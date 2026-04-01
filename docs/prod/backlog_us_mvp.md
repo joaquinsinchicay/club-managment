@@ -5,14 +5,14 @@ User Stories con Acceptance Criteria en formato Gherkin — ordenadas por priori
 
 ---
 
-### E01 🔐 Autenticación y gestión de roles / US-01 — Registro con Google
+### E01 🔐 Autenticación y gestión de roles / US-01 — Iniciar sesión con Google
 
 > *Como usuario, quiero iniciar sesión con mi cuenta de Google, para acceder al sistema del club sin crear una contraseña nueva.*
 
 **Acceptance Criteria — Gherkin**
 
 ```gherkin
-Feature: US-01 — Registro con Google
+Feature: US-01 — Iniciar sesión con Google
 
   Scenario 01: Primer ingreso sin asignación
     Given soy un usuario nuevo sin cuenta
@@ -629,7 +629,7 @@ Feature: US-09 — Gestión de miembros del club
 
 ### E03 💰 Tesorería / US-10 — Apertura y cierre diario de movimientos
 
-> *Como administrador, quiero gestionar los miembros del club activo (ver, modificar roles y removerlos), para mantener el control de acceso y la correcta operación del club.*
+> *Como Secretaria del club, quiero realizar la apertura y cierre diario de movimientos, para registrar la operatoria del día, obtener saldos por cuenta y dejar trazabilidad de mi jornada laboral.*
 
 **Acceptance Criteria — Gherkin**
 
@@ -712,7 +712,7 @@ Feature: US-10 — Apertura y cierre diario de movimientos
 
 ### E03 💰 Tesorería / US-11 — Registro de movimientos diarios
 
-> *Como administrador, quiero gestionar los miembros del club activo (ver, modificar roles y removerlos), para mantener el control de acceso y la correcta operación del club.*
+> *Como Secretaria del club, quiero registrar movimientos diarios, para imputar correctamente ingresos y egresos en las cuentas del club durante una jornada abierta.*
 
 **Acceptance Criteria — Gherkin**
 
@@ -749,9 +749,9 @@ Feature: US-11 — Registro de movimientos diarios
     And veo el campo "Tipo"
     And veo el campo "Categoría"
     And veo el campo "Concepto"
-    And veo el campo "Importe ARS"
+    And veo el campo "Moneda"
+    And veo el campo "Importe"
     And veo la acción "Crear"
-    And no veo campos condicionales que todavía no aplican
 
   Scenario 05: La fecha se completa automáticamente
     Given estoy viendo el formulario de registro de movimientos
@@ -797,71 +797,13 @@ Feature: US-11 — Registro de movimientos diarios
     Then veo un mensaje indicando que el importe debe ser mayor a cero
     And el movimiento no se registra
 
-  Scenario 12: Fecha de transferencia visible y obligatoria para cuenta bancaria
+  Scenario 12: Moneda obligatoria
     Given estoy viendo el formulario de registro de movimientos
-    When selecciono una cuenta de tipo "Bancaria"
-    Then veo el campo "Fecha de transf."
-    And ese campo es obligatorio
-    When intento guardar sin completar la fecha de transferencia
-    Then veo un mensaje indicando que la fecha de transferencia es obligatoria
+    When intento guardar sin seleccionar la moneda
+    Then veo un mensaje indicando que la moneda es obligatoria
     And el movimiento no se registra
 
-  Scenario 13: Fecha de transferencia oculta para cuentas no bancarias
-    Given estoy viendo el formulario de registro de movimientos
-    When selecciono una cuenta que no es de tipo "Bancaria"
-    Then no veo el campo "Fecha de transf."
-
-  Scenario 14: Actividad visible y obligatoria para categorías específicas
-    Given estoy viendo el formulario de registro de movimientos
-    When selecciono la categoría "Ligas/Jornadas" o la categoría "Sueldos"
-    Then veo el campo "Actividad"
-    And ese campo es obligatorio
-    When intento guardar sin completar la actividad
-    Then veo un mensaje indicando que la actividad es obligatoria
-    And el movimiento no se registra
-
-  Scenario 15: Actividad oculta para categorías que no la requieren
-    Given estoy viendo el formulario de registro de movimientos
-    When selecciono una categoría distinta de "Ligas/Jornadas" y "Sueldos"
-    Then no veo el campo "Actividad"
-
-  Scenario 16: Recibo visible y obligatorio para categorías específicas
-    Given estoy viendo el formulario de registro de movimientos
-    When selecciono la categoría "Cuotas" o la categoría "Fichajes"
-    Then veo el campo "Recibo"
-    And ese campo es obligatorio
-    When intento guardar sin asociar un recibo
-    Then veo un mensaje indicando que el recibo es obligatorio
-    And el movimiento no se registra
-
-  Scenario 17: Recibo oculto para categorías que no lo requieren
-    Given estoy viendo el formulario de registro de movimientos
-    When selecciono una categoría distinta de "Cuotas" y "Fichajes"
-    Then no veo el campo "Recibo"
-
-  Scenario 18: Calendario visible y obligatorio para categorías específicas
-    Given estoy viendo el formulario de registro de movimientos
-    When selecciono la categoría "Alquileres" o la categoría "Eventos" o la categoría "Ligas/Jornadas"
-    Then veo el campo "Calendario"
-    And ese campo es obligatorio
-    When intento guardar sin asociar una actividad de calendario
-    Then veo un mensaje indicando que la actividad de calendario es obligatoria
-    And el movimiento no se registra
-
-  Scenario 19: Calendario oculto para categorías que no lo requieren
-    Given estoy viendo el formulario de registro de movimientos
-    When selecciono una categoría distinta de "Alquileres", "Eventos" y "Ligas/Jornadas"
-    Then no veo el campo "Calendario"
-
-  Scenario 20: Actualización dinámica de campos condicionales
-    Given estoy viendo el formulario de registro de movimientos
-    And completé uno o más campos condicionales
-    When cambio la cuenta o la categoría
-    Then el sistema actualiza los campos visibles según la nueva selección
-    And oculta los campos que ya no aplican
-    And limpia los valores cargados en campos que dejaron de aplicar
-
-  Scenario 21: Registro exitoso del movimiento
+  Scenario 13: Registro exitoso del movimiento
     Given estoy viendo el formulario de registro de movimientos
     And completé correctamente todos los campos obligatorios visibles
     When selecciono "Crear"
@@ -870,7 +812,7 @@ Feature: US-11 — Registro de movimientos diarios
     And impacta el saldo de la cuenta correspondiente
     And veo un mensaje de confirmación
 
-  Scenario 22: Registro exitoso asociado a jornada y usuario responsable
+  Scenario 14: Registro exitoso asociado a jornada y usuario responsable
     Given estoy viendo el formulario de registro de movimientos
     And existe una jornada abierta para el día actual
     And completé correctamente todos los campos obligatorios visibles
@@ -879,26 +821,11 @@ Feature: US-11 — Registro de movimientos diarios
     And registra la fecha y hora de creación
     And registra el usuario responsable de la carga
 
-  Scenario 23: Borrar formulario
+  Scenario 15: Borrar formulario
     Given estoy viendo el formulario de registro de movimientos
     And completé uno o más campos
     When selecciono "Borrar formulario"
     Then el formulario vuelve a su estado inicial
-    And conserva la fecha cargada por defecto
-
-  Scenario 24: Consistencia por club activo
-    Given estoy autenticado
-    And tengo rol "Secretaria" en más de un club
-    And existe una jornada abierta en el club activo
-    When registro un movimiento
-    Then el movimiento se registra únicamente en el club activo
-    And no impacta cuentas ni jornadas de otros clubes
-
-  Scenario 25: Confirmación y reseteo del formulario después de un registro exitoso
-    Given registré exitosamente un movimiento
-    When el sistema confirma el registro
-    Then veo un mensaje de éxito
-    And el formulario vuelve a quedar listo para cargar un nuevo movimiento
     And conserva la fecha cargada por defecto
 ```
 
@@ -1350,6 +1277,1288 @@ Feature: US-14 — Apertura y cierre diario con validación de saldos por cuenta
     When realizo la apertura o el cierre diario
     Then la operación aplica únicamente al club activo
     And solo considera las cuentas habilitadas de ese club
+```
+
+---
+
+### E03 💰 Tesorería / US-15 — Configuración de cuentas y categorías del club
+
+> *Como Admin del club, quiero configurar las cuentas y categorías de tesorería del club activo, para definir los parámetros que utilizará Secretaria en la operatoria diaria.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-15 — Configuración de cuentas y categorías del club
+
+  Scenario 01: Acceso a la configuración de tesorería desde Configuración del club
+    Given estoy autenticado
+    And soy admin del club activo
+    When ingreso a "Configuración del club"
+    Then veo la solapa "Tesorería"
+
+  Scenario 02: Usuario no admin no accede a la configuración de tesorería
+    Given estoy autenticado
+    And no soy admin del club activo
+    When intento acceder a la configuración de tesorería del club
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización de configuración de cuentas
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la solapa "Tesorería"
+    When la pantalla carga
+    Then veo el listado de cuentas del club activo
+    And cada cuenta muestra nombre, tipo, estado, visibilidad para Secretaria y emoji
+
+  Scenario 04: Visualización de configuración de categorías
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la solapa "Tesorería"
+    When la pantalla carga
+    Then veo el listado de categorías del club activo
+    And cada categoría muestra nombre, estado, visibilidad para Secretaria y emoji
+
+  Scenario 05: Alta de cuenta
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la solapa "Tesorería"
+    When selecciono crear una cuenta
+    Then veo un formulario con los campos "Nombre", "Tipo", "Visible para Secretaria", "Estado" y "Emoji"
+    And el campo "Tipo" ofrece las opciones "Efectivo", "Bancaria" y "Billetera virtual"
+
+  Scenario 06: Creación exitosa de cuenta
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de cuenta
+    When completo un nombre válido
+    And selecciono un tipo válido
+    And defino su visibilidad para Secretaria
+    And defino su estado
+    And confirmo la creación
+    Then el sistema registra la cuenta en el club activo
+    And la cuenta queda disponible según su configuración
+
+  Scenario 07: Nombre de cuenta obligatorio
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de cuenta
+    When intento guardar sin completar el nombre
+    Then veo un mensaje indicando que el nombre es obligatorio
+    And la cuenta no se registra
+
+  Scenario 08: Tipo de cuenta obligatorio
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de cuenta
+    When intento guardar sin seleccionar el tipo
+    Then veo un mensaje indicando que el tipo es obligatorio
+    And la cuenta no se registra
+
+  Scenario 09: No se permite duplicar cuentas activas con el mismo nombre en el club activo
+    Given estoy autenticado
+    And soy admin del club activo
+    And ya existe una cuenta activa con un nombre determinado en el club activo
+    When intento crear otra cuenta con ese mismo nombre
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que la cuenta ya existe
+
+  Scenario 10: Alta de categoría
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la solapa "Tesorería"
+    When selecciono crear una categoría
+    Then veo un formulario con los campos "Nombre", "Visible para Secretaria", "Estado" y "Emoji"
+    And el campo "Nombre" permite seleccionar o cargar una categoría para el club
+
+  Scenario 11: Creación exitosa de categoría
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de categoría
+    When completo un nombre válido
+    And defino su visibilidad para Secretaria
+    And defino su estado
+    And confirmo la creación
+    Then el sistema registra la categoría en el club activo
+    And la categoría queda disponible según su configuración
+
+  Scenario 12: Nombre de categoría obligatorio
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de categoría
+    When intento guardar sin completar el nombre
+    Then veo un mensaje indicando que el nombre es obligatorio
+    And la categoría no se registra
+
+  Scenario 13: No se permite duplicar categorías activas con el mismo nombre en el club activo
+    Given estoy autenticado
+    And soy admin del club activo
+    And ya existe una categoría activa con un nombre determinado en el club activo
+    When intento crear otra categoría con ese mismo nombre
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que la categoría ya existe
+
+  Scenario 14: Edición de cuenta
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe una cuenta en el club activo
+    When edito su nombre, tipo, visibilidad para Secretaria, estado o emoji
+    Then el sistema actualiza la cuenta
+    And los cambios aplican solo al club activo
+
+  Scenario 15: Edición de categoría
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe una categoría en el club activo
+    When edito su nombre, visibilidad para Secretaria, estado o emoji
+    Then el sistema actualiza la categoría
+    And los cambios aplican solo al club activo
+
+  Scenario 16: Cuenta inactiva no aparece para Secretaria
+    Given existe una cuenta inactiva en el club activo
+    When Secretaria accede a apertura, cierre o registro de movimientos
+    Then esa cuenta no aparece entre las opciones disponibles
+
+  Scenario 17: Cuenta no visible para Secretaria no aparece en su operatoria
+    Given existe una cuenta activa en el club activo
+    And la cuenta no está marcada como visible para Secretaria
+    When Secretaria accede a apertura, cierre o registro de movimientos
+    Then esa cuenta no aparece entre las opciones disponibles
+
+  Scenario 18: Categoría inactiva no aparece para Secretaria
+    Given existe una categoría inactiva en el club activo
+    When Secretaria accede al registro de movimientos
+    Then esa categoría no aparece entre las opciones disponibles
+
+  Scenario 19: Categoría no visible para Secretaria no aparece en su operatoria
+    Given existe una categoría activa en el club activo
+    And la categoría no está marcada como visible para Secretaria
+    When Secretaria accede al registro de movimientos
+    Then esa categoría no aparece entre las opciones disponibles
+
+  Scenario 20: Inicialización desde template
+    Given estoy autenticado
+    And soy admin del club activo
+    And el club aún no tiene configuración de tesorería
+    When ingreso a la solapa "Tesorería"
+    Then puedo iniciar la configuración a partir de un template base del sistema
+
+  Scenario 21: Template crea configuración editable
+    Given estoy autenticado
+    And soy admin del club activo
+    And seleccioné un template base
+    When confirmo su aplicación
+    Then el sistema crea cuentas iniciales con los tipos "Efectivo", "Bancaria" y "Billetera virtual"
+    And el sistema crea categorías iniciales del template base
+    And esas configuraciones pueden editarse, activarse o desactivarse posteriormente
+
+  Scenario 22: Template base de categorías del sistema
+    Given estoy autenticado
+    And soy admin del club activo
+    When consulto el template base de categorías
+    Then veo las categorías "Alquileres", "Cuotas", "Eventos", "Fichajes", "Impuestos", "Indumentaria", "Inversiones", "Ligas/Jornadas", "Mantenimiento", "Obra", "Otros", "Préstamo", "Servicios", "Sponsor", "Subsidios", "Sueldos", "Utilería" y "Transferencias e/cuentas"
+
+  Scenario 23: Consistencia por club activo
+    Given estoy autenticado
+    And soy admin en más de un club
+    When creo, edito o desactivo cuentas o categorías
+    Then la configuración aplica únicamente al club activo
+    And no afecta la configuración de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-16 — Configuración de campos adicionales del formulario de movimientos
+
+> *Como Admin del club, quiero configurar la visibilidad y obligatoriedad de los campos adicionales del formulario de movimientos, para adaptar la carga de Secretaria a la operatoria del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-16 — Configuración de campos adicionales del formulario de movimientos
+
+  Scenario 01: Acceso a la configuración desde Tesorería
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en "Configuración del club"
+    When ingreso a la solapa "Tesorería"
+    Then veo una sección de configuración de campos adicionales del formulario
+
+  Scenario 02: Usuario no admin no accede
+    Given estoy autenticado
+    And no soy admin del club activo
+    When intento acceder a la configuración
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización de campos configurables
+    Given estoy autenticado
+    And soy admin del club activo
+    When ingreso a la configuración del formulario
+    Then veo los campos "Actividad", "Recibo" y "Calendario"
+
+  Scenario 04: Configuración de visibilidad de campo
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy configurando un campo adicional
+    When defino que el campo es visible para una categoría
+    Then el sistema guarda la configuración
+
+  Scenario 05: Configuración de obligatoriedad de campo
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy configurando un campo adicional
+    When defino que el campo es obligatorio para una categoría
+    Then el sistema guarda la configuración
+
+  Scenario 06: Configuración por categoría
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe una categoría
+    When configuro un campo adicional para esa categoría
+    Then la regla aplica solo a esa categoría
+
+  Scenario 07: Secretaria ve campo según configuración
+    Given existe una configuración que hace visible un campo para una categoría
+    And tengo rol "Secretaria"
+    When selecciono esa categoría en el formulario de movimientos
+    Then veo el campo correspondiente
+
+  Scenario 08: Secretaria no ve campo si no aplica
+    Given existe una configuración de campo adicional
+    And tengo rol "Secretaria"
+    When selecciono una categoría que no tiene ese campo configurado
+    Then no veo ese campo en el formulario
+
+  Scenario 09: Campo obligatorio bloquea guardado
+    Given existe una configuración que hace obligatorio un campo adicional
+    And tengo rol "Secretaria"
+    When selecciono una categoría que requiere ese campo
+    And intento guardar sin completarlo
+    Then veo un mensaje de error
+    And el movimiento no se registra
+
+  Scenario 10: Cambios impactan en el formulario de Secretaria
+    Given estoy autenticado
+    And soy admin del club activo
+    When modifico la configuración de campos
+    Then los cambios se reflejan en el formulario de movimientos
+
+  Scenario 11: Configuración por club
+    Given estoy autenticado
+    And soy admin en más de un club
+    When configuro campos adicionales
+    Then la configuración aplica solo al club activo
+    And no afecta otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-17 — Vinculación de movimientos con recibos del sistema de socios
+
+> *Como Secretaria del club, quiero asociar un movimiento a un número de recibo del sistema de socios, para vincular correctamente el ingreso o egreso con su comprobante correspondiente.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-17 — Vinculación de movimientos con recibos del sistema de socios
+
+  Scenario 01: Visualización del campo Recibo según configuración
+    Given tengo rol "Secretaria" en el club activo
+    And existe una configuración que hace visible el campo "Recibo" para una categoría
+    When selecciono una categoría que requiere recibo en el formulario de movimientos
+    Then veo el campo "Recibo"
+
+  Scenario 02: Campo Recibo no visible cuando no aplica
+    Given tengo rol "Secretaria" en el club activo
+    And no existe una configuración que haga visible el campo "Recibo" para una categoría
+    When selecciono una categoría que no requiere recibo en el formulario de movimientos
+    Then no veo el campo "Recibo"
+
+  Scenario 03: Campo Recibo obligatorio según configuración
+    Given tengo rol "Secretaria" en el club activo
+    And existe una configuración que hace obligatorio el campo "Recibo" para una categoría
+    When selecciono una categoría que requiere recibo
+    And intento guardar el movimiento sin completar el campo "Recibo"
+    Then veo un mensaje indicando que el recibo es obligatorio
+    And el movimiento no se registra
+
+  Scenario 04: Registro exitoso con número de recibo
+    Given tengo rol "Secretaria" en el club activo
+    And seleccioné una categoría que requiere recibo
+    And completé correctamente todos los demás campos obligatorios
+    When ingreso un número de recibo válido
+    And guardo el movimiento
+    Then el sistema registra el movimiento
+    And guarda el número de recibo asociado al movimiento
+
+  Scenario 05: Edición del número de recibo antes de guardar
+    Given tengo rol "Secretaria" en el club activo
+    And estoy completando un movimiento con campo "Recibo" visible
+    When modifico el valor del número de recibo antes de guardar
+    Then el sistema conserva el último valor ingresado
+
+  Scenario 06: Recibo visible en el detalle del movimiento
+    Given existe un movimiento registrado con número de recibo asociado
+    When consulto el detalle del movimiento
+    Then veo el número de recibo vinculado al movimiento
+
+  Scenario 07: Consistencia por club activo
+    Given tengo rol "Secretaria" en más de un club
+    When registro un movimiento con número de recibo
+    Then el recibo queda asociado únicamente al movimiento del club activo
+
+  Scenario 08: Configuración por club del campo Recibo
+    Given soy admin del club activo
+    When configuro la visibilidad u obligatoriedad del campo "Recibo"
+    Then la configuración aplica únicamente al club activo
+    And no afecta a otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-18 — Configuración de formatos válidos para recibos
+
+> *Como Admin del club, quiero configurar los formatos válidos del campo Recibo, para asegurar que Secretaria cargue referencias consistentes con los sistemas de socios utilizados por el club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-18 — Configuración de formatos válidos para recibos
+
+  Scenario 01: Acceso a la configuración de formatos de recibo
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en "Configuración del club"
+    When ingreso a la solapa "Tesorería"
+    Then veo una sección de configuración de formatos de recibo
+
+  Scenario 02: Usuario no admin no accede a la configuración
+    Given estoy autenticado
+    And no soy admin del club activo
+    When intento acceder a la configuración de formatos de recibo
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización de formatos configurados
+    Given estoy autenticado
+    And soy admin del club activo
+    And existen formatos de recibo configurados
+    When ingreso a la configuración de formatos de recibo
+    Then veo el listado de formatos configurados para el club activo
+    And cada formato muestra nombre, estado, tipo de validación y ejemplo
+
+  Scenario 04: Alta de formato numérico
+    Given estoy autenticado
+    And soy admin del club activo
+    When selecciono crear un formato de recibo
+    And elijo el tipo de validación "Numérico"
+    Then veo un formulario con los campos "Nombre", "Estado", "Valor mínimo" y "Ejemplo"
+
+  Scenario 05: Creación exitosa de formato numérico
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de formato numérico
+    When completo un nombre válido
+    And defino un valor mínimo válido
+    And defino su estado
+    And confirmo la creación
+    Then el sistema registra el formato en el club activo
+    And el formato queda disponible según su estado
+
+  Scenario 06: Alta de formato con nomenclatura
+    Given estoy autenticado
+    And soy admin del club activo
+    When selecciono crear un formato de recibo
+    And elijo el tipo de validación "Nomenclatura"
+    Then veo un formulario con los campos "Nombre", "Estado", "Patrón" y "Ejemplo"
+
+  Scenario 07: Creación exitosa de formato con nomenclatura
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de formato con nomenclatura
+    When completo un nombre válido
+    And defino un patrón válido
+    And defino su estado
+    And confirmo la creación
+    Then el sistema registra el formato en el club activo
+    And el formato queda disponible según su estado
+
+  Scenario 08: No se permite guardar un formato sin nombre
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de formato
+    When intento guardar sin completar el nombre
+    Then veo un mensaje indicando que el nombre es obligatorio
+    And el formato no se registra
+
+  Scenario 09: No se permite guardar un formato numérico sin valor mínimo
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de formato numérico
+    When intento guardar sin completar el valor mínimo
+    Then veo un mensaje indicando que el valor mínimo es obligatorio
+    And el formato no se registra
+
+  Scenario 10: No se permite guardar un formato de nomenclatura sin patrón
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de formato con nomenclatura
+    When intento guardar sin completar el patrón
+    Then veo un mensaje indicando que el patrón es obligatorio
+    And el formato no se registra
+
+  Scenario 11: Edición de formato de recibo
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe un formato de recibo configurado
+    When edito su nombre, estado, valor mínimo, patrón o ejemplo
+    Then el sistema actualiza el formato en el club activo
+
+  Scenario 12: Formato inactivo no participa en validación
+    Given existe un formato de recibo inactivo en el club activo
+    When Secretaria ingresa un número de recibo
+    Then ese formato no se considera válido para la validación
+
+  Scenario 13: Múltiples formatos activos permitidos
+    Given estoy autenticado
+    And soy admin del club activo
+    And existen múltiples formatos de recibo activos
+    When Secretaria ingresa un número de recibo
+    Then el sistema acepta el valor si cumple al menos uno de los formatos activos
+
+  Scenario 14: Recibo válido según formato numérico
+    Given existe un formato numérico activo con valor mínimo configurado
+    And tengo rol "Secretaria" en el club activo
+    When ingreso un recibo numérico igual o mayor al mínimo permitido
+    Then el sistema considera válido el recibo
+
+  Scenario 15: Recibo inválido según formato numérico
+    Given existe un formato numérico activo con valor mínimo configurado
+    And tengo rol "Secretaria" en el club activo
+    When ingreso un recibo numérico menor al mínimo permitido
+    Then el sistema muestra un mensaje indicando que el recibo no cumple un formato válido
+    And el movimiento no se registra
+
+  Scenario 16: Recibo válido según formato con nomenclatura
+    Given existe un formato de nomenclatura activo con patrón configurado
+    And tengo rol "Secretaria" en el club activo
+    When ingreso un recibo que cumple el patrón definido
+    Then el sistema considera válido el recibo
+
+  Scenario 17: Recibo inválido según formato con nomenclatura
+    Given existe un formato de nomenclatura activo con patrón configurado
+    And tengo rol "Secretaria" en el club activo
+    When ingreso un recibo que no cumple el patrón definido
+    Then el sistema muestra un mensaje indicando que el recibo no cumple un formato válido
+    And el movimiento no se registra
+
+  Scenario 18: Helper visible para Secretaria con ejemplos válidos
+    Given existen formatos de recibo activos en el club activo
+    And tengo rol "Secretaria" en el club activo
+    When veo el campo "Recibo" en el formulario de movimientos
+    Then veo ayuda contextual con ejemplos de formatos válidos
+
+  Scenario 19: Convivencia entre sistema viejo y sistema nuevo
+    Given existe un formato numérico activo para recibos del sistema viejo
+    And existe un formato con nomenclatura activo para recibos del sistema nuevo
+    And tengo rol "Secretaria" en el club activo
+    When ingreso un recibo que cumple uno de los dos formatos
+    Then el sistema permite guardar el movimiento
+
+  Scenario 20: Configuración por club activo
+    Given estoy autenticado
+    And soy admin en más de un club
+    When creo, edito o desactivo formatos de recibo
+    Then la configuración aplica únicamente al club activo
+    And no afecta la configuración de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-19 — Vinculación de movimientos con actividad del club
+
+> *Como Secretaria del club, quiero asociar un movimiento a una actividad del club, para identificar a qué disciplina corresponde el ingreso o egreso.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-19 — Vinculación de movimientos con actividad del club
+
+  Scenario 01: Visualización del campo Actividad según configuración
+    Given tengo rol "Secretaria" en el club activo
+    And existe una configuración que hace visible el campo "Actividad" para una categoría
+    When selecciono una categoría que requiere actividad en el formulario de movimientos
+    Then veo el campo "Actividad"
+
+  Scenario 02: Campo Actividad no visible cuando no aplica
+    Given tengo rol "Secretaria" en el club activo
+    And no existe una configuración que haga visible el campo "Actividad" para una categoría
+    When selecciono una categoría que no requiere actividad en el formulario de movimientos
+    Then no veo el campo "Actividad"
+
+  Scenario 03: Campo Actividad obligatorio según configuración
+    Given tengo rol "Secretaria" en el club activo
+    And existe una configuración que hace obligatorio el campo "Actividad" para una categoría
+    When selecciono una categoría que requiere actividad
+    And intento guardar el movimiento sin seleccionar una actividad
+    Then veo un mensaje indicando que la actividad es obligatoria
+    And el movimiento no se registra
+
+  Scenario 04: Selección de actividad desde catálogo del club
+    Given tengo rol "Secretaria" en el club activo
+    And existen actividades configuradas en el club
+    When veo el campo "Actividad"
+    Then puedo seleccionar una actividad desde el listado disponible
+
+  Scenario 05: Registro exitoso con actividad
+    Given tengo rol "Secretaria" en el club activo
+    And seleccioné una categoría que requiere actividad
+    And completé correctamente todos los demás campos obligatorios
+    When selecciono una actividad válida
+    And guardo el movimiento
+    Then el sistema registra el movimiento
+    And guarda la actividad asociada al movimiento
+
+  Scenario 06: Actividad visible en el detalle del movimiento
+    Given existe un movimiento registrado con actividad asociada
+    When consulto el detalle del movimiento
+    Then veo la actividad vinculada al movimiento
+
+  Scenario 07: Actividades inactivas no aparecen para Secretaria
+    Given existe una actividad inactiva en el club activo
+    When veo el campo "Actividad"
+    Then esa actividad no aparece entre las opciones disponibles
+
+  Scenario 08: Actividades visibles solo del club activo
+    Given tengo rol "Secretaria" en más de un club
+    When veo el campo "Actividad"
+    Then solo veo actividades del club activo
+
+  Scenario 09: Cambio de categoría actualiza visibilidad del campo
+    Given estoy completando el formulario de movimientos
+    And el campo "Actividad" está visible
+    When cambio la categoría por una que no requiere actividad
+    Then el campo "Actividad" deja de mostrarse
+    And se limpia el valor previamente seleccionado
+
+  Scenario 10: Consistencia por club activo
+    Given tengo rol "Secretaria" en más de un club
+    When registro un movimiento con actividad
+    Then la actividad queda asociada únicamente al movimiento del club activo
+```
+
+---
+
+### E03 💰 Tesorería / US-20 — Configuración de actividades del club
+
+> *Como Admin del club, quiero configurar las actividades del club, para que Secretaria pueda asociar los movimientos a la disciplina correspondiente.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-20 — Configuración de actividades del club
+
+  Scenario 01: Acceso a la configuración de actividades
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en "Configuración del club"
+    When ingreso a la solapa "Tesorería"
+    Then veo una sección de configuración de actividades
+
+  Scenario 02: Usuario no admin no accede a la configuración
+    Given estoy autenticado
+    And no soy admin del club activo
+    When intento acceder a la configuración de actividades
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización de actividades configuradas
+    Given estoy autenticado
+    And soy admin del club activo
+    And existen actividades configuradas en el club activo
+    When ingreso a la configuración de actividades
+    Then veo el listado de actividades del club activo
+    And cada actividad muestra nombre, estado y emoji
+
+  Scenario 04: Alta de actividad
+    Given estoy autenticado
+    And soy admin del club activo
+    When selecciono crear una actividad
+    Then veo un formulario con los campos "Nombre", "Estado" y "Emoji"
+
+  Scenario 05: Creación exitosa de actividad
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de actividad
+    When completo un nombre válido
+    And defino su estado
+    And confirmo la creación
+    Then el sistema registra la actividad en el club activo
+    And la actividad queda disponible según su configuración
+
+  Scenario 06: Nombre de actividad obligatorio
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de actividad
+    When intento guardar sin completar el nombre
+    Then veo un mensaje indicando que el nombre es obligatorio
+    And la actividad no se registra
+
+  Scenario 07: No se permite duplicar actividades activas con el mismo nombre en el club activo
+    Given estoy autenticado
+    And soy admin del club activo
+    And ya existe una actividad activa con un nombre determinado en el club activo
+    When intento crear otra actividad con ese mismo nombre
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que la actividad ya existe
+
+  Scenario 08: Edición de actividad
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe una actividad configurada en el club activo
+    When edito su nombre, estado o emoji
+    Then el sistema actualiza la actividad en el club activo
+
+  Scenario 09: Actividad inactiva no aparece para Secretaria
+    Given existe una actividad inactiva en el club activo
+    When Secretaria accede al formulario de movimientos
+    Then esa actividad no aparece entre las opciones disponibles
+
+  Scenario 10: Actividad activa aparece para Secretaria cuando el campo aplica
+    Given existe una actividad activa en el club activo
+    And el campo "Actividad" está visible según la configuración del formulario
+    When Secretaria accede al formulario de movimientos
+    Then esa actividad aparece entre las opciones disponibles
+
+  Scenario 11: Estado vacío sin actividades configuradas
+    Given estoy autenticado
+    And soy admin del club activo
+    And no existen actividades configuradas
+    When ingreso a la configuración de actividades
+    Then veo un estado vacío indicando que no hay actividades disponibles
+
+  Scenario 12: Consistencia por club activo
+    Given estoy autenticado
+    And soy admin en más de un club
+    When creo, edito o desactivo actividades
+    Then la configuración aplica únicamente al club activo
+    And no afecta la configuración de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-21 — Vinculación de movimientos con eventos de calendario
+
+> *Como Secretaria del club, quiero asociar un movimiento a un evento del calendario, para imputar correctamente ingresos y egresos a una actividad puntual del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-21 — Vinculación de movimientos con eventos de calendario
+
+  Scenario 01: Visualización del campo Calendario según configuración
+    Given tengo rol "Secretaria" en el club activo
+    And existe una configuración que hace visible el campo "Calendario" para una categoría
+    When selecciono una categoría que requiere calendario en el formulario de movimientos
+    Then veo el campo "Calendario"
+
+  Scenario 02: Campo Calendario no visible cuando no aplica
+    Given tengo rol "Secretaria" en el club activo
+    And no existe una configuración que haga visible el campo "Calendario" para una categoría
+    When selecciono una categoría que no requiere calendario en el formulario de movimientos
+    Then no veo el campo "Calendario"
+
+  Scenario 03: Campo Calendario obligatorio según configuración
+    Given tengo rol "Secretaria" en el club activo
+    And existe una configuración que hace obligatorio el campo "Calendario" para una categoría
+    When selecciono una categoría que requiere calendario
+    And intento guardar el movimiento sin seleccionar un evento
+    Then veo un mensaje indicando que el calendario es obligatorio
+    And el movimiento no se registra
+
+  Scenario 04: Selección de evento desde el calendario del club
+    Given tengo rol "Secretaria" en el club activo
+    And existen eventos de calendario en el club activo
+    When veo el campo "Calendario"
+    Then puedo seleccionar un evento desde el listado disponible
+
+  Scenario 05: Registro exitoso con evento de calendario
+    Given tengo rol "Secretaria" en el club activo
+    And seleccioné una categoría que requiere calendario
+    And completé correctamente todos los demás campos obligatorios
+    When selecciono un evento válido del calendario
+    And guardo el movimiento
+    Then el sistema registra el movimiento
+    And guarda el evento asociado al movimiento
+
+  Scenario 06: Evento visible en el detalle del movimiento
+    Given existe un movimiento registrado con un evento asociado
+    When consulto el detalle del movimiento
+    Then veo el evento de calendario vinculado al movimiento
+
+  Scenario 07: Solo se muestran eventos del club activo
+    Given tengo rol "Secretaria" en más de un club
+    When veo el campo "Calendario"
+    Then solo veo eventos del calendario del club activo
+
+  Scenario 08: Cambio de categoría actualiza visibilidad del campo Calendario
+    Given estoy completando el formulario de movimientos
+    And el campo "Calendario" está visible
+    When cambio la categoría por una que no requiere calendario
+    Then el campo "Calendario" deja de mostrarse
+    And se limpia el valor previamente seleccionado
+
+  Scenario 09: Estado vacío sin eventos disponibles
+    Given tengo rol "Secretaria" en el club activo
+    And el campo "Calendario" está visible
+    And no existen eventos disponibles en el club activo
+    When veo el formulario de movimientos
+    Then veo el campo "Calendario" sin opciones seleccionables
+    And veo un mensaje indicando que no hay eventos disponibles
+
+  Scenario 10: Consistencia por club activo
+    Given tengo rol "Secretaria" en más de un club
+    When registro un movimiento con evento de calendario
+    Then el evento queda asociado únicamente al movimiento del club activo
+```
+
+---
+
+### E03 💰 Tesorería / US-22 — Disponibilización de eventos sincronizados para imputación de movimientos
+
+> *Como Admin del club, quiero utilizar los eventos sincronizados desde Google Calendar para que Secretaria pueda imputar movimientos a eventos reales del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-22 — Disponibilización de eventos sincronizados para imputación de movimientos
+
+  Scenario 01: Acceso a la configuración de eventos para tesorería
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en "Configuración del club"
+    When ingreso a la solapa "Tesorería"
+    Then veo una sección de eventos disponibles para imputación
+
+  Scenario 02: Usuario no admin no accede a la configuración
+    Given estoy autenticado
+    And no soy admin del club activo
+    When intento acceder a la configuración de eventos para imputación
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización de eventos sincronizados
+    Given estoy autenticado
+    And soy admin del club activo
+    And existen eventos sincronizados desde Google Calendar para el club activo
+    When ingreso a la configuración de eventos para imputación
+    Then veo el listado de eventos sincronizados
+    And cada evento muestra al menos título y fecha
+
+  Scenario 04: Estado vacío sin eventos sincronizados
+    Given estoy autenticado
+    And soy admin del club activo
+    And no existen eventos sincronizados para el club activo
+    When ingreso a la configuración de eventos para imputación
+    Then veo un estado vacío indicando que no hay eventos disponibles
+
+  Scenario 05: Disponibilización de evento para tesorería
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe un evento sincronizado
+    When marco el evento como disponible para imputación
+    Then el evento queda habilitado para ser seleccionado por Secretaria en el formulario de movimientos
+
+  Scenario 06: Evento no habilitado no aparece para Secretaria
+    Given existe un evento sincronizado en el club activo
+    And el evento no está habilitado para imputación
+    When Secretaria visualiza el campo "Calendario" en el formulario de movimientos
+    Then ese evento no aparece entre las opciones disponibles
+
+  Scenario 07: Evento habilitado aparece para Secretaria
+    Given existe un evento sincronizado en el club activo
+    And el evento está habilitado para imputación
+    When Secretaria visualiza el campo "Calendario" en el formulario de movimientos
+    Then ese evento aparece entre las opciones disponibles
+
+  Scenario 08: Actualización de eventos sincronizados
+    Given existe un evento previamente sincronizado desde Google Calendar
+    When la información del evento se actualiza en la fuente sincronizada
+    Then la información visible para imputación refleja la última versión disponible
+
+  Scenario 09: Solo se consideran eventos del club activo
+    Given estoy autenticado
+    And soy admin en más de un club
+    When ingreso a la configuración de eventos para imputación
+    Then solo veo eventos sincronizados del club activo
+
+  Scenario 10: Consistencia por club activo
+    Given estoy autenticado
+    And soy admin en más de un club
+    When habilito o deshabilito eventos para imputación
+    Then la configuración aplica únicamente al club activo
+    And no afecta eventos de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-23 — Configuración de monedas disponibles para tesorería
+
+> *Como Admin del club, quiero configurar las monedas disponibles para tesorería, para definir qué moneda puede utilizar Secretaria en la carga de movimientos y en la visualización de saldos del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-23 — Configuración de monedas disponibles para tesorería
+
+  Scenario 01: Acceso a la configuración de monedas
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en "Configuración del club"
+    When ingreso a la solapa "Tesorería"
+    Then veo una sección de configuración de monedas
+
+  Scenario 02: Usuario no admin no accede a la configuración de monedas
+    Given estoy autenticado
+    And no soy admin del club activo
+    When intento acceder a la configuración de monedas
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización del listado predefinido de monedas
+    Given estoy autenticado
+    And soy admin del club activo
+    When ingreso a la configuración de monedas
+    Then veo el listado predefinido de monedas "ARS", "USD" y "EUR"
+
+  Scenario 04: Selección de monedas disponibles para el club
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la configuración de monedas
+    When selecciono una o más monedas del listado predefinido
+    And confirmo la configuración
+    Then el sistema guarda esas monedas como disponibles para el club activo
+
+  Scenario 05: Al menos una moneda debe estar configurada
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la configuración de monedas
+    When intento guardar sin seleccionar ninguna moneda
+    Then veo un mensaje indicando que debo seleccionar al menos una moneda
+    And la configuración no se guarda
+
+  Scenario 06: Definición de moneda principal para Secretaria
+    Given estoy autenticado
+    And soy admin del club activo
+    And seleccioné una o más monedas disponibles
+    When marco una de ellas como moneda principal
+    And confirmo la configuración
+    Then el sistema guarda esa moneda como moneda principal del club activo para tesorería
+
+  Scenario 07: La moneda principal debe estar dentro de las monedas disponibles
+    Given estoy autenticado
+    And soy admin del club activo
+    When intento definir como moneda principal una moneda no seleccionada como disponible
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que la moneda principal debe ser una de las monedas disponibles
+
+  Scenario 08: Secretaria ve solo las monedas habilitadas
+    Given existe una configuración de monedas para el club activo
+    And tengo rol "Secretaria" en el club activo
+    When accedo al formulario de registro de movimientos
+    Then en el campo "Moneda" veo únicamente las monedas habilitadas para el club activo
+
+  Scenario 09: Moneda principal precargada en el formulario de Secretaria
+    Given existe una moneda principal configurada para el club activo
+    And tengo rol "Secretaria" en el club activo
+    When accedo al formulario de registro de movimientos
+    Then el campo "Moneda" aparece precargado con la moneda principal del club activo
+
+  Scenario 10: La moneda principal se utiliza en la visualización de saldos
+    Given existe una moneda principal configurada para el club activo
+    And tengo rol "Secretaria" en el club activo
+    When visualizo saldos en el dashboard o en el detalle de cuentas
+    Then los saldos se muestran utilizando la moneda principal configurada para el club activo
+
+  Scenario 11: Cambio de moneda principal impacta en la operatoria de Secretaria
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe una moneda principal configurada
+    When modifico la moneda principal del club activo
+    Then el cambio se refleja en el formulario de movimientos de Secretaria
+    And el cambio se refleja en la visualización de saldos del club activo
+
+  Scenario 12: Configuración por club activo
+    Given estoy autenticado
+    And soy admin en más de un club
+    When selecciono monedas disponibles o cambio la moneda principal
+    Then la configuración aplica únicamente al club activo
+    And no afecta la configuración de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-24 — Configuración de tipos de movimiento fijos del sistema
+
+> *Como Admin del club, quiero configurar qué tipos de movimiento fijos del sistema estarán disponibles en tesorería, para que Secretaria pueda registrar ingresos y egresos de forma consistente.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-24 — Configuración de tipos de movimiento fijos del sistema
+
+  Scenario 01: Acceso a la configuración de tipos de movimiento
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en "Configuración del club"
+    When ingreso a la solapa "Tesorería"
+    Then veo una sección de configuración de tipos de movimiento
+
+  Scenario 02: Usuario no admin no accede a la configuración
+    Given estoy autenticado
+    And no soy admin del club activo
+    When intento acceder a la configuración de tipos de movimiento
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización del listado fijo del sistema
+    Given estoy autenticado
+    And soy admin del club activo
+    When ingreso a la configuración de tipos de movimiento
+    Then veo el listado fijo del sistema con las opciones "Ingreso" y "Egreso"
+
+  Scenario 04: Selección de tipos disponibles para el club
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la configuración de tipos de movimiento
+    When selecciono uno o más tipos del listado fijo
+    And confirmo la configuración
+    Then el sistema guarda esos tipos como disponibles para el club activo
+
+  Scenario 05: Al menos un tipo debe estar habilitado
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la configuración de tipos de movimiento
+    When intento guardar sin seleccionar ningún tipo
+    Then veo un mensaje indicando que debo seleccionar al menos un tipo de movimiento
+    And la configuración no se guarda
+
+  Scenario 06: Secretaria ve solo los tipos habilitados
+    Given existe una configuración de tipos de movimiento para el club activo
+    And tengo rol "Secretaria" en el club activo
+    When accedo al formulario de registro de movimientos
+    Then en el campo "Tipo" veo únicamente los tipos habilitados para el club activo
+
+  Scenario 07: Tipo no habilitado no aparece para Secretaria
+    Given existe una configuración de tipos de movimiento para el club activo
+    And el tipo "Egreso" no está habilitado
+    And tengo rol "Secretaria" en el club activo
+    When accedo al formulario de registro de movimientos
+    Then no veo el tipo "Egreso" entre las opciones disponibles
+
+  Scenario 08: Impacto del tipo en el saldo
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta
+    When registro un movimiento de tipo "Ingreso"
+    Then el sistema suma el importe al saldo de la cuenta correspondiente
+    When registro un movimiento de tipo "Egreso"
+    Then el sistema resta el importe al saldo de la cuenta correspondiente
+
+  Scenario 09: El importe siempre se carga como valor positivo
+    Given tengo rol "Secretaria" en el club activo
+    When registro un movimiento
+    Then el campo "Importe" espera un valor mayor a cero
+    And el impacto en el saldo se determina por el tipo de movimiento seleccionado
+
+  Scenario 10: Cambio de configuración impacta en el formulario de Secretaria
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe una configuración previa de tipos de movimiento
+    When modifico los tipos habilitados
+    Then el cambio se refleja en el formulario de movimientos de Secretaria del club activo
+
+  Scenario 11: Configuración por club activo
+    Given estoy autenticado
+    And soy admin en más de un club
+    When habilito o deshabilito tipos de movimiento
+    Then la configuración aplica únicamente al club activo
+    And no afecta la configuración de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-25 — Registro de transferencias entre cuentas
+
+> *Como Secretaria del club, quiero registrar transferencias entre cuentas de la misma moneda, para reflejar correctamente traspasos internos sin cargar movimientos duplicados manualmente.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-25 — Registro de transferencias entre cuentas
+
+  Scenario 01: Secretaria ve la opción con jornada abierta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    When ingreso al módulo de tesorería
+    Then veo la opción para registrar transferencias entre cuentas
+
+  Scenario 02: Usuario sin rol Secretaria no ve la opción
+    Given estoy autenticado
+    And no tengo rol "Secretaria" en el club activo
+    When ingreso al módulo de tesorería
+    Then no veo la opción para registrar transferencias entre cuentas
+
+  Scenario 03: No se muestra la opción sin jornada abierta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    When ingreso al módulo de tesorería
+    Then no veo la opción para registrar transferencias entre cuentas
+
+  Scenario 04: Campos visibles al iniciar la carga
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    When abro el formulario de transferencia entre cuentas
+    Then veo el campo "Fecha" completo por defecto y no editable
+    And veo el campo "Cuenta origen"
+    And veo el campo "Cuenta destino"
+    And veo el campo "Moneda"
+    And veo el campo "Importe"
+    And veo el campo "Concepto"
+    And veo la acción "Crear"
+
+  Scenario 05: Cuenta origen obligatoria
+    Given estoy viendo el formulario de transferencia
+    When intento guardar sin seleccionar una cuenta origen
+    Then veo un mensaje indicando que la cuenta origen es obligatoria
+    And la transferencia no se registra
+
+  Scenario 06: Cuenta destino obligatoria
+    Given estoy viendo el formulario de transferencia
+    When intento guardar sin seleccionar una cuenta destino
+    Then veo un mensaje indicando que la cuenta destino es obligatoria
+    And la transferencia no se registra
+
+  Scenario 07: Cuenta origen y destino deben ser distintas
+    Given estoy viendo el formulario de transferencia
+    When selecciono la misma cuenta como origen y destino
+    And intento guardar
+    Then veo un mensaje indicando que las cuentas deben ser distintas
+    And la transferencia no se registra
+
+  Scenario 08: Moneda obligatoria
+    Given estoy viendo el formulario de transferencia
+    When intento guardar sin seleccionar una moneda
+    Then veo un mensaje indicando que la moneda es obligatoria
+    And la transferencia no se registra
+
+  Scenario 09: Importe obligatorio y mayor a cero
+    Given estoy viendo el formulario de transferencia
+    When intento guardar sin completar el importe
+    Then veo un mensaje indicando que el importe es obligatorio
+    And la transferencia no se registra
+    When ingreso un importe igual a cero o negativo
+    Then veo un mensaje indicando que el importe debe ser mayor a cero
+    And la transferencia no se registra
+
+  Scenario 10: Solo se permiten cuentas del club activo
+    Given tengo rol "Secretaria" en más de un club
+    When abro el formulario de transferencia
+    Then solo puedo seleccionar cuentas del club activo
+
+  Scenario 11: La moneda debe ser compatible con ambas cuentas
+    Given estoy viendo el formulario de transferencia
+    When selecciono una moneda que no es compatible con la cuenta origen o la cuenta destino
+    And intento guardar
+    Then veo un mensaje indicando que la moneda no es válida para las cuentas seleccionadas
+    And la transferencia no se registra
+
+  Scenario 12: Registro exitoso de transferencia
+    Given estoy viendo el formulario de transferencia
+    And completé correctamente todos los campos obligatorios
+    When selecciono "Crear"
+    Then el sistema registra una transferencia interna en el club activo
+    And genera automáticamente un movimiento de egreso en la cuenta origen
+    And genera automáticamente un movimiento de ingreso en la cuenta destino
+    And ambos movimientos quedan asociados a la misma transferencia
+    And ambos movimientos quedan asociados a la jornada abierta actual
+    And veo un mensaje de confirmación
+
+  Scenario 13: Ambos movimientos comparten trazabilidad común
+    Given registré exitosamente una transferencia entre cuentas
+    When consulto el detalle de los movimientos generados
+    Then ambos movimientos comparten la misma referencia de transferencia
+    And comparten la misma fecha
+    And comparten el mismo usuario responsable
+    And comparten el mismo concepto
+
+  Scenario 14: La transferencia impacta correctamente en los saldos
+    Given registré exitosamente una transferencia entre cuentas
+    When el sistema actualiza los saldos
+    Then resta el importe en la cuenta origen
+    And suma el mismo importe en la cuenta destino
+
+  Scenario 15: La transferencia no debe contarse como ingreso o egreso externo del club
+    Given registré exitosamente una transferencia entre cuentas
+    When consulto reportes o agregados contables del día
+    Then la operación queda identificada como transferencia interna
+    And no se contabiliza como ingreso externo ni egreso externo del club
+
+  Scenario 16: Confirmación y reseteo del formulario
+    Given registré exitosamente una transferencia entre cuentas
+    When el sistema confirma el registro
+    Then veo un mensaje de éxito
+    And el formulario vuelve a quedar listo para cargar una nueva transferencia
+    And conserva la fecha cargada por defecto
+
+  Scenario 17: Consistencia por club activo
+    Given tengo rol "Secretaria" en más de un club
+    When registro una transferencia entre cuentas
+    Then la transferencia se registra únicamente en el club activo
+    And no impacta cuentas ni jornadas de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-26 — Registro de compra y venta de moneda extranjera
+
+> *Como Secretaria del club, quiero registrar operaciones de compra y venta de moneda entre cuentas de distinta moneda, para reflejar correctamente conversiones de fondos y su impacto en los saldos del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-26 — Registro de compra y venta de moneda extranjera
+
+  Scenario 01: Secretaria ve la opción con jornada abierta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    When ingreso al módulo de tesorería
+    Then veo la opción para registrar compra o venta de moneda
+
+  Scenario 02: Usuario sin rol Secretaria no ve la opción
+    Given estoy autenticado
+    And no tengo rol "Secretaria" en el club activo
+    When ingreso al módulo de tesorería
+    Then no veo la opción para registrar compra o venta de moneda
+
+  Scenario 03: No se muestra la opción sin jornada abierta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    When ingreso al módulo de tesorería
+    Then no veo la opción para registrar compra o venta de moneda
+
+  Scenario 04: Campos visibles al iniciar la carga
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    When abro el formulario de compra o venta de moneda
+    Then veo el campo "Fecha" completo por defecto y no editable
+    And veo el campo "Operación"
+    And veo el campo "Cuenta origen"
+    And veo el campo "Moneda origen"
+    And veo el campo "Importe origen"
+    And veo el campo "Cuenta destino"
+    And veo el campo "Moneda destino"
+    And veo el campo "Importe destino"
+    And veo el campo "Concepto"
+    And veo la acción "Crear"
+
+  Scenario 05: Operación obligatoria
+    Given estoy viendo el formulario de compra o venta de moneda
+    When intento guardar sin seleccionar la operación
+    Then veo un mensaje indicando que la operación es obligatoria
+    And la operación no se registra
+
+  Scenario 06: Cuenta origen y destino obligatorias
+    Given estoy viendo el formulario de compra o venta de moneda
+    When intento guardar sin seleccionar una cuenta origen o una cuenta destino
+    Then veo un mensaje indicando que ambas cuentas son obligatorias
+    And la operación no se registra
+
+  Scenario 07: Cuenta origen y destino deben ser distintas
+    Given estoy viendo el formulario de compra o venta de moneda
+    When selecciono la misma cuenta como origen y destino
+    And intento guardar
+    Then veo un mensaje indicando que las cuentas deben ser distintas
+    And la operación no se registra
+
+  Scenario 08: Moneda origen y moneda destino obligatorias
+    Given estoy viendo el formulario de compra o venta de moneda
+    When intento guardar sin completar la moneda origen o la moneda destino
+    Then veo un mensaje indicando que ambas monedas son obligatorias
+    And la operación no se registra
+
+  Scenario 09: Las monedas deben ser distintas
+    Given estoy viendo el formulario de compra o venta de moneda
+    When selecciono la misma moneda como origen y destino
+    And intento guardar
+    Then veo un mensaje indicando que las monedas deben ser distintas
+    And la operación no se registra
+
+  Scenario 10: Importes obligatorios y mayores a cero
+    Given estoy viendo el formulario de compra o venta de moneda
+    When intento guardar sin completar el importe origen o el importe destino
+    Then veo un mensaje indicando que ambos importes son obligatorios
+    And la operación no se registra
+    When ingreso un importe origen o destino igual a cero o negativo
+    Then veo un mensaje indicando que los importes deben ser mayores a cero
+    And la operación no se registra
+
+  Scenario 11: Compatibilidad entre cuentas y monedas
+    Given estoy viendo el formulario de compra o venta de moneda
+    When selecciono una moneda que no es compatible con la cuenta origen o la cuenta destino
+    And intento guardar
+    Then veo un mensaje indicando que la moneda no es válida para la cuenta seleccionada
+    And la operación no se registra
+
+  Scenario 12: Registro exitoso de compra o venta de moneda
+    Given estoy viendo el formulario de compra o venta de moneda
+    And completé correctamente todos los campos obligatorios
+    When selecciono "Crear"
+    Then el sistema registra una operación de cambio de moneda en el club activo
+    And genera automáticamente un movimiento de egreso en la cuenta origen por el importe origen
+    And genera automáticamente un movimiento de ingreso en la cuenta destino por el importe destino
+    And ambos movimientos quedan asociados a la misma operación
+    And ambos movimientos quedan asociados a la jornada abierta actual
+    And veo un mensaje de confirmación
+
+  Scenario 13: La operación registra tipo de cambio implícito
+    Given registré exitosamente una compra o venta de moneda
+    When consulto el detalle de la operación
+    Then veo el importe origen
+    And veo el importe destino
+    And el sistema puede derivar el tipo de cambio implícito de la operación
+
+  Scenario 14: Ambos movimientos comparten trazabilidad común
+    Given registré exitosamente una compra o venta de moneda
+    When consulto el detalle de los movimientos generados
+    Then ambos movimientos comparten la misma referencia de operación
+    And comparten la misma fecha
+    And comparten el mismo usuario responsable
+    And comparten el mismo concepto
+
+  Scenario 15: La operación impacta correctamente en los saldos
+    Given registré exitosamente una compra o venta de moneda
+    When el sistema actualiza los saldos
+    Then resta el importe origen en la cuenta origen
+    And suma el importe destino en la cuenta destino
+
+  Scenario 16: La operación no debe contarse como ingreso o egreso externo del club
+    Given registré exitosamente una compra o venta de moneda
+    When consulto reportes o agregados contables del día
+    Then la operación queda identificada como conversión interna de moneda
+    And no se contabiliza como ingreso externo ni egreso externo del club
+
+  Scenario 17: Confirmación y reseteo del formulario
+    Given registré exitosamente una compra o venta de moneda
+    When el sistema confirma el registro
+    Then veo un mensaje de éxito
+    And el formulario vuelve a quedar listo para cargar una nueva operación
+    And conserva la fecha cargada por defecto
+
+  Scenario 18: Consistencia por club activo
+    Given tengo rol "Secretaria" en más de un club
+    When registro una compra o venta de moneda
+    Then la operación se registra únicamente en el club activo
+    And no impacta cuentas ni jornadas de otros clubes
 ```
 
 ---
