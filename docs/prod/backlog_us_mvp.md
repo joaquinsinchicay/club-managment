@@ -365,4 +365,542 @@ Feature: US-06 — Visualización del rol en el club activo en el header
 ```
 
 ---
+
+### E01 🔐 Autenticación y gestión de roles / US-07 — Invitar usuario al club
+
+> *Como administrador, quiero invitar un usuario al club activo asignándole un rol, para incorporarlo al sistema con los permisos correctos.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-07 — Invitar usuario al club
+
+  Scenario 01: Acceso a la acción de invitar usuario
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la pantalla de configuración del club activo
+    When la pantalla carga
+    Then veo una acción para invitar un usuario al club
+
+  Scenario 02: Formulario de invitación
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en la pantalla de configuración del club activo
+    When selecciono la acción de invitar usuario
+    Then veo un formulario de invitación
+    And veo un campo para ingresar el email del usuario
+    And veo un selector de rol
+    And veo las acciones "Invitar" y "Cancelar"
+
+  Scenario 03: Invitación exitosa a usuario no existente
+    Given estoy autenticado
+    And soy admin del club activo
+    And ingreso un email que no pertenece a ningún usuario existente
+    And selecciono un rol válido
+    When confirmo la invitación
+    Then el sistema registra la invitación para ese email en el club activo
+    And el usuario queda asociado al club activo con el rol seleccionado
+    And veo un mensaje de confirmación
+
+  Scenario 04: Invitación exitosa a usuario ya existente
+    Given estoy autenticado
+    And soy admin del club activo
+    And ingreso un email que pertenece a un usuario existente
+    And ese usuario no pertenece al club activo
+    And selecciono un rol válido
+    When confirmo la invitación
+    Then el sistema asocia al usuario existente al club activo con el rol seleccionado
+    And veo un mensaje de confirmación
+
+  Scenario 05: Usuario ya pertenece al club activo
+    Given estoy autenticado
+    And soy admin del club activo
+    And ingreso un email de un usuario que ya pertenece al club activo
+    When confirmo la invitación
+    Then el sistema no crea una nueva invitación ni una membresía duplicada
+    And veo un mensaje indicando que el usuario ya pertenece al club
+
+  Scenario 06: Email obligatorio
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de invitación
+    When intento invitar sin completar el email
+    Then veo un mensaje indicando que el email es obligatorio
+    And la invitación no se procesa
+
+  Scenario 07: Rol obligatorio
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de invitación
+    When intento invitar sin seleccionar un rol
+    Then veo un mensaje indicando que el rol es obligatorio
+    And la invitación no se procesa
+
+  Scenario 08: Email inválido
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de invitación
+    When ingreso un email con formato inválido
+    And confirmo la invitación
+    Then veo un mensaje indicando que el email no es válido
+    And la invitación no se procesa
+
+  Scenario 09: Cancelación del formulario
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de invitación
+    When selecciono "Cancelar"
+    Then el formulario se cierra sin crear la invitación
+
+  Scenario 10: Admin solo puede invitar al club activo
+    Given estoy autenticado
+    And soy admin de un club activo
+    When invito un usuario desde la configuración del club
+    Then la invitación se genera únicamente para el club activo
+    And no afecta la membresía del usuario en otros clubes
+```
+
+---
+
+### E01 🔐 Autenticación y gestión de roles / US-08 — Ingreso al club con invitación preexistente al iniciar sesión con Google
+
+> *Como usuario invitado a un club, quiero que al iniciar sesión con Google el sistema reconozca mi invitación y me otorgue acceso al club con el rol asignado, para comenzar a usar el sistema sin pasos manuales adicionales.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-08 — Ingreso al club con invitación preexistente al iniciar sesión con Google
+
+  Scenario 01: Ingreso exitoso con invitación preexistente
+    Given existe una invitación vigente para mi email en un club
+    And la invitación tiene un rol asignado
+    And no tengo una cuenta previa en el sistema
+    When inicio sesión con Google usando ese mismo email
+    Then el sistema crea mi cuenta
+    And me asocia al club de la invitación
+    And me asigna el rol definido en la invitación
+    And mi estado en ese club es "activo"
+    And soy redirigido al dashboard de ese club
+
+  Scenario 02: Usuario existente con invitación a un nuevo club
+    Given ya tengo una cuenta en el sistema
+    And existe una invitación vigente para mi email en un club al que todavía no pertenezco
+    And la invitación tiene un rol asignado
+    When inicio sesión con Google usando ese mismo email
+    Then el sistema asocia mi cuenta existente al club de la invitación
+    And me asigna el rol definido en la invitación
+    And mi estado en ese club es "activo"
+
+  Scenario 03: Usuario existente con un solo club previo más un nuevo club invitado
+    Given ya tengo una cuenta en el sistema
+    And ya pertenezco a un club con estado "activo"
+    And existe una invitación vigente para mi email en un segundo club
+    When inicio sesión con Google usando ese mismo email
+    Then el sistema me asocia también al nuevo club invitado
+    And conservo mi acceso al club anterior
+    And mis roles y estados en cada club se mantienen independientes
+
+  Scenario 04: Invitación ya utilizada
+    Given existe una invitación para mi email
+    And esa invitación ya fue utilizada
+    When inicio sesión con Google usando ese mismo email
+    Then el sistema no vuelve a procesar la invitación
+    And no crea una membresía duplicada
+
+  Scenario 05: No existe invitación para el email
+    Given no existe una invitación para mi email
+    And no tengo clubes asignados
+    When inicio sesión con Google
+    Then el sistema crea mi cuenta con estado pendiente según el flujo general de acceso
+    And no me asigna automáticamente a ningún club
+
+  Scenario 06: El email autenticado no coincide con el email invitado
+    Given existe una invitación vigente para un email
+    When inicio sesión con Google usando un email diferente
+    Then el sistema no aplica esa invitación
+    And no me asigna al club asociado a esa invitación
+
+  Scenario 07: Múltiples invitaciones para distintos clubes
+    Given existen múltiples invitaciones vigentes para mi email en distintos clubes
+    And cada invitación tiene un rol asignado
+    When inicio sesión con Google usando ese mismo email
+    Then el sistema me asocia a todos los clubes de las invitaciones vigentes
+    And me asigna en cada club el rol definido en su invitación
+    And define un club activo inicial válido para mi sesión
+
+  Scenario 08: La invitación no afecta otros clubes del usuario
+    Given ya tengo acceso a uno o más clubes
+    And existe una invitación vigente para mi email en otro club
+    When inicio sesión con Google usando ese mismo email
+    Then el sistema agrega únicamente la membresía correspondiente al club invitante
+    And no modifica mis roles ni estados en los demás clubes
+```
+
+---
+
+
+### E01 🔐 Autenticación y gestión de roles / US-09 — Gestión de miembros del club
+
+> *Como administrador, quiero gestionar los miembros del club activo (ver, modificar roles y removerlos), para mantener el control de acceso y la correcta operación del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-09 — Gestión de miembros del club
+
+  Scenario 01: Visualización de miembros del club
+    Given estoy autenticado
+    And soy admin del club activo
+    When accedo a la configuración del club
+    Then veo la lista de miembros del club activo
+    And cada miembro muestra nombre, avatar, rol y estado en ese club
+
+  Scenario 02: Cambio de rol de un miembro
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe un miembro con estado "activo"
+    When modifico el rol de ese miembro
+    Then el sistema actualiza el rol del miembro en el club activo
+    And los permisos del miembro se actualizan según el nuevo rol
+
+  Scenario 03: Remover miembro del club
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe un miembro en el club activo
+    When selecciono remover al miembro
+    Then el sistema elimina la membresía del usuario en ese club
+    And el usuario pierde acceso a ese club
+    And no se modifica su acceso a otros clubes
+
+  Scenario 04: Confirmación al remover miembro
+    Given estoy autenticado
+    And soy admin del club activo
+    And selecciono remover a un miembro
+    When confirmo la acción
+    Then el miembro es removido del club
+    When cancelo la acción
+    Then el miembro no es removido
+
+  Scenario 05: Un usuario puede removerse a sí mismo
+    Given estoy autenticado
+    And soy miembro del club activo
+    When selecciono salir del club
+    Then el sistema elimina mi membresía en ese club
+    And pierdo acceso a ese club
+
+  Scenario 06: No se puede eliminar el último admin del club
+    Given estoy autenticado
+    And soy admin del club activo
+    And soy el único admin del club
+    When intento removerme o cambiar mi rol a no admin
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que debe existir al menos un admin
+
+  Scenario 07: No se puede dejar al club sin admins
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe solo un admin en el club
+    When intento remover a ese admin o cambiar su rol
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que debe existir al menos un admin
+
+  Scenario 08: Remover miembro pendiente
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe un usuario con estado "pendiente_aprobacion"
+    When lo remuevo
+    Then el sistema elimina su relación con el club
+    And no queda pendiente en el sistema para ese club
+
+  Scenario 09: Admin solo puede gestionar miembros de su club
+    Given estoy autenticado
+    And soy admin de un club activo
+    When intento gestionar miembros de otro club donde no soy admin
+    Then no tengo permisos para realizar esa acción
+
+  Scenario 10: Consistencia con el club activo
+    Given estoy autenticado
+    And soy admin del club activo
+    When gestiono miembros
+    Then todas las acciones aplican únicamente al club activo
+```
+
+---
+
+### E03 💰 Tesorería / US-10 — Apertura y cierre diario de movimientos
+
+> *Como administrador, quiero gestionar los miembros del club activo (ver, modificar roles y removerlos), para mantener el control de acceso y la correcta operación del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-10 — Apertura y cierre diario de movimientos
+
+  Scenario 01: Acceso a la funcionalidad según rol
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    When ingreso al módulo de tesorería
+    Then veo la opción de apertura y cierre diario
+
+  Scenario 02: Usuario sin rol no accede
+    Given estoy autenticado
+    And no tengo rol "Secretaria" en el club activo
+    When intento acceder al módulo de apertura y cierre diario
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Apertura de jornada
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una apertura de jornada activa para el día actual
+    When realizo la apertura de jornada
+    Then el sistema registra la fecha y hora de apertura
+    And asocia la apertura a mi usuario y al club activo
+    And habilita el registro de movimientos del día
+
+  Scenario 04: No se puede abrir más de una jornada por día
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And ya existe una apertura de jornada para el día actual
+    When intento abrir una nueva jornada
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que la jornada ya fue abierta
+
+  Scenario 05: Registro de movimientos durante jornada abierta
+    Given existe una jornada abierta para el día actual
+    When registro ingresos o egresos en cuentas
+    Then los movimientos quedan asociados a la jornada activa
+    And impactan en el saldo de cada cuenta
+
+  Scenario 06: Cierre de jornada
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    When realizo el cierre de jornada
+    Then el sistema registra la fecha y hora de cierre
+    And calcula el saldo final de cada cuenta del día
+    And bloquea la modificación de los movimientos del día
+
+  Scenario 07: No se puede cerrar jornada sin apertura previa
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    When intento cerrar la jornada
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que no hay jornada abierta
+
+  Scenario 08: No se pueden registrar movimientos fuera de una jornada abierta
+    Given no existe una jornada abierta para el día actual
+    When intento registrar un movimiento
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que debo abrir la jornada
+
+  Scenario 09: Registro de horario laboral implícito
+    Given realizo la apertura y cierre de jornada
+    When la jornada queda cerrada
+    Then el sistema registra el rango horario trabajado
+    And ese registro queda asociado a mi usuario y al club activo
+
+  Scenario 10: Consistencia por club activo
+    Given estoy autenticado
+    And tengo rol "Secretaria" en distintos clubes
+    When realizo apertura o cierre de jornada
+    Then la operación aplica únicamente al club activo
+    And no afecta la información de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-11 — Registro de movimientos diarios
+
+> *Como administrador, quiero gestionar los miembros del club activo (ver, modificar roles y removerlos), para mantener el control de acceso y la correcta operación del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-11 — Registro de movimientos diarios
+
+  Scenario 01: Secretaria ve la opción de registrar movimientos con jornada abierta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    When ingreso al módulo de tesorería
+    Then veo la opción para registrar movimientos diarios
+
+  Scenario 02: Usuario sin rol Secretaria no ve la opción
+    Given estoy autenticado
+    And no tengo rol "Secretaria" en el club activo
+    When ingreso al módulo de tesorería
+    Then no veo la opción para registrar movimientos diarios
+
+  Scenario 03: No se muestra la opción sin jornada abierta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    When ingreso al módulo de tesorería
+    Then no veo la opción para registrar movimientos diarios
+
+  Scenario 04: Campos visibles al iniciar la carga
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    When abro el formulario de registro de movimientos
+    Then veo el campo "Fecha" completo por defecto y no editable
+    And veo el campo "Cuenta"
+    And veo el campo "Tipo"
+    And veo el campo "Categoría"
+    And veo el campo "Concepto"
+    And veo el campo "Importe ARS"
+    And veo la acción "Crear"
+    And no veo campos condicionales que todavía no aplican
+
+  Scenario 05: La fecha se completa automáticamente
+    Given estoy viendo el formulario de registro de movimientos
+    When el formulario carga
+    Then el campo "Fecha" muestra por defecto la fecha del día
+    And no puedo editar ese valor
+
+  Scenario 06: Cuenta obligatoria
+    Given estoy viendo el formulario de registro de movimientos
+    When intento guardar sin seleccionar una cuenta
+    Then veo un mensaje indicando que la cuenta es obligatoria
+    And el movimiento no se registra
+
+  Scenario 07: Tipo obligatorio y siempre visible
+    Given estoy viendo el formulario de registro de movimientos
+    Then veo siempre el campo "Tipo"
+    When intento guardar sin completar el tipo
+    Then veo un mensaje indicando que el tipo es obligatorio
+    And el movimiento no se registra
+
+  Scenario 08: Categoría obligatoria y siempre visible
+    Given estoy viendo el formulario de registro de movimientos
+    Then veo siempre el campo "Categoría"
+    When intento guardar sin completar la categoría
+    Then veo un mensaje indicando que la categoría es obligatoria
+    And el movimiento no se registra
+
+  Scenario 09: Concepto obligatorio
+    Given estoy viendo el formulario de registro de movimientos
+    When intento guardar sin completar el concepto
+    Then veo un mensaje indicando que el concepto es obligatorio
+    And el movimiento no se registra
+
+  Scenario 10: Importe obligatorio
+    Given estoy viendo el formulario de registro de movimientos
+    When intento guardar sin completar el importe
+    Then veo un mensaje indicando que el importe es obligatorio
+    And el movimiento no se registra
+
+  Scenario 11: Importe mayor a cero
+    Given estoy viendo el formulario de registro de movimientos
+    When ingreso un importe igual a cero o negativo
+    Then veo un mensaje indicando que el importe debe ser mayor a cero
+    And el movimiento no se registra
+
+  Scenario 12: Fecha de transferencia visible y obligatoria para cuenta bancaria
+    Given estoy viendo el formulario de registro de movimientos
+    When selecciono una cuenta de tipo "Bancaria"
+    Then veo el campo "Fecha de transf."
+    And ese campo es obligatorio
+    When intento guardar sin completar la fecha de transferencia
+    Then veo un mensaje indicando que la fecha de transferencia es obligatoria
+    And el movimiento no se registra
+
+  Scenario 13: Fecha de transferencia oculta para cuentas no bancarias
+    Given estoy viendo el formulario de registro de movimientos
+    When selecciono una cuenta que no es de tipo "Bancaria"
+    Then no veo el campo "Fecha de transf."
+
+  Scenario 14: Actividad visible y obligatoria para categorías específicas
+    Given estoy viendo el formulario de registro de movimientos
+    When selecciono la categoría "Ligas/Jornadas" o la categoría "Sueldos"
+    Then veo el campo "Actividad"
+    And ese campo es obligatorio
+    When intento guardar sin completar la actividad
+    Then veo un mensaje indicando que la actividad es obligatoria
+    And el movimiento no se registra
+
+  Scenario 15: Actividad oculta para categorías que no la requieren
+    Given estoy viendo el formulario de registro de movimientos
+    When selecciono una categoría distinta de "Ligas/Jornadas" y "Sueldos"
+    Then no veo el campo "Actividad"
+
+  Scenario 16: Recibo visible y obligatorio para categorías específicas
+    Given estoy viendo el formulario de registro de movimientos
+    When selecciono la categoría "Cuotas" o la categoría "Fichajes"
+    Then veo el campo "Recibo"
+    And ese campo es obligatorio
+    When intento guardar sin asociar un recibo
+    Then veo un mensaje indicando que el recibo es obligatorio
+    And el movimiento no se registra
+
+  Scenario 17: Recibo oculto para categorías que no lo requieren
+    Given estoy viendo el formulario de registro de movimientos
+    When selecciono una categoría distinta de "Cuotas" y "Fichajes"
+    Then no veo el campo "Recibo"
+
+  Scenario 18: Calendario visible y obligatorio para categorías específicas
+    Given estoy viendo el formulario de registro de movimientos
+    When selecciono la categoría "Alquileres" o la categoría "Eventos" o la categoría "Ligas/Jornadas"
+    Then veo el campo "Calendario"
+    And ese campo es obligatorio
+    When intento guardar sin asociar una actividad de calendario
+    Then veo un mensaje indicando que la actividad de calendario es obligatoria
+    And el movimiento no se registra
+
+  Scenario 19: Calendario oculto para categorías que no lo requieren
+    Given estoy viendo el formulario de registro de movimientos
+    When selecciono una categoría distinta de "Alquileres", "Eventos" y "Ligas/Jornadas"
+    Then no veo el campo "Calendario"
+
+  Scenario 20: Actualización dinámica de campos condicionales
+    Given estoy viendo el formulario de registro de movimientos
+    And completé uno o más campos condicionales
+    When cambio la cuenta o la categoría
+    Then el sistema actualiza los campos visibles según la nueva selección
+    And oculta los campos que ya no aplican
+    And limpia los valores cargados en campos que dejaron de aplicar
+
+  Scenario 21: Registro exitoso del movimiento
+    Given estoy viendo el formulario de registro de movimientos
+    And completé correctamente todos los campos obligatorios visibles
+    When selecciono "Crear"
+    Then el sistema registra el movimiento en el club activo
+    And asocia el movimiento a la jornada abierta actual
+    And impacta el saldo de la cuenta correspondiente
+    And veo un mensaje de confirmación
+
+  Scenario 22: Registro exitoso asociado a jornada y usuario responsable
+    Given estoy viendo el formulario de registro de movimientos
+    And existe una jornada abierta para el día actual
+    And completé correctamente todos los campos obligatorios visibles
+    When selecciono "Crear"
+    Then el sistema persiste el movimiento vinculado a la jornada activa
+    And registra la fecha y hora de creación
+    And registra el usuario responsable de la carga
+
+  Scenario 23: Borrar formulario
+    Given estoy viendo el formulario de registro de movimientos
+    And completé uno o más campos
+    When selecciono "Borrar formulario"
+    Then el formulario vuelve a su estado inicial
+    And conserva la fecha cargada por defecto
+
+  Scenario 24: Consistencia por club activo
+    Given estoy autenticado
+    And tengo rol "Secretaria" en más de un club
+    And existe una jornada abierta en el club activo
+    When registro un movimiento
+    Then el movimiento se registra únicamente en el club activo
+    And no impacta cuentas ni jornadas de otros clubes
+
+  Scenario 25: Confirmación y reseteo del formulario después de un registro exitoso
+    Given registré exitosamente un movimiento
+    When el sistema confirma el registro
+    Then veo un mensaje de éxito
+    And el formulario vuelve a quedar listo para cargar un nuevo movimiento
+    And conserva la fecha cargada por defecto
+```
+
+---
 *Joaquin Fernandez Sinchi — Product Manager · A-CSPO | Buenos Aires, Argentina | Marzo 2026*
