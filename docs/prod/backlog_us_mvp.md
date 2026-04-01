@@ -903,4 +903,455 @@ Feature: US-11 — Registro de movimientos diarios
 ```
 
 ---
+
+### E02 Navegación / US-12 — Card de saldos y operación diaria en el dashboard
+
+> *Como Secretaria del club, quiero ver en el dashboard una card con los saldos de las cuentas y acciones de apertura/cierre de jornada y registro de movimientos, para operar de forma rápida y centralizada.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-12 — Card de saldos y operación diaria en el dashboard
+
+  Scenario 01: Visualización de la card para Secretaria
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    When ingreso al dashboard del club activo
+    Then veo una card de "Saldos de cuentas"
+    And veo el listado de cuentas con su saldo actual
+
+  Scenario 02: Usuario sin rol Secretaria no ve la card
+    Given estoy autenticado
+    And no tengo rol "Secretaria" en el club activo
+    When ingreso al dashboard del club activo
+    Then no veo la card de "Saldos de cuentas"
+
+  Scenario 03: Visualización de saldos por cuenta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    When veo la card de saldos
+    Then veo cada cuenta con su nombre
+    And veo el saldo actualizado del día para cada cuenta
+
+  Scenario 04: Visualización con múltiples cuentas
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existen múltiples cuentas en el club
+    When veo la card de saldos
+    Then veo todas las cuentas habilitadas para el rol Secretaria
+    And cada una muestra su saldo correspondiente
+
+  Scenario 05: Estado de jornada visible
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    When veo la card de saldos
+    Then veo el estado de la jornada del día
+    And el estado puede ser "Abierta" o "Cerrada"
+
+  Scenario 06: CTA abrir jornada cuando no hay jornada abierta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    When veo la card de saldos
+    Then veo el botón "Abrir jornada"
+    And no veo el botón "Cerrar jornada"
+    And no veo el botón "Registrar movimiento"
+
+  Scenario 07: CTA cerrar jornada cuando hay jornada abierta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    When veo la card de saldos
+    Then veo el botón "Cerrar jornada"
+    And veo el botón "Registrar movimiento"
+    And no veo el botón "Abrir jornada"
+
+  Scenario 08: Acción de abrir jornada desde la card
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta
+    When selecciono "Abrir jornada"
+    Then el sistema abre la jornada del día
+    And actualiza el estado a "Abierta"
+    And se actualizan los CTA disponibles
+
+  Scenario 09: Acción de cerrar jornada desde la card
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta
+    When selecciono "Cerrar jornada"
+    Then el sistema cierra la jornada del día
+    And actualiza el estado a "Cerrada"
+    And se actualizan los CTA disponibles
+
+  Scenario 10: Acceso a registro de movimiento desde la card
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta
+    When selecciono "Registrar movimiento"
+    Then soy redirigido al formulario de registro de movimientos
+
+  Scenario 11: Consistencia de datos con el club activo
+    Given estoy autenticado
+    And tengo acceso a más de un club
+    When visualizo la card en el dashboard
+    Then los saldos corresponden únicamente al club activo
+    And los CTA operan únicamente sobre ese club
+
+  Scenario 12: Actualización de saldos tras movimientos
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta
+    When se registra un nuevo movimiento
+    Then los saldos en la card se actualizan reflejando el nuevo estado
+
+  Scenario 13: Estado sin cuentas configuradas
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existen cuentas configuradas
+    When ingreso al dashboard
+    Then veo la card con un estado vacío
+    And veo un mensaje indicando que no hay cuentas disponibles
+```
+
+---
+
+### E03 💰 Tesorería / US-13 — Consulta detallada de movimientos y saldos por cuenta
+
+> *Como Secretaria del club, quiero consultar el detalle de movimientos y saldos por cuenta, para controlar la operatoria diaria y verificar el estado de cada cuenta del club activo.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
+
+  Scenario 01: Acceso al detalle desde la card del dashboard
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existen cuentas configuradas en el club activo
+    When selecciono una cuenta o la acción de ver detalle desde la card de saldos
+    Then accedo a la vista detallada de esa cuenta
+
+  Scenario 02: Usuario sin rol Secretaria no accede al detalle
+    Given estoy autenticado
+    And no tengo rol "Secretaria" en el club activo
+    When intento acceder al detalle de movimientos y saldos por cuenta
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización del saldo actual de la cuenta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And accedí al detalle de una cuenta
+    When la vista carga
+    Then veo el nombre de la cuenta
+    And veo el saldo actual de esa cuenta
+    And veo el estado de la jornada del día
+
+  Scenario 04: Visualización del listado de movimientos del día
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And accedí al detalle de una cuenta
+    When la vista carga
+    Then veo el listado de movimientos de la jornada actual para esa cuenta
+    And cada movimiento muestra fecha y hora
+    And cada movimiento muestra concepto
+    And cada movimiento muestra categoría
+    And cada movimiento muestra tipo
+    And cada movimiento muestra importe
+    And cada movimiento muestra usuario responsable
+
+  Scenario 05: Orden cronológico de movimientos
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existen múltiples movimientos en la cuenta durante la jornada
+    When visualizo el detalle de la cuenta
+    Then veo los movimientos ordenados cronológicamente
+
+  Scenario 06: Visualización sin movimientos
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And accedí al detalle de una cuenta sin movimientos en la jornada actual
+    When la vista carga
+    Then veo el saldo actual de la cuenta
+    And veo un estado vacío indicando que no hay movimientos registrados para esa jornada
+
+  Scenario 07: Consistencia con el club activo
+    Given estoy autenticado
+    And tengo rol "Secretaria" en más de un club
+    When accedo al detalle de una cuenta
+    Then solo veo información de cuentas y movimientos del club activo
+    And no veo movimientos de otros clubes
+
+  Scenario 08: Actualización del detalle luego de registrar un movimiento
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And estoy visualizando el detalle de una cuenta
+    When se registra un nuevo movimiento en esa cuenta durante la jornada activa
+    Then el listado incorpora el nuevo movimiento
+    And el saldo actual de la cuenta se actualiza
+
+  Scenario 09: Visualización de movimientos solo de la cuenta seleccionada
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existen movimientos en múltiples cuentas del club
+    When accedo al detalle de una cuenta específica
+    Then veo únicamente los movimientos correspondientes a esa cuenta
+
+  Scenario 10: Acceso a registrar movimiento desde el detalle de cuenta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And estoy visualizando el detalle de una cuenta
+    When selecciono "Registrar movimiento"
+    Then accedo al formulario de registro de movimientos
+    And la cuenta seleccionada puede quedar precargada
+
+  Scenario 11: No se muestra acción de registrar movimiento con jornada cerrada
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    When accedo al detalle de una cuenta
+    Then no veo la acción "Registrar movimiento"
+
+  Scenario 12: Cambio entre cuentas
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existen múltiples cuentas configuradas
+    When selecciono otra cuenta para consultar
+    Then veo el saldo y los movimientos correspondientes a la nueva cuenta seleccionada
+
+  Scenario 13: Estado sin cuentas configuradas
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existen cuentas configuradas
+    When intento acceder a la consulta detallada de cuentas
+    Then veo un estado vacío indicando que no hay cuentas disponibles
+```
+
+---
+
+### E03 💰 Tesorería / US-14 — Apertura y cierre diario con validación de saldos por cuenta
+
+> *Como Secretaria del club, quiero abrir y cerrar la jornada validando los saldos de cada cuenta disponible, para asegurar que los saldos iniciales y finales queden correctamente registrados y que cualquier diferencia genere el movimiento correspondiente.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-14 — Apertura y cierre diario con validación de saldos por cuenta
+
+  Scenario 01: Acceso a apertura diaria
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    When ingreso a la acción de apertura diaria
+    Then veo la pantalla de apertura de jornada
+
+  Scenario 02: Acceso a cierre diario
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    When ingreso a la acción de cierre diario
+    Then veo la pantalla de cierre de jornada
+
+  Scenario 03: Usuario sin rol Secretaria no accede
+    Given estoy autenticado
+    And no tengo rol "Secretaria" en el club activo
+    When intento acceder a la apertura o cierre diario
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 04: Apertura muestra todas las cuentas disponibles para Secretaria
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    And existen cuentas habilitadas para Secretaria
+    When ingreso a la apertura diaria
+    Then veo todas las cuentas disponibles para Secretaria
+    And cada cuenta muestra su saldo preingresado según el saldo actual
+    And puedo editar el saldo de cada cuenta
+
+  Scenario 05: Cierre muestra todas las cuentas disponibles para Secretaria
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And existen cuentas habilitadas para Secretaria
+    When ingreso al cierre diario
+    Then veo todas las cuentas disponibles para Secretaria
+    And cada cuenta muestra su saldo preingresado según el saldo actual
+    And puedo editar el saldo de cada cuenta
+
+  Scenario 06: Apertura exitosa sin diferencias
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    And estoy viendo la apertura diaria
+    And no modifiqué ninguno de los saldos preingresados
+    When confirmo la apertura
+    Then el sistema registra la apertura de la jornada
+    And registra la fecha y hora de apertura
+    And registra el usuario responsable
+    And habilita la carga de movimientos
+    And no genera movimientos adicionales por diferencia
+
+  Scenario 07: Cierre exitoso sin diferencias
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And estoy viendo el cierre diario
+    And no modifiqué ninguno de los saldos preingresados
+    When confirmo el cierre
+    Then el sistema registra el cierre de la jornada
+    And registra la fecha y hora de cierre
+    And registra el usuario responsable
+    And no genera movimientos adicionales por diferencia
+
+  Scenario 08: Edición de saldo en apertura detecta diferencia
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    And estoy viendo la apertura diaria
+    When edito el saldo de una cuenta
+    Then el sistema detecta que existe una diferencia
+    And veo un mensaje indicando que se registrará un movimiento por el monto equivalente a esa diferencia
+
+  Scenario 09: Edición de saldo en cierre detecta diferencia
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And estoy viendo el cierre diario
+    When edito el saldo de una cuenta
+    Then el sistema detecta que existe una diferencia
+    And veo un mensaje indicando que se registrará un movimiento por el monto equivalente a esa diferencia
+
+  Scenario 10: Visualización del movimiento a generar por diferencia en apertura
+    Given estoy viendo la apertura diaria
+    And existe una diferencia en una o más cuentas
+    When el sistema calcula la diferencia
+    Then veo el detalle del movimiento que se generará por cada diferencia detectada
+    And veo la cuenta afectada
+    And veo el importe de la diferencia
+    And veo el tipo de ajuste correspondiente
+    And veo las acciones "Confirmar" y "Cancelar"
+
+  Scenario 11: Visualización del movimiento a generar por diferencia en cierre
+    Given estoy viendo el cierre diario
+    And existe una diferencia en una o más cuentas
+    When el sistema calcula la diferencia
+    Then veo el detalle del movimiento que se generará por cada diferencia detectada
+    And veo la cuenta afectada
+    And veo el importe de la diferencia
+    And veo el tipo de ajuste correspondiente
+    And veo las acciones "Confirmar" y "Cancelar"
+
+  Scenario 12: Confirmación de apertura con diferencias
+    Given estoy viendo la apertura diaria
+    And existe una diferencia en una o más cuentas
+    And estoy viendo el detalle de los movimientos a generar
+    When selecciono "Confirmar"
+    Then el sistema registra la apertura de la jornada
+    And genera los movimientos de ajuste correspondientes
+    And asocia esos movimientos a la jornada abierta
+    And registra el usuario responsable de la operación
+
+  Scenario 13: Confirmación de cierre con diferencias
+    Given estoy viendo el cierre diario
+    And existe una diferencia en una o más cuentas
+    And estoy viendo el detalle de los movimientos a generar
+    When selecciono "Confirmar"
+    Then el sistema registra el cierre de la jornada
+    And genera los movimientos de ajuste correspondientes
+    And asocia esos movimientos a la jornada del día
+    And registra el usuario responsable de la operación
+
+  Scenario 14: Cancelación de apertura con diferencias
+    Given estoy viendo la apertura diaria
+    And existe una diferencia en una o más cuentas
+    And estoy viendo el detalle de los movimientos a generar
+    When selecciono "Cancelar"
+    Then la apertura no se confirma
+    And no se genera ningún movimiento de ajuste
+
+  Scenario 15: Cancelación de cierre con diferencias
+    Given estoy viendo el cierre diario
+    And existe una diferencia en una o más cuentas
+    And estoy viendo el detalle de los movimientos a generar
+    When selecciono "Cancelar"
+    Then el cierre no se confirma
+    And no se genera ningún movimiento de ajuste
+
+  Scenario 16: No se puede abrir una nueva jornada si ya existe una abierta
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And ya existe una jornada abierta para el día actual
+    When intento iniciar una nueva apertura diaria
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que ya existe una jornada abierta
+
+  Scenario 17: No se puede cerrar una jornada inexistente
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    When intento iniciar el cierre diario
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que no existe una jornada abierta
+
+  Scenario 18: Apertura sin cuentas disponibles
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And no existe una jornada abierta para el día actual
+    And no existen cuentas habilitadas para Secretaria
+    When ingreso a la apertura diaria
+    Then veo un estado vacío indicando que no hay cuentas disponibles
+    And no puedo confirmar la apertura
+
+  Scenario 19: Cierre sin cuentas disponibles
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And no existen cuentas habilitadas para Secretaria
+    When ingreso al cierre diario
+    Then veo un estado vacío indicando que no hay cuentas disponibles
+    And no puedo confirmar el cierre
+
+  Scenario 20: Saldo editado obligatorio al confirmar apertura
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And estoy viendo la apertura diaria
+    When dejo el saldo de una cuenta vacío e intento confirmar
+    Then veo un mensaje indicando que el saldo es obligatorio
+    And la apertura no se confirma
+
+  Scenario 21: Saldo editado obligatorio al confirmar cierre
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And estoy viendo el cierre diario
+    When dejo el saldo de una cuenta vacío e intento confirmar
+    Then veo un mensaje indicando que el saldo es obligatorio
+    And el cierre no se confirma
+
+  Scenario 22: Saldo editado debe ser válido en apertura
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And estoy viendo la apertura diaria
+    When ingreso un saldo inválido en una cuenta e intento confirmar
+    Then veo un mensaje indicando que el saldo no es válido
+    And la apertura no se confirma
+
+  Scenario 23: Saldo editado debe ser válido en cierre
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And estoy viendo el cierre diario
+    When ingreso un saldo inválido en una cuenta e intento confirmar
+    Then veo un mensaje indicando que el saldo no es válido
+    And el cierre no se confirma
+
+  Scenario 24: Consistencia por club activo
+    Given estoy autenticado
+    And tengo rol "Secretaria" en más de un club
+    When realizo la apertura o el cierre diario
+    Then la operación aplica únicamente al club activo
+    And solo considera las cuentas habilitadas de ese club
+```
+
+---
+
 *Joaquin Fernandez Sinchi — Product Manager · A-CSPO | Buenos Aires, Argentina | Marzo 2026*
