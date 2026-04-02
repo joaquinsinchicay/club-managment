@@ -1,24 +1,14 @@
 import { redirect } from "next/navigation";
 
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
-import { getSessionContext } from "@/lib/auth/service";
-import { appConfig } from "@/lib/config";
-import { getCurrentActiveClubId } from "@/lib/auth/session";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 
 export default async function DashboardPage() {
-  const supabase = createServerSupabaseClient();
-  const {
-    data: { user }
-  } = appConfig.authProviderMode === "mock"
-    ? { data: { user: null } }
-    : await supabase.auth.getUser();
+  const context = await getAuthenticatedSessionContext();
 
-  if (!user) {
+  if (!context) {
     redirect("/login");
   }
-
-  const context = await getSessionContext(user.id, await getCurrentActiveClubId());
 
   if (context.activeMemberships.length === 0 || !context.activeClub) {
     redirect("/pending-approval");

@@ -5,8 +5,11 @@ import { appConfig } from "@/lib/config";
 import type { AuthIdentity, Club, GoogleProfileKey, Membership, User } from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import {
+  clearCurrentAuthUserId,
   clearCurrentActiveClubId,
+  getCurrentAuthUserId,
   getCurrentActiveClubId,
+  setCurrentAuthUserId,
   setCurrentActiveClubId
 } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -15,6 +18,7 @@ export type SessionContext = {
   user: User;
   memberships: Membership[];
   activeMemberships: Membership[];
+  activeMembership: Membership | null;
   activeClub: Club | null;
 };
 
@@ -24,7 +28,11 @@ type StartGoogleSignInInput = {
 };
 
 function getRequestedProfile(mockProfile?: string): GoogleProfileKey {
-  if (mockProfile === "existing_pending" || mockProfile === "existing_active") {
+  if (
+    mockProfile === "existing_pending" ||
+    mockProfile === "existing_active" ||
+    mockProfile === "existing_secretaria"
+  ) {
     return mockProfile;
   }
 
@@ -81,6 +89,19 @@ async function resolveDestinationForUser(userId: string, currentActiveClubId?: s
   };
 }
 
+async function getAuthenticatedUserId(): Promise<string | null> {
+  if (appConfig.authProviderMode === "mock") {
+    return getCurrentAuthUserId();
+  }
+
+  const supabase = createServerSupabaseClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  return user?.id ?? null;
+}
+
 export async function getSessionContext(userId: string, activeClubId?: string | null): Promise<SessionContext> {
   const user = await accessRepository.findUserById(userId);
 
@@ -90,41 +111,51 @@ export async function getSessionContext(userId: string, activeClubId?: string | 
 
   const memberships = await accessRepository.listMembershipsForUser(userId);
   const activeMemberships = memberships.filter((membership) => membership.status === "activo");
+  const preferredClubId = activeClubId ?? (await accessRepository.getLastActiveClubId(userId));
 
   const resolvedClubId =
-    activeClubId && activeMemberships.some((membership) => membership.clubId === activeClubId)
-      ? activeClubId
+    preferredClubId && activeMemberships.some((membership) => membership.clubId === preferredClubId)
+      ? preferredClubId
       : activeMemberships[0]?.clubId ?? null;
+  const activeMembership =
+    activeMemberships.find((membership) => membership.clubId === resolvedClubId) ?? null;
   const activeClub = resolvedClubId ? await accessRepository.findClubById(resolvedClubId) : null;
 
   return {
     user,
     memberships,
     activeMemberships,
+    activeMembership,
     activeClub
   };
 }
 
-export async function resolveCurrentUserDestination(): Promise<string> {
-  if (appConfig.authProviderMode === "mock") {
-    const activeClubId = await getCurrentActiveClubId();
+export async function getAuthenticatedSessionContext(): Promise<SessionContext | null> {
+  const userId = await getAuthenticatedUserId();
 
-    if (!activeClubId) {
-      return "/login";
-    }
+  if (!userId) {
+    return null;
   }
 
-  const supabase = createServerSupabaseClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  try {
+    return await getSessionContext(userId, await getCurrentActiveClubId());
+  } catch {
+    return null;
+  }
+}
 
-  if (!user) {
+export async function resolveCurrentUserDestination(): Promise<string> {
+  const context = await getAuthenticatedSessionContext();
+
+  if (!context) {
     return "/login";
   }
 
-  const resolution = await resolveDestinationForUser(user.id, await getCurrentActiveClubId());
-  return resolution.destination;
+  if (context.activeMemberships.length === 0 || !context.activeClub) {
+    return "/pending-approval";
+  }
+
+  return "/dashboard";
 }
 
 export async function startGoogleSignIn({
@@ -156,8 +187,12 @@ export async function startGoogleSignIn({
   const resolution = await resolveDestinationForUser(user.id);
   const response = NextResponse.redirect(new URL(resolution.destination, requestUrl));
 
+  setCurrentAuthUserId(response, user.id);
+
   if (resolution.activeClubId) {
     setCurrentActiveClubId(response, resolution.activeClubId);
+  } else {
+    clearCurrentActiveClubId(response);
   }
 
   return response;
@@ -202,5 +237,6 @@ export async function signOut(requestUrl: string): Promise<NextResponse> {
 
   const response = NextResponse.redirect(new URL("/login", requestUrl));
   clearCurrentActiveClubId(response);
+  clearCurrentAuthUserId(response);
   return response;
 }

@@ -19,6 +19,23 @@
       "title": "Tu acceso esta pendiente de aprobacion",
       "description": "Tu cuenta existe, pero todavia no tienes una membresia activa en ningun club.",
       "next_step": "Un administrador debe aprobar tu acceso y asignarte un rol para habilitar el ingreso operativo."
+    },
+    "sign_out": {
+      "confirm_title": "Cerrar sesion",
+      "confirm_description": "Vas a cerrar tu sesion y volver a la pantalla de login.",
+      "confirm_cta": "Confirmar cierre",
+      "cancel_cta": "Cancelar",
+      "loading": "Cerrando sesion..."
+    }
+  },
+  "header": {
+    "pending_club_label": "Sin club activo",
+    "avatar_menu": {
+      "club_settings": "Configuracion del club",
+      "sign_out": "Cerrar sesion",
+      "trigger_aria_label": "Abrir menu de sesion",
+      "menu_aria_label": "Menu de sesion del usuario",
+      "fallback_initials_label": "Avatar del usuario sin foto de perfil"
     }
   },
   "dashboard": {
@@ -29,5 +46,15 @@
     "user_label": "Usuario",
     "role_label": "Rol",
     "role_pending": "pendiente"
+  },
+  "settings": {
+    "club": {
+      "eyebrow": "Configuracion",
+      "title": "Configuracion del club",
+      "description": "Gestiona la configuracion operativa del club activo.",
+      "forbidden_title": "No tienes permisos para abrir esta configuracion",
+      "forbidden_description": "Solo un usuario admin del club activo puede acceder a esta pagina.",
+      "back_to_dashboard_cta": "Volver al dashboard"
+    }
   }
 }

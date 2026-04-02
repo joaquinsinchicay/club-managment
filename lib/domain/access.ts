@@ -40,7 +40,11 @@ export type AuthIdentity = {
   updatedAt: string;
 };
 
-export type GoogleProfileKey = "new_pending" | "existing_pending" | "existing_active";
+export type GoogleProfileKey =
+  | "new_pending"
+  | "existing_pending"
+  | "existing_active"
+  | "existing_secretaria";
 
 export type GoogleProfile = {
   profileKey: GoogleProfileKey;

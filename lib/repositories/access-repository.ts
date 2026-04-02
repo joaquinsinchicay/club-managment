@@ -20,6 +20,7 @@ const now = () => new Date().toISOString();
 const CLUB_ID = "club-atletico-ejemplo";
 const ACTIVE_USER_ID = "user-active-001";
 const PENDING_USER_ID = "user-pending-001";
+const SECRETARIA_USER_ID = "user-secretaria-001";
 
 type MockStore = {
   users: Map<string, User>;
@@ -57,6 +58,17 @@ function createStore(): MockStore {
         createdAt,
         updatedAt: createdAt
       }
+    ],
+    [
+      SECRETARIA_USER_ID,
+      {
+        id: SECRETARIA_USER_ID,
+        email: "secretaria.user@example.com",
+        fullName: "Sofia Secretaria",
+        avatarUrl: null,
+        createdAt,
+        updatedAt: createdAt
+      }
     ]
   ]);
 
@@ -77,10 +89,21 @@ function createStore(): MockStore {
       role: "admin",
       status: "activo",
       joinedAt: createdAt
+    },
+    {
+      id: "membership-secretaria-001",
+      userId: SECRETARIA_USER_ID,
+      clubId: CLUB_ID,
+      role: "secretaria",
+      status: "activo",
+      joinedAt: createdAt
     }
   ];
 
-  const preferences = new Map<string, string>([[ACTIVE_USER_ID, CLUB_ID]]);
+  const preferences = new Map<string, string>([
+    [ACTIVE_USER_ID, CLUB_ID],
+    [SECRETARIA_USER_ID, CLUB_ID]
+  ]);
 
   return { users, memberships, clubs, preferences };
 }
@@ -110,6 +133,12 @@ const GOOGLE_PROFILES: Record<GoogleProfileKey, GoogleProfile> = {
     profileKey: "existing_active",
     email: "active.user@example.com",
     fullName: "Agustin Activo",
+    avatarUrl: null
+  },
+  existing_secretaria: {
+    profileKey: "existing_secretaria",
+    email: "secretaria.user@example.com",
+    fullName: "Sofia Secretaria",
     avatarUrl: null
   }
 };
