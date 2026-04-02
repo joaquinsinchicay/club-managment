@@ -22,6 +22,52 @@ jobs:
           test -f README.md || (echo "Missing README.md" && exit 1)
           test -f WORKFLOW.md || (echo "Missing WORKFLOW.md" && exit 1)
           test -f DEFINITION_OF_DONE.md || (echo "Missing DEFINITION_OF_DONE.md" && exit 1)
+
+          test -f docs/design/design-system.md || (echo "Missing docs/design/design-system.md" && exit 1)
+          test -f docs/architecture/decisions.md || (echo "Missing docs/architecture/decisions.md" && exit 1)
+          test -f docs/contracts/permission-matrix.md || (echo "Missing docs/contracts/permission-matrix.md" && exit 1)
+          test -f docs/contracts/api-contracts.md || (echo "Missing docs/contracts/api-contracts.md" && exit 1)
+          test -f docs/domain/domain-model.md || (echo "Missing docs/domain/domain-model.md" && exit 1)
+          test -f docs/domain/schema.sql || (echo "Missing docs/domain/schema.sql" && exit 1)
+          test -f docs/database/rls-policies.sql || (echo "Missing docs/database/rls-policies.sql" && exit 1)
+
+          echo "All required files exist ✅"
+
+      - name: Check texts file
+        run: |
+          echo "Checking texts file..."
+
+          if [ -f lib/texts.json ]; then
+            echo "Found lib/texts.json ✅"
+          elif [ -f texts.json ]; then
+            echo "Found texts.json ✅"
+          else
+            echo "Missing texts.json"
+            exit 1
+          finame: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  validate-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check required files
+        run: |
+          echo "Checking required files..."
+
+          test -f README.md || (echo "Missing README.md" && exit 1)
+          test -f WORKFLOW.md || (echo "Missing WORKFLOW.md" && exit 1)
+          test -f DEFINITION_OF_DONE.md || (echo "Missing DEFINITION_OF_DONE.md" && exit 1)
           test -f design/design-system.md || (echo "Missing design-system.md" && exit 1)
           test -f architecture/decisions.md || (echo "Missing decisions.md" && exit 1)
           test -f contracts/permission-matrix.md || (echo "Missing permission-matrix.md" && exit 1)
