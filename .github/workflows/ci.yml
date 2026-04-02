@@ -33,6 +33,42 @@ jobs:
           test -f docs/domain/domain-model.md || (echo "Missing docs/domain/domain-model.md" && exit 1)
           test -f docs/domain/schema.sql || (echo "Missing docs/domain/schema.sql" && exit 1)
 
-      - name: Check texts file
+      - name: Check texts.json exists
         run: |
           test -f lib/texts.json || (echo "Missing lib/texts.json" && exit 1)
+
+      - name: Validate texts.json format
+        run: |
+          python -m json.tool lib/texts.json > /dev/null
+
+      - name: Validate PDD filenames
+        run: |
+          if [ -d docs/pdd ]; then
+            find docs/pdd -type f -name "*.md" | while read file; do
+              base="$(basename "$file")"
+              echo "$base" | grep -Eq '^pdd_us_[0-9]{2}_.+\.md$' || {
+                echo "Invalid PDD filename: $base"
+                echo "Expected format: pdd_us_XX_descriptive_name.md"
+                exit 1
+              }
+            done
+          fi
+
+      - name: Validate PDD required sections
+        run: |
+          if [ -d docs/pdd ]; then
+            find docs/pdd -type f -name "*.md" | while read file; do
+              echo "Checking $file"
+
+              grep -q '^## 11\. UI / UX' "$file" || { echo "Missing '## 11. UI / UX' in $file"; exit 1; }
+              grep -q '^## 12\. Mensajes y textos' "$file" || { echo "Missing '## 12. Mensajes y textos' in $file"; exit 1; }
+              grep -q '^## 19\. Implementation contract' "$file" || { echo "Missing '## 19. Implementation contract' in $file"; exit 1; }
+              grep -q '^## 20\. No permitido' "$file" || { echo "Missing '## 20. No permitido' in $file"; exit 1; }
+              grep -q 'lib/texts\.json' "$file" || { echo "Missing reference to lib/texts.json in $file"; exit 1; }
+            done
+          fi
+
+      - name: Print repository structure
+        run: |
+          echo "Repository structure:"
+          find docs -maxdepth 3 -type f | sort
