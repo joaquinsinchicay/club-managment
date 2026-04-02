@@ -1,0 +1,33 @@
+{
+  "app": {
+    "title": "Club Management System",
+    "description": "Base ejecutable inicial para gestion operativa multi-club.",
+    "badge": "Acceso"
+  },
+  "auth": {
+    "login": {
+      "title": "Iniciar sesion con Google",
+      "description": "Accede al sistema del club con tu cuenta de Google para continuar en el contexto correcto.",
+      "google_sign_in_cta": "Ingresar con Google",
+      "helper": "Si ya tienes acceso a un club, entraras directamente a tu dashboard activo.",
+      "redirecting_authenticated_user": "Redirigiendo al club activo...",
+      "oauth_cancelled": "Cancelaste el acceso con Google. Puedes intentarlo nuevamente.",
+      "oauth_generic_error": "No pudimos iniciar sesion con Google. Vuelve a intentarlo."
+    },
+    "pending_approval": {
+      "eyebrow": "Pendiente",
+      "title": "Tu acceso esta pendiente de aprobacion",
+      "description": "Tu cuenta existe, pero todavia no tienes una membresia activa en ningun club.",
+      "next_step": "Un administrador debe aprobar tu acceso y asignarte un rol para habilitar el ingreso operativo."
+    }
+  },
+  "dashboard": {
+    "eyebrow": "Dashboard",
+    "title": "Club activo listo",
+    "description": "La sesion se resolvio correctamente sobre un club valido.",
+    "club_label": "Club activo",
+    "user_label": "Usuario",
+    "role_label": "Rol",
+    "role_pending": "pendiente"
+  }
+}
