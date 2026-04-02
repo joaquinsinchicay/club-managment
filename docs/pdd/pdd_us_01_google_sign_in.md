@@ -1,543 +1,228 @@
-# PDD · US-01 — Iniciar sesión con Google
-
-## 1. Objetivo
-
-Definir el diseño funcional y técnico de la user story `US-01 — Iniciar sesión con Google`, alineado con el backlog del MVP, las decisiones de arquitectura, el modelo de dominio, la matriz de permisos y el design system del repositorio.
-
-Esta funcionalidad debe permitir que un usuario:
-
-* inicie sesión con Google usando Supabase Auth
-* reutilice su cuenta si ya existe
-* sea redirigido según su contexto de memberships
-* no cree duplicados
-* quede en estado de espera si todavía no tiene acceso operativo a ningún club
+# PDD — US-01 · Iniciar sesión con Google
 
 ---
 
-## 2. Referencias del repositorio
+## 1. Identificación
 
-Fuentes usadas para este PDD:
-
-* `docs/prod/backlog_us_mvp.md`
-* `docs/architecture/decisions.md`
-* `docs/architecture/tech-stack.md`
-* `docs/contracts/api-contracts.md`
-* `docs/contracts/permission-matrix.md`
-* `docs/domain/domain-model.md`
-* `docs/database/README.md`
-* `docs/design/design-system.md`
+| Campo | Valor |
+|---|---|
+| Epic | E01 · Autenticación y gestión de roles |
+| User Story | Como usuario, quiero iniciar sesión con mi cuenta de Google, para acceder al sistema del club sin crear una contraseña nueva. |
+| Prioridad | Alta |
+| Objetivo de negocio | Habilitar un acceso seguro y de baja fricción mediante Google OAuth, reutilizando cuentas existentes por email y derivando al usuario al estado correcto de acceso. |
 
 ---
 
-## 3. User Story
+## 2. Problema a resolver
 
-> Como usuario, quiero iniciar sesión con mi cuenta de Google, para acceder al sistema del club sin crear una contraseña nueva.
-
----
-
-## 4. Acceptance Criteria Base
-
-La implementación debe cubrir los escenarios ya definidos en backlog:
-
-1. Primer ingreso sin asignación.
-2. Usuario existente sin asignación.
-3. Usuario existente con asignación.
-4. Cancelación del flujo OAuth.
-5. Usuario ya autenticado.
+El sistema necesita un mecanismo de autenticación único, simple y seguro que evite credenciales locales, permita reconocer usuarios ya existentes sin duplicarlos y determine correctamente si el usuario debe quedar en espera de aprobación o ingresar al dashboard de un club activo.
 
 ---
 
-## 5. Alcance
+## 3. Objetivo funcional
 
-### Incluido
+Cuando un usuario interactúa con la pantalla de login, el sistema debe iniciar autenticación con Google mediante Supabase Auth. Tras un resultado exitoso, debe identificar si el email ya corresponde a un usuario existente, crear el usuario solo cuando no exista, y resolver el destino inmediato según su contexto de memberships:
 
-* pantalla de login con CTA `Ingresar con Google`
-* inicio de flujo OAuth con Google vía Supabase Auth
-* resolución de sesión autenticada
-* creación o reutilización del usuario global
-* lectura de memberships del usuario autenticado
-* redirección según disponibilidad de clubes activos
-* pantalla de espera de aprobación para usuarios sin acceso operativo
-
-### No incluido
-
-* invitación a clubes
-* aprobación manual de memberships
-* selector de club
-* avatar y menú de sesión
-* gestión de miembros
-
-Esos puntos quedan cubiertos por historias posteriores del backlog.
+- si no tiene memberships activas en ningún club, debe ver la pantalla de espera de aprobación
+- si tiene al menos una membership activa, debe ingresar al sistema sobre un club activo válido
+- si cancela OAuth, debe volver al login sin efectos persistentes
+- si ya tiene una sesión activa, no debe iniciar un nuevo flujo OAuth y debe ser redirigido directamente
 
 ---
 
-## 6. Resultado esperado de negocio
+## 4. Alcance
 
-La autenticación debe resolver el acceso al sistema sin fricción y sin ambigüedad:
+### Incluye
+- Inicio de sesión con Google usando Supabase Auth.
+- Reutilización de usuario existente por email autenticado.
+- Creación inicial del perfil global del usuario cuando no existe.
+- Determinación del estado post-login entre espera de aprobación y acceso al dashboard.
+- Redirección automática desde login cuando ya existe una sesión activa.
+- Manejo de cancelación del flujo OAuth sin crear registros.
 
-* si el usuario no tiene memberships activas, entra pero no opera
-* si el usuario ya pertenece a uno o más clubes activos, entra y continúa al contexto correcto
-* si el usuario cancela OAuth, no se debe crear ningún registro inconsistente
-
----
-
-## 7. Actores
-
-### Usuario no autenticado
-
-Puede ver la pantalla de login e iniciar OAuth con Google.
-
-### Usuario autenticado sin memberships activas
-
-Puede quedar autenticado, pero solo debe ver la pantalla de espera de aprobación.
-
-### Usuario autenticado con memberships activas
-
-Debe ser redirigido al dashboard del club activo o resolverse mediante el flujo de club activo.
+### No incluye
+- Alta automática a clubes por invitación preexistente.
+- Lógica detallada para selección del club activo entre múltiples clubes.
+- Gestión manual de roles, aprobaciones o membresías desde UI.
+- Autenticación por email/contraseña u otros proveedores.
 
 ---
 
-## 8. Reglas funcionales
+## 5. Actor principal
 
-1. La autenticación usa exclusivamente `Google OAuth` mediante `Supabase Auth`.
-2. El usuario global existe una sola vez en el sistema.
-3. La identidad canónica del usuario es su email autenticado en Google, asociada a `auth.uid()`.
-4. No se deben crear usuarios duplicados si el email ya existe.
-5. Los permisos no dependen del usuario global sino de `memberships`.
-6. Solo las memberships con estado `activo` habilitan acceso operativo.
-7. Si el usuario ya tiene sesión activa, no debe volver a iniciar el flujo OAuth.
-8. La lógica de resolución de acceso debe ejecutarse en backend.
+Usuario no autenticado o usuario ya autenticado que accede a la pantalla de login.
 
 ---
 
-## 9. Flujo UX
+## 6. Precondiciones
 
-## 9.1 Pantalla de login
-
-Pantalla mínima, clara y enfocada en una sola acción primaria:
-
-* título de acceso
-* breve texto explicativo
-* botón primario `Ingresar con Google`
-
-Reglas de diseño:
-
-* una sola acción primaria visible
-* lenguaje explícito
-* no agregar ruido visual
-* mantener layout simple, operacional y mobile-first
-
-## 9.2 Inicio del flujo OAuth
-
-Cuando el usuario presiona `Ingresar con Google`:
-
-* se dispara `supabase.auth.signInWithOAuth`
-* el proveedor es Google
-* se configura redirect/callback al entorno de la app
-
-## 9.3 Retorno desde OAuth
-
-Al volver desde Google:
-
-* se resuelve la sesión de Supabase
-* se obtiene el usuario autenticado
-* se sincroniza o crea el perfil interno del usuario
-* se cargan memberships y preferencia de club activo
-
-## 9.4 Resolución post-login
-
-Hay tres salidas posibles:
-
-### Caso A: sin memberships activas
-
-Redirigir a pantalla `espera de aprobación`.
-
-### Caso B: con una o más memberships activas
-
-Redirigir al flujo que resuelve `active_club_id` y luego al dashboard del club.
-
-### Caso C: usuario ya autenticado entra a `/login`
-
-Bypass del login y redirección automática.
+- Google OAuth está habilitado en Supabase Auth.
+- El sistema puede obtener identidad autenticada confiable desde Supabase Auth.
+- Existe una pantalla de login pública y una pantalla de espera de aprobación.
+- El backend puede consultar usuarios, memberships y preferencia de club activo respetando RLS y validaciones de contexto.
 
 ---
 
-## 10. Pantallas y estados
+## 7. Postcondiciones
 
-## 10.1 Login
-
-### Elementos
-
-* título
-* descripción corta
-* botón `Ingresar con Google`
-
-### Estados
-
-* idle
-* loading al iniciar OAuth
-* error recuperable si falla el inicio del flujo
-
-## 10.2 Espera de aprobación
-
-### Objetivo
-
-Informar que la cuenta existe pero todavía no tiene acceso operativo a un club.
-
-### Contenido mínimo
-
-* mensaje principal de espera
-* explicación breve
-* opción de cerrar sesión
-
-### Restricciones
-
-* no mostrar módulos operativos
-* no renderizar dashboard
-
-## 10.3 Redirect guard en login
-
-Si existe sesión válida:
-
-* no mostrar CTA de login
-* ejecutar redirección inmediata
+| Escenario | Resultado esperado |
+|---|---|
+| Usuario nuevo sin asignación | Se crea un registro global de usuario y el acceso queda en estado de espera de aprobación. |
+| Usuario existente sin asignación | Se reutiliza el usuario existente sin duplicados y el acceso queda en estado de espera de aprobación. |
+| Usuario existente con asignación activa | Se reutiliza el usuario existente y la sesión ingresa al sistema sobre un club activo válido. |
+| Cancelación de OAuth | No se crea usuario ni membership y el usuario vuelve al login. |
+| Usuario ya autenticado | No se inicia OAuth de nuevo y el usuario es redirigido automáticamente al dashboard de un club activo válido. |
 
 ---
 
-## 11. Modelo de datos impactado
+## 8. Reglas de negocio
 
-## 11.1 Entidades involucradas
-
-### User
-
-Campos relevantes:
-
-* `id`
-* `email`
-* `full_name`
-* `avatar_url`
-
-### Membership
-
-Campos relevantes:
-
-* `user_id`
-* `club_id`
-* `role`
-* `status`
-
-Estados relevantes:
-
-* `pendiente_aprobacion`
-* `activo`
-* `inactivo`
-
-### UserClubPreference
-
-Campos relevantes:
-
-* `user_id`
-* `last_active_club_id`
-
-## 11.2 Reglas de persistencia
-
-1. Si el usuario autenticado no existe en tabla `users`, debe crearse.
-2. Si ya existe, deben actualizarse al menos `full_name` y `avatar_url` si aplica la estrategia elegida por negocio.
-3. No deben crearse memberships automáticas en esta historia.
-4. `last_active_club_id` solo se usa para resolver redirección si existe y es válido.
+- La autenticación oficial del MVP es Google OAuth mediante Supabase Auth.
+- El usuario global del sistema es único por email.
+- Un login exitoso nunca debe crear un usuario duplicado si ya existe una cuenta con el mismo email.
+- Los permisos no dependen del usuario global sino de sus memberships por club.
+- Un usuario sin memberships activas no puede acceder al dashboard y debe quedar en espera de aprobación.
+- Un usuario con al menos una membership activa puede ingresar al sistema en el contexto de un club válido.
+- La resolución del club destino debe considerar únicamente memberships con `status = activo`.
+- Cancelar el consentimiento de Google no debe generar efectos persistentes.
+- Si ya existe una sesión válida, la pantalla de login actúa solo como punto de redirección y no como iniciador de un nuevo login.
+- Esta US no debe asignar clubes ni roles automáticamente fuera de los casos definidos en historias específicas de invitaciones.
 
 ---
 
-## 12. Contrato funcional requerido
+## 9. Flujo principal
 
-Esta historia depende explícitamente de un contrato similar a `Get current session context` definido en `docs/contracts/api-contracts.md`.
-
-## 12.1 Operación requerida
-
-### Get current session context
-
-Debe devolver:
-
-* usuario autenticado
-* memberships
-* `active_club_id`
-
-## 12.2 Uso en US-01
-
-Después de autenticar:
-
-1. obtener sesión
-2. resolver usuario del sistema
-3. resolver memberships activas
-4. resolver `active_club_id`
-5. decidir redirección
+1. El usuario accede a la pantalla de login sin sesión activa.
+2. La UI ofrece la acción de iniciar sesión con Google.
+3. El usuario selecciona la acción y el sistema inicia el flujo OAuth con Google mediante Supabase Auth.
+4. Google autentica al usuario y devuelve identidad válida al sistema.
+5. El backend busca un usuario existente por email autenticado.
+6. Si no existe usuario, crea el perfil global con email, nombre y avatar provistos por el proveedor.
+7. El sistema consulta las memberships del usuario y determina si existe al menos una con estado `activo`.
+8. Si no existe ninguna membership activa, el sistema muestra la pantalla de espera de aprobación.
+9. Si existe al menos una membership activa, el sistema resuelve un club activo válido y redirige al dashboard correspondiente.
 
 ---
 
-## 13. Lógica de negocio detallada
+## 10. Flujos alternativos
 
-## 13.1 Primer ingreso sin asignación
+### A. Usuario existente sin asignación activa
 
-Condición:
+1. El usuario completa OAuth correctamente.
+2. El sistema encuentra un usuario existente por email.
+3. El sistema no crea un nuevo registro de usuario.
+4. El sistema verifica que no existen memberships activas.
+5. El usuario ve la pantalla de espera de aprobación.
 
-* usuario nuevo autenticado con Google
-* sin memberships
+### B. Cancelación del flujo OAuth
 
-Resultado:
+1. El usuario inicia el flujo de Google.
+2. El usuario cancela el consentimiento o abandona el flujo.
+3. El sistema vuelve a la pantalla de login.
+4. No se persiste ningún usuario nuevo ni cambios de acceso.
 
-* se crea `User`
-* no se crea club ni membership
-* se muestra espera de aprobación
+### C. Usuario ya autenticado
 
-## 13.2 Usuario existente sin asignación
+1. El usuario accede a la pantalla de login con una sesión vigente.
+2. El sistema detecta la sesión antes de renderizar acciones de ingreso.
+3. El sistema redirige automáticamente al dashboard de un club activo válido.
+4. No se dispara un nuevo flujo OAuth.
 
-Condición:
+### D. Usuario existente con memberships no activas
 
-* existe `User`
-* no tiene memberships activas
-
-Resultado:
-
-* no se crea duplicado
-* se reutiliza la cuenta
-* se muestra espera de aprobación
-
-## 13.3 Usuario existente con asignación
-
-Condición:
-
-* existe `User`
-* tiene al menos una membership `activo`
-
-Resultado:
-
-* se reutiliza la cuenta
-* se resuelve club activo
-* se redirige al dashboard
-
-## 13.4 Cancelación del flujo OAuth
-
-Condición:
-
-* usuario cancela en Google
-
-Resultado:
-
-* no se crea usuario interno nuevo
-* no se crean memberships
-* vuelve a login con feedback recuperable si hace falta
-
-## 13.5 Usuario ya autenticado
-
-Condición:
-
-* sesión de Supabase vigente
-
-Resultado:
-
-* `/login` actúa como guard inverso
-* redirige al destino resuelto
+1. El usuario completa OAuth correctamente.
+2. El sistema reutiliza el usuario existente.
+3. El sistema detecta que tiene memberships, pero ninguna en estado `activo`.
+4. El usuario ve la pantalla de espera de aprobación y no accede al dashboard.
 
 ---
 
-## 14. Resolución de club activo
+## 11. UI / UX
 
-Aunque el detalle completo queda profundizado en historias posteriores, US-01 debe respetar estas reglas:
+### Fuente de verdad
+- `design/design-system.md`
 
-1. Solo considerar memberships con estado `activo`.
-2. Si existe `last_active_club_id` válido, usarlo.
-3. Si no existe, elegir un club activo disponible.
-4. Si no hay ninguno, devolver `active_club_id = null`.
-
-Esto debe resolverse en backend.
-
----
-
-## 15. Requisitos técnicos
-
-## 15.1 Frontend
-
-* Next.js App Router
-* pantalla de login en grupo auth
-* uso de Server Components por defecto
-* Client Component solo para interacción del botón si fuera necesario
-
-## 15.2 Backend
-
-* Supabase Auth para sesión
-* lógica de resolución en server action, route handler o capa server
-* no resolver permisos críticos solo en cliente
-
-## 15.3 Seguridad
-
-* usar `auth.uid()` como fuente de verdad
-* no crear sesiones custom
-* no confiar en parámetros de frontend para memberships
+### Reglas
+- La pantalla de login debe ser mobile-first y priorizar una única acción principal de acceso.
+- La acción principal debe iniciar Google OAuth de forma explícita y visible.
+- Si el usuario ya tiene sesión activa, la pantalla no debe fomentar una segunda autenticación; debe redirigir automáticamente.
+- La pantalla de espera de aprobación debe comunicar claramente que el usuario todavía no tiene acceso operativo.
+- Los estados de carga y redirección deben ser claros y no ambiguos.
+- La interfaz no debe exponer decisiones de permisos en frontend como fuente de verdad; solo refleja el estado resuelto por backend.
+- El flujo debe evitar ruido visual y mantener foco operativo en el estado de acceso del usuario.
 
 ---
 
-## 16. Estados de error
+## 12. Mensajes y textos
 
-## 16.1 Error al iniciar OAuth
+### Fuente de verdad
+- `lib/texts.json`
 
-Mostrar mensaje legible:
+### Reglas
+- No hardcoded strings are allowed.
+- All user-facing texts must map to `lib/texts.json`.
 
-* no se pudo iniciar sesión con Google
-* intentá nuevamente
+### Keys requeridas
 
-## 16.2 Sesión inválida al volver del callback
-
-Resultado:
-
-* limpiar estado transitorio si aplica
-* volver a login
-
-## 16.3 Usuario autenticado pero sin contexto resoluble
-
-Resultado:
-
-* si no hay memberships activas, mostrar espera de aprobación
-* no tratarlo como error técnico
-
-## 16.4 Error inesperado de backend
-
-Resultado:
-
-* log en backend
-* mensaje genérico al usuario
-* no exponer detalles internos
+| Tipo | Key | Contexto |
+|---|---|---|
+| button | `auth.login.google_sign_in_cta` | Texto del botón principal para iniciar sesión con Google. Missing |
+| title | `auth.login.title` | Título de la pantalla de login. Missing |
+| body | `auth.login.description` | Texto breve de apoyo en la pantalla de login. Missing |
+| status | `auth.login.redirecting_authenticated_user` | Mensaje durante la redirección automática de un usuario con sesión activa. Missing |
+| title | `auth.pending_approval.title` | Título de la pantalla de espera de aprobación. Missing |
+| body | `auth.pending_approval.description` | Explicación del estado sin club o sin membership activa. Missing |
+| action | `auth.pending_approval.primary_action` | Acción principal disponible en pantalla de espera si se define una. Missing |
+| error | `auth.login.oauth_cancelled` | Mensaje opcional al volver al login tras cancelar OAuth, si la UX decide informarlo. Missing |
+| error | `auth.login.oauth_generic_error` | Mensaje de error genérico si la autenticación falla por una razón distinta a cancelación. Missing |
+| status | `auth.login.loading` | Estado visible mientras se inicia el flujo de autenticación. Missing |
 
 ---
 
-## 17. Copys sugeridos
+## 13. Persistencia
 
-## 17.1 Login
+### Entidades afectadas
+List tables/entities and expected write behavior:
+- `users`: INSERT cuando el email autenticado no existe; UPDATE solo para sincronizar atributos globales permitidos del perfil si el sistema decide refrescarlos de forma controlada; READ para reutilizar cuentas existentes.
+- `memberships`: READ para determinar si el usuario posee memberships y si alguna está en estado `activo`; no-op en esta US para usuarios sin invitación.
+- `user_club_preferences`: READ opcional para recuperar el último club activo válido durante la resolución de destino; no-op cuando el usuario no tiene club activo disponible.
+- `clubs`: READ indirecto o derivado solo para validar el club de destino cuando existan memberships activas.
+- `club_invitations`: no-op en esta US; el procesamiento de invitaciones vigentes pertenece a US-08.
 
-### Título
-
-`Ingresá al sistema`
-
-### Texto
-
-`Usá tu cuenta de Google para acceder al club.`
-
-### CTA
-
-`Ingresar con Google`
-
-## 17.2 Espera de aprobación
-
-### Título
-
-`Tu acceso está pendiente de aprobación`
-
-### Texto
-
-`Ya iniciamos tu sesión, pero todavía no tenés un club activo habilitado. Cuando un administrador apruebe tu acceso, vas a poder ingresar al sistema.`
+Do not reference current code files.
 
 ---
 
-## 18. Consideraciones de diseño
+## 14. Seguridad
 
-Basado en `docs/design/design-system.md`:
-
-1. La pantalla debe priorizar claridad operativa.
-2. Debe existir una sola acción primaria.
-3. El texto debe ser corto y escaneable.
-4. No usar recursos visuales decorativos innecesarios.
-5. Si hay estado de espera, debe ser explícito y no ambiguo.
-
----
-
-## 19. Métricas de aceptación funcional
-
-La historia se considera bien implementada si:
-
-1. el usuario puede autenticarse con Google
-2. no se generan usuarios duplicados
-3. un usuario sin memberships activas ve espera de aprobación
-4. un usuario con memberships activas llega al dashboard
-5. un usuario autenticado no vuelve a pasar por login
-6. cancelar OAuth no deja registros inconsistentes
+List:
+- La autenticación debe resolverse exclusivamente con Supabase Auth y Google OAuth.
+- La identidad autenticada confiable debe provenir de `auth.uid()` y del email devuelto por el proveedor autenticado.
+- La resolución del acceso post-login debe considerar únicamente memberships activas del usuario autenticado.
+- No debe otorgarse acceso al dashboard cuando el usuario no tenga ninguna membership activa.
+- El backend debe resolver el club activo; no debe confiar solo en parámetros de frontend.
+- Toda consulta autenticada posterior debe respetar `app.current_club_id` y las políticas RLS.
+- No debe existir acceso cross-club durante la determinación del destino de login.
+- Esta US no debe usar service role para bypass de RLS en lógica de negocio.
 
 ---
 
-## 20. Casos límite
+## 15. Dependencias
 
-1. Usuario con email válido en Auth pero sin registro interno.
-2. Usuario con registro interno pero sin memberships.
-3. Usuario con memberships solo en estado `pendiente_aprobacion`.
-4. Usuario con `last_active_club_id` apuntando a un club ya no disponible.
-5. Usuario con avatar nulo.
-6. Usuario con nombre vacío o incompleto desde Google.
-
----
-
-## 21. Testing sugerido
-
-## 21.1 Manual
-
-1. Login con usuario completamente nuevo.
-2. Login con usuario existente sin memberships activas.
-3. Login con usuario existente con una membership activa.
-4. Login con usuario existente con múltiples memberships activas.
-5. Cancelación manual del flujo OAuth.
-6. Reingreso a `/login` con sesión vigente.
-
-## 21.2 Backend
-
-Validar:
-
-* creación idempotente de usuario
-* resolución de memberships activas
-* resolución correcta de `active_club_id`
-
-## 21.3 Seguridad
-
-Validar:
-
-* no exposición de datos de clubes sin membership
-* lectura de contexto solo desde backend
-* funcionamiento correcto con Supabase Auth
+List dependencies on:
+- auth: Supabase Auth con Google OAuth habilitado.
+- domain entities: `users`, `memberships`, `clubs`, `user_club_preferences`.
+- permissions: reglas basadas en `membership.status = activo` dentro del club activo.
+- other US if relevant: US-05 para la política detallada de redirección post-login entre múltiples clubes; US-08 para procesamiento de invitaciones preexistentes; US-03 para aprobación y asignación de rol posteriores.
 
 ---
 
-## 22. Dependencias
+## 16. Riesgos
 
-Para implementar US-01 se necesita:
-
-* proyecto Supabase configurado
-* Google OAuth habilitado
-* estructura base de tabla `users`
-* estructura base de tabla `memberships`
-* contrato de `current session context`
-
----
-
-## 23. Riesgos
-
-1. Duplicación de usuarios si no se define bien la sincronización entre Auth y tabla `users`.
-2. Redirecciones inconsistentes si `active_club_id` se resuelve parcialmente en frontend.
-3. Mala UX si la pantalla de espera no explica claramente por qué no hay acceso.
-4. Errores de sesión si callback y dominio de redirect no están bien configurados en Supabase.
-
----
-
-## 24. Criterio de Done
-
-US-01 está completa cuando:
-
-1. existe una pantalla de login funcional con Google OAuth
-2. existe un flujo de callback/resolución de sesión
-3. el sistema crea o reutiliza correctamente el usuario
-4. la redirección post-login sigue las reglas del dominio
-5. existe pantalla de espera para usuarios sin acceso operativo
-6. los cinco acceptance criteria del backlog pasan validación manual
-
----
-
-## 25. Supuestos explícitos
-
-1. La tabla de usuarios interna está desacoplada de `auth.users`, pero se sincroniza con ella.
-2. La creación automática de `Membership` no forma parte de US-01.
-3. La resolución completa de múltiples clubes se apoya en historias posteriores, pero US-01 debe dejar encaminado el contexto correctamente.
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|---|---|---|---|
+| Duplicar usuarios por no reutilizar email autenticado | Media | Alta | Forzar búsqueda y reconciliación por email antes de crear perfil global. |
+| Redirigir a un club no válido o no activo | Media | Alta | Resolver destino solo con memberships `activo` y validación backend del club activo. |
+| Crear efectos persistentes cuando el usuario cancela OAuth | Baja | Media | Persistir únicamente después de una autenticación confirmada por proveedor. |
+| Mezclar en esta US la lógica de invitaciones y ampliar alcance | Media | Media | Limitar explícitamente la historia al flujo general y delegar invitaciones a US-08. |
+| Dejar textos hardcodeados durante implementación | Alta | Media | Definir y completar las keys faltantes en `lib/texts.json` antes de desarrollar la UI. |

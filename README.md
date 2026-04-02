@@ -222,6 +222,54 @@ Fix issues from audit for {US_ID}
 
 ---
 
+## 🚀 Bootstrap actual
+
+El repositorio ya incluye una base ejecutable minima con:
+
+* Next.js + TypeScript + Tailwind
+* estructura `app/` inicial
+* capa base de `lib/auth`, `lib/domain` y `lib/repositories`
+* validacion documental por script
+* pipeline CI con `lint`, `typecheck` y `build`
+* implementacion inicial de US-01 sobre un proveedor de auth mockeable
+
+### Correr local
+
+```bash
+npm install
+npm run dev
+```
+
+### Modo bootstrap
+
+Por defecto el proyecto corre con `AUTH_PROVIDER_MODE=mock`.
+
+Esto permite validar la primera vertical funcional sin depender todavia de credenciales reales de Supabase. La integracion real queda preparada como siguiente iteracion.
+
+### Conexion con Supabase
+
+El repositorio ya queda preparado para el proyecto:
+
+```bash
+SUPABASE_PROJECT_REF=qfiyxpaxbdhbeapksyjp
+NEXT_PUBLIC_SUPABASE_URL=https://qfiyxpaxbdhbeapksyjp.supabase.co
+```
+
+Pasos pendientes para activar integracion real:
+
+```bash
+cp .env.example .env.local
+# completar NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+# opcional: completar SUPABASE_ACCESS_TOKEN
+npx supabase link --project-ref qfiyxpaxbdhbeapksyjp
+```
+
+Sin `SUPABASE_ACCESS_TOKEN` o `supabase login`, la CLI no puede terminar el `link` remoto.
+
+La app cambia automaticamente a auth real cuando existen `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Si esas variables no estan disponibles, conserva el fallback `mock` para CI y bootstrap local.
+
+---
+
 ## ⚠️ Reglas importantes
 
 * No implementar sin PDD
