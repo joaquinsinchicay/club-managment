@@ -845,7 +845,7 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     And tengo rol "Secretaria" en el club activo
     When ingreso al dashboard del club activo
     Then veo una card de "Saldos de cuentas"
-    And veo el listado de cuentas con su saldo actual
+    And veo el listado de cuentas con su saldo acumulado actual
 
   Scenario 02: Usuario sin rol Secretaria no ve la card
     Given estoy autenticado
@@ -858,7 +858,7 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     And tengo rol "Secretaria" en el club activo
     When veo la card de saldos
     Then veo cada cuenta con su nombre
-    And veo el saldo actualizado del día para cada cuenta
+    And veo el saldo acumulado actualizado del día para cada cuenta
 
   Scenario 04: Visualización con múltiples cuentas
     Given estoy autenticado
@@ -1138,7 +1138,7 @@ Feature: US-14 — Apertura y cierre diario con validación de saldos por cuenta
     And estoy viendo la apertura diaria
     When edito el saldo de una cuenta
     Then el sistema detecta que existe una diferencia
-    And veo un mensaje indicando que se registrará un movimiento por el monto equivalente a esa diferencia
+    And veo un mensaje indicando que se registrará un movimiento por el monto equivalente a esa diferencia con categoría = Ajuste
 
   Scenario 09: Edición de saldo en cierre detecta diferencia
     Given estoy autenticado
@@ -1147,7 +1147,7 @@ Feature: US-14 — Apertura y cierre diario con validación de saldos por cuenta
     And estoy viendo el cierre diario
     When edito el saldo de una cuenta
     Then el sistema detecta que existe una diferencia
-    And veo un mensaje indicando que se registrará un movimiento por el monto equivalente a esa diferencia
+    And veo un mensaje indicando que se registrará un movimiento por el monto equivalente a esa diferencia con categoría = Ajuste
 
   Scenario 10: Visualización del movimiento a generar por diferencia en apertura
     Given estoy viendo la apertura diaria
@@ -2173,7 +2173,8 @@ Feature: US-23 — Configuración de monedas disponibles para tesorería
     Given existe una moneda principal configurada para el club activo
     And tengo rol "Secretaria" en el club activo
     When visualizo saldos en el dashboard o en el detalle de cuentas
-    Then los saldos se muestran utilizando la moneda principal configurada para el club activo
+    Then los saldos se muestran en la moneda propia de cada cuenta
+    And la moneda principal se utiliza como valor por defecto en la carga de movimientos
 
   Scenario 11: Cambio de moneda principal impacta en la operatoria de Secretaria
     Given estoy autenticado
@@ -2559,6 +2560,568 @@ Feature: US-26 — Registro de compra y venta de moneda extranjera
     When registro una compra o venta de moneda
     Then la operación se registra únicamente en el club activo
     And no impacta cuentas ni jornadas de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-27 — Registro de movimientos de Tesorería en cuentas propias
+
+> *Como usuario con rol Tesorería, quiero registrar movimientos en las cuentas de Tesorería del club, para reflejar la operatoria financiera en cuentas distintas a las utilizadas por Secretaria.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-27 — Registro de movimientos de Tesorería en cuentas propias
+
+  Scenario 01: Tesorería ve la opción de registrar movimientos
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso al módulo de tesorería
+    Then veo la opción para registrar movimientos de Tesorería
+
+  Scenario 02: Usuario sin rol Tesorería no ve la opción
+    Given estoy autenticado
+    And no tengo rol "Tesorería" en el club activo
+    When ingreso al módulo de tesorería
+    Then no veo la opción para registrar movimientos de Tesorería
+
+  Scenario 03: Tesorería solo ve cuentas habilitadas para su rol
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And existen cuentas configuradas para Tesorería
+    When abro el formulario de registro de movimientos
+    Then veo únicamente las cuentas habilitadas para Tesorería
+    And no veo las cuentas exclusivas de Secretaria
+
+  Scenario 04: Campos visibles al iniciar la carga
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When abro el formulario de registro de movimientos de Tesorería
+    Then veo el campo "Fecha" completo por defecto y editable
+    And veo el campo "Cuenta"
+    And veo el campo "Tipo"
+    And veo el campo "Categoría"
+    And veo el campo "Concepto"
+    And veo el campo "Moneda"
+    And veo el campo "Importe"
+    And veo la acción "Crear"
+
+  Scenario 05: Cuenta obligatoria
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin seleccionar una cuenta
+    Then veo un mensaje indicando que la cuenta es obligatoria
+    And el movimiento no se registra
+
+  Scenario 06: Tipo obligatorio
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin completar el tipo
+    Then veo un mensaje indicando que el tipo es obligatorio
+    And el movimiento no se registra
+
+  Scenario 07: Categoría obligatoria
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin completar la categoría
+    Then veo un mensaje indicando que la categoría es obligatoria
+    And el movimiento no se registra
+
+  Scenario 08: Moneda obligatoria
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin seleccionar la moneda
+    Then veo un mensaje indicando que la moneda es obligatoria
+    And el movimiento no se registra
+
+  Scenario 09: Importe obligatorio y mayor a cero
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin completar el importe
+    Then veo un mensaje indicando que el importe es obligatorio
+    And el movimiento no se registra
+    When ingreso un importe igual a cero o negativo
+    Then veo un mensaje indicando que el importe debe ser mayor a cero
+    And el movimiento no se registra
+
+  Scenario 10: Cuenta bimonetaria permite seleccionar ARS o USD
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And seleccioné una cuenta bimonetaria
+    When visualizo el campo "Moneda"
+    Then puedo seleccionar una de las monedas habilitadas para esa cuenta
+    And las opciones incluyen "ARS" y "USD" si ambas están configuradas
+
+  Scenario 11: Cuenta no compatible con la moneda seleccionada
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And seleccioné una cuenta
+    When selecciono una moneda no habilitada para esa cuenta
+    And intento guardar
+    Then veo un mensaje indicando que la moneda no es válida para la cuenta seleccionada
+    And el movimiento no se registra
+
+  Scenario 12: Registro exitoso en cuenta bimonetaria
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And seleccioné una cuenta bimonetaria
+    And seleccioné una moneda válida para esa cuenta
+    And completé correctamente todos los demás campos obligatorios
+    When selecciono "Crear"
+    Then el sistema registra el movimiento en el club activo
+    And impacta el saldo de la cuenta en la moneda seleccionada
+    And no modifica el saldo de la otra moneda de esa misma cuenta
+    And veo un mensaje de confirmación
+
+  Scenario 13: Registro exitoso con usuario responsable
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And completé correctamente todos los campos obligatorios visibles
+    When selecciono "Crear"
+    Then el sistema registra la fecha y hora de creación
+    And registra el usuario responsable de la carga
+
+  Scenario 14: Visualización separada de saldos por moneda en una cuenta bimonetaria
+    Given existe una cuenta bimonetaria con saldo en ARS y saldo en USD
+    When consulto el saldo de esa cuenta
+    Then veo el saldo de ARS por separado
+    And veo el saldo de USD por separado
+
+  Scenario 15: Borrar formulario
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And completé uno o más campos
+    When selecciono "Borrar formulario"
+    Then el formulario vuelve a su estado inicial
+    And conserva la fecha cargada por defecto
+
+  Scenario 16: Confirmación y reseteo del formulario después de un registro exitoso
+    Given registré exitosamente un movimiento de Tesorería
+    When el sistema confirma el registro
+    Then veo un mensaje de éxito
+    And el formulario vuelve a quedar listo para cargar un nuevo movimiento
+    And conserva la fecha cargada por defecto
+
+  Scenario 17: Consistencia por club activo
+    Given tengo rol "Tesorería" en más de un club
+    When registro un movimiento
+    Then el movimiento se registra únicamente en el club activo
+    And no impacta cuentas de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-27 — Registro de movimientos de Tesorería en cuentas propias
+
+> *Como usuario con rol Tesorería, quiero registrar movimientos en las cuentas de Tesorería del club, para reflejar la operatoria financiera en cuentas distintas a las utilizadas por Secretaria.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-27 — Registro de movimientos de Tesorería en cuentas propias
+
+  Scenario 01: Tesorería ve la opción de registrar movimientos
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso al módulo de tesorería
+    Then veo la opción para registrar movimientos de Tesorería
+
+  Scenario 02: Usuario sin rol Tesorería no ve la opción
+    Given estoy autenticado
+    And no tengo rol "Tesorería" en el club activo
+    When ingreso al módulo de tesorería
+    Then no veo la opción para registrar movimientos de Tesorería
+
+  Scenario 03: Tesorería solo ve cuentas habilitadas para su rol
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And existen cuentas configuradas para Tesorería
+    When abro el formulario de registro de movimientos
+    Then veo únicamente las cuentas habilitadas para Tesorería
+    And no veo las cuentas exclusivas de Secretaria
+
+  Scenario 04: Campos visibles al iniciar la carga
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When abro el formulario de registro de movimientos de Tesorería
+    Then veo el campo "Fecha" completo por defecto y editable
+    And veo el campo "Cuenta"
+    And veo el campo "Tipo"
+    And veo el campo "Categoría"
+    And veo el campo "Concepto"
+    And veo el campo "Moneda"
+    And veo el campo "Importe"
+    And veo la acción "Crear"
+
+  Scenario 05: Cuenta obligatoria
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin seleccionar una cuenta
+    Then veo un mensaje indicando que la cuenta es obligatoria
+    And el movimiento no se registra
+
+  Scenario 06: Tipo obligatorio
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin completar el tipo
+    Then veo un mensaje indicando que el tipo es obligatorio
+    And el movimiento no se registra
+
+  Scenario 07: Categoría obligatoria
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin completar la categoría
+    Then veo un mensaje indicando que la categoría es obligatoria
+    And el movimiento no se registra
+
+  Scenario 08: Moneda obligatoria
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin seleccionar la moneda
+    Then veo un mensaje indicando que la moneda es obligatoria
+    And el movimiento no se registra
+
+  Scenario 09: Importe obligatorio y mayor a cero
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    When intento guardar sin completar el importe
+    Then veo un mensaje indicando que el importe es obligatorio
+    And el movimiento no se registra
+    When ingreso un importe igual a cero o negativo
+    Then veo un mensaje indicando que el importe debe ser mayor a cero
+    And el movimiento no se registra
+
+  Scenario 10: Cuenta bimonetaria permite seleccionar ARS o USD
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And seleccioné una cuenta bimonetaria
+    When visualizo el campo "Moneda"
+    Then puedo seleccionar una de las monedas habilitadas para esa cuenta
+    And las opciones incluyen "ARS" y "USD" si ambas están configuradas
+
+  Scenario 11: Cuenta no compatible con la moneda seleccionada
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And seleccioné una cuenta
+    When selecciono una moneda no habilitada para esa cuenta
+    And intento guardar
+    Then veo un mensaje indicando que la moneda no es válida para la cuenta seleccionada
+    And el movimiento no se registra
+
+  Scenario 12: Registro exitoso en cuenta bimonetaria
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And seleccioné una cuenta bimonetaria
+    And seleccioné una moneda válida para esa cuenta
+    And completé correctamente todos los demás campos obligatorios
+    When selecciono "Crear"
+    Then el sistema registra el movimiento en el club activo
+    And impacta el saldo de la cuenta en la moneda seleccionada
+    And no modifica el saldo de la otra moneda de esa misma cuenta
+    And veo un mensaje de confirmación
+
+  Scenario 13: Registro exitoso con usuario responsable
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And completé correctamente todos los campos obligatorios visibles
+    When selecciono "Crear"
+    Then el sistema registra la fecha y hora de creación
+    And registra el usuario responsable de la carga
+
+  Scenario 14: Visualización separada de saldos por moneda en una cuenta bimonetaria
+    Given existe una cuenta bimonetaria con saldo en ARS y saldo en USD
+    When consulto el saldo de esa cuenta
+    Then veo el saldo de ARS por separado
+    And veo el saldo de USD por separado
+
+  Scenario 15: Borrar formulario
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And completé uno o más campos
+    When selecciono "Borrar formulario"
+    Then el formulario vuelve a su estado inicial
+    And conserva la fecha cargada por defecto
+
+  Scenario 16: Confirmación y reseteo del formulario después de un registro exitoso
+    Given registré exitosamente un movimiento de Tesorería
+    When el sistema confirma el registro
+    Then veo un mensaje de éxito
+    And el formulario vuelve a quedar listo para cargar un nuevo movimiento
+    And conserva la fecha cargada por defecto
+
+  Scenario 17: Consistencia por club activo
+    Given tengo rol "Tesorería" en más de un club
+    When registro un movimiento
+    Then el movimiento se registra únicamente en el club activo
+    And no impacta cuentas de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-28 — Configuración de cuentas de Tesorería y monedas habilitadas por cuenta
+
+> *Como Admin del club, quiero configurar las cuentas de Tesorería y las monedas habilitadas para cada una, para definir correctamente la operatoria financiera del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-28 — Configuración de cuentas de Tesorería y monedas habilitadas por cuenta
+
+  Scenario 01: Acceso a la configuración de cuentas de Tesorería
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy en "Configuración del club"
+    When ingreso a la solapa "Tesorería"
+    Then veo una sección de configuración de cuentas de Tesorería
+
+  Scenario 02: Usuario no admin no accede a la configuración
+    Given estoy autenticado
+    And no soy admin del club activo
+    When intento acceder a la configuración de cuentas de Tesorería
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización de cuentas de Tesorería configuradas
+    Given estoy autenticado
+    And soy admin del club activo
+    And existen cuentas de Tesorería configuradas
+    When ingreso a la configuración de cuentas de Tesorería
+    Then veo el listado de cuentas de Tesorería del club activo
+    And cada cuenta muestra nombre, estado, emoji y monedas habilitadas
+
+  Scenario 04: Alta de cuenta de Tesorería
+    Given estoy autenticado
+    And soy admin del club activo
+    When selecciono crear una cuenta de Tesorería
+    Then veo un formulario con los campos "Nombre", "Estado", "Emoji" y "Monedas habilitadas"
+
+  Scenario 05: Nombre de cuenta obligatorio
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de cuenta de Tesorería
+    When intento guardar sin completar el nombre
+    Then veo un mensaje indicando que el nombre es obligatorio
+    And la cuenta no se registra
+
+  Scenario 06: Al menos una moneda debe estar habilitada
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de cuenta de Tesorería
+    When intento guardar sin seleccionar ninguna moneda
+    Then veo un mensaje indicando que debo habilitar al menos una moneda
+    And la cuenta no se registra
+
+  Scenario 07: Creación exitosa de cuenta monomonetaria
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de cuenta de Tesorería
+    When completo un nombre válido
+    And selecciono una sola moneda habilitada
+    And defino su estado
+    And confirmo la creación
+    Then el sistema registra la cuenta en el club activo
+    And la cuenta queda disponible para operar en esa moneda
+
+  Scenario 08: Creación exitosa de cuenta bimonetaria
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de cuenta de Tesorería
+    When completo un nombre válido
+    And selecciono más de una moneda habilitada
+    And defino su estado
+    And confirmo la creación
+    Then el sistema registra la cuenta en el club activo
+    And la cuenta queda disponible para operar en todas las monedas configuradas
+
+  Scenario 09: No se permite duplicar cuentas activas con el mismo nombre en el club activo
+    Given estoy autenticado
+    And soy admin del club activo
+    And ya existe una cuenta de Tesorería activa con un nombre determinado
+    When intento crear otra cuenta con ese mismo nombre
+    Then el sistema bloquea la acción
+    And veo un mensaje indicando que la cuenta ya existe
+
+  Scenario 10: Edición de cuenta de Tesorería
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe una cuenta de Tesorería configurada
+    When edito su nombre, estado, emoji o monedas habilitadas
+    Then el sistema actualiza la cuenta en el club activo
+
+  Scenario 11: Cuenta inactiva no aparece para Tesorería
+    Given existe una cuenta de Tesorería inactiva en el club activo
+    When un usuario con rol "Tesorería" accede al formulario de movimientos
+    Then esa cuenta no aparece entre las opciones disponibles
+
+  Scenario 12: Cuenta activa aparece para Tesorería
+    Given existe una cuenta de Tesorería activa en el club activo
+    When un usuario con rol "Tesorería" accede al formulario de movimientos
+    Then esa cuenta aparece entre las opciones disponibles
+
+  Scenario 13: Las monedas habilitadas determinan las opciones del formulario
+    Given existe una cuenta de Tesorería activa con monedas habilitadas
+    When un usuario con rol "Tesorería" selecciona esa cuenta en el formulario de movimientos
+    Then en el campo "Moneda" veo únicamente las monedas habilitadas para esa cuenta
+
+  Scenario 14: Cuenta monomonetaria muestra una sola moneda posible
+    Given existe una cuenta de Tesorería activa con una única moneda habilitada
+    When un usuario con rol "Tesorería" selecciona esa cuenta en el formulario de movimientos
+    Then en el campo "Moneda" veo únicamente esa moneda
+
+  Scenario 15: Cuenta bimonetaria muestra múltiples monedas posibles
+    Given existe una cuenta de Tesorería activa con más de una moneda habilitada
+    When un usuario con rol "Tesorería" selecciona esa cuenta en el formulario de movimientos
+    Then en el campo "Moneda" veo todas las monedas habilitadas para esa cuenta
+
+  Scenario 16: Visualización separada de saldos por moneda
+    Given existe una cuenta de Tesorería con más de una moneda habilitada
+    And la cuenta tiene saldo registrado en más de una moneda
+    When consulto el detalle de esa cuenta
+    Then veo el saldo de cada moneda por separado
+
+  Scenario 17: Estado vacío sin cuentas de Tesorería configuradas
+    Given estoy autenticado
+    And soy admin del club activo
+    And no existen cuentas de Tesorería configuradas
+    When ingreso a la configuración de cuentas de Tesorería
+    Then veo un estado vacío indicando que no hay cuentas disponibles
+
+  Scenario 18: Consistencia por club activo
+    Given estoy autenticado
+    And soy admin en más de un club
+    When creo, edito o desactivo cuentas de Tesorería
+    Then la configuración aplica únicamente al club activo
+    And no afecta la configuración de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-29 — Consolidación diaria de movimientos de Secretaría en Tesorería
+
+> *Como usuario con rol Tesorería, quiero revisar y consolidar diariamente los movimientos cargados por Secretaría, para incorporarlos correctamente a Tesorería, corregir imputaciones si es necesario e integrar coincidencias con trazabilidad completa.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-29 — Consolidación diaria de movimientos de Secretaría en Tesorería
+
+  Scenario 01: Acceso a la consolidación diaria
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso a la sección de consolidación
+    Then puedo seleccionar una fecha para revisar y consolidar
+
+  Scenario 02: Usuario sin rol Tesorería no accede
+    Given estoy autenticado
+    And no tengo rol "Tesorería" en el club activo
+    When intento acceder a la sección de consolidación
+    Then no tengo acceso a la funcionalidad
+
+  Scenario 03: Visualización de movimientos pendientes del día seleccionado
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And seleccioné una fecha
+    And existen movimientos cargados por Secretaría en esa fecha pendientes de consolidación
+    When ingreso a la vista de consolidación diaria
+    Then veo el listado de movimientos pendientes de consolidación del día seleccionado
+
+  Scenario 04: Estado vacío sin movimientos del día
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And seleccioné una fecha
+    And no existen movimientos cargados por Secretaría para esa fecha
+    When ingreso a la vista de consolidación diaria
+    Then veo un mensaje indicando que no hay movimientos para consolidar
+
+  Scenario 05: Visualización de información clave en el listado
+    Given estoy en la vista de consolidación diaria
+    Then cada movimiento muestra fecha, cuenta, tipo, categoría, concepto, moneda, importe y usuario que lo cargó
+
+  Scenario 06: Estado inicial pendiente de consolidación
+    Given existe un movimiento cargado por Secretaría
+    When el movimiento es visible en Tesorería para la fecha seleccionada
+    Then su estado es "pendiente de consolidación"
+
+  Scenario 07: Visualización del detalle del movimiento
+    Given estoy en la vista de consolidación diaria
+    When selecciono un movimiento
+    Then puedo ver el detalle completo del movimiento
+
+  Scenario 08: Edición de imputaciones antes de consolidar el día
+    Given estoy revisando un movimiento pendiente de consolidación
+    When modifico cuenta, tipo, categoría, concepto, moneda o importe
+    And guardo los cambios
+    Then el sistema actualiza el movimiento
+    And registra el cambio en el historial
+
+  Scenario 09: Detección automática de posible coincidencia
+    Given existe un movimiento pendiente de consolidación
+    And existe un movimiento en Tesorería con misma cuenta, moneda e importe
+    When visualizo el movimiento pendiente
+    Then el sistema indica que existe un posible movimiento coincidente
+
+  Scenario 10: Visualización comparativa para decisión
+    Given existe un posible movimiento coincidente
+    When selecciono ver detalle
+    Then veo la información del movimiento de Secretaría
+    And veo la información del movimiento de Tesorería
+    And puedo compararlos
+
+  Scenario 11: Integración de movimientos coincidentes antes de consolidar el día
+    Given existe un movimiento pendiente de consolidación
+    And existe un movimiento coincidente en Tesorería
+    When selecciono "Integrar"
+    Then el sistema unifica ambos movimientos en uno solo
+    And evita duplicar el impacto en los saldos
+    And el estado del movimiento pasa a "integrado"
+
+  Scenario 12: La integración no modifica saldos duplicadamente
+    Given existe un movimiento coincidente en Tesorería
+    And integro el movimiento pendiente
+    When el sistema procesa la integración
+    Then el saldo permanece con un único impacto contable
+
+  Scenario 13: No se permite consolidar el día con movimientos inválidos
+    Given existen movimientos del día con datos incompletos o inválidos
+    When intento consolidar el día
+    Then el sistema bloquea la acción
+    And muestra cuáles movimientos deben corregirse
+
+  Scenario 14: Consolidación completa del día
+    Given todos los movimientos del día son válidos o ya fueron integrados
+    When selecciono "Consolidar día"
+    Then el sistema incorpora a Tesorería todos los movimientos pendientes del día
+    And actualiza los saldos correspondientes
+    And los movimientos pendientes pasan a estado "consolidado"
+    And los movimientos integrados mantienen estado "integrado"
+
+  Scenario 15: Eliminación de pendientes tras consolidación diaria
+    Given un día fue consolidado
+    When vuelvo a consultar la vista de consolidación para esa fecha
+    Then no veo movimientos pendientes de consolidación para ese día
+
+  Scenario 16: Historial completo del movimiento
+    Given un movimiento fue editado, integrado o consolidado
+    When consulto su historial
+    Then veo la imputación original cargada por Secretaría
+    And veo las modificaciones realizadas
+    And veo la acción final realizada
+    And veo fecha, hora y usuario responsable de cada acción
+
+  Scenario 17: Registro de la consolidación diaria
+    Given consolidé una fecha
+    When finaliza el proceso
+    Then el sistema registra la consolidación diaria
+    And guarda la fecha consolidada
+    And guarda la fecha y hora de ejecución
+    And guarda el usuario responsable
+
+  Scenario 18: Un día no puede consolidarse dos veces
+    Given una fecha ya fue consolidada
+    When intento consolidarla nuevamente
+    Then el sistema bloquea la acción
+    And muestra un mensaje indicando que esa fecha ya fue consolidada
+
+  Scenario 19: Fallo al consolidar el día
+    Given estoy consolidando una fecha
+    When ocurre un error interno en el proceso
+    Then ningún movimiento cambia de estado
+    And todos permanecen en estado "pendiente de consolidación" o "integrado" según corresponda
+    And no se pierde información
+    And el sistema registra el error
+    And informa al usuario
+
+  Scenario 20: Consistencia por club activo
+    Given tengo rol "Tesorería" en más de un club
+    When reviso, edito, integro o consolido movimientos de una fecha
+    Then las acciones aplican únicamente a movimientos del club activo
+    And no afectan movimientos de otros clubes
+
+  Scenario 21: Fecha por defecto en la consolidación diaria
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso a la sección de consolidación
+    Then el sistema propone por defecto la fecha del día anterior
+    And la fecha puede ser modificada manualmente por el usuario
 ```
 
 ---
