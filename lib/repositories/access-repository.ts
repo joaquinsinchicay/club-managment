@@ -1,4 +1,6 @@
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { appConfig } from "@/lib/config";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 import type { AuthIdentity, Club, GoogleProfile, GoogleProfileKey, Membership, User } from "@/lib/domain/access";
 
 type AccessRepository = {
@@ -206,14 +208,26 @@ function mapClubRow(row: {
   };
 }
 
-async function findRealUserByEmail(email: string) {
-  const adminClient = createAdminSupabaseClient();
+function shouldUseSupabaseDatabase() {
+  return appConfig.authProviderMode !== "mock" && hasSupabaseBrowserConfig();
+}
 
-  if (!adminClient) {
+function createAccessSupabaseClient() {
+  if (!shouldUseSupabaseDatabase()) {
     return null;
   }
 
-  const { data, error } = await adminClient
+  return createServerSupabaseClient();
+}
+
+async function findRealUserByEmail(email: string) {
+  const supabase = createAccessSupabaseClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
     .from("users")
     .select("id,email,full_name,avatar_url,created_at,updated_at")
     .eq("email", email)
@@ -227,13 +241,13 @@ async function findRealUserByEmail(email: string) {
 }
 
 async function findRealUserById(userId: string) {
-  const adminClient = createAdminSupabaseClient();
+  const supabase = createAccessSupabaseClient();
 
-  if (!adminClient) {
+  if (!supabase) {
     return null;
   }
 
-  const { data, error } = await adminClient
+  const { data, error } = await supabase
     .from("users")
     .select("id,email,full_name,avatar_url,created_at,updated_at")
     .eq("id", userId)
@@ -247,13 +261,13 @@ async function findRealUserById(userId: string) {
 }
 
 async function listRealMembershipsForUser(userId: string) {
-  const adminClient = createAdminSupabaseClient();
+  const supabase = createAccessSupabaseClient();
 
-  if (!adminClient) {
+  if (!supabase) {
     return [];
   }
 
-  const { data, error } = await adminClient
+  const { data, error } = await supabase
     .from("memberships")
     .select("id,user_id,club_id,role,status,joined_at")
     .eq("user_id", userId);
@@ -266,13 +280,13 @@ async function listRealMembershipsForUser(userId: string) {
 }
 
 async function findRealClubById(clubId: string) {
-  const adminClient = createAdminSupabaseClient();
+  const supabase = createAccessSupabaseClient();
 
-  if (!adminClient) {
+  if (!supabase) {
     return null;
   }
 
-  const { data, error } = await adminClient
+  const { data, error } = await supabase
     .from("clubs")
     .select("id,name,slug,status")
     .eq("id", clubId)
@@ -286,13 +300,13 @@ async function findRealClubById(clubId: string) {
 }
 
 async function getRealLastActiveClubId(userId: string) {
-  const adminClient = createAdminSupabaseClient();
+  const supabase = createAccessSupabaseClient();
 
-  if (!adminClient) {
+  if (!supabase) {
     return null;
   }
 
-  const { data, error } = await adminClient
+  const { data, error } = await supabase
     .from("user_club_preferences")
     .select("last_active_club_id")
     .eq("user_id", userId)
@@ -306,13 +320,13 @@ async function getRealLastActiveClubId(userId: string) {
 }
 
 async function setRealLastActiveClubId(userId: string, clubId: string) {
-  const adminClient = createAdminSupabaseClient();
+  const supabase = createAccessSupabaseClient();
 
-  if (!adminClient) {
+  if (!supabase) {
     return;
   }
 
-  await adminClient.from("user_club_preferences").upsert(
+  await supabase.from("user_club_preferences").upsert(
     {
       user_id: userId,
       last_active_club_id: clubId
@@ -324,13 +338,13 @@ async function setRealLastActiveClubId(userId: string, clubId: string) {
 }
 
 async function syncRealUserProfileFromAuthIdentity(identity: AuthIdentity) {
-  const adminClient = createAdminSupabaseClient();
+  const supabase = createAccessSupabaseClient();
 
-  if (!adminClient) {
+  if (!supabase) {
     return;
   }
 
-  await adminClient.from("users").upsert(
+  await supabase.from("users").upsert(
     {
       id: identity.id,
       email: identity.email,
@@ -349,10 +363,8 @@ export const accessRepository: AccessRepository = {
     return GOOGLE_PROFILES[profileKey];
   },
   async findUserByEmail(email) {
-    const realUser = await findRealUserByEmail(email);
-
-    if (realUser) {
-      return realUser;
+    if (shouldUseSupabaseDatabase()) {
+      return findRealUserByEmail(email);
     }
 
     const users = Array.from(getStore().users.values());
@@ -383,57 +395,61 @@ export const accessRepository: AccessRepository = {
     return nextUser;
   },
   async findUserById(userId) {
-    const realUser = await findRealUserById(userId);
-
-    if (realUser) {
-      return realUser;
+    if (shouldUseSupabaseDatabase()) {
+      return findRealUserById(userId);
     }
 
     return getStore().users.get(userId) ?? null;
   },
   async listMembershipsForUser(userId) {
-    const realMemberships = await listRealMembershipsForUser(userId);
-
-    if (realMemberships.length > 0) {
-      return realMemberships;
+    if (shouldUseSupabaseDatabase()) {
+      return listRealMembershipsForUser(userId);
     }
 
     return getStore().memberships.filter((membership) => membership.userId === userId);
   },
   async listActiveMembershipsForUser(userId) {
-    const realMemberships = await listRealMembershipsForUser(userId);
+    const memberships = shouldUseSupabaseDatabase()
+      ? await listRealMembershipsForUser(userId)
+      : getStore().memberships.filter((membership) => membership.userId === userId);
 
-    if (realMemberships.length > 0) {
-      return realMemberships.filter((membership) => membership.status === "activo");
-    }
-
-    return getStore().memberships.filter(
-      (membership) => membership.userId === userId && membership.status === "activo"
-    );
+    return memberships.filter((membership) => membership.status === "activo");
   },
   async findClubById(clubId) {
-    const realClub = await findRealClubById(clubId);
-
-    if (realClub) {
-      return realClub;
+    if (shouldUseSupabaseDatabase()) {
+      return findRealClubById(clubId);
     }
 
     return getStore().clubs.find((club) => club.id === clubId) ?? null;
   },
   async getLastActiveClubId(userId) {
-    const realPreference = await getRealLastActiveClubId(userId);
-
-    if (realPreference) {
-      return realPreference;
+    if (shouldUseSupabaseDatabase()) {
+      return getRealLastActiveClubId(userId);
     }
 
     return getStore().preferences.get(userId) ?? null;
   },
   async setLastActiveClubId(userId, clubId) {
-    await setRealLastActiveClubId(userId, clubId);
+    if (shouldUseSupabaseDatabase()) {
+      await setRealLastActiveClubId(userId, clubId);
+      return;
+    }
+
     getStore().preferences.set(userId, clubId);
   },
   async syncUserProfileFromAuthIdentity(identity) {
-    await syncRealUserProfileFromAuthIdentity(identity);
+    if (shouldUseSupabaseDatabase()) {
+      await syncRealUserProfileFromAuthIdentity(identity);
+      return;
+    }
+
+    getStore().users.set(identity.id, {
+      id: identity.id,
+      email: identity.email,
+      fullName: identity.fullName,
+      avatarUrl: identity.avatarUrl,
+      createdAt: identity.createdAt,
+      updatedAt: identity.updatedAt
+    });
   }
 };

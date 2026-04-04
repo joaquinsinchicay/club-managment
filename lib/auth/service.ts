@@ -39,6 +39,17 @@ function getRequestedProfile(mockProfile?: string): GoogleProfileKey {
   return "new_pending";
 }
 
+function mapAuthIdentityToUser(identity: AuthIdentity): User {
+  return {
+    id: identity.id,
+    email: identity.email,
+    fullName: identity.fullName,
+    avatarUrl: identity.avatarUrl,
+    createdAt: identity.createdAt,
+    updatedAt: identity.updatedAt
+  };
+}
+
 function buildAuthIdentityFromSupabaseUser(user: SupabaseUser): AuthIdentity {
   const userMetadata = user.user_metadata;
   const fullName =
@@ -89,9 +100,28 @@ async function resolveDestinationForUser(userId: string, currentActiveClubId?: s
   };
 }
 
-async function getAuthenticatedUserId(): Promise<string | null> {
+async function getAuthenticatedIdentity(): Promise<AuthIdentity | null> {
   if (appConfig.authProviderMode === "mock") {
-    return getCurrentAuthUserId();
+    const userId = await getCurrentAuthUserId();
+
+    if (!userId) {
+      return null;
+    }
+
+    const user = await accessRepository.findUserById(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
   }
 
   const supabase = createServerSupabaseClient();
@@ -99,11 +129,15 @@ async function getAuthenticatedUserId(): Promise<string | null> {
     data: { user }
   } = await supabase.auth.getUser();
 
-  return user?.id ?? null;
+  return user ? buildAuthIdentityFromSupabaseUser(user) : null;
 }
 
-export async function getSessionContext(userId: string, activeClubId?: string | null): Promise<SessionContext> {
-  const user = await accessRepository.findUserById(userId);
+export async function getSessionContext(
+  userId: string,
+  activeClubId?: string | null,
+  fallbackUser?: User
+): Promise<SessionContext> {
+  const user = (await accessRepository.findUserById(userId)) ?? fallbackUser;
 
   if (!user) {
     throw new Error("Session user was not found");
@@ -131,14 +165,18 @@ export async function getSessionContext(userId: string, activeClubId?: string | 
 }
 
 export async function getAuthenticatedSessionContext(): Promise<SessionContext | null> {
-  const userId = await getAuthenticatedUserId();
+  const identity = await getAuthenticatedIdentity();
 
-  if (!userId) {
+  if (!identity) {
     return null;
   }
 
   try {
-    return await getSessionContext(userId, await getCurrentActiveClubId());
+    return await getSessionContext(
+      identity.id,
+      await getCurrentActiveClubId(),
+      mapAuthIdentityToUser(identity)
+    );
   } catch {
     return null;
   }

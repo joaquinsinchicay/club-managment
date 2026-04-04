@@ -61,6 +61,18 @@ Esto:
 * crea funciones helper
 * define políticas de acceso
 
+### Ejecución remota desde este repo
+
+Para aplicar `/database/rls-policies.sql` directamente desde una terminal local se necesita al menos uno de estos mecanismos disponibles:
+
+* `supabase` CLI autenticado contra el proyecto
+* `psql` + `POSTGRES_URL_NON_POOLING` o `POSTGRES_URL` con credenciales completas
+* un driver Postgres local y `POSTGRES_URL_NON_POOLING` o `POSTGRES_URL` con credenciales completas
+
+Si `POSTGRES_URL*` está vacío en `.env.local` / `.env.production.local`, el SQL debe ejecutarse manualmente desde Supabase SQL Editor o completarse primero la connection string de base.
+
+Si el host de conexión directa `db.<project_ref>.supabase.co` no resuelve desde la red local, usar la URI de **Session pooler** provista por el botón **Connect** del dashboard de Supabase.
+
 ---
 
 ## 4. Supabase Auth
@@ -97,6 +109,17 @@ Esto debe hacerlo:
 
 * backend (server actions / middleware)
 * nunca confiar en frontend únicamente
+
+## 5.4 Excepción preselección de club
+
+Durante la resolución post-login todavía puede no existir `active_club_id`.
+En ese caso RLS solo debe permitir lecturas/mutaciones sobre recursos propios del usuario autenticado:
+
+* `users` → perfil propio
+* `memberships` → memberships propias
+* `user_club_preferences` → preferencia propia
+
+No debe habilitarse lectura de datos operativos multi-club sin `app.current_club_id`.
 
 ---
 
@@ -180,7 +203,8 @@ Verificar:
 
 Causa probable:
 
-* no seteaste `app.current_club_id`
+* no seteaste `app.current_club_id` para consultas de datos operativos del club
+* estás intentando leer recursos de otro usuario fuera de las policies self-owned
 
 ---
 
