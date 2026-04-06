@@ -96,7 +96,11 @@ export function ClubSettingsCard({
             </p>
           </div>
 
-          {feedback ? <StatusMessage tone={feedback.tone} message={feedback.message} /> : null}
+          {feedback ? (
+            <div id="feedback">
+              <StatusMessage tone={feedback.tone} message={feedback.message} />
+            </div>
+          ) : null}
 
           <ClubInvitationManager inviteUserAction={inviteUserAction} />
 

@@ -524,3 +524,161 @@ as $$
     )
   order by ci.created_at, ci.email;
 $$;
+
+create or replace function approve_membership_for_current_admin(
+  p_membership_id uuid,
+  p_role membership_role
+)
+returns table (
+  id uuid,
+  user_id uuid,
+  club_id uuid,
+  status membership_status,
+  joined_at timestamp,
+  roles membership_role[]
+)
+language sql
+security definer
+set search_path = public
+as $$
+  with target as (
+    select m.id, m.user_id, m.club_id
+    from memberships m
+    where m.id = p_membership_id
+      and exists (
+        select 1
+        from memberships admin_membership
+        join membership_roles admin_role on admin_role.membership_id = admin_membership.id
+        where admin_membership.user_id = auth.uid()
+          and admin_membership.club_id = m.club_id
+          and admin_membership.status = 'activo'
+          and admin_role.role = 'admin'
+      )
+  ),
+  updated as (
+    update memberships m
+    set role = p_role,
+        status = 'activo',
+        approved_at = now(),
+        approved_by_user_id = auth.uid(),
+        joined_at = now(),
+        updated_at = now()
+    from target
+    where m.id = target.id
+    returning m.id, m.user_id, m.club_id, m.status, m.joined_at
+  ),
+  deleted_roles as (
+    delete from membership_roles mr
+    using updated
+    where mr.membership_id = updated.id
+  ),
+  inserted_roles as (
+    insert into membership_roles (membership_id, role)
+    select updated.id, p_role
+    from updated
+    on conflict (membership_id, role) do nothing
+  )
+  select updated.id, updated.user_id, updated.club_id, updated.status, updated.joined_at, array[p_role]::membership_role[] as roles
+  from updated;
+$$;
+
+create or replace function update_membership_roles_for_current_admin(
+  p_membership_id uuid,
+  p_roles membership_role[]
+)
+returns table (
+  id uuid,
+  user_id uuid,
+  club_id uuid,
+  status membership_status,
+  joined_at timestamp,
+  roles membership_role[]
+)
+language sql
+security definer
+set search_path = public
+as $$
+  with normalized_roles as (
+    select distinct unnest(p_roles) as role
+  ),
+  ordered_roles as (
+    select role
+    from normalized_roles
+    order by array_position(array['admin'::membership_role, 'secretaria'::membership_role, 'tesoreria'::membership_role], role)
+  ),
+  target as (
+    select m.id, m.user_id, m.club_id
+    from memberships m
+    where m.id = p_membership_id
+      and exists (
+        select 1
+        from memberships admin_membership
+        join membership_roles admin_role on admin_role.membership_id = admin_membership.id
+        where admin_membership.user_id = auth.uid()
+          and admin_membership.club_id = m.club_id
+          and admin_membership.status = 'activo'
+          and admin_role.role = 'admin'
+      )
+      and exists (select 1 from ordered_roles)
+  ),
+  updated as (
+    update memberships m
+    set role = (select role from ordered_roles limit 1),
+        updated_at = now()
+    from target
+    where m.id = target.id
+    returning m.id, m.user_id, m.club_id, m.status, m.joined_at
+  ),
+  deleted_roles as (
+    delete from membership_roles mr
+    using updated
+    where mr.membership_id = updated.id
+  ),
+  inserted_roles as (
+    insert into membership_roles (membership_id, role)
+    select updated.id, ordered_roles.role
+    from updated
+    cross join ordered_roles
+    on conflict (membership_id, role) do nothing
+  )
+  select
+    updated.id,
+    updated.user_id,
+    updated.club_id,
+    updated.status,
+    updated.joined_at,
+    coalesce(array(select role from ordered_roles), array[]::membership_role[]) as roles
+  from updated;
+$$;
+
+create or replace function remove_membership_for_current_actor(p_membership_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  with target as (
+    select m.id
+    from memberships m
+    where m.id = p_membership_id
+      and (
+        m.user_id = auth.uid()
+        or exists (
+          select 1
+          from memberships admin_membership
+          join membership_roles admin_role on admin_role.membership_id = admin_membership.id
+          where admin_membership.user_id = auth.uid()
+            and admin_membership.club_id = m.club_id
+            and admin_membership.status = 'activo'
+            and admin_role.role = 'admin'
+        )
+      )
+  ),
+  deleted as (
+    delete from memberships m
+    using target
+    where m.id = target.id
+    returning true
+  )
+  select coalesce((select true from deleted limit 1), false);
+$$;

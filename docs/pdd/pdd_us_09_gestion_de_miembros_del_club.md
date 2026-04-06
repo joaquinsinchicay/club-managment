@@ -77,6 +77,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 | Último admin intenta salir o ser degradado | La acción se bloquea sin cambios persistentes. |
 | Invitado ya autenticado | El admin ve al usuario invitado como miembro activo una vez consumida la invitación. |
 | Admin quiere salir de settings | Puede volver al dashboard sin usar navegación externa del navegador. |
+| Admin ejecuta una acción sobre miembros | El sistema vuelve a settings mostrando feedback visible de éxito o error. |
 
 ---
 
@@ -143,6 +144,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 - Debe existir una acción explícita para volver al dashboard desde la pantalla de configuración.
 - La UI de edición de roles debe permitir multi-selección explícita y comprensible.
 - Los mensajes de error o éxito deben ser breves, visibles y no ambiguos.
+- Luego de aprobar, actualizar roles o remover, la pantalla debe volver al bloque de feedback para evitar que el mensaje quede fuera del viewport.
 - No debe haber textos hardcodeados.
 
 ---
@@ -173,6 +175,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 | dialog | `settings.club.members.remove_dialog_cancel_cta` | Cancelar remoción. |
 | feedback | `settings.club.members.feedback.membership_removed` | Remoción exitosa de otro miembro. |
 | feedback | `settings.club.members.feedback.self_removed` | Auto-remoción exitosa. |
+| feedback | `settings.club.members.feedback.membership_roles_updated` | Confirmación de actualización de roles. |
 | feedback | `settings.club.members.feedback.last_admin_required` | Error por último admin. |
 | feedback | `settings.club.members.feedback.forbidden` | Error por permisos insuficientes. |
 

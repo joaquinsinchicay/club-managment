@@ -932,50 +932,65 @@ async function approveRealMembership(
   approvedByUserId: string,
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+  const adminSupabase = createAdminSupabaseClient();
+
+  if (adminSupabase) {
+    const timestamp = now();
+    const { data, error } = await adminSupabase
+      .from("memberships")
+      .update({
+        role,
+        status: "activo",
+        approved_at: timestamp,
+        approved_by_user_id: approvedByUserId,
+        joined_at: timestamp,
+        updated_at: timestamp
+      })
+      .eq("id", membershipId)
+      .select("id,user_id,club_id,status,joined_at")
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    const deleteRolesResult = await adminSupabase
+      .from("membership_roles")
+      .delete()
+      .eq("membership_id", membershipId);
+
+    if (deleteRolesResult.error) {
+      return null;
+    }
+
+    const roleInsert = await adminSupabase.from("membership_roles").insert({
+      membership_id: membershipId,
+      role
+    });
+
+    if (roleInsert.error) {
+      return null;
+    }
+
+    return mapMembershipRow(data, [role]);
+  }
+
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
   }
 
-  const timestamp = now();
-  const { data, error } = await supabase
-    .from("memberships")
-    .update({
-      role,
-      status: "activo",
-      approved_at: timestamp,
-      approved_by_user_id: approvedByUserId,
-      joined_at: timestamp,
-      updated_at: timestamp
-    })
-    .eq("id", membershipId)
-    .select("id,user_id,club_id,status,joined_at")
-    .maybeSingle();
-
-  if (error || !data) {
-    return null;
-  }
-
-  const deleteRolesResult = await supabase
-    .from("membership_roles")
-    .delete()
-    .eq("membership_id", membershipId);
-
-  if (deleteRolesResult.error) {
-    return null;
-  }
-
-  const roleInsert = await supabase.from("membership_roles").insert({
-    membership_id: membershipId,
-    role
+  const { data, error } = await supabase.rpc("approve_membership_for_current_admin", {
+    p_membership_id: membershipId,
+    p_role: role
   });
 
-  if (roleInsert.error) {
+  if (error || !data || data.length === 0) {
     return null;
   }
 
-  return mapMembershipRow(data, [role]);
+  return mapMembershipRow(data[0], sortMembershipRoles(data[0].roles ?? [role]));
 }
 
 async function updateRealMembershipRoles(
@@ -983,60 +998,90 @@ async function updateRealMembershipRoles(
   roles: MembershipRole[],
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+  const adminSupabase = createAdminSupabaseClient();
+
+  if (adminSupabase) {
+    const sortedRoles = sortMembershipRoles(roles);
+
+    const { data, error } = await adminSupabase
+      .from("memberships")
+      .update({
+        role: sortedRoles[0],
+        updated_at: now()
+      })
+      .eq("id", membershipId)
+      .select("id,user_id,club_id,status,joined_at")
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    const deleteRolesResult = await adminSupabase
+      .from("membership_roles")
+      .delete()
+      .eq("membership_id", membershipId);
+
+    if (deleteRolesResult.error) {
+      return null;
+    }
+
+    const roleInsert = await adminSupabase.from("membership_roles").insert(
+      sortedRoles.map((currentRole) => ({
+        membership_id: membershipId,
+        role: currentRole
+      }))
+    );
+
+    if (roleInsert.error) {
+      return null;
+    }
+
+    return mapMembershipRow(data, sortedRoles);
+  }
+
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
   }
 
   const sortedRoles = sortMembershipRoles(roles);
+  const { data, error } = await supabase.rpc("update_membership_roles_for_current_admin", {
+    p_membership_id: membershipId,
+    p_roles: sortedRoles
+  });
 
-  const { data, error } = await supabase
-    .from("memberships")
-    .update({
-      role: sortedRoles[0],
-      updated_at: now()
-    })
-    .eq("id", membershipId)
-    .select("id,user_id,club_id,status,joined_at")
-    .maybeSingle();
-
-  if (error || !data) {
+  if (error || !data || data.length === 0) {
     return null;
   }
 
-  const deleteRolesResult = await supabase
-    .from("membership_roles")
-    .delete()
-    .eq("membership_id", membershipId);
-
-  if (deleteRolesResult.error) {
-    return null;
-  }
-
-  const roleInsert = await supabase.from("membership_roles").insert(
-    sortedRoles.map((currentRole) => ({
-      membership_id: membershipId,
-      role: currentRole
-    }))
-  );
-
-  if (roleInsert.error) {
-    return null;
-  }
-
-  return mapMembershipRow(data, sortedRoles);
+  return mapMembershipRow(data[0], sortMembershipRoles(data[0].roles ?? sortedRoles));
 }
 
 async function removeRealMembership(membershipId: string, client?: AccessRepositoryClient) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+  const adminSupabase = createAdminSupabaseClient();
+
+  if (adminSupabase) {
+    const { error } = await adminSupabase.from("memberships").delete().eq("id", membershipId);
+    return !error;
+  }
+
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return false;
   }
 
-  const { error } = await supabase.from("memberships").delete().eq("id", membershipId);
-  return !error;
+  const { data, error } = await supabase.rpc("remove_membership_for_current_actor", {
+    p_membership_id: membershipId
+  });
+
+  if (error) {
+    return false;
+  }
+
+  return Boolean(data);
 }
 
 async function syncRealUserProfileFromAuthIdentity(identity: AuthIdentity, client?: AccessRepositoryClient) {
