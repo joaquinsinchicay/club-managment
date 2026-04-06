@@ -7,8 +7,6 @@ type TreasuryCardProps = {
   treasuryCard: DashboardTreasuryCardData;
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
-  openDailyCashSessionAction: () => Promise<void>;
-  closeDailyCashSessionAction: () => Promise<void>;
   createTreasuryMovementAction: (formData: FormData) => Promise<void>;
 };
 
@@ -28,8 +26,6 @@ export function TreasuryCard({
   treasuryCard,
   accounts,
   categories,
-  openDailyCashSessionAction,
-  closeDailyCashSessionAction,
   createTreasuryMovementAction
 }: TreasuryCardProps) {
   const canCreateMovement = treasuryCard.availableActions.includes("create_movement");
@@ -91,25 +87,21 @@ export function TreasuryCard({
 
         <div className="grid gap-3 sm:grid-cols-2">
           {canOpenSession ? (
-            <form action={openDailyCashSessionAction}>
-              <button
-                type="submit"
-                className="min-h-11 w-full rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-              >
-                {texts.dashboard.treasury.open_session_cta}
-              </button>
-            </form>
+            <Link
+              href="/dashboard/session/open"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            >
+              {texts.dashboard.treasury.open_session_flow_cta}
+            </Link>
           ) : null}
 
           {canCloseSession ? (
-            <form action={closeDailyCashSessionAction}>
-              <button
-                type="submit"
-                className="min-h-11 w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-              >
-                {texts.dashboard.treasury.close_session_cta}
-              </button>
-            </form>
+            <Link
+              href="/dashboard/session/close"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            >
+              {texts.dashboard.treasury.close_session_flow_cta}
+            </Link>
           ) : null}
         </div>
 

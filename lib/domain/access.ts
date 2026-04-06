@@ -100,6 +100,26 @@ export type TreasuryMovement = {
   createdAt: string;
 };
 
+export type DailyCashSessionBalance = {
+  id: string;
+  sessionId: string;
+  accountId: string;
+  currencyCode: string;
+  balanceMoment: "opening" | "closing";
+  expectedBalance: number;
+  declaredBalance: number;
+  differenceAmount: number;
+};
+
+export type BalanceAdjustment = {
+  id: string;
+  sessionId: string;
+  movementId: string;
+  accountId: string;
+  differenceAmount: number;
+  adjustmentMoment: "opening" | "closing";
+};
+
 export type DashboardTreasuryCard = {
   sessionStatus: TreasurySessionStatus | "not_started";
   sessionDate: string;
@@ -136,6 +156,24 @@ export type TreasuryAccountDetail = {
     createdByUserName: string;
     createdAt: string;
   }>;
+};
+
+export type SessionBalanceDraft = {
+  accountId: string;
+  accountName: string;
+  currencyCode: string;
+  expectedBalance: number;
+  declaredBalance: number;
+  differenceAmount: number;
+  adjustmentType: "ingreso" | "egreso" | null;
+};
+
+export type DailyCashSessionValidation = {
+  mode: "open" | "close";
+  sessionDate: string;
+  sessionStatus: TreasurySessionStatus | "not_started";
+  accounts: SessionBalanceDraft[];
+  hasDifferences: boolean;
 };
 
 export type Session = {

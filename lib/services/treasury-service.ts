@@ -1,5 +1,11 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import type { DashboardTreasuryCard, TreasuryAccountDetail } from "@/lib/domain/access";
+import type {
+  DailyCashSessionValidation,
+  DashboardTreasuryCard,
+  SessionBalanceDraft,
+  TreasuryAccount,
+  TreasuryAccountDetail
+} from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
 type TreasuryActionCode =
@@ -20,6 +26,10 @@ type TreasuryActionCode =
   | "invalid_account"
   | "invalid_category"
   | "invalid_currency"
+  | "no_accounts_available"
+  | "declared_balance_required"
+  | "declared_balance_invalid"
+  | "adjustment_category_missing"
   | "unknown_error";
 
 export type TreasuryActionResult = {
@@ -49,6 +59,344 @@ async function getSecretariaSession() {
 
 function buildMovementSignedAmount(movementType: "ingreso" | "egreso", amount: number) {
   return movementType === "ingreso" ? amount : amount * -1;
+}
+
+async function getSecretariaAccounts(clubId: string) {
+  const accounts = await accessRepository.listTreasuryAccountsForClub(clubId);
+  return accounts.filter((account) => account.accountScope === "secretaria");
+}
+
+async function buildAccountBalanceDrafts(
+  clubId: string,
+  sessionDate: string,
+  accounts: TreasuryAccount[]
+): Promise<SessionBalanceDraft[]> {
+  const movementsByAccount = await Promise.all(
+    accounts.map(async (account) => ({
+      account,
+      movements: await accessRepository.listTreasuryMovementsByAccount(clubId, account.id, sessionDate)
+    }))
+  );
+
+  return movementsByAccount.flatMap(({ account, movements }) =>
+    account.currencies.map((currencyCode) => {
+      const expectedBalance = movements
+        .filter((movement) => movement.currencyCode === currencyCode)
+        .reduce(
+          (total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount),
+          0
+        );
+
+      return {
+        accountId: account.id,
+        accountName: account.name,
+        currencyCode,
+        expectedBalance,
+        declaredBalance: expectedBalance,
+        differenceAmount: 0,
+        adjustmentType: null
+      } satisfies SessionBalanceDraft;
+    })
+  );
+}
+
+function buildDraftFromDeclaredValue(
+  draft: SessionBalanceDraft,
+  declaredBalance: number
+): SessionBalanceDraft {
+  const differenceAmount = declaredBalance - draft.expectedBalance;
+
+  return {
+    ...draft,
+    declaredBalance,
+    differenceAmount,
+    adjustmentType:
+      differenceAmount === 0 ? null : differenceAmount > 0 ? "ingreso" : "egreso"
+  };
+}
+
+async function getSessionValidationBase(
+  mode: "open" | "close"
+): Promise<{
+  clubId: string;
+  sessionDate: string;
+  sessionStatus: "open" | "closed" | "not_started";
+  sessionId: string | null;
+  accounts: SessionBalanceDraft[];
+} | null> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return null;
+  }
+
+  const sessionDate = getTodayDate();
+  const [accounts, session] = await Promise.all([
+    getSecretariaAccounts(context.activeClub.id),
+    accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
+  ]);
+
+  if (mode === "open" && session) {
+    return {
+      clubId: context.activeClub.id,
+      sessionDate,
+      sessionStatus: session.status,
+      sessionId: session.id,
+      accounts: []
+    };
+  }
+
+  if (mode === "close" && (!session || session.status !== "open")) {
+    return {
+      clubId: context.activeClub.id,
+      sessionDate,
+      sessionStatus: session?.status ?? "not_started",
+      sessionId: session?.id ?? null,
+      accounts: []
+    };
+  }
+
+  return {
+    clubId: context.activeClub.id,
+    sessionDate,
+    sessionStatus: session?.status ?? "not_started",
+    sessionId: session?.id ?? null,
+    accounts: await buildAccountBalanceDrafts(context.activeClub.id, sessionDate, accounts)
+  };
+}
+
+export async function getDailyCashSessionValidationForActiveClub(
+  mode: "open" | "close"
+): Promise<DailyCashSessionValidation | null> {
+  const base = await getSessionValidationBase(mode);
+
+  if (!base) {
+    return null;
+  }
+
+  return {
+    mode,
+    sessionDate: base.sessionDate,
+    sessionStatus: base.sessionStatus,
+    accounts: base.accounts,
+    hasDifferences: base.accounts.some((account) => account.differenceAmount !== 0)
+  };
+}
+
+async function validateDeclaredBalances(
+  mode: "open" | "close",
+  input: Array<{
+    accountId: string;
+    currencyCode: string;
+    declaredBalance: string;
+  }>
+): Promise<
+  | {
+      ok: false;
+      code: TreasuryActionCode;
+    }
+  | {
+      ok: true;
+      clubId: string;
+      userId: string;
+      sessionDate: string;
+      sessionId: string | null;
+      drafts: SessionBalanceDraft[];
+    }
+> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  const base = await getSessionValidationBase(mode);
+
+  if (!base) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  if (mode === "open" && base.sessionId) {
+    return { ok: false, code: "session_already_exists" };
+  }
+
+  if (mode === "close" && !base.sessionId) {
+    return { ok: false, code: "session_not_open" };
+  }
+
+  if (base.accounts.length === 0) {
+    return { ok: false, code: "no_accounts_available" };
+  }
+
+  const inputMap = new Map(
+    input.map((entry) => [`${entry.accountId}:${entry.currencyCode}`, entry.declaredBalance])
+  );
+
+  const drafts: SessionBalanceDraft[] = [];
+
+  for (const draft of base.accounts) {
+    const key = `${draft.accountId}:${draft.currencyCode}`;
+    const rawDeclared = inputMap.get(key);
+
+    if (rawDeclared === undefined || rawDeclared.trim() === "") {
+      return { ok: false, code: "declared_balance_required" };
+    }
+
+    const parsed = Number(rawDeclared);
+
+    if (!Number.isFinite(parsed)) {
+      return { ok: false, code: "declared_balance_invalid" };
+    }
+
+    drafts.push(buildDraftFromDeclaredValue(draft, parsed));
+  }
+
+  return {
+    ok: true,
+    clubId: context.activeClub.id,
+    userId: context.user.id,
+    sessionDate: base.sessionDate,
+    sessionId: base.sessionId,
+    drafts
+  };
+}
+
+async function applyBalanceAdjustments(input: {
+  clubId: string;
+  userId: string;
+  sessionId: string;
+  sessionDate: string;
+  mode: "open" | "close";
+  drafts: SessionBalanceDraft[];
+}) {
+  const adjustmentCategory = await accessRepository.findTreasuryAdjustmentCategory(input.clubId);
+
+  if (!adjustmentCategory) {
+    return { ok: false, code: "adjustment_category_missing" } as const;
+  }
+
+  for (const draft of input.drafts.filter((entry) => entry.differenceAmount !== 0 && entry.adjustmentType)) {
+    const movement = await accessRepository.createTreasuryMovement({
+      clubId: input.clubId,
+      dailyCashSessionId: input.sessionId,
+      accountId: draft.accountId,
+      movementType: draft.adjustmentType!,
+      categoryId: adjustmentCategory.id,
+      concept: `${adjustmentCategory.name} ${input.mode === "open" ? "de apertura" : "de cierre"}`,
+      currencyCode: draft.currencyCode,
+      amount: Math.abs(draft.differenceAmount),
+      movementDate: input.sessionDate,
+      createdByUserId: input.userId
+    });
+
+    if (!movement) {
+      return { ok: false, code: "unknown_error" } as const;
+    }
+
+    await accessRepository.recordBalanceAdjustment({
+      sessionId: input.sessionId,
+      movementId: movement.id,
+      accountId: draft.accountId,
+      differenceAmount: draft.differenceAmount,
+      adjustmentMoment: input.mode === "open" ? "opening" : "closing"
+    });
+  }
+
+  return { ok: true } as const;
+}
+
+export async function openDailyCashSessionWithDeclaredBalances(input: Array<{
+  accountId: string;
+  currencyCode: string;
+  declaredBalance: string;
+}>): Promise<TreasuryActionResult> {
+  const validation = await validateDeclaredBalances("open", input);
+
+  if (!validation.ok) {
+    return validation;
+  }
+
+  const createdSession = await accessRepository.createDailyCashSession(
+    validation.clubId,
+    validation.sessionDate,
+    validation.userId
+  );
+
+  if (!createdSession) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  await accessRepository.recordDailyCashSessionBalances(
+    validation.drafts.map((draft) => ({
+      sessionId: createdSession.id,
+      accountId: draft.accountId,
+      currencyCode: draft.currencyCode,
+      balanceMoment: "opening",
+      expectedBalance: draft.expectedBalance,
+      declaredBalance: draft.declaredBalance,
+      differenceAmount: draft.differenceAmount
+    }))
+  );
+
+  const adjustmentResult = await applyBalanceAdjustments({
+    clubId: validation.clubId,
+    userId: validation.userId,
+    sessionId: createdSession.id,
+    sessionDate: validation.sessionDate,
+    mode: "open",
+    drafts: validation.drafts
+  });
+
+  if (!adjustmentResult.ok) {
+    return adjustmentResult;
+  }
+
+  return { ok: true, code: "session_opened" };
+}
+
+export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
+  accountId: string;
+  currencyCode: string;
+  declaredBalance: string;
+}>): Promise<TreasuryActionResult> {
+  const validation = await validateDeclaredBalances("close", input);
+
+  if (!validation.ok || !validation.sessionId) {
+    return validation.ok ? { ok: false, code: "session_not_open" } : validation;
+  }
+
+  await accessRepository.recordDailyCashSessionBalances(
+    validation.drafts.map((draft) => ({
+      sessionId: validation.sessionId!,
+      accountId: draft.accountId,
+      currencyCode: draft.currencyCode,
+      balanceMoment: "closing",
+      expectedBalance: draft.expectedBalance,
+      declaredBalance: draft.declaredBalance,
+      differenceAmount: draft.differenceAmount
+    }))
+  );
+
+  const adjustmentResult = await applyBalanceAdjustments({
+    clubId: validation.clubId,
+    userId: validation.userId,
+    sessionId: validation.sessionId,
+    sessionDate: validation.sessionDate,
+    mode: "close",
+    drafts: validation.drafts
+  });
+
+  if (!adjustmentResult.ok) {
+    return adjustmentResult;
+  }
+
+  const updated = await accessRepository.closeDailyCashSession(validation.sessionId, validation.userId);
+
+  if (!updated) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  return { ok: true, code: "session_closed" };
 }
 
 export async function getDashboardTreasuryCardForActiveClub(): Promise<DashboardTreasuryCard | null> {
@@ -100,52 +448,35 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
 }
 
 export async function openDailyCashSession(): Promise<TreasuryActionResult> {
-  const context = await getSecretariaSession();
+  const base = await getSessionValidationBase("open");
 
-  if (!context?.activeClub) {
+  if (!base) {
     return { ok: false, code: "forbidden" };
   }
 
-  const sessionDate = getTodayDate();
-  const existingSession = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate);
-
-  if (existingSession) {
-    return { ok: false, code: "session_already_exists" };
-  }
-
-  const created = await accessRepository.createDailyCashSession(
-    context.activeClub.id,
-    sessionDate,
-    context.user.id
+  return openDailyCashSessionWithDeclaredBalances(
+    base.accounts.map((account) => ({
+      accountId: account.accountId,
+      currencyCode: account.currencyCode,
+      declaredBalance: String(account.expectedBalance)
+    }))
   );
-
-  if (!created) {
-    return { ok: false, code: "unknown_error" };
-  }
-
-  return { ok: true, code: "session_opened" };
 }
 
 export async function closeDailyCashSession(): Promise<TreasuryActionResult> {
-  const context = await getSecretariaSession();
+  const base = await getSessionValidationBase("close");
 
-  if (!context?.activeClub) {
+  if (!base) {
     return { ok: false, code: "forbidden" };
   }
 
-  const session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
-
-  if (!session || session.status !== "open") {
-    return { ok: false, code: "session_not_open" };
-  }
-
-  const updated = await accessRepository.closeDailyCashSession(session.id, context.user.id);
-
-  if (!updated) {
-    return { ok: false, code: "unknown_error" };
-  }
-
-  return { ok: true, code: "session_closed" };
+  return closeDailyCashSessionWithDeclaredBalances(
+    base.accounts.map((account) => ({
+      accountId: account.accountId,
+      currencyCode: account.currencyCode,
+      declaredBalance: String(account.expectedBalance)
+    }))
+  );
 }
 
 export async function createTreasuryMovement(input: {

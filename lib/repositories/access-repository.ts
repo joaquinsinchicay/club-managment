@@ -4,9 +4,11 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 import type {
   AuthIdentity,
+  BalanceAdjustment,
   Club,
   ClubInvitation,
   ClubMember,
+  DailyCashSessionBalance,
   GoogleProfile,
   GoogleProfileKey,
   DailyCashSession,
@@ -33,6 +35,7 @@ type AccessRepository = {
   listPendingInvitationsByEmail(email: string, client?: AccessRepositoryClient): Promise<ClubInvitation[]>;
   listTreasuryAccountsForClub(clubId: string): Promise<TreasuryAccount[]>;
   listTreasuryCategoriesForClub(clubId: string): Promise<TreasuryCategory[]>;
+  findTreasuryAdjustmentCategory(clubId: string): Promise<TreasuryCategory | null>;
   getDailyCashSessionByDate(clubId: string, sessionDate: string): Promise<DailyCashSession | null>;
   createDailyCashSession(
     clubId: string,
@@ -54,6 +57,24 @@ type AccessRepository = {
     movementDate: string;
     createdByUserId: string;
   }): Promise<TreasuryMovement | null>;
+  recordDailyCashSessionBalances(
+    input: Array<{
+      sessionId: string;
+      accountId: string;
+      currencyCode: string;
+      balanceMoment: "opening" | "closing";
+      expectedBalance: number;
+      declaredBalance: number;
+      differenceAmount: number;
+    }>
+  ): Promise<void>;
+  recordBalanceAdjustment(input: {
+    sessionId: string;
+    movementId: string;
+    accountId: string;
+    differenceAmount: number;
+    adjustmentMoment: "opening" | "closing";
+  }): Promise<void>;
   getLastActiveClubId(userId: string, client?: AccessRepositoryClient): Promise<string | null>;
   setLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient): Promise<void>;
   createClubInvitation(
@@ -104,6 +125,8 @@ type MockStore = {
   treasuryAccounts: TreasuryAccount[];
   treasuryCategories: TreasuryCategory[];
   dailyCashSessions: DailyCashSession[];
+  dailyCashSessionBalances: DailyCashSessionBalance[];
+  balanceAdjustments: BalanceAdjustment[];
   treasuryMovements: TreasuryMovement[];
   preferences: Map<string, string>;
 };
@@ -290,13 +313,25 @@ function createStore(): MockStore {
       name: "Gastos operativos"
     },
     {
+      id: "category-ajuste-001",
+      clubId: CLUB_ID,
+      name: "Ajuste"
+    },
+    {
       id: "category-sur-001",
       clubId: CLUB_SUR_ID,
       name: "Cuotas Sur"
+    },
+    {
+      id: "category-ajuste-sur-001",
+      clubId: CLUB_SUR_ID,
+      name: "Ajuste"
     }
   ];
 
   const dailyCashSessions: DailyCashSession[] = [];
+  const dailyCashSessionBalances: DailyCashSessionBalance[] = [];
+  const balanceAdjustments: BalanceAdjustment[] = [];
   const treasuryMovements: TreasuryMovement[] = [];
 
   return {
@@ -307,6 +342,8 @@ function createStore(): MockStore {
     treasuryAccounts,
     treasuryCategories,
     dailyCashSessions,
+    dailyCashSessionBalances,
+    balanceAdjustments,
     treasuryMovements,
     preferences
   };
@@ -965,6 +1002,13 @@ export const accessRepository: AccessRepository = {
   async listTreasuryCategoriesForClub(clubId) {
     return getStore().treasuryCategories.filter((category) => category.clubId === clubId);
   },
+  async findTreasuryAdjustmentCategory(clubId) {
+    return (
+      getStore().treasuryCategories.find(
+        (category) => category.clubId === clubId && category.name.toLowerCase() === "ajuste"
+      ) ?? null
+    );
+  },
   async getDailyCashSessionByDate(clubId, sessionDate) {
     return (
       getStore().dailyCashSessions.find(
@@ -1030,6 +1074,32 @@ export const accessRepository: AccessRepository = {
 
     getStore().treasuryMovements.push(movement);
     return movement;
+  },
+  async recordDailyCashSessionBalances(input) {
+    const store = getStore();
+
+    input.forEach((entry) => {
+      store.dailyCashSessionBalances.push({
+        id: `session-balance-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sessionId: entry.sessionId,
+        accountId: entry.accountId,
+        currencyCode: entry.currencyCode,
+        balanceMoment: entry.balanceMoment,
+        expectedBalance: entry.expectedBalance,
+        declaredBalance: entry.declaredBalance,
+        differenceAmount: entry.differenceAmount
+      });
+    });
+  },
+  async recordBalanceAdjustment(input) {
+    getStore().balanceAdjustments.push({
+      id: `balance-adjustment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      sessionId: input.sessionId,
+      movementId: input.movementId,
+      accountId: input.accountId,
+      differenceAmount: input.differenceAmount,
+      adjustmentMoment: input.adjustmentMoment
+    });
   },
   async getLastActiveClubId(userId, client) {
     if (shouldUseSupabaseDatabase()) {

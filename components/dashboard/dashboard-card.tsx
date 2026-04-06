@@ -14,8 +14,6 @@ type DashboardCardProps = {
   treasuryCard: DashboardTreasuryCardData | null;
   treasuryAccounts: TreasuryAccount[];
   treasuryCategories: TreasuryCategory[];
-  openDailyCashSessionAction: () => Promise<void>;
-  closeDailyCashSessionAction: () => Promise<void>;
   createTreasuryMovementAction: (formData: FormData) => Promise<void>;
 };
 
@@ -44,8 +42,6 @@ export function DashboardCard({
   treasuryCard,
   treasuryAccounts,
   treasuryCategories,
-  openDailyCashSessionAction,
-  closeDailyCashSessionAction,
   createTreasuryMovementAction
 }: DashboardCardProps) {
   const feedbackMessage = getFeedbackMessage(feedbackCode);
@@ -105,8 +101,6 @@ export function DashboardCard({
                 treasuryCard={treasuryCard}
                 accounts={treasuryAccounts}
                 categories={treasuryCategories}
-                openDailyCashSessionAction={openDailyCashSessionAction}
-                closeDailyCashSessionAction={closeDailyCashSessionAction}
                 createTreasuryMovementAction={createTreasuryMovementAction}
               />
             ) : null}

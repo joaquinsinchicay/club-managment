@@ -2,9 +2,7 @@ import { redirect } from "next/navigation";
 
 import { setActiveClubAction } from "@/app/(dashboard)/dashboard/actions";
 import {
-  closeDailyCashSessionAction,
   createTreasuryMovementAction,
-  openDailyCashSessionAction
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
@@ -53,8 +51,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       treasuryCard={treasuryCard}
       treasuryAccounts={treasuryAccounts}
       treasuryCategories={treasuryCategories}
-      openDailyCashSessionAction={openDailyCashSessionAction}
-      closeDailyCashSessionAction={closeDailyCashSessionAction}
       createTreasuryMovementAction={createTreasuryMovementAction}
     />
   );
