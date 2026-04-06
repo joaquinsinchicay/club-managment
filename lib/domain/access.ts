@@ -57,6 +57,15 @@ export type ClubInvitation = {
   createdAt: string;
 };
 
+export type PendingClubInvitation = {
+  invitationId: string;
+  clubId: string;
+  email: string;
+  role: MembershipRole;
+  status: "pendiente_aprobacion";
+  createdAt: string;
+};
+
 export type TreasuryAccount = {
   id: string;
   clubId: string;

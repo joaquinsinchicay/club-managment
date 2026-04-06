@@ -4,10 +4,16 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import { texts } from "@/lib/texts";
-import type { ClubMember, MembershipRole, MembershipStatus } from "@/lib/domain/access";
+import type {
+  ClubMember,
+  MembershipRole,
+  MembershipStatus,
+  PendingClubInvitation
+} from "@/lib/domain/access";
 
 type ClubMembersManagerProps = {
   members: ClubMember[];
+  pendingInvitations: PendingClubInvitation[];
   currentUserId: string;
   approveMembershipAction: (formData: FormData) => Promise<void>;
   updateMembershipRoleAction: (formData: FormData) => Promise<void>;
@@ -40,6 +46,7 @@ function getStatusLabel(status: MembershipStatus) {
 
 export function ClubMembersManager({
   members,
+  pendingInvitations,
   currentUserId,
   approveMembershipAction,
   updateMembershipRoleAction,
@@ -51,7 +58,7 @@ export function ClubMembersManager({
     [members, selectedMembershipId]
   );
 
-  if (members.length === 0) {
+  if (members.length === 0 && pendingInvitations.length === 0) {
     return (
       <div className="rounded-[24px] border border-dashed border-border bg-secondary/40 p-5 text-sm text-muted-foreground">
         <p className="font-semibold text-foreground">{texts.settings.club.members.empty_title}</p>
@@ -63,6 +70,44 @@ export function ClubMembersManager({
   return (
     <>
       <div className="space-y-4">
+        {pendingInvitations.map((invitation) => (
+          <article
+            key={invitation.invitationId}
+            className="rounded-[24px] border border-warning/40 bg-warning/10 p-4 shadow-sm"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
+                <span aria-hidden="true">{getInitials(invitation.email, invitation.email)}</span>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-foreground">{invitation.email}</p>
+                  <span className="rounded-full bg-warning px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-foreground">
+                    {texts.settings.club.members.pending_badge}
+                  </span>
+                </div>
+                <p className="mt-1 truncate text-sm text-muted-foreground">{invitation.email}</p>
+
+                <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                  <div className="rounded-2xl border border-border/70 bg-card px-3 py-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      {texts.settings.club.members.status_label}
+                    </p>
+                    <p className="mt-1 font-medium text-foreground">{getStatusLabel(invitation.status)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/70 bg-card px-3 py-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      {texts.settings.club.members.role_label}
+                    </p>
+                    <p className="mt-1 font-medium text-foreground">{getRoleLabel(invitation.role)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        ))}
+
         {members.map((member) => {
           const isCurrentUser = member.userId === currentUserId;
           const initials = getInitials(member.fullName, member.email);

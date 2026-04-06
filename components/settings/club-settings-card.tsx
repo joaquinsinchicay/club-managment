@@ -4,13 +4,14 @@ import { StatusMessage } from "@/components/ui/status-message";
 import { CardShell } from "@/components/ui/card-shell";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
-import type { ClubMember } from "@/lib/domain/access";
+import type { ClubMember, PendingClubInvitation } from "@/lib/domain/access";
 import type { ClubMemberActionCode } from "@/lib/services/club-members-service";
 import type { ClubInvitationActionCode } from "@/lib/services/club-invitations-service";
 
 type ClubSettingsCardProps = {
   context: SessionContext;
   members: ClubMember[];
+  pendingInvitations: PendingClubInvitation[];
   feedbackCode?: string;
   inviteUserAction: (formData: FormData) => Promise<void>;
   approveMembershipAction: (formData: FormData) => Promise<void>;
@@ -50,6 +51,7 @@ function getFeedbackMessage(feedbackCode?: string) {
 export function ClubSettingsCard({
   context,
   members,
+  pendingInvitations,
   feedbackCode,
   inviteUserAction,
   approveMembershipAction,
@@ -91,6 +93,7 @@ export function ClubSettingsCard({
 
           <ClubMembersManager
             members={members}
+            pendingInvitations={pendingInvitations}
             currentUserId={context.user.id}
             approveMembershipAction={approveMembershipAction}
             updateMembershipRoleAction={updateMembershipRoleAction}

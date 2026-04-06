@@ -54,6 +54,7 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
       <ClubSettingsCard
         context={context}
         members={clubMembersData.members}
+        pendingInvitations={clubMembersData.pendingInvitations}
         feedbackCode={searchParams?.feedback}
         inviteUserAction={inviteClubUserAction}
         approveMembershipAction={approveClubMembershipAction}

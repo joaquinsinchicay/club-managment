@@ -14,6 +14,7 @@ import type {
   DailyCashSession,
   Membership,
   MembershipRole,
+  PendingClubInvitation,
   TreasuryAccount,
   TreasuryCategory,
   TreasuryMovement,
@@ -32,6 +33,7 @@ type AccessRepository = {
   listActiveMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   findClubById(clubId: string, client?: AccessRepositoryClient): Promise<Club | null>;
   listClubMembers(clubId: string, client?: AccessRepositoryClient): Promise<ClubMember[]>;
+  listPendingInvitationsForClub(clubId: string, client?: AccessRepositoryClient): Promise<PendingClubInvitation[]>;
   listPendingInvitationsByEmail(email: string, client?: AccessRepositoryClient): Promise<ClubInvitation[]>;
   listTreasuryAccountsForClub(clubId: string): Promise<TreasuryAccount[]>;
   listTreasuryCategoriesForClub(clubId: string): Promise<TreasuryCategory[]>;
@@ -653,6 +655,43 @@ async function listRealPendingInvitationsByEmail(email: string, client?: AccessR
   });
 }
 
+async function listRealPendingInvitationsForClub(clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("club_invitations")
+    .select("id,club_id,email,role,status,expires_at,used_at,created_at")
+    .eq("club_id", clubId)
+    .eq("status", "pending")
+    .is("used_at", null);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data
+    .map(mapInvitationRow)
+    .filter((invitation) => {
+      if (!invitation.expiresAt) {
+        return true;
+      }
+
+      return new Date(invitation.expiresAt).getTime() > Date.now();
+    })
+    .map((invitation) => ({
+      invitationId: invitation.id,
+      clubId: invitation.clubId,
+      email: invitation.email,
+      role: invitation.role,
+      status: "pendiente_aprobacion" as const,
+      createdAt: invitation.createdAt
+    }));
+}
+
 async function setRealLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient) {
   const supabase = createAccessSupabaseClient(client);
 
@@ -979,6 +1018,32 @@ export const accessRepository: AccessRepository = {
         return mapClubMemberFromMembership(membership, user);
       })
       .filter((member): member is ClubMember => Boolean(member));
+  },
+  async listPendingInvitationsForClub(clubId, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealPendingInvitationsForClub(clubId, client);
+    }
+
+    return getStore().invitations
+      .filter((invitation) => {
+        if (invitation.clubId !== clubId || invitation.status !== "pending" || invitation.usedAt) {
+          return false;
+        }
+
+        if (!invitation.expiresAt) {
+          return true;
+        }
+
+        return new Date(invitation.expiresAt).getTime() > Date.now();
+      })
+      .map((invitation) => ({
+        invitationId: invitation.id,
+        clubId: invitation.clubId,
+        email: invitation.email,
+        role: invitation.role,
+        status: "pendiente_aprobacion" as const,
+        createdAt: invitation.createdAt
+      }));
   },
   async listPendingInvitationsByEmail(email, client) {
     if (shouldUseSupabaseDatabase()) {

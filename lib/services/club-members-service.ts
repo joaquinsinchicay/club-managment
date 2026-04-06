@@ -1,4 +1,4 @@
-import type { ClubMember, MembershipRole } from "@/lib/domain/access";
+import type { ClubMember, MembershipRole, PendingClubInvitation } from "@/lib/domain/access";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
@@ -100,12 +100,22 @@ export async function getClubMembersForActiveClub() {
     return null;
   }
 
-  const members = await accessRepository.listClubMembers(activeClub.id);
+  const [members, pendingInvitations] = await Promise.all([
+    accessRepository.listClubMembers(activeClub.id),
+    accessRepository.listPendingInvitationsForClub(activeClub.id)
+  ]);
 
   return {
     context,
-    members: sortClubMembers(members)
+    members: sortClubMembers(members),
+    pendingInvitations: sortPendingInvitations(pendingInvitations)
   };
+}
+
+function sortPendingInvitations(invitations: PendingClubInvitation[]) {
+  return [...invitations].sort((left, right) =>
+    left.email.localeCompare(right.email, "es")
+  );
 }
 
 export async function approveClubMembership(
