@@ -30,6 +30,7 @@
   },
   "header": {
     "pending_club_label": "Sin club activo",
+    "welcome_message": "Bienvenido/a {name}, tu rol es {role}",
     "avatar_menu": {
       "club_settings": "Configuracion del club",
       "sign_out": "Cerrar sesion",
@@ -45,7 +46,17 @@
     "club_label": "Club activo",
     "user_label": "Usuario",
     "role_label": "Rol",
-    "role_pending": "pendiente"
+    "role_pending": "pendiente",
+    "feedback": {
+      "active_club_updated": "Actualizamos el club activo correctamente.",
+      "club_not_available": "No tienes acceso al club seleccionado.",
+      "forbidden": "No pudimos actualizar el club activo."
+    },
+    "club_selector": {
+      "label": "Cambiar club activo",
+      "helper": "Selecciona otro club para cambiar el contexto operativo.",
+      "loading": "Actualizando club activo..."
+    }
   },
   "settings": {
     "club": {

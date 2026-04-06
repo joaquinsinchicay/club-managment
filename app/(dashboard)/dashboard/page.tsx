@@ -1,9 +1,16 @@
 import { redirect } from "next/navigation";
 
+import { setActiveClubAction } from "@/app/(dashboard)/dashboard/actions";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  searchParams?: {
+    feedback?: string;
+  };
+};
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const context = await getAuthenticatedSessionContext();
 
   if (!context) {
@@ -14,5 +21,11 @@ export default async function DashboardPage() {
     redirect("/pending-approval");
   }
 
-  return <DashboardCard context={context} />;
+  return (
+    <DashboardCard
+      context={context}
+      feedbackCode={searchParams?.feedback}
+      setActiveClubAction={setActiveClubAction}
+    />
+  );
 }

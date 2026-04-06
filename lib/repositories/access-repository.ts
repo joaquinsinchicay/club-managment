@@ -44,6 +44,7 @@ type AccessRepository = {
 const now = () => new Date().toISOString();
 
 const CLUB_ID = "club-atletico-ejemplo";
+const CLUB_SUR_ID = "club-social-del-sur";
 const ACTIVE_USER_ID = "user-active-001";
 const SECOND_ADMIN_USER_ID = "user-admin-002";
 const PENDING_USER_ID = "user-pending-001";
@@ -128,6 +129,12 @@ function createStore(): MockStore {
       name: "Club Atletico Ejemplo",
       slug: "club-atletico-ejemplo",
       status: "active"
+    },
+    {
+      id: CLUB_SUR_ID,
+      name: "Club Social del Sur",
+      slug: "club-social-del-sur",
+      status: "active"
     }
   ];
 
@@ -149,10 +156,26 @@ function createStore(): MockStore {
       joinedAt: createdAt
     },
     {
+      id: "membership-active-002",
+      userId: ACTIVE_USER_ID,
+      clubId: CLUB_SUR_ID,
+      role: "tesoreria",
+      status: "activo",
+      joinedAt: createdAt
+    },
+    {
       id: "membership-secretaria-001",
       userId: SECRETARIA_USER_ID,
       clubId: CLUB_ID,
       role: "secretaria",
+      status: "activo",
+      joinedAt: createdAt
+    },
+    {
+      id: "membership-secretaria-002",
+      userId: SECRETARIA_USER_ID,
+      clubId: CLUB_SUR_ID,
+      role: "tesoreria",
       status: "activo",
       joinedAt: createdAt
     },

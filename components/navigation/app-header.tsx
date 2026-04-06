@@ -6,17 +6,35 @@ type AppHeaderProps = {
   context: SessionContext;
 };
 
+function replaceTemplate(template: string, values: Record<string, string>) {
+  return Object.entries(values).reduce(
+    (message, [key, value]) => message.replace(`{${key}}`, value),
+    template
+  );
+}
+
 export function AppHeader({ context }: AppHeaderProps) {
-  const roleLabel = context.activeMembership?.role ?? texts.dashboard.role_pending;
+  const roleLabel = context.activeMembership
+    ? texts.settings.club.members.roles[context.activeMembership.role]
+    : texts.dashboard.role_pending;
   const clubLabel = context.activeClub?.name ?? texts.header.pending_club_label;
+  const welcomeMessage = context.activeMembership
+    ? replaceTemplate(texts.header.welcome_message, {
+        name: context.user.fullName,
+        role: roleLabel
+      })
+    : null;
 
   return (
     <header className="sticky top-0 z-10 border-b border-border/70 bg-background/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">{clubLabel}</p>
-          <p className="truncate text-xs text-muted-foreground">{context.user.fullName}</p>
-          <p className="truncate text-xs capitalize text-muted-foreground">{roleLabel}</p>
+          {welcomeMessage ? (
+            <p className="truncate text-xs text-muted-foreground">{welcomeMessage}</p>
+          ) : (
+            <p className="truncate text-xs text-muted-foreground">{context.user.fullName}</p>
+          )}
         </div>
 
         <AvatarSessionMenu

@@ -17,6 +17,14 @@ export type Club = {
   status: "active";
 };
 
+export type AvailableClub = {
+  id: string;
+  name: string;
+  slug: string;
+  role: MembershipRole;
+  status: MembershipStatus;
+};
+
 export type Membership = {
   id: string;
   userId: string;

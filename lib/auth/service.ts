@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 import { appConfig } from "@/lib/config";
-import type { AuthIdentity, Club, GoogleProfileKey, Membership, User } from "@/lib/domain/access";
+import type {
+  AuthIdentity,
+  AvailableClub,
+  Club,
+  GoogleProfileKey,
+  Membership,
+  User
+} from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import {
   clearCurrentAuthUserId,
@@ -22,6 +29,7 @@ export type SessionContext = {
   activeMemberships: Membership[];
   activeMembership: Membership | null;
   activeClub: Club | null;
+  availableClubs: AvailableClub[];
 };
 
 type StartGoogleSignInInput = {
@@ -69,6 +77,28 @@ function buildAuthIdentityFromSupabaseUser(user: SupabaseUser): AuthIdentity {
     createdAt: user.created_at ?? new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
+}
+
+async function buildAvailableClubs(activeMemberships: Membership[], client?: AuthServiceClient) {
+  const clubs = await Promise.all(
+    activeMemberships.map(async (membership) => {
+      const club = await accessRepository.findClubById(membership.clubId, client);
+
+      if (!club) {
+        return null;
+      }
+
+      return {
+        id: club.id,
+        name: club.name,
+        slug: club.slug,
+        role: membership.role,
+        status: membership.status
+      } satisfies AvailableClub;
+    })
+  );
+
+  return clubs.filter((club): club is AvailableClub => Boolean(club));
 }
 
 async function resolveDestinationForUser(
@@ -160,13 +190,15 @@ export async function getSessionContext(
   const activeMembership =
     activeMemberships.find((membership) => membership.clubId === resolvedClubId) ?? null;
   const activeClub = resolvedClubId ? await accessRepository.findClubById(resolvedClubId) : null;
+  const availableClubs = await buildAvailableClubs(activeMemberships);
 
   return {
     user,
     memberships,
     activeMemberships,
     activeMembership,
-    activeClub
+    activeClub,
+    availableClubs
   };
 }
 
@@ -196,13 +228,15 @@ export async function getAuthenticatedSessionContext(): Promise<SessionContext |
   const activeMembership =
     activeMemberships.find((membership) => membership.clubId === resolvedClubId) ?? null;
   const activeClub = resolvedClubId ? await accessRepository.findClubById(resolvedClubId) : null;
+  const availableClubs = await buildAvailableClubs(activeMemberships);
 
   return {
     user,
     memberships,
     activeMemberships,
     activeMembership,
-    activeClub
+    activeClub,
+    availableClubs
   };
 }
 
