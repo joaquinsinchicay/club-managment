@@ -14,6 +14,8 @@ import {
 } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+type AuthServiceClient = ReturnType<typeof createServerSupabaseClient>;
+
 export type SessionContext = {
   user: User;
   memberships: Membership[];
@@ -69,8 +71,12 @@ function buildAuthIdentityFromSupabaseUser(user: SupabaseUser): AuthIdentity {
   };
 }
 
-async function resolveDestinationForUser(userId: string, currentActiveClubId?: string | null) {
-  const activeMemberships = await accessRepository.listActiveMembershipsForUser(userId);
+async function resolveDestinationForUser(
+  userId: string,
+  currentActiveClubId?: string | null,
+  client?: AuthServiceClient
+) {
+  const activeMemberships = await accessRepository.listActiveMembershipsForUser(userId, client);
 
   if (activeMemberships.length === 0) {
     return {
@@ -81,7 +87,7 @@ async function resolveDestinationForUser(userId: string, currentActiveClubId?: s
 
   const preferredClubId =
     currentActiveClubId ??
-    (await accessRepository.getLastActiveClubId(userId)) ??
+    (await accessRepository.getLastActiveClubId(userId, client)) ??
     activeMemberships[0]?.clubId ??
     null;
 
@@ -91,7 +97,7 @@ async function resolveDestinationForUser(userId: string, currentActiveClubId?: s
       : activeMemberships[0]?.clubId ?? null;
 
   if (resolvedClubId) {
-    await accessRepository.setLastActiveClubId(userId, resolvedClubId);
+    await accessRepository.setLastActiveClubId(userId, resolvedClubId, client);
   }
 
   return {
@@ -171,15 +177,33 @@ export async function getAuthenticatedSessionContext(): Promise<SessionContext |
     return null;
   }
 
-  try {
-    return await getSessionContext(
-      identity.id,
-      await getCurrentActiveClubId(),
-      mapAuthIdentityToUser(identity)
-    );
-  } catch {
-    return null;
-  }
+  const fallbackUser = mapAuthIdentityToUser(identity);
+  const persistedUser = identity.email
+    ? await accessRepository.findUserByEmail(identity.email)
+    : await accessRepository.findUserById(identity.id);
+  const user = persistedUser ?? fallbackUser;
+  const userId = persistedUser?.id ?? identity.id;
+  const memberships = await accessRepository.listMembershipsForUser(userId);
+  const activeMemberships = memberships.filter((membership) => membership.status === "activo");
+  const preferredClubId = await getCurrentActiveClubId();
+  const storedClubId = await accessRepository.getLastActiveClubId(userId);
+  const resolvedClubId =
+    preferredClubId && activeMemberships.some((membership) => membership.clubId === preferredClubId)
+      ? preferredClubId
+      : storedClubId && activeMemberships.some((membership) => membership.clubId === storedClubId)
+        ? storedClubId
+        : activeMemberships[0]?.clubId ?? null;
+  const activeMembership =
+    activeMemberships.find((membership) => membership.clubId === resolvedClubId) ?? null;
+  const activeClub = resolvedClubId ? await accessRepository.findClubById(resolvedClubId) : null;
+
+  return {
+    user,
+    memberships,
+    activeMemberships,
+    activeMembership,
+    activeClub
+  };
 }
 
 export async function resolveCurrentUserDestination(): Promise<string> {
@@ -253,9 +277,12 @@ export async function finishGoogleSignIn(requestUrl: string, code: string): Prom
   }
 
   const identity = buildAuthIdentityFromSupabaseUser(user);
-  await accessRepository.syncUserProfileFromAuthIdentity(identity);
-
-  const resolution = await resolveDestinationForUser(user.id, await getCurrentActiveClubId());
+  const syncedUser = await accessRepository.syncUserProfileFromAuthIdentity(identity, supabase);
+  const resolution = await resolveDestinationForUser(
+    syncedUser.id,
+    await getCurrentActiveClubId(),
+    supabase
+  );
   const response = NextResponse.redirect(new URL(resolution.destination, requestUrl));
 
   if (resolution.activeClubId) {

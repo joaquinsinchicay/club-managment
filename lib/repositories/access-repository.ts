@@ -3,18 +3,20 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 import type { AuthIdentity, Club, GoogleProfile, GoogleProfileKey, Membership, User } from "@/lib/domain/access";
 
+type AccessRepositoryClient = ReturnType<typeof createServerSupabaseClient>;
+
 type AccessRepository = {
   getGoogleProfile(profileKey: GoogleProfileKey): GoogleProfile;
-  findUserByEmail(email: string): Promise<User | null>;
+  findUserByEmail(email: string, client?: AccessRepositoryClient): Promise<User | null>;
   createUserFromGoogleProfile(profile: GoogleProfile): Promise<User>;
   updateUserFromGoogleProfile(userId: string, profile: GoogleProfile): Promise<User>;
-  findUserById(userId: string): Promise<User | null>;
-  listMembershipsForUser(userId: string): Promise<Membership[]>;
-  listActiveMembershipsForUser(userId: string): Promise<Membership[]>;
-  findClubById(clubId: string): Promise<Club | null>;
-  getLastActiveClubId(userId: string): Promise<string | null>;
-  setLastActiveClubId(userId: string, clubId: string): Promise<void>;
-  syncUserProfileFromAuthIdentity(identity: AuthIdentity): Promise<void>;
+  findUserById(userId: string, client?: AccessRepositoryClient): Promise<User | null>;
+  listMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
+  listActiveMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
+  findClubById(clubId: string, client?: AccessRepositoryClient): Promise<Club | null>;
+  getLastActiveClubId(userId: string, client?: AccessRepositoryClient): Promise<string | null>;
+  setLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient): Promise<void>;
+  syncUserProfileFromAuthIdentity(identity: AuthIdentity, client?: AccessRepositoryClient): Promise<User>;
 };
 
 const now = () => new Date().toISOString();
@@ -212,16 +214,16 @@ function shouldUseSupabaseDatabase() {
   return appConfig.authProviderMode !== "mock" && hasSupabaseBrowserConfig();
 }
 
-function createAccessSupabaseClient() {
+function createAccessSupabaseClient(client?: AccessRepositoryClient) {
   if (!shouldUseSupabaseDatabase()) {
     return null;
   }
 
-  return createServerSupabaseClient();
+  return client ?? createServerSupabaseClient();
 }
 
-async function findRealUserByEmail(email: string) {
-  const supabase = createAccessSupabaseClient();
+async function findRealUserByEmail(email: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -240,8 +242,8 @@ async function findRealUserByEmail(email: string) {
   return mapUserRow(data);
 }
 
-async function findRealUserById(userId: string) {
-  const supabase = createAccessSupabaseClient();
+async function findRealUserById(userId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -260,8 +262,8 @@ async function findRealUserById(userId: string) {
   return mapUserRow(data);
 }
 
-async function listRealMembershipsForUser(userId: string) {
-  const supabase = createAccessSupabaseClient();
+async function listRealMembershipsForUser(userId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return [];
@@ -279,8 +281,8 @@ async function listRealMembershipsForUser(userId: string) {
   return data.map(mapMembershipRow);
 }
 
-async function findRealClubById(clubId: string) {
-  const supabase = createAccessSupabaseClient();
+async function findRealClubById(clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -299,8 +301,8 @@ async function findRealClubById(clubId: string) {
   return mapClubRow(data);
 }
 
-async function getRealLastActiveClubId(userId: string) {
-  const supabase = createAccessSupabaseClient();
+async function getRealLastActiveClubId(userId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -319,8 +321,8 @@ async function getRealLastActiveClubId(userId: string) {
   return data.last_active_club_id ?? null;
 }
 
-async function setRealLastActiveClubId(userId: string, clubId: string) {
-  const supabase = createAccessSupabaseClient();
+async function setRealLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return;
@@ -337,34 +339,76 @@ async function setRealLastActiveClubId(userId: string, clubId: string) {
   );
 }
 
-async function syncRealUserProfileFromAuthIdentity(identity: AuthIdentity) {
-  const supabase = createAccessSupabaseClient();
+async function syncRealUserProfileFromAuthIdentity(identity: AuthIdentity, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
-    return;
+    return {
+      id: identity.id,
+      email: identity.email,
+      fullName: identity.fullName,
+      avatarUrl: identity.avatarUrl,
+      createdAt: identity.createdAt,
+      updatedAt: identity.updatedAt
+    };
   }
 
-  await supabase.from("users").upsert(
-    {
+  const existingUser = await findRealUserById(identity.id, supabase);
+
+  if (existingUser) {
+    const { data, error } = await supabase
+      .from("users")
+      .update({
+        email: identity.email,
+        full_name: identity.fullName,
+        avatar_url: identity.avatarUrl,
+        updated_at: identity.updatedAt
+      })
+      .eq("id", identity.id)
+      .select("id,email,full_name,avatar_url,created_at,updated_at")
+      .single();
+
+    if (error || !data) {
+      return existingUser;
+    }
+
+    return mapUserRow(data);
+  }
+
+  const { data, error } = await supabase
+    .from("users")
+    .insert({
       id: identity.id,
       email: identity.email,
       full_name: identity.fullName,
       avatar_url: identity.avatarUrl,
+      created_at: identity.createdAt,
       updated_at: identity.updatedAt
-    },
-    {
-      onConflict: "id"
-    }
-  );
+    })
+    .select("id,email,full_name,avatar_url,created_at,updated_at")
+    .single();
+
+  if (error || !data) {
+    return {
+      id: identity.id,
+      email: identity.email,
+      fullName: identity.fullName,
+      avatarUrl: identity.avatarUrl,
+      createdAt: identity.createdAt,
+      updatedAt: identity.updatedAt
+    };
+  }
+
+  return mapUserRow(data);
 }
 
 export const accessRepository: AccessRepository = {
   getGoogleProfile(profileKey) {
     return GOOGLE_PROFILES[profileKey];
   },
-  async findUserByEmail(email) {
+  async findUserByEmail(email, client) {
     if (shouldUseSupabaseDatabase()) {
-      return findRealUserByEmail(email);
+      return findRealUserByEmail(email, client);
     }
 
     const users = Array.from(getStore().users.values());
@@ -394,62 +438,64 @@ export const accessRepository: AccessRepository = {
     store.users.set(userId, nextUser);
     return nextUser;
   },
-  async findUserById(userId) {
+  async findUserById(userId, client) {
     if (shouldUseSupabaseDatabase()) {
-      return findRealUserById(userId);
+      return findRealUserById(userId, client);
     }
 
     return getStore().users.get(userId) ?? null;
   },
-  async listMembershipsForUser(userId) {
+  async listMembershipsForUser(userId, client) {
     if (shouldUseSupabaseDatabase()) {
-      return listRealMembershipsForUser(userId);
+      return listRealMembershipsForUser(userId, client);
     }
 
     return getStore().memberships.filter((membership) => membership.userId === userId);
   },
-  async listActiveMembershipsForUser(userId) {
+  async listActiveMembershipsForUser(userId, client) {
     const memberships = shouldUseSupabaseDatabase()
-      ? await listRealMembershipsForUser(userId)
+      ? await listRealMembershipsForUser(userId, client)
       : getStore().memberships.filter((membership) => membership.userId === userId);
 
     return memberships.filter((membership) => membership.status === "activo");
   },
-  async findClubById(clubId) {
+  async findClubById(clubId, client) {
     if (shouldUseSupabaseDatabase()) {
-      return findRealClubById(clubId);
+      return findRealClubById(clubId, client);
     }
 
     return getStore().clubs.find((club) => club.id === clubId) ?? null;
   },
-  async getLastActiveClubId(userId) {
+  async getLastActiveClubId(userId, client) {
     if (shouldUseSupabaseDatabase()) {
-      return getRealLastActiveClubId(userId);
+      return getRealLastActiveClubId(userId, client);
     }
 
     return getStore().preferences.get(userId) ?? null;
   },
-  async setLastActiveClubId(userId, clubId) {
+  async setLastActiveClubId(userId, clubId, client) {
     if (shouldUseSupabaseDatabase()) {
-      await setRealLastActiveClubId(userId, clubId);
+      await setRealLastActiveClubId(userId, clubId, client);
       return;
     }
 
     getStore().preferences.set(userId, clubId);
   },
-  async syncUserProfileFromAuthIdentity(identity) {
+  async syncUserProfileFromAuthIdentity(identity, client) {
     if (shouldUseSupabaseDatabase()) {
-      await syncRealUserProfileFromAuthIdentity(identity);
-      return;
+      return syncRealUserProfileFromAuthIdentity(identity, client);
     }
 
-    getStore().users.set(identity.id, {
+    const user = {
       id: identity.id,
       email: identity.email,
       fullName: identity.fullName,
       avatarUrl: identity.avatarUrl,
       createdAt: identity.createdAt,
       updatedAt: identity.updatedAt
-    });
+    };
+
+    getStore().users.set(identity.id, user);
+    return user;
   }
 };
