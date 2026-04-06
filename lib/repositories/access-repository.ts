@@ -595,7 +595,10 @@ async function getRealLastActiveClubId(userId: string, client?: AccessRepository
 }
 
 async function listRealClubMembers(clubId: string, client?: AccessRepositoryClient) {
-  const supabase = createAccessSupabaseClient(client);
+  // Membership management still relies on active-club authorization resolved in
+  // the service layer. Using the admin client here avoids dropping rows when the
+  // request has not set app.current_club_id for RLS-dependent reads.
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return [];
@@ -763,7 +766,7 @@ async function approveRealMembership(
   approvedByUserId: string,
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -796,7 +799,7 @@ async function updateRealMembershipRole(
   role: MembershipRole,
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -820,7 +823,7 @@ async function updateRealMembershipRole(
 }
 
 async function removeRealMembership(membershipId: string, client?: AccessRepositoryClient) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return false;
