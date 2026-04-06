@@ -40,6 +40,7 @@ La pantalla de configuración del club activo debe permitir:
 - Auto-remoción del club activo.
 - Diálogo explícito de confirmación para remoción.
 - Validación de regla “debe existir al menos un admin activo”.
+- Visualización consistente de memberships activas originadas por invitaciones ya consumidas.
 
 ### No incluye
 - Invitaciones a miembros.
@@ -73,6 +74,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 | Admin remueve miembro | La membership se elimina del club activo. |
 | Usuario se auto-remueve | Pierde acceso a ese club y el sistema resuelve un nuevo destino válido. |
 | Último admin intenta salir o ser degradado | La acción se bloquea sin cambios persistentes. |
+| Invitado ya autenticado | El admin ve al usuario invitado como miembro activo una vez consumida la invitación. |
 
 ---
 
@@ -85,6 +87,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 - Remover una membership elimina el acceso de ese usuario solo para ese club.
 - La remoción o cambio de rol no modifica memberships de otros clubes.
 - Las confirmaciones visuales no reemplazan validaciones de negocio server-side.
+- El listado administrativo debe resolver memberships activas del club aunque provengan de invitaciones consumidas en un login previo.
 
 ---
 
@@ -132,6 +135,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 - Cada miembro debe mostrar nombre, email, rol, estado y acción disponible.
 - La acción de remoción debe requerir confirmación explícita en diálogo.
 - Debe existir un tratamiento visual claro para el usuario actual.
+- Un usuario que ya consumió su invitación no debe desaparecer del listado administrativo del club.
 - Los mensajes de error o éxito deben ser breves, visibles y no ambiguos.
 - No debe haber textos hardcodeados.
 
@@ -183,6 +187,7 @@ Do not reference current code files.
 - Ninguna remoción o cambio de rol puede ejecutarse fuera del club activo.
 - La regla del último admin debe validarse server-side antes de mutar datos.
 - La autorización debe respetar RLS y no depender del frontend.
+- La lectura administrativa del listado debe ser consistente entre entornos y no depender exclusivamente de configuraciones opcionales del runtime.
 
 ---
 
@@ -215,6 +220,7 @@ Do not reference current code files.
 | Un miembro pendiente es removido | Se elimina la relación con el club sin dejar residuos operativos para ese club. |
 | El usuario actual se remueve y no tiene otros clubes activos | Debe quedar en pantalla de espera de aprobación. |
 | El usuario actual se remueve y sí tiene otros clubes activos | Debe resolverse otro club activo válido. |
+| Un invitado consume su invitación y luego un admin abre settings | El nuevo miembro debe aparecer en el listado del club con estado activo y rol asignado. |
 
 ---
 

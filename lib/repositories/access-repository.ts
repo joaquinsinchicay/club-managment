@@ -597,35 +597,67 @@ async function getRealLastActiveClubId(userId: string, client?: AccessRepository
 }
 
 async function listRealClubMembers(clubId: string, client?: AccessRepositoryClient) {
-  // Membership management still relies on active-club authorization resolved in
-  // the service layer. Using the admin client here avoids dropping rows when the
-  // request has not set app.current_club_id for RLS-dependent reads.
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+  const adminSupabase = createAdminSupabaseClient();
+
+  if (adminSupabase) {
+    const { data, error } = await adminSupabase
+      .from("memberships")
+      .select("id,user_id,club_id,role,status,joined_at")
+      .eq("club_id", clubId);
+
+    if (error || !data) {
+      return [];
+    }
+
+    const memberships = data.map(mapMembershipRow);
+    const users = await Promise.all(
+      memberships.map(async (membership) => ({
+        membership,
+        user: await findRealUserById(membership.userId, adminSupabase)
+      }))
+    );
+
+    return users
+      .filter((entry): entry is { membership: Membership; user: User } => Boolean(entry.user))
+      .map((entry) => mapClubMemberFromMembership(entry.membership, entry.user));
+  }
+
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return [];
   }
 
   const { data, error } = await supabase
-    .from("memberships")
-    .select("id,user_id,club_id,role,status,joined_at")
-    .eq("club_id", clubId);
+    .rpc("get_club_members_for_current_admin", {
+      p_club_id: clubId
+    });
 
   if (error || !data) {
     return [];
   }
 
-  const memberships = data.map(mapMembershipRow);
-  const users = await Promise.all(
-    memberships.map(async (membership) => ({
-      membership,
-      user: await findRealUserById(membership.userId, supabase)
-    }))
-  );
-
-  return users
-    .filter((entry): entry is { membership: Membership; user: User } => Boolean(entry.user))
-    .map((entry) => mapClubMemberFromMembership(entry.membership, entry.user));
+  return data.map((row: {
+    membership_id: string;
+    user_id: string;
+    club_id: string;
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+    role: MembershipRole;
+    status: Membership["status"];
+    joined_at: string | null;
+  }) => ({
+    membershipId: row.membership_id,
+    userId: row.user_id,
+    clubId: row.club_id,
+    fullName: row.full_name ?? row.email,
+    email: row.email,
+    avatarUrl: row.avatar_url,
+    role: row.role,
+    status: row.status,
+    joinedAt: row.joined_at ?? now()
+  }));
 }
 
 async function listRealPendingInvitationsByEmail(email: string, client?: AccessRepositoryClient) {
@@ -656,40 +688,68 @@ async function listRealPendingInvitationsByEmail(email: string, client?: AccessR
 }
 
 async function listRealPendingInvitationsForClub(clubId: string, client?: AccessRepositoryClient) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+  const adminSupabase = createAdminSupabaseClient();
+
+  if (adminSupabase) {
+    const { data, error } = await adminSupabase
+      .from("club_invitations")
+      .select("id,club_id,email,role,status,expires_at,used_at,created_at")
+      .eq("club_id", clubId)
+      .eq("status", "pending")
+      .is("used_at", null);
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data
+      .map(mapInvitationRow)
+      .filter((invitation) => {
+        if (!invitation.expiresAt) {
+          return true;
+        }
+
+        return new Date(invitation.expiresAt).getTime() > Date.now();
+      })
+      .map((invitation) => ({
+        invitationId: invitation.id,
+        clubId: invitation.clubId,
+        email: invitation.email,
+        role: invitation.role,
+        status: "pendiente_aprobacion" as const,
+        createdAt: invitation.createdAt
+      }));
+  }
+
+  const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
     return [];
   }
 
   const { data, error } = await supabase
-    .from("club_invitations")
-    .select("id,club_id,email,role,status,expires_at,used_at,created_at")
-    .eq("club_id", clubId)
-    .eq("status", "pending")
-    .is("used_at", null);
+    .rpc("get_pending_club_invitations_for_current_admin", {
+      p_club_id: clubId
+    });
 
   if (error || !data) {
     return [];
   }
 
-  return data
-    .map(mapInvitationRow)
-    .filter((invitation) => {
-      if (!invitation.expiresAt) {
-        return true;
-      }
-
-      return new Date(invitation.expiresAt).getTime() > Date.now();
-    })
-    .map((invitation) => ({
-      invitationId: invitation.id,
-      clubId: invitation.clubId,
-      email: invitation.email,
-      role: invitation.role,
-      status: "pendiente_aprobacion" as const,
-      createdAt: invitation.createdAt
-    }));
+  return data.map((row: {
+    invitation_id: string;
+    club_id: string;
+    email: string;
+    role: MembershipRole;
+    created_at: string | null;
+  }) => ({
+    invitationId: row.invitation_id,
+    clubId: row.club_id,
+    email: row.email,
+    role: row.role,
+    status: "pendiente_aprobacion" as const,
+    createdAt: row.created_at ?? now()
+  }));
 }
 
 async function setRealLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient) {

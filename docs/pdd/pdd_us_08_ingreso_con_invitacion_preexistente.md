@@ -21,7 +21,7 @@ Las invitaciones registradas por un admin todavía no tienen un mecanismo autom�
 
 ## 3. Objetivo funcional
 
-Durante el proceso de login exitoso, el sistema debe buscar invitaciones pendientes por email autenticado, crear memberships activas para los clubes correspondientes cuando todavía no existan, marcar esas invitaciones como usadas y luego resolver el destino post-login considerando esas nuevas memberships.
+Durante el proceso de login exitoso, el sistema debe buscar invitaciones pendientes por email autenticado, crear memberships activas para los clubes correspondientes cuando todavía no existan, marcar esas invitaciones como usadas y luego resolver el destino post-login considerando esas nuevas memberships. Una vez consumida la invitación, el usuario debe quedar visible como miembro activo del club para los administradores del mismo club.
 
 ---
 
@@ -33,6 +33,7 @@ Durante el proceso de login exitoso, el sistema debe buscar invitaciones pendien
 - Marcado de invitaciones como usadas.
 - Soporte para una o múltiples invitaciones.
 - Compatibilidad con usuarios nuevos y usuarios ya existentes.
+- Reflejo del nuevo miembro activo en la configuración del club para usuarios `admin`.
 
 ### No incluye
 - Reconciliación por emails distintos al autenticado.
@@ -63,6 +64,7 @@ Usuario que inicia sesión con Google.
 | Usuario existente con invitación | Se agrega la membership faltante al club invitante. |
 | Múltiples invitaciones válidas | Se crean memberships activas para cada club faltante y se define un club activo inicial válido. |
 | Invitación usada o sin coincidencia | No se vuelve a procesar ni se crean duplicados. |
+| Invitación consumida | La invitación deja de verse como pendiente y el usuario aparece como miembro activo del club. |
 
 ---
 
@@ -73,6 +75,7 @@ Usuario que inicia sesión con Google.
 - Si ya existe una membership para ese club, no se crea una segunda; la invitación debe quedar consumida o no re-procesable.
 - Cada invitación crea una membership independiente del resto de clubes del usuario.
 - El destino post-login debe recalcularse después de convertir invitaciones en memberships.
+- Luego de crear la membership, las lecturas administrativas del club deben poder resolver al nuevo miembro como parte del listado activo.
 
 ---
 
@@ -83,8 +86,9 @@ Usuario que inicia sesión con Google.
 3. El backend busca invitaciones pendientes por email autenticado.
 4. Por cada invitación válida, crea una membership activa si aún no existe.
 5. Marca la invitación como usada.
-6. Recalcula el club activo y el destino post-login.
-7. Redirige al usuario según el flujo general.
+6. La membership resultante queda disponible para las lecturas administrativas del club.
+7. Recalcula el club activo y el destino post-login.
+8. Redirige al usuario según el flujo general.
 
 ---
 
@@ -182,4 +186,3 @@ Do not reference current code files.
 | Crear memberships duplicadas al reprocesar invitaciones | Media | Alta | Verificar memberships existentes por club antes de insertar. |
 | Aplicar invitaciones a un email distinto | Baja | Alta | Usar solo el email autenticado por proveedor. |
 | Procesar parcialmente múltiples invitaciones | Media | Media | Iterar y marcar cada invitación usada luego de su tratamiento. |
-
