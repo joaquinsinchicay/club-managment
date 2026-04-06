@@ -54,7 +54,54 @@
       "description": "Gestiona la configuracion operativa del club activo.",
       "forbidden_title": "No tienes permisos para abrir esta configuracion",
       "forbidden_description": "Solo un usuario admin del club activo puede acceder a esta pagina.",
-      "back_to_dashboard_cta": "Volver al dashboard"
+      "back_to_dashboard_cta": "Volver al dashboard",
+      "members": {
+        "section_title": "Miembros del club",
+        "section_description": "Aprueba ingresos, actualiza roles y administra quienes pueden operar en el club activo.",
+        "empty_title": "No hay miembros para mostrar",
+        "empty_description": "Cuando existan membresias en este club, apareceran listadas aqui.",
+        "current_user_badge": "Tu usuario",
+        "pending_badge": "Pendiente de aprobacion",
+        "name_label": "Nombre",
+        "email_label": "Email",
+        "role_label": "Rol",
+        "status_label": "Estado",
+        "actions_label": "Acciones",
+        "joined_at_label": "Ingreso al club",
+        "approve_cta": "Aprobar acceso",
+        "update_role_cta": "Actualizar rol",
+        "remove_cta": "Remover miembro",
+        "leave_club_cta": "Salir del club",
+        "remove_dialog_title": "Confirmar remocion",
+        "remove_dialog_description": "Esta accion eliminara la membresia del club activo.",
+        "remove_dialog_member_label": "Miembro seleccionado",
+        "remove_dialog_confirm_cta": "Confirmar remocion",
+        "remove_dialog_cancel_cta": "Cancelar",
+        "role_placeholder": "Selecciona un rol",
+        "roles": {
+          "admin": "Admin",
+          "secretaria": "Secretaria",
+          "tesoreria": "Tesoreria"
+        },
+        "statuses": {
+          "pendiente_aprobacion": "Pendiente de aprobacion",
+          "activo": "Activo",
+          "inactivo": "Inactivo"
+        },
+        "feedback": {
+          "membership_approved": "La membresia fue aprobada y el rol quedo asignado.",
+          "membership_role_updated": "El rol del miembro se actualizo correctamente.",
+          "membership_removed": "La membresia fue removida del club activo.",
+          "self_removed": "Tu membresia fue removida del club activo.",
+          "forbidden": "No tienes permisos para realizar esta accion.",
+          "invalid_role": "Debes seleccionar un rol valido.",
+          "member_not_found": "No encontramos la membresia seleccionada en el club activo.",
+          "membership_not_pending": "Solo puedes aprobar membresias que sigan pendientes.",
+          "membership_not_active": "Solo puedes cambiar el rol de membresias activas.",
+          "last_admin_required": "Debe existir al menos un admin activo en el club.",
+          "unknown_error": "No pudimos completar la accion. Vuelve a intentarlo."
+        }
+      }
     }
   }
 }

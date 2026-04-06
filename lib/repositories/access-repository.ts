@@ -1,7 +1,16 @@
 import { appConfig } from "@/lib/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
-import type { AuthIdentity, Club, GoogleProfile, GoogleProfileKey, Membership, User } from "@/lib/domain/access";
+import type {
+  AuthIdentity,
+  Club,
+  ClubMember,
+  GoogleProfile,
+  GoogleProfileKey,
+  Membership,
+  MembershipRole,
+  User
+} from "@/lib/domain/access";
 
 type AccessRepositoryClient = ReturnType<typeof createServerSupabaseClient>;
 
@@ -14,8 +23,21 @@ type AccessRepository = {
   listMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   listActiveMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   findClubById(clubId: string, client?: AccessRepositoryClient): Promise<Club | null>;
+  listClubMembers(clubId: string, client?: AccessRepositoryClient): Promise<ClubMember[]>;
   getLastActiveClubId(userId: string, client?: AccessRepositoryClient): Promise<string | null>;
   setLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient): Promise<void>;
+  approveMembership(
+    membershipId: string,
+    role: MembershipRole,
+    approvedByUserId: string,
+    client?: AccessRepositoryClient
+  ): Promise<Membership | null>;
+  updateMembershipRole(
+    membershipId: string,
+    role: MembershipRole,
+    client?: AccessRepositoryClient
+  ): Promise<Membership | null>;
+  removeMembership(membershipId: string, client?: AccessRepositoryClient): Promise<boolean>;
   syncUserProfileFromAuthIdentity(identity: AuthIdentity, client?: AccessRepositoryClient): Promise<User>;
 };
 
@@ -23,8 +45,10 @@ const now = () => new Date().toISOString();
 
 const CLUB_ID = "club-atletico-ejemplo";
 const ACTIVE_USER_ID = "user-active-001";
+const SECOND_ADMIN_USER_ID = "user-admin-002";
 const PENDING_USER_ID = "user-pending-001";
 const SECRETARIA_USER_ID = "user-secretaria-001";
+const TESORERIA_USER_ID = "user-tesoreria-001";
 
 type MockStore = {
   users: Map<string, User>;
@@ -53,6 +77,17 @@ function createStore(): MockStore {
       }
     ],
     [
+      SECOND_ADMIN_USER_ID,
+      {
+        id: SECOND_ADMIN_USER_ID,
+        email: "second.admin@example.com",
+        fullName: "Alma Admin",
+        avatarUrl: null,
+        createdAt,
+        updatedAt: createdAt
+      }
+    ],
+    [
       PENDING_USER_ID,
       {
         id: PENDING_USER_ID,
@@ -69,6 +104,17 @@ function createStore(): MockStore {
         id: SECRETARIA_USER_ID,
         email: "secretaria.user@example.com",
         fullName: "Sofia Secretaria",
+        avatarUrl: null,
+        createdAt,
+        updatedAt: createdAt
+      }
+    ],
+    [
+      TESORERIA_USER_ID,
+      {
+        id: TESORERIA_USER_ID,
+        email: "tesoreria.user@example.com",
+        fullName: "Tomas Tesoreria",
         avatarUrl: null,
         createdAt,
         updatedAt: createdAt
@@ -95,11 +141,35 @@ function createStore(): MockStore {
       joinedAt: createdAt
     },
     {
+      id: "membership-admin-002",
+      userId: SECOND_ADMIN_USER_ID,
+      clubId: CLUB_ID,
+      role: "admin",
+      status: "activo",
+      joinedAt: createdAt
+    },
+    {
       id: "membership-secretaria-001",
       userId: SECRETARIA_USER_ID,
       clubId: CLUB_ID,
       role: "secretaria",
       status: "activo",
+      joinedAt: createdAt
+    },
+    {
+      id: "membership-tesoreria-001",
+      userId: TESORERIA_USER_ID,
+      clubId: CLUB_ID,
+      role: "tesoreria",
+      status: "activo",
+      joinedAt: createdAt
+    },
+    {
+      id: "membership-pending-001",
+      userId: PENDING_USER_ID,
+      clubId: CLUB_ID,
+      role: "secretaria",
+      status: "pendiente_aprobacion",
       joinedAt: createdAt
     }
   ];
@@ -207,6 +277,20 @@ function mapClubRow(row: {
     name: row.name,
     slug: row.slug,
     status: "active"
+  };
+}
+
+function mapClubMemberFromMembership(membership: Membership, user: User): ClubMember {
+  return {
+    membershipId: membership.id,
+    userId: membership.userId,
+    clubId: membership.clubId,
+    fullName: user.fullName,
+    email: user.email,
+    avatarUrl: user.avatarUrl,
+    role: membership.role,
+    status: membership.status,
+    joinedAt: membership.joinedAt
   };
 }
 
@@ -321,6 +405,35 @@ async function getRealLastActiveClubId(userId: string, client?: AccessRepository
   return data.last_active_club_id ?? null;
 }
 
+async function listRealClubMembers(clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("memberships")
+    .select("id,user_id,club_id,role,status,joined_at")
+    .eq("club_id", clubId);
+
+  if (error || !data) {
+    return [];
+  }
+
+  const memberships = data.map(mapMembershipRow);
+  const users = await Promise.all(
+    memberships.map(async (membership) => ({
+      membership,
+      user: await findRealUserById(membership.userId, supabase)
+    }))
+  );
+
+  return users
+    .filter((entry): entry is { membership: Membership; user: User } => Boolean(entry.user))
+    .map((entry) => mapClubMemberFromMembership(entry.membership, entry.user));
+}
+
 async function setRealLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient) {
   const supabase = createAccessSupabaseClient(client);
 
@@ -337,6 +450,79 @@ async function setRealLastActiveClubId(userId: string, clubId: string, client?: 
       onConflict: "user_id"
     }
   );
+}
+
+async function approveRealMembership(
+  membershipId: string,
+  role: MembershipRole,
+  approvedByUserId: string,
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const timestamp = now();
+  const { data, error } = await supabase
+    .from("memberships")
+    .update({
+      role,
+      status: "activo",
+      approved_at: timestamp,
+      approved_by_user_id: approvedByUserId,
+      joined_at: timestamp,
+      updated_at: timestamp
+    })
+    .eq("id", membershipId)
+    .select("id,user_id,club_id,role,status,joined_at")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapMembershipRow(data);
+}
+
+async function updateRealMembershipRole(
+  membershipId: string,
+  role: MembershipRole,
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("memberships")
+    .update({
+      role,
+      updated_at: now()
+    })
+    .eq("id", membershipId)
+    .select("id,user_id,club_id,role,status,joined_at")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapMembershipRow(data);
+}
+
+async function removeRealMembership(membershipId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return false;
+  }
+
+  const { error } = await supabase.from("memberships").delete().eq("id", membershipId);
+  return !error;
 }
 
 async function syncRealUserProfileFromAuthIdentity(identity: AuthIdentity, client?: AccessRepositoryClient) {
@@ -466,6 +652,26 @@ export const accessRepository: AccessRepository = {
 
     return getStore().clubs.find((club) => club.id === clubId) ?? null;
   },
+  async listClubMembers(clubId, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealClubMembers(clubId, client);
+    }
+
+    const store = getStore();
+
+    return store.memberships
+      .filter((membership) => membership.clubId === clubId)
+      .map((membership) => {
+        const user = store.users.get(membership.userId);
+
+        if (!user) {
+          return null;
+        }
+
+        return mapClubMemberFromMembership(membership, user);
+      })
+      .filter((member): member is ClubMember => Boolean(member));
+  },
   async getLastActiveClubId(userId, client) {
     if (shouldUseSupabaseDatabase()) {
       return getRealLastActiveClubId(userId, client);
@@ -480,6 +686,64 @@ export const accessRepository: AccessRepository = {
     }
 
     getStore().preferences.set(userId, clubId);
+  },
+  async approveMembership(membershipId, role, approvedByUserId, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return approveRealMembership(membershipId, role, approvedByUserId, client);
+    }
+
+    const store = getStore();
+    const membershipIndex = store.memberships.findIndex((membership) => membership.id === membershipId);
+
+    if (membershipIndex === -1) {
+      return null;
+    }
+
+    const timestamp = now();
+    const updatedMembership: Membership = {
+      ...store.memberships[membershipIndex],
+      role,
+      status: "activo",
+      joinedAt: timestamp
+    };
+
+    store.memberships[membershipIndex] = updatedMembership;
+    return updatedMembership;
+  },
+  async updateMembershipRole(membershipId, role, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return updateRealMembershipRole(membershipId, role, client);
+    }
+
+    const store = getStore();
+    const membershipIndex = store.memberships.findIndex((membership) => membership.id === membershipId);
+
+    if (membershipIndex === -1) {
+      return null;
+    }
+
+    const updatedMembership: Membership = {
+      ...store.memberships[membershipIndex],
+      role
+    };
+
+    store.memberships[membershipIndex] = updatedMembership;
+    return updatedMembership;
+  },
+  async removeMembership(membershipId, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return removeRealMembership(membershipId, client);
+    }
+
+    const store = getStore();
+    const membershipIndex = store.memberships.findIndex((membership) => membership.id === membershipId);
+
+    if (membershipIndex === -1) {
+      return false;
+    }
+
+    store.memberships.splice(membershipIndex, 1);
+    return true;
   },
   async syncUserProfileFromAuthIdentity(identity, client) {
     if (shouldUseSupabaseDatabase()) {

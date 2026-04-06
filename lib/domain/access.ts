@@ -26,6 +26,18 @@ export type Membership = {
   joinedAt: string;
 };
 
+export type ClubMember = {
+  membershipId: string;
+  userId: string;
+  clubId: string;
+  fullName: string;
+  email: string;
+  avatarUrl: string | null;
+  role: MembershipRole;
+  status: MembershipStatus;
+  joinedAt: string;
+};
+
 export type Session = {
   userId: string;
   activeClubId: string | null;

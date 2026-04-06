@@ -18,8 +18,22 @@ export async function getCurrentActiveClubId(): Promise<string | null> {
   return cookieStore.get(ACTIVE_CLUB_COOKIE_NAME)?.value ?? null;
 }
 
+export function storeCurrentActiveClubId(clubId: string) {
+  const cookieStore = cookies();
+  cookieStore.set(ACTIVE_CLUB_COOKIE_NAME, clubId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/"
+  });
+}
+
 export function setCurrentActiveClubId(response: NextResponse, clubId: string) {
   setSessionCookie(response, ACTIVE_CLUB_COOKIE_NAME, clubId);
+}
+
+export function clearStoredActiveClubId() {
+  const cookieStore = cookies();
+  cookieStore.delete(ACTIVE_CLUB_COOKIE_NAME);
 }
 
 export function clearCurrentActiveClubId(response: NextResponse) {
