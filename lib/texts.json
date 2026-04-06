@@ -41,13 +41,7 @@
     }
   },
   "dashboard": {
-    "eyebrow": "Dashboard",
-    "title": "Club activo listo",
-    "description": "La sesion se resolvio correctamente sobre un club valido.",
     "club_label": "Club activo",
-    "user_label": "Usuario",
-    "role_label": "Rol",
-    "roles_label": "Roles",
     "role_pending": "pendiente",
     "feedback": {
       "active_club_updated": "Actualizamos el club activo correctamente.",

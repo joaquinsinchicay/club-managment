@@ -198,7 +198,7 @@ Feature: US-04 — Selector de club activo en el dashboard
     And tengo acceso a más de un club
     When ingreso al dashboard
     Then veo el selector de club activo en el dashboard
-    And veo identificado el club activo actual
+    And veo identificado el club activo actual en el upper bar
 
   Scenario 03: Cambio de club activo desde el selector
     Given estoy autenticado
@@ -325,7 +325,8 @@ Feature: US-06 — Visualización del rol en el club activo en el header
     And tengo un club activo
     And tengo un rol asignado en ese club
     When estoy en cualquier pantalla del sistema
-    Then veo en el header el mensaje "Bienvenido/a <Nombre>, tu rol es <Rol>"
+    Then veo en el header el nombre del club activo
+    And veo en el header el mensaje "Bienvenido/a <Nombre>, tu rol es <Rol>"
     And el nombre corresponde a mi perfil de usuario
     And el rol corresponde a mi rol en el club activo
 

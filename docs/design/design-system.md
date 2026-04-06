@@ -291,6 +291,7 @@ Rules:
 
 Must show:
 
+* active club context in upper bar
 * session status
 * balances
 * primary actions

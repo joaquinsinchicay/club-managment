@@ -21,7 +21,7 @@ Cuando un usuario pertenece a más de un club, el sistema necesita exponer qué 
 
 ## 3. Objetivo funcional
 
-El dashboard debe mostrar un selector de club activo únicamente cuando el usuario tenga más de una membership activa. Al elegir otro club disponible, el backend debe validar acceso, persistir la preferencia y refrescar la interfaz para reflejar el nuevo contexto.
+El dashboard debe mostrar un selector de club activo únicamente cuando el usuario tenga más de una membership activa. El club activo vigente se identifica en el upper bar compartido de la aplicación. Al elegir otro club disponible, el backend debe validar acceso, persistir la preferencia y refrescar la interfaz para reflejar el nuevo contexto.
 
 ---
 
@@ -60,7 +60,7 @@ Usuario autenticado con una o más memberships activas.
 | Escenario | Resultado esperado |
 |---|---|
 | Usuario con un solo club | El dashboard no muestra selector. |
-| Usuario con múltiples clubes | El dashboard muestra selector y el club activo actual. |
+| Usuario con múltiples clubes | El dashboard muestra selector y el club activo actual se identifica en el upper bar. |
 | Usuario cambia club | El club activo se actualiza y el dashboard se recarga en el nuevo contexto. |
 | Usuario intenta elegir club no disponible | La operación se rechaza sin cambiar el contexto. |
 
@@ -111,6 +111,7 @@ Usuario autenticado con una o más memberships activas.
 ### Reglas
 - El selector debe vivir dentro del dashboard.
 - La opción actualmente activa debe quedar claramente indicada.
+- El contexto activo no debe duplicarse en una card adicional del dashboard si ya está visible en el upper bar.
 - El cambio debe sentirse inmediato y no ambiguo.
 - Si el usuario tiene un solo club, la UI no debe mostrar controles innecesarios.
 - No debe haber textos hardcodeados.
@@ -162,7 +163,7 @@ Do not reference current code files.
 
 - contracts: `Get current session context`, `Set active club`.
 - domain entities: `memberships`, `clubs`, `user_club_preferences`.
-- other US if relevant: US-05 para política de resolución inicial del club activo; US-06 para render del rol contextual en header.
+- other US if relevant: US-05 para política de resolución inicial del club activo; US-06 para render del contexto activo en header.
 
 ---
 
@@ -173,4 +174,3 @@ Do not reference current code files.
 | Persistir un club inválido y romper navegación | Media | Alta | Validar pertenencia activa antes de actualizar preferencia. |
 | Mostrar clubes no disponibles en selector | Media | Alta | Construir opciones solo desde memberships activas. |
 | Retraso visual al cambiar club sin feedback | Media | Media | Mostrar estado y feedback de cambio. |
-

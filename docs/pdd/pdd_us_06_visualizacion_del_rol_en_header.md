@@ -21,13 +21,14 @@ En un sistema multi-club, el usuario necesita confirmar rápidamente quién es d
 
 ## 3. Objetivo funcional
 
-El header de pantallas autenticadas debe mostrar un mensaje de bienvenida con el nombre del usuario y el rol correspondiente al club activo. Si cambia el club activo, el texto debe actualizarse para reflejar el nuevo rol.
+El header de pantallas autenticadas debe mostrar el nombre del club activo y un mensaje de bienvenida con el nombre del usuario y el rol correspondiente a ese contexto. Si cambia el club activo, el texto debe actualizarse para reflejar el nuevo club y el nuevo rol.
 
 ---
 
 ## 4. Alcance
 
 ### Incluye
+- Render del nombre del club activo en header.
 - Render del nombre del usuario en header.
 - Render del rol del usuario en el club activo.
 - Actualización automática del mensaje cuando cambia el club activo.
@@ -56,8 +57,8 @@ Usuario autenticado con club activo resuelto.
 
 | Escenario | Resultado esperado |
 |---|---|
-| Usuario con club y rol activo | Ve mensaje con nombre y rol en header. |
-| Usuario cambia de club | El header actualiza el rol mostrado. |
+| Usuario con club y rol activo | Ve nombre de club y mensaje con nombre y rol en header. |
+| Usuario cambia de club | El header actualiza el club y el rol mostrados. |
 | Usuario sin rol activo en el club | No se muestra mensaje de rol operativo. |
 | Usuario no autenticado | No se renderiza header privado. |
 
@@ -67,6 +68,7 @@ Usuario autenticado con club activo resuelto.
 
 - El rol visible debe provenir de la membership activa del club activo.
 - El rol mostrado es contextual al club, no global.
+- El nombre del club visible debe provenir del club activo resuelto server-side.
 - El texto del header debe cambiar cuando cambia el club activo.
 - Si no existe membership activa válida, no debe mostrarse un mensaje que induzca permisos inexistentes.
 
@@ -103,6 +105,7 @@ Usuario autenticado con club activo resuelto.
 
 ### Reglas
 - El mensaje debe ser compacto y persistente dentro del header.
+- El nombre del club activo es la referencia principal del contexto y no debe duplicarse en una card introductoria del dashboard.
 - Debe ser legible en mobile.
 - No debe mostrar información contradictoria con los permisos efectivos.
 - No debe haber textos hardcodeados.
@@ -122,9 +125,9 @@ Usuario autenticado con club activo resuelto.
 
 | Tipo | Key | Contexto |
 |---|---|---|
+| fallback | `header.pending_club_label` | Label cuando todavía no hay club activo. |
 | body | `header.welcome_message_single` | Mensaje del header cuando la membership tiene un solo rol. |
 | body | `header.welcome_message_multiple` | Mensaje del header cuando la membership combina múltiples roles. |
-| fallback | `header.pending_club_label` | Label cuando todavía no hay club activo. |
 | label | `settings.club.members.roles.admin` | Label legible para rol admin. |
 | label | `settings.club.members.roles.secretaria` | Label legible para rol secretaria. |
 | label | `settings.club.members.roles.tesoreria` | Label legible para rol tesoreria. |

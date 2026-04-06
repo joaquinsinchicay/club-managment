@@ -4,7 +4,9 @@ import { setActiveClubAction } from "@/app/(dashboard)/dashboard/actions";
 import {
   createTreasuryMovementAction,
 } from "@/app/(dashboard)/dashboard/treasury-actions";
-import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { ActiveClubSelector } from "@/components/dashboard/active-club-selector";
+import { TreasuryCard } from "@/components/dashboard/treasury-card";
+import { AppHeader } from "@/components/navigation/app-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { hasMembershipRole } from "@/lib/domain/membership-roles";
 import { getDashboardTreasuryCardForActiveClub } from "@/lib/services/treasury-service";
@@ -40,13 +42,29 @@ export default async function DashboardPage() {
       : [];
 
   return (
-    <DashboardCard
-      context={context}
-      setActiveClubAction={setActiveClubAction}
-      treasuryCard={treasuryCard}
-      treasuryAccounts={treasuryAccounts}
-      treasuryCategories={treasuryCategories}
-      createTreasuryMovementAction={createTreasuryMovementAction}
-    />
+    <div className="min-h-screen">
+      <AppHeader context={context} />
+
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
+        {context.availableClubs.length > 1 ? (
+          <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
+            <ActiveClubSelector
+              clubs={context.availableClubs}
+              activeClubId={context.activeClub?.id ?? context.availableClubs[0]?.id ?? ""}
+              setActiveClubAction={setActiveClubAction}
+            />
+          </section>
+        ) : null}
+
+        {treasuryCard ? (
+          <TreasuryCard
+            treasuryCard={treasuryCard}
+            accounts={treasuryAccounts}
+            categories={treasuryCategories}
+            createTreasuryMovementAction={createTreasuryMovementAction}
+          />
+        ) : null}
+      </main>
+    </div>
   );
 }
