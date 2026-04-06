@@ -41,6 +41,7 @@ La pantalla de configuración del club activo debe permitir:
 - Diálogo explícito de confirmación para remoción.
 - Validación de regla “debe existir al menos un admin activo”.
 - Visualización consistente de memberships activas originadas por invitaciones ya consumidas.
+- Acción visible para volver al dashboard desde la configuración del club.
 
 ### No incluye
 - Invitaciones a miembros.
@@ -75,6 +76,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 | Usuario se auto-remueve | Pierde acceso a ese club y el sistema resuelve un nuevo destino válido. |
 | Último admin intenta salir o ser degradado | La acción se bloquea sin cambios persistentes. |
 | Invitado ya autenticado | El admin ve al usuario invitado como miembro activo una vez consumida la invitación. |
+| Admin quiere salir de settings | Puede volver al dashboard sin usar navegación externa del navegador. |
 
 ---
 
@@ -136,6 +138,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 - La acción de remoción debe requerir confirmación explícita en diálogo.
 - Debe existir un tratamiento visual claro para el usuario actual.
 - Un usuario que ya consumió su invitación no debe desaparecer del listado administrativo del club.
+- Debe existir una acción explícita para volver al dashboard desde la pantalla de configuración.
 - Los mensajes de error o éxito deben ser breves, visibles y no ambiguos.
 - No debe haber textos hardcodeados.
 
@@ -154,6 +157,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 
 | Tipo | Key | Contexto |
 |---|---|---|
+| action | `settings.club.back_to_dashboard_cta` | Volver al dashboard desde settings del club. |
 | badge | `settings.club.members.current_user_badge` | Identifica al usuario actual en la lista. |
 | badge | `settings.club.members.pending_badge` | Indica membresía pendiente. |
 | action | `settings.club.members.remove_cta` | Remover miembro administrado por admin. |

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { ClubInvitationManager } from "@/components/settings/club-invitation-manager";
 import { ClubMembersManager } from "@/components/settings/club-members-manager";
 import { StatusMessage } from "@/components/ui/status-message";
@@ -69,6 +71,13 @@ export function ClubSettingsCard({
         className="max-w-4xl"
       >
         <div className="space-y-5">
+          <Link
+            href="/dashboard"
+            className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+          >
+            {texts.settings.club.back_to_dashboard_cta}
+          </Link>
+
           <div className="rounded-2xl border border-border bg-secondary/70 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {texts.dashboard.club_label}
