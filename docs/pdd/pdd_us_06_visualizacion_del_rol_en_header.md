@@ -122,7 +122,8 @@ Usuario autenticado con club activo resuelto.
 
 | Tipo | Key | Contexto |
 |---|---|---|
-| body | `header.welcome_message` | Mensaje del header con placeholders `{name}` y `{role}`. |
+| body | `header.welcome_message_single` | Mensaje del header cuando la membership tiene un solo rol. |
+| body | `header.welcome_message_multiple` | Mensaje del header cuando la membership combina múltiples roles. |
 | fallback | `header.pending_club_label` | Label cuando todavía no hay club activo. |
 | label | `settings.club.members.roles.admin` | Label legible para rol admin. |
 | label | `settings.club.members.roles.secretaria` | Label legible para rol secretaria. |
@@ -164,4 +165,3 @@ Do not reference current code files.
 | Mostrar rol incorrecto tras un cambio de club | Media | Alta | Rehidratar contexto desde backend después de cambiar el club activo. |
 | Usar etiquetas de rol inconsistentes | Media | Media | Reutilizar labels centralizados de roles desde `lib/texts.json`. |
 | Mostrar mensaje de rol sin membership válida | Baja | Media | Omitir el mensaje cuando no exista membership activa resuelta. |
-

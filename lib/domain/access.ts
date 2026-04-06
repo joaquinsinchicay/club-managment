@@ -21,7 +21,7 @@ export type AvailableClub = {
   id: string;
   name: string;
   slug: string;
-  role: MembershipRole;
+  roles: MembershipRole[];
   status: MembershipStatus;
 };
 
@@ -29,7 +29,7 @@ export type Membership = {
   id: string;
   userId: string;
   clubId: string;
-  role: MembershipRole;
+  roles: MembershipRole[];
   status: MembershipStatus;
   joinedAt: string;
 };
@@ -41,7 +41,7 @@ export type ClubMember = {
   fullName: string;
   email: string;
   avatarUrl: string | null;
-  role: MembershipRole;
+  roles: MembershipRole[];
   status: MembershipStatus;
   joinedAt: string;
 };

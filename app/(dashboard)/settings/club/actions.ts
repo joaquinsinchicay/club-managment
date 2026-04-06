@@ -26,8 +26,11 @@ export async function approveClubMembershipAction(formData: FormData) {
 
 export async function updateClubMembershipRoleAction(formData: FormData) {
   const membershipId = String(formData.get("membership_id") ?? "");
-  const role = String(formData.get("role") ?? "");
-  const result = await updateClubMembershipRole(membershipId, role);
+  const roles = formData
+    .getAll("roles")
+    .map((value) => String(value))
+    .filter(Boolean);
+  const result = await updateClubMembershipRole(membershipId, roles);
 
   redirectToSettings(result.code);
 }

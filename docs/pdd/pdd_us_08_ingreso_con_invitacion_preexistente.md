@@ -21,7 +21,7 @@ Las invitaciones registradas por un admin todavía no tienen un mecanismo autom�
 
 ## 3. Objetivo funcional
 
-Durante el proceso de login exitoso, el sistema debe buscar invitaciones pendientes por email autenticado, crear memberships activas para los clubes correspondientes cuando todavía no existan, marcar esas invitaciones como usadas y luego resolver el destino post-login considerando esas nuevas memberships. Una vez consumida la invitación, el usuario debe quedar visible como miembro activo del club para los administradores del mismo club.
+Durante el proceso de login exitoso, el sistema debe buscar invitaciones pendientes por email autenticado, crear memberships activas para los clubes correspondientes cuando todavía no existan, asignar el rol inicial definido por la invitación, marcar esas invitaciones como usadas y luego resolver el destino post-login considerando esas nuevas memberships. Una vez consumida la invitación, el usuario debe quedar visible como miembro activo del club para los administradores del mismo club.
 
 ---
 
@@ -74,6 +74,7 @@ Usuario que inicia sesión con Google.
 - Solo se procesan invitaciones pendientes y no usadas.
 - Si ya existe una membership para ese club, no se crea una segunda; la invitación debe quedar consumida o no re-procesable.
 - Cada invitación crea una membership independiente del resto de clubes del usuario.
+- La membership resultante nace con un único rol inicial; roles adicionales pueden agregarse luego desde settings del club.
 - El destino post-login debe recalcularse después de convertir invitaciones en memberships.
 - Luego de crear la membership, las lecturas administrativas del club deben poder resolver al nuevo miembro como parte del listado activo.
 

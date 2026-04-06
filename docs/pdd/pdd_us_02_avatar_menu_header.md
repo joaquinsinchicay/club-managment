@@ -60,7 +60,7 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 
 - Existe una sesión autenticada válida resuelta por Supabase Auth.
 - El header global está disponible en las pantallas autenticadas de la aplicación.
-- El backend puede resolver `auth_user_id`, `active_club_id`, `membership.role` y `membership.status`.
+- El backend puede resolver `auth_user_id`, `active_club_id`, `membership.roles` y `membership.status`.
 - Existe una ruta o pantalla de configuración del club protegida por permisos.
 - El frontend recibe o consulta el contexto de sesión actual mediante un contrato consistente con `Get current session context`.
 
@@ -201,7 +201,7 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 
 - Todas las pantallas que renderizan el avatar y su menú requieren sesión autenticada válida.
 - La visibilidad de `Configuración del club` debe derivarse del contexto autenticado y del rol de membership activa en backend o server-side data, no de estado local sin validar.
-- La ruta/página de configuración del club debe aplicar autorización server-side y permitir acceso solo si `membership.role = admin` y `membership.status = activo` para el `active_club_id`.
+- La ruta/página de configuración del club debe aplicar autorización server-side y permitir acceso solo si `membership.roles` incluye `admin` y `membership.status = activo` para el `active_club_id`.
 - Un usuario no admin no debe poder forzar acceso a configuración manipulando el frontend o escribiendo la URL manualmente.
 - El logout debe cerrar la sesión Supabase y eliminar el contexto autenticado usado por la UI.
 - Toda lectura de memberships, clubs y datos de configuración debe respetar `app.current_club_id` y RLS.
@@ -224,7 +224,7 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
 | Mostrar configuración a no admins por validar solo en UI | Media | Alta | Condicionar UI con contexto server-side y reforzar guard de ruta backend. |
-| Permitir acceso directo a settings por URL sin rol admin | Media | Alta | Validar `membership.role`, `membership.status` y `active_club_id` en servidor antes de renderizar la página. |
+| Permitir acceso directo a settings por URL sin rol admin | Media | Alta | Validar `membership.roles`, `membership.status` y `active_club_id` en servidor antes de renderizar la página. |
 | Avatar roto o vacío cuando no existe `avatar_url` ni nombre completo | Media | Baja | Implementar fallback determinístico a iniciales desde nombre y, si falta, desde email. |
 | Logout sin confirmación puede causar cierre accidental | Media | Media | Exigir diálogo de confirmación antes de ejecutar sign out. |
 | Menú queda abierto o ejecuta acciones al cerrarse por ESC/outside click | Baja | Media | Separar explícitamente eventos de cierre y eventos de selección de acción. |

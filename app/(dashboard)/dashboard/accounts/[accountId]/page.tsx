@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import { hasMembershipRole } from "@/lib/domain/membership-roles";
 import { getTreasuryAccountDetailForActiveClub } from "@/lib/services/treasury-service";
 import { AccountDetailCard } from "@/components/dashboard/account-detail-card";
 
@@ -21,7 +22,7 @@ export default async function AccountDetailPage({ params }: AccountDetailPagePro
     redirect("/pending-approval");
   }
 
-  if (context.activeMembership.role !== "secretaria") {
+  if (!hasMembershipRole(context.activeMembership, "secretaria")) {
     redirect("/dashboard");
   }
 

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import { formatMembershipRoles, MEMBERSHIP_ROLES } from "@/lib/domain/membership-roles";
 import { texts } from "@/lib/texts";
 import type {
   ClubMember,
@@ -19,8 +20,6 @@ type ClubMembersManagerProps = {
   updateMembershipRoleAction: (formData: FormData) => Promise<void>;
   removeMembershipAction: (formData: FormData) => Promise<void>;
 };
-
-const membershipRoles: MembershipRole[] = ["admin", "secretaria", "tesoreria"];
 
 function getInitials(fullName: string, email: string) {
   const nameParts = fullName
@@ -162,9 +161,9 @@ export function ClubMembersManager({
                     </div>
                     <div className="rounded-2xl border border-border/70 bg-card px-3 py-2">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                        {texts.settings.club.members.role_label}
+                        {texts.settings.club.members.roles_label}
                       </p>
-                      <p className="mt-1 font-medium text-foreground">{getRoleLabel(member.role)}</p>
+                      <p className="mt-1 font-medium text-foreground">{formatMembershipRoles(member.roles)}</p>
                     </div>
                   </div>
                 </div>
@@ -177,31 +176,48 @@ export function ClubMembersManager({
                       ? approveMembershipAction
                       : updateMembershipRoleAction
                   }
-                  className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
+                  className="grid gap-3"
                 >
                   <input type="hidden" name="membership_id" value={member.membershipId} />
-                  <label className="grid gap-2 text-sm text-foreground">
-                    <span className="font-medium">{texts.settings.club.members.role_label}</span>
-                    <select
-                      name="role"
-                      defaultValue={member.role}
-                      className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                    >
-                      {membershipRoles.map((role) => (
-                        <option key={role} value={role}>
-                          {getRoleLabel(role)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <fieldset className="grid gap-3 rounded-2xl border border-border/70 bg-card px-4 py-4">
+                    <legend className="px-1 text-sm font-medium text-foreground">
+                      {texts.settings.club.members.roles_label}
+                    </legend>
+
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      {MEMBERSHIP_ROLES.map((role) => {
+                        const inputId = `${member.membershipId}-${role}`;
+
+                        return (
+                          <label
+                            key={role}
+                            htmlFor={inputId}
+                            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground transition hover:bg-secondary"
+                          >
+                            <input
+                              id={inputId}
+                              type={member.status === "pendiente_aprobacion" ? "radio" : "checkbox"}
+                              name={member.status === "pendiente_aprobacion" ? "role" : "roles"}
+                              value={role}
+                              defaultChecked={member.status === "pendiente_aprobacion"
+                                ? member.roles[0] === role
+                                : member.roles.includes(role)}
+                              className="h-4 w-4 border-border text-foreground focus:ring-foreground"
+                            />
+                            <span className="font-medium">{getRoleLabel(role)}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
 
                   <button
                     type="submit"
-                    className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                    className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
                   >
                     {member.status === "pendiente_aprobacion"
                       ? texts.settings.club.members.approve_cta
-                      : texts.settings.club.members.update_role_cta}
+                      : texts.settings.club.members.update_roles_cta}
                   </button>
                 </form>
 

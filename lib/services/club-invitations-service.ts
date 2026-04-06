@@ -1,8 +1,8 @@
 import type { MembershipRole } from "@/lib/domain/access";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import { hasMembershipRole, isMembershipRole } from "@/lib/domain/membership-roles";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
-const MEMBERSHIP_ROLES: MembershipRole[] = ["admin", "secretaria", "tesoreria"];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type ClubInvitationActionCode =
@@ -21,10 +21,6 @@ export type ClubInvitationActionResult = {
   code: ClubInvitationActionCode;
 };
 
-function isMembershipRole(role: string): role is MembershipRole {
-  return MEMBERSHIP_ROLES.includes(role as MembershipRole);
-}
-
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
@@ -36,7 +32,7 @@ async function getAdminSession() {
     return null;
   }
 
-  if (context.activeMembership.role !== "admin" || context.activeMembership.status !== "activo") {
+  if (!hasMembershipRole(context.activeMembership, "admin") || context.activeMembership.status !== "activo") {
     return null;
   }
 

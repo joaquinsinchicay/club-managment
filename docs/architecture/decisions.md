@@ -86,7 +86,7 @@ Los permisos no dependen del usuario global sino de la membership en el club act
 
 ## 4.3 Decisión cerrada
 
-Cada membership tiene exactamente un rol.
+Cada membership tiene uno o más roles.
 
 Roles válidos:
 
@@ -104,7 +104,7 @@ Toda referencia funcional del tipo:
 
 debe interpretarse como:
 
-> usuario cuya membership activa en el club activo tiene ese rol
+> usuario cuya membership activa en el club activo incluye ese rol
 
 ---
 

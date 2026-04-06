@@ -51,7 +51,7 @@ Toda operación autenticada debe resolver:
 
 * `auth_user_id`
 * `active_club_id`
-* `membership.role`
+* `membership.roles`
 * `membership.status`
 
 Si no existe contexto válido:
@@ -95,7 +95,7 @@ Cualquier usuario autenticado
     {
       "club_id": "uuid",
       "club_name": "Club Atlético Ejemplo",
-      "role": "admin",
+      "roles": ["admin", "tesoreria"],
       "status": "activo"
     }
   ]
@@ -166,7 +166,7 @@ Sí
       "full_name": "Nombre",
       "email": "mail@example.com",
       "avatar_url": "https://...",
-      "role": "secretaria",
+      "roles": ["secretaria"],
       "status": "activo"
     }
   ]
@@ -255,10 +255,10 @@ Sí
 
 ---
 
-### 4.6 Update membership role
+### 4.6 Update membership roles
 
 **Purpose**
-Modificar rol de un miembro activo del club.
+Modificar roles de un miembro activo del club.
 
 **Auth required**
 Sí
@@ -271,7 +271,7 @@ Sí
 ```json
 {
   "membership_id": "uuid",
-  "role": "admin"
+  "roles": ["admin", "tesoreria"]
 }
 ```
 
@@ -279,13 +279,14 @@ Sí
 
 * la membership debe pertenecer al club activo
 * debe preservarse al menos un admin activo en el club
+* debe enviarse al menos un rol válido
 
 **Output**
 
 ```json
 {
   "membership_id": "uuid",
-  "role": "admin",
+  "roles": ["admin", "tesoreria"],
   "status": "activo"
 }
 ```

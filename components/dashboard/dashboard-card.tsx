@@ -3,6 +3,7 @@ import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { AppHeader } from "@/components/navigation/app-header";
 import { CardShell } from "@/components/ui/card-shell";
 import { StatusMessage } from "@/components/ui/status-message";
+import { formatMembershipRoles } from "@/lib/domain/membership-roles";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { DashboardTreasuryCard as DashboardTreasuryCardData, TreasuryAccount, TreasuryCategory } from "@/lib/domain/access";
@@ -86,11 +87,13 @@ export function DashboardCard({
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em]">
-                  {texts.dashboard.role_label}
+                  {context.activeMembership?.roles.length && context.activeMembership.roles.length > 1
+                    ? texts.dashboard.roles_label
+                    : texts.dashboard.role_label}
                 </p>
                 <p className="mt-1 text-base font-semibold text-foreground">
                   {context.activeMembership
-                    ? texts.settings.club.members.roles[context.activeMembership.role]
+                    ? formatMembershipRoles(context.activeMembership.roles)
                     : texts.dashboard.role_pending}
                 </p>
               </div>

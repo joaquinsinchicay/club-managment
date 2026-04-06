@@ -5,6 +5,7 @@
 alter table users enable row level security;
 alter table clubs enable row level security;
 alter table memberships enable row level security;
+alter table membership_roles enable row level security;
 alter table club_invitations enable row level security;
 alter table user_club_preferences enable row level security;
 alter table treasury_accounts enable row level security;
@@ -15,7 +16,6 @@ alter table daily_cash_sessions enable row level security;
 -- HELPER FUNCTIONS
 -- =========================================
 
--- Devuelve el user_id desde Supabase Auth.
 create or replace function current_user_id()
 returns uuid
 language sql
@@ -24,7 +24,6 @@ as $$
   select auth.uid();
 $$;
 
--- Devuelve el email autenticado desde el JWT de Supabase Auth.
 create or replace function current_user_email()
 returns text
 language sql
@@ -33,7 +32,6 @@ as $$
   select auth.jwt() ->> 'email';
 $$;
 
--- Devuelve el club activo seteado por backend en la request.
 create or replace function current_club_id()
 returns uuid
 language sql
@@ -42,25 +40,37 @@ as $$
   select nullif(current_setting('app.current_club_id', true), '')::uuid;
 $$;
 
--- Devuelve el rol activo del usuario autenticado en el club activo.
--- SECURITY DEFINER evita recursión de policies sobre memberships al evaluar helpers de autorización.
-create or replace function current_user_role()
-returns text
+create or replace function current_user_roles()
+returns text[]
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select role::text
-  from memberships
-  where user_id = auth.uid()
-    and club_id = current_club_id()
-    and status = 'activo'
-  limit 1;
+  select coalesce(
+    array(
+      select mr.role::text
+      from membership_roles mr
+      join memberships m on m.id = mr.membership_id
+      where m.user_id = auth.uid()
+        and m.club_id = current_club_id()
+        and m.status = 'activo'
+      order by array_position(array['admin', 'secretaria', 'tesoreria']::text[], mr.role::text)
+    ),
+    array[]::text[]
+  );
 $$;
 
--- Verifica si el usuario autenticado tiene membership activa en el club activo.
--- SECURITY DEFINER evita recursión de policies sobre memberships al evaluar helpers de autorización.
+create or replace function current_user_has_role(required_role text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select required_role = any(current_user_roles());
+$$;
+
 create or replace function is_member_of_current_club()
 returns boolean
 language sql
@@ -89,13 +99,15 @@ drop policy if exists "Users can update themselves" on users;
 create policy "Users can see themselves"
 on users
 for select
+to authenticated
 using (id = current_user_id());
 
 create policy "Admins can see users of current club"
 on users
 for select
+to authenticated
 using (
-  current_user_role() = 'admin'
+  (select current_user_has_role('admin'))
   and exists (
     select 1
     from memberships
@@ -107,6 +119,7 @@ using (
 create policy "Users can insert themselves"
 on users
 for insert
+to authenticated
 with check (
   id = current_user_id()
   and email = current_user_email()
@@ -115,6 +128,7 @@ with check (
 create policy "Users can update themselves"
 on users
 for update
+to authenticated
 using (id = current_user_id())
 with check (
   id = current_user_id()
@@ -130,6 +144,7 @@ drop policy if exists "User can see their clubs" on clubs;
 create policy "User can see their clubs"
 on clubs
 for select
+to authenticated
 using (
   exists (
     select 1
@@ -144,26 +159,116 @@ using (
 -- MEMBERSHIPS
 -- =========================================
 
-drop policy if exists "Users see memberships of their clubs" on memberships;
 drop policy if exists "Users can see own memberships" on memberships;
-drop policy if exists "Admins manage memberships" on memberships;
 drop policy if exists "Admins manage memberships in current club" on memberships;
+drop policy if exists "Users can remove own memberships" on memberships;
+drop policy if exists "Users can create own memberships from invitations" on memberships;
 
 create policy "Users can see own memberships"
 on memberships
 for select
+to authenticated
 using (user_id = current_user_id());
+
+create policy "Users can create own memberships from invitations"
+on memberships
+for insert
+to authenticated
+with check (
+  user_id = current_user_id()
+  and exists (
+    select 1
+    from club_invitations
+    where club_invitations.club_id = memberships.club_id
+      and club_invitations.email = current_user_email()
+      and club_invitations.status = 'pending'
+      and club_invitations.used_at is null
+  )
+);
 
 create policy "Admins manage memberships in current club"
 on memberships
 for all
+to authenticated
 using (
   club_id = current_club_id()
-  and current_user_role() = 'admin'
+  and (select current_user_has_role('admin'))
 )
 with check (
   club_id = current_club_id()
-  and current_user_role() = 'admin'
+  and (select current_user_has_role('admin'))
+);
+
+create policy "Users can remove own memberships"
+on memberships
+for delete
+to authenticated
+using (user_id = current_user_id());
+
+-- =========================================
+-- MEMBERSHIP ROLES
+-- =========================================
+
+drop policy if exists "Users can see own membership roles" on membership_roles;
+drop policy if exists "Admins manage membership roles in current club" on membership_roles;
+drop policy if exists "Users can insert own membership roles from invitations" on membership_roles;
+
+create policy "Users can see own membership roles"
+on membership_roles
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from memberships
+    where memberships.id = membership_roles.membership_id
+      and memberships.user_id = current_user_id()
+  )
+);
+
+create policy "Users can insert own membership roles from invitations"
+on membership_roles
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from memberships
+    where memberships.id = membership_roles.membership_id
+      and memberships.user_id = current_user_id()
+      and exists (
+        select 1
+        from club_invitations
+        where club_invitations.club_id = memberships.club_id
+          and club_invitations.email = current_user_email()
+          and club_invitations.role = membership_roles.role
+          and club_invitations.status = 'pending'
+          and club_invitations.used_at is null
+      )
+  )
+);
+
+create policy "Admins manage membership roles in current club"
+on membership_roles
+for all
+to authenticated
+using (
+  exists (
+    select 1
+    from memberships
+    where memberships.id = membership_roles.membership_id
+      and memberships.club_id = current_club_id()
+      and (select current_user_has_role('admin'))
+  )
+)
+with check (
+  exists (
+    select 1
+    from memberships
+    where memberships.id = membership_roles.membership_id
+      and memberships.club_id = current_club_id()
+      and (select current_user_has_role('admin'))
+  )
 );
 
 -- =========================================
@@ -171,17 +276,39 @@ with check (
 -- =========================================
 
 drop policy if exists "Admins manage invitations in current club" on club_invitations;
+drop policy if exists "Users can see own pending invitations" on club_invitations;
+drop policy if exists "Users can consume own invitations" on club_invitations;
+
+create policy "Users can see own pending invitations"
+on club_invitations
+for select
+to authenticated
+using (
+  email = current_user_email()
+);
+
+create policy "Users can consume own invitations"
+on club_invitations
+for update
+to authenticated
+using (
+  email = current_user_email()
+)
+with check (
+  email = current_user_email()
+);
 
 create policy "Admins manage invitations in current club"
 on club_invitations
 for all
+to authenticated
 using (
   club_id = current_club_id()
-  and current_user_role() = 'admin'
+  and (select current_user_has_role('admin'))
 )
 with check (
   club_id = current_club_id()
-  and current_user_role() = 'admin'
+  and (select current_user_has_role('admin'))
 );
 
 -- =========================================
@@ -193,6 +320,7 @@ drop policy if exists "Users can manage own club preferences" on user_club_prefe
 create policy "Users can manage own club preferences"
 on user_club_preferences
 for all
+to authenticated
 using (user_id = current_user_id())
 with check (user_id = current_user_id());
 
@@ -201,12 +329,12 @@ with check (user_id = current_user_id());
 -- =========================================
 
 drop policy if exists "Members can view accounts" on treasury_accounts;
-drop policy if exists "Admins manage accounts" on treasury_accounts;
 drop policy if exists "Admins manage accounts in current club" on treasury_accounts;
 
 create policy "Members can view accounts"
 on treasury_accounts
 for select
+to authenticated
 using (
   club_id = current_club_id()
   and is_member_of_current_club()
@@ -215,13 +343,14 @@ using (
 create policy "Admins manage accounts in current club"
 on treasury_accounts
 for all
+to authenticated
 using (
   club_id = current_club_id()
-  and current_user_role() = 'admin'
+  and (select current_user_has_role('admin'))
 )
 with check (
   club_id = current_club_id()
-  and current_user_role() = 'admin'
+  and (select current_user_has_role('admin'))
 );
 
 -- =========================================
@@ -229,27 +358,31 @@ with check (
 -- =========================================
 
 drop policy if exists "Secretaria and admin can view sessions" on daily_cash_sessions;
-drop policy if exists "Secretaria manage sessions" on daily_cash_sessions;
 drop policy if exists "Secretaria can manage sessions in current club" on daily_cash_sessions;
 
 create policy "Secretaria and admin can view sessions"
 on daily_cash_sessions
 for select
+to authenticated
 using (
   club_id = current_club_id()
-  and current_user_role() in ('admin', 'secretaria')
+  and (
+    (select current_user_has_role('admin'))
+    or (select current_user_has_role('secretaria'))
+  )
 );
 
 create policy "Secretaria can manage sessions in current club"
 on daily_cash_sessions
 for all
+to authenticated
 using (
   club_id = current_club_id()
-  and current_user_role() = 'secretaria'
+  and (select current_user_has_role('secretaria'))
 )
 with check (
   club_id = current_club_id()
-  and current_user_role() = 'secretaria'
+  and (select current_user_has_role('secretaria'))
 );
 
 -- =========================================
@@ -257,16 +390,14 @@ with check (
 -- =========================================
 
 drop policy if exists "Members can view movements" on treasury_movements;
-drop policy if exists "Secretaria can insert movements" on treasury_movements;
 drop policy if exists "Secretaria can insert movements in current club" on treasury_movements;
-drop policy if exists "Tesoreria can update movements" on treasury_movements;
 drop policy if exists "Tesoreria can update movements in current club" on treasury_movements;
-drop policy if exists "Admin full access movements" on treasury_movements;
 drop policy if exists "Admin full access movements in current club" on treasury_movements;
 
 create policy "Members can view movements"
 on treasury_movements
 for select
+to authenticated
 using (
   club_id = current_club_id()
   and is_member_of_current_club()
@@ -275,40 +406,121 @@ using (
 create policy "Secretaria can insert movements in current club"
 on treasury_movements
 for insert
+to authenticated
 with check (
   club_id = current_club_id()
-  and current_user_role() = 'secretaria'
+  and (select current_user_has_role('secretaria'))
 );
 
 create policy "Tesoreria can update movements in current club"
 on treasury_movements
 for update
+to authenticated
 using (
   club_id = current_club_id()
-  and current_user_role() = 'tesoreria'
+  and (select current_user_has_role('tesoreria'))
 )
 with check (
   club_id = current_club_id()
-  and current_user_role() = 'tesoreria'
+  and (select current_user_has_role('tesoreria'))
 );
 
 create policy "Admin full access movements in current club"
 on treasury_movements
 for all
+to authenticated
 using (
   club_id = current_club_id()
-  and current_user_role() = 'admin'
+  and (select current_user_has_role('admin'))
 )
 with check (
   club_id = current_club_id()
-  and current_user_role() = 'admin'
+  and (select current_user_has_role('admin'))
 );
 
 -- =========================================
--- SEGURIDAD EXTRA IMPORTANTE
+-- RPCS
 -- =========================================
 
--- Ninguna query multi-tenant debe confiar solo en frontend.
--- El backend debe setear app.current_club_id y RLS debe filtrar por club activo.
--- Las lecturas preselección de club solo pueden exponer recursos propios del usuario autenticado
--- (perfil propio, memberships propias y preferencias propias).
+create or replace function get_club_members_for_current_admin(p_club_id uuid)
+returns table (
+  membership_id uuid,
+  user_id uuid,
+  club_id uuid,
+  full_name text,
+  email text,
+  avatar_url text,
+  roles membership_role[],
+  status membership_status,
+  joined_at timestamp
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    m.id as membership_id,
+    m.user_id,
+    m.club_id,
+    u.full_name,
+    u.email,
+    u.avatar_url,
+    coalesce(
+      array_agg(mr.role order by array_position(array['admin'::membership_role, 'secretaria'::membership_role, 'tesoreria'::membership_role], mr.role))
+        filter (where mr.role is not null),
+      array[]::membership_role[]
+    ) as roles,
+    m.status,
+    m.joined_at
+  from memberships m
+  join users u on u.id = m.user_id
+  left join membership_roles mr on mr.membership_id = m.id
+  where m.club_id = p_club_id
+    and exists (
+      select 1
+      from memberships current_membership
+      join membership_roles current_role on current_role.membership_id = current_membership.id
+      where current_membership.user_id = auth.uid()
+        and current_membership.club_id = p_club_id
+        and current_membership.status = 'activo'
+        and current_role.role = 'admin'
+    )
+  group by m.id, u.id
+  order by u.full_name nulls last, u.email;
+$$;
+
+create or replace function get_pending_club_invitations_for_current_admin(p_club_id uuid)
+returns table (
+  invitation_id uuid,
+  club_id uuid,
+  email text,
+  role membership_role,
+  created_at timestamp
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    ci.id as invitation_id,
+    ci.club_id,
+    ci.email,
+    ci.role,
+    ci.created_at
+  from club_invitations ci
+  where ci.club_id = p_club_id
+    and ci.status = 'pending'
+    and ci.used_at is null
+    and exists (
+      select 1
+      from memberships current_membership
+      join membership_roles current_role on current_role.membership_id = current_membership.id
+      where current_membership.user_id = auth.uid()
+        and current_membership.club_id = p_club_id
+        and current_membership.status = 'activo'
+        and current_role.role = 'admin'
+    )
+  order by ci.created_at, ci.email;
+$$;

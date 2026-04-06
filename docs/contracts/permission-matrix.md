@@ -24,8 +24,9 @@ Roles disponibles:
 1. Todos los permisos aplican dentro del **club activo**.
 2. Un usuario solo puede ejecutar acciones si su `membership.status = activo`.
 3. Si una acción no está explícitamente permitida → debe considerarse prohibida.
-4. Los permisos no se heredan ni combinan (un solo rol por membership).
-5. La validación de permisos debe ocurrir en backend, no en frontend.
+4. Una membership puede tener múltiples roles simultáneos.
+5. Los permisos se resuelven por unión de roles.
+6. La validación de permisos debe ocurrir en backend, no en frontend.
 
 ---
 
@@ -44,13 +45,14 @@ Roles disponibles:
 | Ver miembros del club | ✅     | ❌          | ❌         |
 | Invitar miembros      | ✅     | ❌          | ❌         |
 | Aprobar membresía     | ✅     | ❌          | ❌         |
-| Modificar rol         | ✅     | ❌          | ❌         |
+| Modificar roles       | ✅     | ❌          | ❌         |
 | Remover miembro       | ⚠️    | ❌          | ❌         |
 | Auto-removerse        | ⚠️    | ⚠️         | ⚠️        |
 
 ### Reglas
 
 * ⚠️ No se puede eliminar el último admin activo del club.
+* ⚠️ No se puede quitar el rol `admin` al último admin activo del club, aunque conserve otros roles.
 
 ---
 
@@ -220,9 +222,8 @@ Roles disponibles:
 1. Nunca permitir acciones fuera del club activo.
 2. Nunca confiar en frontend para validar permisos.
 3. Validar siempre:
-
    * membership
-   * role
+   * roles
    * status
 4. No permitir acciones no listadas.
 5. Toda acción de Tesorería sobre movimientos debe auditarse.

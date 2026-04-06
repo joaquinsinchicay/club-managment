@@ -24,7 +24,7 @@ La configuración del club necesita evolucionar desde un acceso protegido hacia 
 La pantalla de configuración del club activo debe permitir:
 
 - ver todos los miembros del club activo
-- cambiar roles de memberships activas
+- cambiar los roles asignados de memberships activas
 - remover memberships del club activo
 - permitir auto-remoción del usuario actual
 - bloquear cualquier acción que deje al club sin admins activos
@@ -35,7 +35,7 @@ La pantalla de configuración del club activo debe permitir:
 
 ### Incluye
 - Visualización de miembros del club activo con datos de usuario y membership.
-- Cambio de rol para memberships activas.
+- Gestión de múltiples roles para memberships activas.
 - Remoción de miembros del club activo.
 - Auto-remoción del club activo.
 - Diálogo explícito de confirmación para remoción.
@@ -70,8 +70,8 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 
 | Escenario | Resultado esperado |
 |---|---|
-| Admin ve miembros del club | Obtiene lista completa del club activo con rol y estado. |
-| Admin cambia rol de miembro | La membership actualiza su rol sin afectar otros clubes. |
+| Admin ve miembros del club | Obtiene lista completa del club activo con roles y estado. |
+| Admin cambia roles de miembro | La membership actualiza sus roles sin afectar otros clubes. |
 | Admin remueve miembro | La membership se elimina del club activo. |
 | Usuario se auto-remueve | Pierde acceso a ese club y el sistema resuelve un nuevo destino válido. |
 | Último admin intenta salir o ser degradado | La acción se bloquea sin cambios persistentes. |
@@ -84,6 +84,8 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 
 - Todas las acciones aplican únicamente al club activo.
 - Un `admin` solo puede gestionar memberships del club activo.
+- Cada membership del club puede combinar múltiples roles operativos a la vez.
+- Los permisos de una membership se resuelven por unión de roles.
 - Un usuario puede auto-removerse del club activo aunque no sea `admin`.
 - No se puede remover o degradar al último `admin` activo del club.
 - Remover una membership elimina el acceso de ese usuario solo para ese club.
@@ -97,7 +99,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 
 1. Un admin abre la configuración del club activo.
 2. El sistema muestra la lista de miembros del club con su información clave.
-3. El admin puede cambiar el rol de miembros activos.
+3. El admin puede seleccionar uno o más roles para miembros activos.
 4. El admin puede iniciar la remoción de un miembro.
 5. El sistema abre un diálogo de confirmación.
 6. Si el admin confirma, la membership se elimina del club activo.
@@ -115,7 +117,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 
 ### B. Bloqueo por último admin
 
-1. Se intenta remover o degradar al único admin activo del club.
+1. Se intenta remover o quitar el rol `admin` al único admin activo del club.
 2. El sistema valida cantidad de admins activos.
 3. La acción se rechaza sin mutar datos.
 
@@ -134,11 +136,12 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 
 ### Reglas
 - La sección de miembros debe ser legible en mobile y desktop.
-- Cada miembro debe mostrar nombre, email, rol, estado y acción disponible.
+- Cada miembro debe mostrar nombre, email, roles, estado y acción disponible.
 - La acción de remoción debe requerir confirmación explícita en diálogo.
 - Debe existir un tratamiento visual claro para el usuario actual.
 - Un usuario que ya consumió su invitación no debe desaparecer del listado administrativo del club.
 - Debe existir una acción explícita para volver al dashboard desde la pantalla de configuración.
+- La UI de edición de roles debe permitir multi-selección explícita y comprensible.
 - Los mensajes de error o éxito deben ser breves, visibles y no ambiguos.
 - No debe haber textos hardcodeados.
 
@@ -160,6 +163,8 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 | action | `settings.club.back_to_dashboard_cta` | Volver al dashboard desde settings del club. |
 | badge | `settings.club.members.current_user_badge` | Identifica al usuario actual en la lista. |
 | badge | `settings.club.members.pending_badge` | Indica membresía pendiente. |
+| label | `settings.club.members.roles_label` | Etiqueta para visualizar o editar múltiples roles. |
+| action | `settings.club.members.update_roles_cta` | Confirmar actualización de roles. |
 | action | `settings.club.members.remove_cta` | Remover miembro administrado por admin. |
 | action | `settings.club.members.leave_club_cta` | Auto-remoción del usuario actual. |
 | dialog | `settings.club.members.remove_dialog_title` | Título de confirmación de remoción. |
@@ -176,7 +181,8 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 ## 13. Persistencia
 
 ### Entidades afectadas
-- `memberships`: READ para listar miembros; UPDATE para cambios de rol; DELETE para remoción de memberships.
+- `memberships`: READ para listar miembros; DELETE para remoción de memberships.
+- `membership_roles`: READ para listar roles por membership; INSERT/DELETE para actualizar la combinación de roles.
 - `users`: READ para mostrar nombre, avatar y email en el listado.
 - `user_club_preferences`: UPDATE opcional cuando una auto-remoción obliga a resolver otro club activo.
 
@@ -188,7 +194,7 @@ Do not reference current code files.
 
 - Solo `admin` puede listar miembros del club activo y remover a otros usuarios.
 - La auto-remoción debe limitarse estrictamente a la membership del usuario autenticado.
-- Ninguna remoción o cambio de rol puede ejecutarse fuera del club activo.
+- Ninguna remoción o cambio de roles puede ejecutarse fuera del club activo.
 - La regla del último admin debe validarse server-side antes de mutar datos.
 - La autorización debe respetar RLS y no depender del frontend.
 - La lectura administrativa del listado debe ser consistente entre entornos y no depender exclusivamente de configuraciones opcionales del runtime.
@@ -198,8 +204,8 @@ Do not reference current code files.
 ## 15. Dependencias
 
 - auth: sesión autenticada.
-- contracts: `Get club members`, `Update membership role`, `Remove membership`.
-- domain entities: `users`, `memberships`, `user_club_preferences`.
+- contracts: `Get club members`, `Update membership roles`, `Remove membership`.
+- domain entities: `users`, `memberships`, `membership_roles`, `user_club_preferences`.
 - permissions: `admin` gestiona miembros; cualquier usuario puede auto-removerse según regla de negocio.
 - other US if relevant: US-03 para aprobación y asignación inicial de rol; US-04 y US-05 para resolución más amplia del club activo luego de cambios de membresía.
 
@@ -209,7 +215,7 @@ Do not reference current code files.
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
-| Dejar al club sin admins activos | Media | Alta | Validar conteo de admins activos antes de remover o degradar. |
+| Dejar al club sin admins activos | Media | Alta | Validar conteo de admins activos antes de remover o quitar el rol admin. |
 | Auto-remover al usuario y dejar la sesión apuntando a un club inválido | Media | Alta | Resolver destino y preferencia del club activo después de la remoción. |
 | Remover miembros de otro club por ids manipulados | Media | Alta | Validar pertenencia al club activo server-side. |
 | Falta de confirmación previa a remoción | Baja | Media | Usar diálogo explícito antes de ejecutar delete. |
@@ -220,7 +226,7 @@ Do not reference current code files.
 
 | Caso | Comportamiento esperado |
 |---|---|
-| Solo existe un admin activo en el club | No puede removerse ni ser degradado. |
+| Solo existe un admin activo en el club | No puede removerse ni perder el rol `admin`. |
 | Un miembro pendiente es removido | Se elimina la relación con el club sin dejar residuos operativos para ese club. |
 | El usuario actual se remueve y no tiene otros clubes activos | Debe quedar en pantalla de espera de aprobación. |
 | El usuario actual se remueve y sí tiene otros clubes activos | Debe resolverse otro club activo válido. |

@@ -22,7 +22,7 @@ Es la base para la implementación del esquema de datos (`domain/schema.sql`), c
 
 ## 2. Decisiones cerradas de modelado (MVP)
 
-1. Cada usuario tiene una única membership por club y exactamente un rol.
+1. Cada usuario tiene una única membership por club y uno o más roles.
 2. Todas las cuentas se modelan en una única tabla.
 3. Todos los movimientos se modelan en una única tabla.
 4. Los saldos se calculan a partir de movimientos.
@@ -72,7 +72,7 @@ Atributos:
 * id
 * user_id
 * club_id
-* role
+* roles
 * status
 * joined_at
 * approved_at
@@ -93,6 +93,8 @@ Estados:
 Reglas:
 
 * Un usuario tiene máximo una membership por club.
+* Una membership puede combinar múltiples roles operativos para el mismo club.
+* Los permisos se resuelven por unión de roles.
 * Debe existir al menos un admin activo por club.
 
 ---
@@ -106,7 +108,7 @@ Atributos:
 * id
 * club_id
 * email
-* role
+* role (rol inicial)
 * status
 * expires_at
 * used_at

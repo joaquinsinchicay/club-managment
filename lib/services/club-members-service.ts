@@ -1,10 +1,15 @@
 import type { ClubMember, MembershipRole, PendingClubInvitation } from "@/lib/domain/access";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import {
+  hasMembershipRole,
+  isMembershipRole,
+  sortMembershipRoles
+} from "@/lib/domain/membership-roles";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
 export type ClubMemberActionCode =
   | "membership_approved"
-  | "membership_role_updated"
+  | "membership_roles_updated"
   | "membership_removed"
   | "self_removed"
   | "forbidden"
@@ -21,12 +26,6 @@ export type ClubMemberActionResult = {
   redirectPath?: string;
   nextActiveClubId?: string | null;
 };
-
-const MEMBERSHIP_ROLES: MembershipRole[] = ["admin", "secretaria", "tesoreria"];
-
-function isMembershipRole(role: string): role is MembershipRole {
-  return MEMBERSHIP_ROLES.includes(role as MembershipRole);
-}
 
 function sortClubMembers(members: ClubMember[]) {
   const statusOrder = {
@@ -53,7 +52,7 @@ async function getAdminSession() {
     return null;
   }
 
-  if (context.activeMembership.role !== "admin" || context.activeMembership.status !== "activo") {
+  if (!hasMembershipRole(context.activeMembership, "admin") || context.activeMembership.status !== "activo") {
     return null;
   }
 
@@ -62,7 +61,7 @@ async function getAdminSession() {
 
 async function countActiveAdmins(clubId: string) {
   const members = await accessRepository.listClubMembers(clubId);
-  return members.filter((member) => member.status === "activo" && member.role === "admin").length;
+  return members.filter((member) => member.status === "activo" && member.roles.includes("admin")).length;
 }
 
 async function resolvePostRemovalRedirect(userId: string): Promise<{
@@ -154,7 +153,7 @@ export async function approveClubMembership(
 
 export async function updateClubMembershipRole(
   membershipId: string,
-  role: string
+  roles: string[]
 ): Promise<ClubMemberActionResult> {
   const context = await getAdminSession();
 
@@ -162,7 +161,9 @@ export async function updateClubMembershipRole(
     return { ok: false, code: "forbidden" };
   }
 
-  if (!isMembershipRole(role)) {
+  const normalizedRoles = sortMembershipRoles(roles.filter(isMembershipRole));
+
+  if (normalizedRoles.length === 0) {
     return { ok: false, code: "invalid_role" };
   }
 
@@ -177,17 +178,21 @@ export async function updateClubMembershipRole(
     return { ok: false, code: "membership_not_active" };
   }
 
-  if (member.role === "admin" && role !== "admin" && (await countActiveAdmins(context.activeClub.id)) <= 1) {
+  if (
+    member.roles.includes("admin") &&
+    !normalizedRoles.includes("admin") &&
+    (await countActiveAdmins(context.activeClub.id)) <= 1
+  ) {
     return { ok: false, code: "last_admin_required" };
   }
 
-  const updated = await accessRepository.updateMembershipRole(membershipId, role);
+  const updated = await accessRepository.updateMembershipRoles(membershipId, normalizedRoles);
 
   if (!updated) {
     return { ok: false, code: "unknown_error" };
   }
 
-  return { ok: true, code: "membership_role_updated" };
+  return { ok: true, code: "membership_roles_updated" };
 }
 
 export async function removeClubMembership(
@@ -207,13 +212,19 @@ export async function removeClubMembership(
   }
 
   const isSelfRemoval = member.userId === session.user.id;
-  const isAdmin = session.activeMembership.role === "admin" && session.activeMembership.status === "activo";
+  const isAdmin =
+    hasMembershipRole(session.activeMembership, "admin") &&
+    session.activeMembership.status === "activo";
 
   if (!isAdmin && !isSelfRemoval) {
     return { ok: false, code: "forbidden" };
   }
 
-  if (member.role === "admin" && member.status === "activo" && (await countActiveAdmins(session.activeClub.id)) <= 1) {
+  if (
+    member.roles.includes("admin") &&
+    member.status === "activo" &&
+    (await countActiveAdmins(session.activeClub.id)) <= 1
+  ) {
     return { ok: false, code: "last_admin_required" };
   }
 

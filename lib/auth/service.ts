@@ -10,6 +10,7 @@ import type {
   Membership,
   User
 } from "@/lib/domain/access";
+import { sortMembershipRoles } from "@/lib/domain/membership-roles";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import { processPendingInvitationsForUser } from "@/lib/services/club-invitations-service";
 import {
@@ -119,7 +120,7 @@ async function buildAvailableClubs(activeMemberships: Membership[], client?: Aut
         id: club.id,
         name: club.name,
         slug: club.slug,
-        role: membership.role,
+        roles: sortMembershipRoles(membership.roles),
         status: membership.status
       } satisfies AvailableClub;
     })

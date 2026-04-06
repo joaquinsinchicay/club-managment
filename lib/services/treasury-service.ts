@@ -1,4 +1,5 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import { hasMembershipRole } from "@/lib/domain/membership-roles";
 import type {
   DailyCashSessionValidation,
   DashboardTreasuryCard,
@@ -50,7 +51,7 @@ async function getSecretariaSession() {
     return null;
   }
 
-  if (context.activeMembership.role !== "secretaria" || context.activeMembership.status !== "activo") {
+  if (!hasMembershipRole(context.activeMembership, "secretaria") || context.activeMembership.status !== "activo") {
     return null;
   }
 
@@ -406,7 +407,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     return null;
   }
 
-  if (context.activeMembership.role !== "secretaria" || context.activeMembership.status !== "activo") {
+  if (!hasMembershipRole(context.activeMembership, "secretaria") || context.activeMembership.status !== "activo") {
     return null;
   }
 

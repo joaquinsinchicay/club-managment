@@ -2,6 +2,7 @@ import { AppHeader } from "@/components/navigation/app-header";
 import { ClubSettingsCard } from "@/components/settings/club-settings-card";
 import { ClubSettingsForbiddenCard } from "@/components/settings/club-settings-forbidden-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import { hasMembershipRole } from "@/lib/domain/membership-roles";
 import { getClubMembersForActiveClub } from "@/lib/services/club-members-service";
 import {
   approveClubMembershipAction,
@@ -28,7 +29,7 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
     redirect("/pending-approval");
   }
 
-  if (context.activeMembership.role !== "admin") {
+  if (!hasMembershipRole(context.activeMembership, "admin")) {
     return (
       <div className="min-h-screen">
         <AppHeader context={context} />
@@ -58,7 +59,7 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
         feedbackCode={searchParams?.feedback}
         inviteUserAction={inviteClubUserAction}
         approveMembershipAction={approveClubMembershipAction}
-        updateMembershipRoleAction={updateClubMembershipRoleAction}
+        updateMembershipRolesAction={updateClubMembershipRoleAction}
         removeMembershipAction={removeClubMembershipAction}
       />
     </div>

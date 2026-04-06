@@ -1,5 +1,6 @@
 import { AvatarSessionMenu } from "@/components/navigation/avatar-session-menu";
 import type { SessionContext } from "@/lib/auth/service";
+import { formatMembershipRoles, hasMembershipRole } from "@/lib/domain/membership-roles";
 import { texts } from "@/lib/texts";
 
 type AppHeaderProps = {
@@ -15,14 +16,19 @@ function replaceTemplate(template: string, values: Record<string, string>) {
 
 export function AppHeader({ context }: AppHeaderProps) {
   const roleLabel = context.activeMembership
-    ? texts.settings.club.members.roles[context.activeMembership.role]
+    ? formatMembershipRoles(context.activeMembership.roles)
     : texts.dashboard.role_pending;
   const clubLabel = context.activeClub?.name ?? texts.header.pending_club_label;
   const welcomeMessage = context.activeMembership
-    ? replaceTemplate(texts.header.welcome_message, {
+    ? replaceTemplate(
+        context.activeMembership.roles.length > 1
+          ? texts.header.welcome_message_multiple
+          : texts.header.welcome_message_single,
+        {
         name: context.user.fullName,
         role: roleLabel
-      })
+        }
+      )
     : null;
 
   return (
@@ -41,7 +47,7 @@ export function AppHeader({ context }: AppHeaderProps) {
           fullName={context.user.fullName}
           email={context.user.email}
           avatarUrl={context.user.avatarUrl}
-          canAccessClubSettings={context.activeMembership?.role === "admin"}
+          canAccessClubSettings={hasMembershipRole(context.activeMembership, "admin")}
         />
       </div>
     </header>

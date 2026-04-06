@@ -17,14 +17,14 @@ type ClubSettingsCardProps = {
   feedbackCode?: string;
   inviteUserAction: (formData: FormData) => Promise<void>;
   approveMembershipAction: (formData: FormData) => Promise<void>;
-  updateMembershipRoleAction: (formData: FormData) => Promise<void>;
+  updateMembershipRolesAction: (formData: FormData) => Promise<void>;
   removeMembershipAction: (formData: FormData) => Promise<void>;
 };
 
 const successFeedbackCodes: Array<ClubMemberActionCode | ClubInvitationActionCode> = [
   "invitation_created",
   "membership_approved",
-  "membership_role_updated",
+  "membership_roles_updated",
   "membership_removed",
   "self_removed"
 ];
@@ -57,7 +57,7 @@ export function ClubSettingsCard({
   feedbackCode,
   inviteUserAction,
   approveMembershipAction,
-  updateMembershipRoleAction,
+  updateMembershipRolesAction,
   removeMembershipAction
 }: ClubSettingsCardProps) {
   const feedback = getFeedbackMessage(feedbackCode);
@@ -105,7 +105,7 @@ export function ClubSettingsCard({
             pendingInvitations={pendingInvitations}
             currentUserId={context.user.id}
             approveMembershipAction={approveMembershipAction}
-            updateMembershipRoleAction={updateMembershipRoleAction}
+            updateMembershipRoleAction={updateMembershipRolesAction}
             removeMembershipAction={removeMembershipAction}
           />
         </div>

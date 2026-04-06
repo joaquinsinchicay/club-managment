@@ -20,6 +20,7 @@ import type {
   TreasuryMovement,
   User
 } from "@/lib/domain/access";
+import { MEMBERSHIP_ROLES, sortMembershipRoles } from "@/lib/domain/membership-roles";
 
 type AccessRepositoryClient = ReturnType<typeof createServerSupabaseClient>;
 
@@ -100,9 +101,9 @@ type AccessRepository = {
     approvedByUserId: string,
     client?: AccessRepositoryClient
   ): Promise<Membership | null>;
-  updateMembershipRole(
+  updateMembershipRoles(
     membershipId: string,
-    role: MembershipRole,
+    roles: MembershipRole[],
     client?: AccessRepositoryClient
   ): Promise<Membership | null>;
   removeMembership(membershipId: string, client?: AccessRepositoryClient): Promise<boolean>;
@@ -218,7 +219,7 @@ function createStore(): MockStore {
       id: "membership-active-001",
       userId: ACTIVE_USER_ID,
       clubId: CLUB_ID,
-      role: "admin",
+    roles: ["admin"],
       status: "activo",
       joinedAt: createdAt
     },
@@ -226,7 +227,7 @@ function createStore(): MockStore {
       id: "membership-admin-002",
       userId: SECOND_ADMIN_USER_ID,
       clubId: CLUB_ID,
-      role: "admin",
+      roles: ["admin"],
       status: "activo",
       joinedAt: createdAt
     },
@@ -234,7 +235,7 @@ function createStore(): MockStore {
       id: "membership-active-002",
       userId: ACTIVE_USER_ID,
       clubId: CLUB_SUR_ID,
-      role: "tesoreria",
+      roles: ["tesoreria"],
       status: "activo",
       joinedAt: createdAt
     },
@@ -242,7 +243,7 @@ function createStore(): MockStore {
       id: "membership-secretaria-001",
       userId: SECRETARIA_USER_ID,
       clubId: CLUB_ID,
-      role: "secretaria",
+      roles: ["secretaria"],
       status: "activo",
       joinedAt: createdAt
     },
@@ -250,7 +251,7 @@ function createStore(): MockStore {
       id: "membership-secretaria-002",
       userId: SECRETARIA_USER_ID,
       clubId: CLUB_SUR_ID,
-      role: "tesoreria",
+      roles: ["tesoreria"],
       status: "activo",
       joinedAt: createdAt
     },
@@ -258,7 +259,7 @@ function createStore(): MockStore {
       id: "membership-tesoreria-001",
       userId: TESORERIA_USER_ID,
       clubId: CLUB_ID,
-      role: "tesoreria",
+      roles: ["tesoreria"],
       status: "activo",
       joinedAt: createdAt
     },
@@ -266,7 +267,7 @@ function createStore(): MockStore {
       id: "membership-pending-001",
       userId: PENDING_USER_ID,
       clubId: CLUB_ID,
-      role: "secretaria",
+      roles: ["secretaria"],
       status: "pendiente_aprobacion",
       joinedAt: createdAt
     }
@@ -417,19 +418,23 @@ function mapUserRow(row: {
   };
 }
 
-function mapMembershipRow(row: {
+type MembershipBaseRow = {
   id: string;
   user_id: string;
   club_id: string;
-  role: "admin" | "secretaria" | "tesoreria";
   status: "pendiente_aprobacion" | "activo" | "inactivo";
   joined_at: string | null;
-}): Membership {
+};
+
+function mapMembershipRow(
+  row: MembershipBaseRow,
+  roles: MembershipRole[]
+): Membership {
   return {
     id: row.id,
     userId: row.user_id,
     clubId: row.club_id,
-    role: row.role,
+    roles: sortMembershipRoles(roles),
     status: row.status,
     joinedAt: row.joined_at ?? now()
   };
@@ -457,10 +462,50 @@ function mapClubMemberFromMembership(membership: Membership, user: User): ClubMe
     fullName: user.fullName,
     email: user.email,
     avatarUrl: user.avatarUrl,
-    role: membership.role,
+    roles: membership.roles,
     status: membership.status,
     joinedAt: membership.joinedAt
   };
+}
+
+async function listRealMembershipRolesByMembershipIds(
+  membershipIds: string[],
+  client?: AccessRepositoryClient
+) {
+  if (membershipIds.length === 0) {
+    return new Map<string, MembershipRole[]>();
+  }
+
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return new Map<string, MembershipRole[]>();
+  }
+
+  const { data, error } = await supabase
+    .from("membership_roles")
+    .select("membership_id,role")
+    .in("membership_id", membershipIds);
+
+  if (error || !data) {
+    return new Map<string, MembershipRole[]>();
+  }
+
+  const rolesByMembershipId = new Map<string, MembershipRole[]>();
+
+  data.forEach((row: { membership_id: string; role: MembershipRole }) => {
+    const currentRoles = rolesByMembershipId.get(row.membership_id) ?? [];
+    currentRoles.push(row.role);
+    rolesByMembershipId.set(row.membership_id, sortMembershipRoles(currentRoles));
+  });
+
+  membershipIds.forEach((membershipId) => {
+    if (!rolesByMembershipId.has(membershipId)) {
+      rolesByMembershipId.set(membershipId, []);
+    }
+  });
+
+  return rolesByMembershipId;
 }
 
 function mapInvitationRow(row: {
@@ -546,14 +591,21 @@ async function listRealMembershipsForUser(userId: string, client?: AccessReposit
 
   const { data, error } = await supabase
     .from("memberships")
-    .select("id,user_id,club_id,role,status,joined_at")
+    .select("id,user_id,club_id,status,joined_at")
     .eq("user_id", userId);
 
   if (error || !data) {
     return [];
   }
 
-  return data.map(mapMembershipRow);
+  const rolesByMembershipId = await listRealMembershipRolesByMembershipIds(
+    data.map((membership) => membership.id),
+    supabase
+  );
+
+  return data.map((membership) =>
+    mapMembershipRow(membership, rolesByMembershipId.get(membership.id) ?? [])
+  );
 }
 
 async function findRealClubById(clubId: string, client?: AccessRepositoryClient) {
@@ -602,14 +654,20 @@ async function listRealClubMembers(clubId: string, client?: AccessRepositoryClie
   if (adminSupabase) {
     const { data, error } = await adminSupabase
       .from("memberships")
-      .select("id,user_id,club_id,role,status,joined_at")
+      .select("id,user_id,club_id,status,joined_at")
       .eq("club_id", clubId);
 
     if (error || !data) {
       return [];
     }
 
-    const memberships = data.map(mapMembershipRow);
+    const rolesByMembershipId = await listRealMembershipRolesByMembershipIds(
+      data.map((membership) => membership.id),
+      adminSupabase
+    );
+    const memberships = data.map((membership) =>
+      mapMembershipRow(membership, rolesByMembershipId.get(membership.id) ?? [])
+    );
     const users = await Promise.all(
       memberships.map(async (membership) => ({
         membership,
@@ -644,7 +702,7 @@ async function listRealClubMembers(clubId: string, client?: AccessRepositoryClie
     full_name: string | null;
     email: string;
     avatar_url: string | null;
-    role: MembershipRole;
+    roles: MembershipRole[];
     status: Membership["status"];
     joined_at: string | null;
   }) => ({
@@ -654,7 +712,7 @@ async function listRealClubMembers(clubId: string, client?: AccessRepositoryClie
     fullName: row.full_name ?? row.email,
     email: row.email,
     avatarUrl: row.avatar_url,
-    role: row.role,
+    roles: sortMembershipRoles(row.roles ?? []),
     status: row.status,
     joinedAt: row.joined_at ?? now()
   }));
@@ -830,14 +888,23 @@ async function createRealMembership(
       approved_by_user_id: approvedByUserId ?? null,
       updated_at: timestamp
     })
-    .select("id,user_id,club_id,role,status,joined_at")
+    .select("id,user_id,club_id,status,joined_at")
     .single();
 
   if (error || !data) {
     return null;
   }
 
-  return mapMembershipRow(data);
+  const roleInsert = await supabase.from("membership_roles").insert({
+    membership_id: data.id,
+    role
+  });
+
+  if (roleInsert.error) {
+    return null;
+  }
+
+  return mapMembershipRow(data, [role]);
 }
 
 async function markRealInvitationAsUsed(invitationId: string, client?: AccessRepositoryClient) {
@@ -883,19 +950,37 @@ async function approveRealMembership(
       updated_at: timestamp
     })
     .eq("id", membershipId)
-    .select("id,user_id,club_id,role,status,joined_at")
+    .select("id,user_id,club_id,status,joined_at")
     .maybeSingle();
 
   if (error || !data) {
     return null;
   }
 
-  return mapMembershipRow(data);
+  const deleteRolesResult = await supabase
+    .from("membership_roles")
+    .delete()
+    .eq("membership_id", membershipId);
+
+  if (deleteRolesResult.error) {
+    return null;
+  }
+
+  const roleInsert = await supabase.from("membership_roles").insert({
+    membership_id: membershipId,
+    role
+  });
+
+  if (roleInsert.error) {
+    return null;
+  }
+
+  return mapMembershipRow(data, [role]);
 }
 
-async function updateRealMembershipRole(
+async function updateRealMembershipRoles(
   membershipId: string,
-  role: MembershipRole,
+  roles: MembershipRole[],
   client?: AccessRepositoryClient
 ) {
   const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
@@ -904,21 +989,43 @@ async function updateRealMembershipRole(
     return null;
   }
 
+  const sortedRoles = sortMembershipRoles(roles);
+
   const { data, error } = await supabase
     .from("memberships")
     .update({
-      role,
+      role: sortedRoles[0],
       updated_at: now()
     })
     .eq("id", membershipId)
-    .select("id,user_id,club_id,role,status,joined_at")
+    .select("id,user_id,club_id,status,joined_at")
     .maybeSingle();
 
   if (error || !data) {
     return null;
   }
 
-  return mapMembershipRow(data);
+  const deleteRolesResult = await supabase
+    .from("membership_roles")
+    .delete()
+    .eq("membership_id", membershipId);
+
+  if (deleteRolesResult.error) {
+    return null;
+  }
+
+  const roleInsert = await supabase.from("membership_roles").insert(
+    sortedRoles.map((currentRole) => ({
+      membership_id: membershipId,
+      role: currentRole
+    }))
+  );
+
+  if (roleInsert.error) {
+    return null;
+  }
+
+  return mapMembershipRow(data, sortedRoles);
 }
 
 async function removeRealMembership(membershipId: string, client?: AccessRepositoryClient) {
@@ -1273,7 +1380,7 @@ export const accessRepository: AccessRepository = {
       id: `membership-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       userId,
       clubId,
-      role,
+      roles: [role],
       status,
       joinedAt: status === "activo" ? timestamp : timestamp
     };
@@ -1311,7 +1418,7 @@ export const accessRepository: AccessRepository = {
     const timestamp = now();
     const updatedMembership: Membership = {
       ...store.memberships[membershipIndex],
-      role,
+      roles: [role],
       status: "activo",
       joinedAt: timestamp
     };
@@ -1319,9 +1426,9 @@ export const accessRepository: AccessRepository = {
     store.memberships[membershipIndex] = updatedMembership;
     return updatedMembership;
   },
-  async updateMembershipRole(membershipId, role, client) {
+  async updateMembershipRoles(membershipId, roles, client) {
     if (shouldUseSupabaseDatabase()) {
-      return updateRealMembershipRole(membershipId, role, client);
+      return updateRealMembershipRoles(membershipId, roles, client);
     }
 
     const store = getStore();
@@ -1333,7 +1440,7 @@ export const accessRepository: AccessRepository = {
 
     const updatedMembership: Membership = {
       ...store.memberships[membershipIndex],
-      role
+      roles: sortMembershipRoles(roles)
     };
 
     store.memberships[membershipIndex] = updatedMembership;

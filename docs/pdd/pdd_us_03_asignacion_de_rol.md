@@ -153,7 +153,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 | action | `settings.club.members.approve_cta` | Acción para aprobar membresía pendiente. |
 | action | `settings.club.members.update_role_cta` | Acción para actualizar rol de miembro activo. |
 | feedback | `settings.club.members.feedback.membership_approved` | Confirmación de aprobación exitosa. |
-| feedback | `settings.club.members.feedback.membership_role_updated` | Confirmación de cambio de rol exitoso. |
+| feedback | `settings.club.members.feedback.membership_roles_updated` | Confirmación de actualización exitosa de roles. |
 | feedback | `settings.club.members.feedback.invalid_role` | Error por rol inválido. |
 | feedback | `settings.club.members.feedback.membership_not_pending` | Error al aprobar una membership no pendiente. |
 | feedback | `settings.club.members.feedback.membership_not_active` | Error al editar rol de membership no activa. |
@@ -187,7 +187,7 @@ Do not reference current code files.
 ## 15. Dependencias
 
 - auth: sesión autenticada resuelta por Supabase Auth o modo mock equivalente.
-- contracts: `Get club members`, `Approve membership`, `Update membership role`.
+- contracts: `Get club members`, `Approve membership`, `Update membership roles`.
 - domain entities: `users`, `memberships`, `clubs`.
 - permissions: matriz de permisos donde solo `admin` gestiona miembros.
 - other US if relevant: US-02 para acceso a settings desde el avatar; US-09 para remoción y gestión completa de miembros.

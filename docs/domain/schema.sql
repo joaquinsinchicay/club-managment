@@ -70,6 +70,14 @@ updated_at timestamp default now(),
 unique (user_id, club_id)
 );
 
+create table membership_roles (
+id uuid primary key default uuid_generate_v4(),
+membership_id uuid not null references memberships(id) on delete cascade,
+role membership_role not null,
+created_at timestamp default now(),
+unique (membership_id, role)
+);
+
 create table club_invitations (
 id uuid primary key default uuid_generate_v4(),
 club_id uuid not null references clubs(id),

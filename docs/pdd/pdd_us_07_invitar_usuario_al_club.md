@@ -21,7 +21,7 @@ La gestión de miembros ya permite aprobar pendientes y administrar memberships 
 
 ## 3. Objetivo funcional
 
-Dentro de la configuración del club activo, un `admin` debe poder abrir un formulario de invitación, ingresar email y rol, validar esos datos y registrar una invitación pendiente para el club activo. Si el usuario ya pertenece al club, la acción debe bloquearse. La invitación pendiente debe quedar visible en la misma pantalla de configuración como estado previo al alta operativa, hasta que el usuario invitado ingrese con Google y la invitación sea consumida.
+Dentro de la configuración del club activo, un `admin` debe poder abrir un formulario de invitación, ingresar email y un rol inicial, validar esos datos y registrar una invitación pendiente para el club activo. Si el usuario ya pertenece al club, la acción debe bloquearse. La invitación pendiente debe quedar visible en la misma pantalla de configuración como estado previo al alta operativa, hasta que el usuario invitado ingrese con Google y la invitación sea consumida.
 
 ---
 
@@ -29,7 +29,7 @@ Dentro de la configuración del club activo, un `admin` debe poder abrir un form
 
 ### Incluye
 - Acción visible de invitar usuario dentro de settings del club activo.
-- Formulario con email, rol, confirmación y cancelación.
+- Formulario con email, rol inicial, confirmación y cancelación.
 - Validaciones de email requerido, formato y rol requerido.
 - Persistencia de invitación pendiente en `club_invitations`.
 - Visualización de invitaciones pendientes del club activo dentro del bloque de miembros/configuración.
@@ -60,7 +60,7 @@ Usuario autenticado con rol `admin` y membership `activo` en el club activo.
 
 | Escenario | Resultado esperado |
 |---|---|
-| Invitación válida | Se crea una invitación pendiente para el email y rol seleccionados en el club activo. |
+| Invitación válida | Se crea una invitación pendiente para el email y rol inicial seleccionado en el club activo. |
 | Invitación válida visible en settings | La invitación pendiente aparece listada en la configuración del club con rol y estado pendiente. |
 | Usuario ya pertenece al club | No se crea invitación ni membership duplicada. |
 | Email inválido o faltante | La invitación no se procesa. |
@@ -73,7 +73,8 @@ Usuario autenticado con rol `admin` y membership `activo` en el club activo.
 - Solo `admin` puede invitar usuarios desde el club activo.
 - La invitación siempre se registra para el club activo y nunca para otros clubes.
 - No debe crearse una membership duplicada si ya existe pertenencia al club activo.
-- La invitación debe guardar el rol que será aplicado cuando el usuario ingrese.
+- La invitación debe guardar un único rol inicial que será aplicado cuando el usuario ingrese.
+- Los roles adicionales, si hicieran falta, se administran luego desde la gestión de miembros del club.
 - La invitación se registra con estado pendiente hasta ser consumida o descartada.
 - La visibilidad en settings no convierte la invitación en membership activa ni reemplaza el consumo posterior en login.
 

@@ -183,11 +183,12 @@ Resultado esperado:
 
 ### 7.2 Test de roles
 
-Cambiar rol en membership:
+Cambiar roles de una membership:
 
 ```sql
-update memberships set role = 'secretaria'
-where user_id = 'USER_ID' and club_id = 'CLUB_ID';
+insert into membership_roles (membership_id, role)
+values ('MEMBERSHIP_ID', 'secretaria')
+on conflict do nothing;
 ```
 
 Verificar:
