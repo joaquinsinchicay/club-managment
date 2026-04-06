@@ -42,6 +42,28 @@ function resolveAppUrl(requestUrl: string) {
   return appConfig.canonicalAppUrl || new URL(requestUrl).origin;
 }
 
+function shouldUseVercelProtectionBypass(appUrl: string) {
+  const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  const isPreviewDeployment = process.env.VERCEL_TARGET_ENV === "preview";
+  const isVercelHostname = new URL(appUrl).hostname.endsWith(".vercel.app");
+
+  return Boolean(bypassSecret && isPreviewDeployment && isVercelHostname);
+}
+
+function buildOAuthCallbackUrl(appUrl: string) {
+  const callbackUrl = new URL("/auth/callback", appUrl);
+
+  if (!shouldUseVercelProtectionBypass(appUrl)) {
+    return callbackUrl.toString();
+  }
+
+  const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET!;
+  callbackUrl.searchParams.set("x-vercel-protection-bypass", bypassSecret);
+  callbackUrl.searchParams.set("x-vercel-set-bypass-cookie", "samesitenone");
+
+  return callbackUrl.toString();
+}
+
 function getRequestedProfile(mockProfile?: string): GoogleProfileKey {
   if (
     mockProfile === "existing_pending" ||
@@ -269,7 +291,7 @@ export async function startGoogleSignIn({
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: new URL("/auth/callback", appUrl).toString()
+        redirectTo: buildOAuthCallbackUrl(appUrl)
       }
     });
 
