@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { DashboardTreasuryCard as DashboardTreasuryCardData, TreasuryCategory, TreasuryAccount } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 
@@ -63,7 +65,15 @@ export function TreasuryCard({
           <div className="grid gap-3">
             {treasuryCard.accounts.map((account) => (
               <article key={account.accountId} className="rounded-2xl border border-border bg-secondary/40 p-4">
-                <p className="text-sm font-semibold text-foreground">{account.name}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-foreground">{account.name}</p>
+                  <Link
+                    href={`/dashboard/accounts/${account.accountId}`}
+                    className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                  >
+                    {texts.dashboard.treasury.detail_cta}
+                  </Link>
+                </div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   {account.balances.map((balance) => (
                     <div key={`${account.accountId}-${balance.currencyCode}`} className="rounded-2xl border border-border/60 bg-card px-3 py-2">

@@ -115,6 +115,29 @@ export type DashboardTreasuryCard = {
   availableActions: Array<"open_session" | "close_session" | "create_movement">;
 };
 
+export type TreasuryAccountDetail = {
+  account: {
+    accountId: string;
+    name: string;
+  };
+  sessionStatus: TreasurySessionStatus | "not_started";
+  balances: Array<{
+    currencyCode: string;
+    amount: number;
+  }>;
+  movements: Array<{
+    movementId: string;
+    movementDate: string;
+    movementType: "ingreso" | "egreso";
+    categoryName: string;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+    createdByUserName: string;
+    createdAt: string;
+  }>;
+};
+
 export type Session = {
   userId: string;
   activeClubId: string | null;
