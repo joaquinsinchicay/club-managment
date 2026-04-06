@@ -275,6 +275,8 @@ Sin `SUPABASE_ACCESS_TOKEN` o `supabase login`, la CLI no puede terminar el `lin
 
 La app cambia automaticamente a auth real cuando existen `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Si esas variables no estan disponibles, conserva el fallback `mock` para CI y bootstrap local.
 
+Si el login OAuth se usa desde un deployment de Vercel protegido, configurar `APP_URL` o `NEXT_PUBLIC_APP_URL` con la URL publica canonica de la app para que el callback de Supabase no vuelva a un preview privado.
+
 ---
 
 ## ⚠️ Reglas importantes

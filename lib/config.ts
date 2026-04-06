@@ -12,7 +12,19 @@ function resolveAuthProviderMode() {
   return configuredMode ?? (hasSupabaseConfig ? "supabase" : "mock");
 }
 
+function resolveCanonicalAppUrl() {
+  const configuredUrl =
+    process.env.APP_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.SITE_URL ??
+    "";
+
+  return configuredUrl.trim().replace(/\/+$/, "");
+}
+
 export const appConfig = {
   authProviderMode: resolveAuthProviderMode(),
-  supabaseProjectRef: process.env.SUPABASE_PROJECT_REF ?? "qfiyxpaxbdhbeapksyjp"
+  supabaseProjectRef: process.env.SUPABASE_PROJECT_REF ?? "qfiyxpaxbdhbeapksyjp",
+  canonicalAppUrl: resolveCanonicalAppUrl()
 } as const;
