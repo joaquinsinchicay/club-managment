@@ -50,12 +50,55 @@
     "feedback": {
       "active_club_updated": "Actualizamos el club activo correctamente.",
       "club_not_available": "No tienes acceso al club seleccionado.",
-      "forbidden": "No pudimos actualizar el club activo."
+      "forbidden": "No pudimos actualizar el club activo.",
+      "session_opened": "La jornada del dia fue abierta correctamente.",
+      "session_closed": "La jornada del dia fue cerrada correctamente.",
+      "movement_created": "El movimiento fue registrado correctamente.",
+      "session_already_exists": "La jornada del dia ya fue abierta.",
+      "session_not_open": "No hay una jornada abierta para cerrar.",
+      "session_required": "Debes abrir la jornada antes de registrar movimientos.",
+      "account_required": "Debes seleccionar una cuenta.",
+      "category_required": "Debes seleccionar una categoria.",
+      "movement_type_required": "Debes seleccionar un tipo de movimiento.",
+      "concept_required": "Debes completar el concepto.",
+      "currency_required": "Debes seleccionar una moneda.",
+      "amount_required": "Debes completar el importe.",
+      "amount_must_be_positive": "El importe debe ser mayor a cero.",
+      "invalid_account": "La cuenta seleccionada no es valida para el club activo.",
+      "invalid_category": "La categoria seleccionada no es valida para el club activo.",
+      "invalid_currency": "La moneda seleccionada no es valida para la cuenta.",
+      "unknown_error": "No pudimos completar la accion de tesoreria."
     },
     "club_selector": {
       "label": "Cambiar club activo",
       "helper": "Selecciona otro club para cambiar el contexto operativo.",
       "loading": "Actualizando club activo..."
+    },
+    "treasury": {
+      "title": "Saldos de cuentas",
+      "description": "Opera la jornada diaria y registra movimientos del club activo.",
+      "session_label": "Estado de jornada",
+      "session_open": "Abierta",
+      "session_closed": "Cerrada",
+      "session_not_started": "Sin apertura",
+      "empty_accounts": "No hay cuentas disponibles para Secretaria en el club activo.",
+      "open_session_cta": "Abrir jornada",
+      "close_session_cta": "Cerrar jornada",
+      "movement_form_title": "Registrar movimiento",
+      "movement_form_description": "Carga ingresos y egresos del dia sobre la jornada abierta.",
+      "date_label": "Fecha",
+      "account_label": "Cuenta",
+      "movement_type_label": "Tipo",
+      "category_label": "Categoria",
+      "concept_label": "Concepto",
+      "currency_label": "Moneda",
+      "amount_label": "Importe",
+      "create_cta": "Crear",
+      "reset_cta": "Borrar formulario",
+      "movement_types": {
+        "ingreso": "Ingreso",
+        "egreso": "Egreso"
+      }
     }
   },
   "settings": {

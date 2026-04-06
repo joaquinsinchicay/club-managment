@@ -9,8 +9,12 @@ import type {
   ClubMember,
   GoogleProfile,
   GoogleProfileKey,
+  DailyCashSession,
   Membership,
   MembershipRole,
+  TreasuryAccount,
+  TreasuryCategory,
+  TreasuryMovement,
   User
 } from "@/lib/domain/access";
 
@@ -27,6 +31,28 @@ type AccessRepository = {
   findClubById(clubId: string, client?: AccessRepositoryClient): Promise<Club | null>;
   listClubMembers(clubId: string, client?: AccessRepositoryClient): Promise<ClubMember[]>;
   listPendingInvitationsByEmail(email: string, client?: AccessRepositoryClient): Promise<ClubInvitation[]>;
+  listTreasuryAccountsForClub(clubId: string): Promise<TreasuryAccount[]>;
+  listTreasuryCategoriesForClub(clubId: string): Promise<TreasuryCategory[]>;
+  getDailyCashSessionByDate(clubId: string, sessionDate: string): Promise<DailyCashSession | null>;
+  createDailyCashSession(
+    clubId: string,
+    sessionDate: string,
+    openedByUserId: string
+  ): Promise<DailyCashSession | null>;
+  closeDailyCashSession(sessionId: string, closedByUserId: string): Promise<DailyCashSession | null>;
+  listTreasuryMovementsBySession(sessionId: string): Promise<TreasuryMovement[]>;
+  createTreasuryMovement(input: {
+    clubId: string;
+    dailyCashSessionId: string;
+    accountId: string;
+    movementType: "ingreso" | "egreso";
+    categoryId: string;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+    movementDate: string;
+    createdByUserId: string;
+  }): Promise<TreasuryMovement | null>;
   getLastActiveClubId(userId: string, client?: AccessRepositoryClient): Promise<string | null>;
   setLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient): Promise<void>;
   createClubInvitation(
@@ -74,6 +100,10 @@ type MockStore = {
   memberships: Membership[];
   clubs: Club[];
   invitations: ClubInvitation[];
+  treasuryAccounts: TreasuryAccount[];
+  treasuryCategories: TreasuryCategory[];
+  dailyCashSessions: DailyCashSession[];
+  treasuryMovements: TreasuryMovement[];
   preferences: Map<string, string>;
 };
 
@@ -223,7 +253,62 @@ function createStore(): MockStore {
 
   const invitations: ClubInvitation[] = [];
 
-  return { users, memberships, clubs, invitations, preferences };
+  const treasuryAccounts: TreasuryAccount[] = [
+    {
+      id: "account-secretaria-caja-001",
+      clubId: CLUB_ID,
+      name: "Caja principal",
+      accountScope: "secretaria",
+      currencies: ["ARS"]
+    },
+    {
+      id: "account-secretaria-banco-001",
+      clubId: CLUB_ID,
+      name: "Banco operativo",
+      accountScope: "secretaria",
+      currencies: ["ARS"]
+    },
+    {
+      id: "account-secretaria-sur-001",
+      clubId: CLUB_SUR_ID,
+      name: "Caja Sur",
+      accountScope: "secretaria",
+      currencies: ["ARS"]
+    }
+  ];
+
+  const treasuryCategories: TreasuryCategory[] = [
+    {
+      id: "category-cuotas-001",
+      clubId: CLUB_ID,
+      name: "Cuotas"
+    },
+    {
+      id: "category-gastos-001",
+      clubId: CLUB_ID,
+      name: "Gastos operativos"
+    },
+    {
+      id: "category-sur-001",
+      clubId: CLUB_SUR_ID,
+      name: "Cuotas Sur"
+    }
+  ];
+
+  const dailyCashSessions: DailyCashSession[] = [];
+  const treasuryMovements: TreasuryMovement[] = [];
+
+  return {
+    users,
+    memberships,
+    clubs,
+    invitations,
+    treasuryAccounts,
+    treasuryCategories,
+    dailyCashSessions,
+    treasuryMovements,
+    preferences
+  };
 }
 
 function getStore(): MockStore {
@@ -872,6 +957,70 @@ export const accessRepository: AccessRepository = {
 
       return new Date(invitation.expiresAt).getTime() > Date.now();
     });
+  },
+  async listTreasuryAccountsForClub(clubId) {
+    return getStore().treasuryAccounts.filter((account) => account.clubId === clubId);
+  },
+  async listTreasuryCategoriesForClub(clubId) {
+    return getStore().treasuryCategories.filter((category) => category.clubId === clubId);
+  },
+  async getDailyCashSessionByDate(clubId, sessionDate) {
+    return (
+      getStore().dailyCashSessions.find(
+        (session) => session.clubId === clubId && session.sessionDate === sessionDate
+      ) ?? null
+    );
+  },
+  async createDailyCashSession(clubId, sessionDate, openedByUserId) {
+    const session: DailyCashSession = {
+      id: `session-${Date.now()}`,
+      clubId,
+      sessionDate,
+      status: "open",
+      openedAt: now(),
+      closedAt: null,
+      openedByUserId,
+      closedByUserId: null
+    };
+
+    getStore().dailyCashSessions.push(session);
+    return session;
+  },
+  async closeDailyCashSession(sessionId, closedByUserId) {
+    const store = getStore();
+    const session = store.dailyCashSessions.find((entry) => entry.id === sessionId);
+
+    if (!session) {
+      return null;
+    }
+
+    session.status = "closed";
+    session.closedAt = now();
+    session.closedByUserId = closedByUserId;
+    return session;
+  },
+  async listTreasuryMovementsBySession(sessionId) {
+    return getStore().treasuryMovements.filter((movement) => movement.dailyCashSessionId === sessionId);
+  },
+  async createTreasuryMovement(input) {
+    const movement: TreasuryMovement = {
+      id: `movement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      clubId: input.clubId,
+      dailyCashSessionId: input.dailyCashSessionId,
+      accountId: input.accountId,
+      movementType: input.movementType,
+      categoryId: input.categoryId,
+      concept: input.concept,
+      currencyCode: input.currencyCode,
+      amount: input.amount,
+      movementDate: input.movementDate,
+      createdByUserId: input.createdByUserId,
+      status: "pending_consolidation",
+      createdAt: now()
+    };
+
+    getStore().treasuryMovements.push(movement);
+    return movement;
   },
   async getLastActiveClubId(userId, client) {
     if (shouldUseSupabaseDatabase()) {

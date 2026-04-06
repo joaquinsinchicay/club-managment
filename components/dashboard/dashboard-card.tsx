@@ -1,14 +1,22 @@
 import { ActiveClubSelector } from "@/components/dashboard/active-club-selector";
+import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { AppHeader } from "@/components/navigation/app-header";
 import { CardShell } from "@/components/ui/card-shell";
 import { StatusMessage } from "@/components/ui/status-message";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
+import type { DashboardTreasuryCard as DashboardTreasuryCardData, TreasuryAccount, TreasuryCategory } from "@/lib/domain/access";
 
 type DashboardCardProps = {
   context: SessionContext;
   feedbackCode?: string;
   setActiveClubAction: (formData: FormData) => Promise<void>;
+  treasuryCard: DashboardTreasuryCardData | null;
+  treasuryAccounts: TreasuryAccount[];
+  treasuryCategories: TreasuryCategory[];
+  openDailyCashSessionAction: () => Promise<void>;
+  closeDailyCashSessionAction: () => Promise<void>;
+  createTreasuryMovementAction: (formData: FormData) => Promise<void>;
 };
 
 function getFeedbackMessage(feedbackCode?: string) {
@@ -32,7 +40,13 @@ function getFeedbackMessage(feedbackCode?: string) {
 export function DashboardCard({
   context,
   feedbackCode,
-  setActiveClubAction
+  setActiveClubAction,
+  treasuryCard,
+  treasuryAccounts,
+  treasuryCategories,
+  openDailyCashSessionAction,
+  closeDailyCashSessionAction,
+  createTreasuryMovementAction
 }: DashboardCardProps) {
   const feedbackMessage = getFeedbackMessage(feedbackCode);
 
@@ -85,6 +99,17 @@ export function DashboardCard({
                 </p>
               </div>
             </div>
+
+            {treasuryCard ? (
+              <TreasuryCard
+                treasuryCard={treasuryCard}
+                accounts={treasuryAccounts}
+                categories={treasuryCategories}
+                openDailyCashSessionAction={openDailyCashSessionAction}
+                closeDailyCashSessionAction={closeDailyCashSessionAction}
+                createTreasuryMovementAction={createTreasuryMovementAction}
+              />
+            ) : null}
           </div>
         </CardShell>
       </main>
