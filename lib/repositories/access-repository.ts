@@ -1,9 +1,11 @@
 import { appConfig } from "@/lib/config";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 import type {
   AuthIdentity,
   Club,
+  ClubInvitation,
   ClubMember,
   GoogleProfile,
   GoogleProfileKey,
@@ -24,8 +26,24 @@ type AccessRepository = {
   listActiveMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   findClubById(clubId: string, client?: AccessRepositoryClient): Promise<Club | null>;
   listClubMembers(clubId: string, client?: AccessRepositoryClient): Promise<ClubMember[]>;
+  listPendingInvitationsByEmail(email: string, client?: AccessRepositoryClient): Promise<ClubInvitation[]>;
   getLastActiveClubId(userId: string, client?: AccessRepositoryClient): Promise<string | null>;
   setLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient): Promise<void>;
+  createClubInvitation(
+    clubId: string,
+    email: string,
+    role: MembershipRole,
+    client?: AccessRepositoryClient
+  ): Promise<ClubInvitation | null>;
+  createMembership(
+    userId: string,
+    clubId: string,
+    role: MembershipRole,
+    status: Membership["status"],
+    approvedByUserId?: string | null,
+    client?: AccessRepositoryClient
+  ): Promise<Membership | null>;
+  markInvitationAsUsed(invitationId: string, client?: AccessRepositoryClient): Promise<boolean>;
   approveMembership(
     membershipId: string,
     role: MembershipRole,
@@ -55,6 +73,7 @@ type MockStore = {
   users: Map<string, User>;
   memberships: Membership[];
   clubs: Club[];
+  invitations: ClubInvitation[];
   preferences: Map<string, string>;
 };
 
@@ -202,7 +221,9 @@ function createStore(): MockStore {
     [SECRETARIA_USER_ID, CLUB_ID]
   ]);
 
-  return { users, memberships, clubs, preferences };
+  const invitations: ClubInvitation[] = [];
+
+  return { users, memberships, clubs, invitations, preferences };
 }
 
 function getStore(): MockStore {
@@ -314,6 +335,28 @@ function mapClubMemberFromMembership(membership: Membership, user: User): ClubMe
     role: membership.role,
     status: membership.status,
     joinedAt: membership.joinedAt
+  };
+}
+
+function mapInvitationRow(row: {
+  id: string;
+  club_id: string;
+  email: string;
+  role: "admin" | "secretaria" | "tesoreria";
+  status: string;
+  expires_at: string | null;
+  used_at: string | null;
+  created_at: string | null;
+}): ClubInvitation {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    email: row.email,
+    role: row.role,
+    status: row.status === "used" ? "used" : "pending",
+    expiresAt: row.expires_at,
+    usedAt: row.used_at,
+    createdAt: row.created_at ?? now()
   };
 }
 
@@ -457,6 +500,33 @@ async function listRealClubMembers(clubId: string, client?: AccessRepositoryClie
     .map((entry) => mapClubMemberFromMembership(entry.membership, entry.user));
 }
 
+async function listRealPendingInvitationsByEmail(email: string, client?: AccessRepositoryClient) {
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("club_invitations")
+    .select("id,club_id,email,role,status,expires_at,used_at,created_at")
+    .eq("email", email.toLowerCase())
+    .eq("status", "pending")
+    .is("used_at", null);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map(mapInvitationRow).filter((invitation) => {
+    if (!invitation.expiresAt) {
+      return true;
+    }
+
+    return new Date(invitation.expiresAt).getTime() > Date.now();
+  });
+}
+
 async function setRealLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient) {
   const supabase = createAccessSupabaseClient(client);
 
@@ -473,6 +543,95 @@ async function setRealLastActiveClubId(userId: string, clubId: string, client?: 
       onConflict: "user_id"
     }
   );
+}
+
+async function createRealClubInvitation(
+  clubId: string,
+  email: string,
+  role: MembershipRole,
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const { data, error } = await supabase
+    .from("club_invitations")
+    .insert({
+      club_id: clubId,
+      email: normalizedEmail,
+      role,
+      status: "pending"
+    })
+    .select("id,club_id,email,role,status,expires_at,used_at,created_at")
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapInvitationRow(data);
+}
+
+async function createRealMembership(
+  userId: string,
+  clubId: string,
+  role: MembershipRole,
+  status: Membership["status"],
+  approvedByUserId?: string | null,
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const timestamp = now();
+
+  const { data, error } = await supabase
+    .from("memberships")
+    .insert({
+      user_id: userId,
+      club_id: clubId,
+      role,
+      status,
+      joined_at: status === "activo" ? timestamp : null,
+      approved_at: status === "activo" ? timestamp : null,
+      approved_by_user_id: approvedByUserId ?? null,
+      updated_at: timestamp
+    })
+    .select("id,user_id,club_id,role,status,joined_at")
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapMembershipRow(data);
+}
+
+async function markRealInvitationAsUsed(invitationId: string, client?: AccessRepositoryClient) {
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return false;
+  }
+
+  const timestamp = now();
+  const { error } = await supabase
+    .from("club_invitations")
+    .update({
+      status: "used",
+      used_at: timestamp
+    })
+    .eq("id", invitationId);
+
+  return !error;
 }
 
 async function approveRealMembership(
@@ -695,6 +854,25 @@ export const accessRepository: AccessRepository = {
       })
       .filter((member): member is ClubMember => Boolean(member));
   },
+  async listPendingInvitationsByEmail(email, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealPendingInvitationsByEmail(email, client);
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    return getStore().invitations.filter((invitation) => {
+      if (invitation.email !== normalizedEmail || invitation.status !== "pending" || invitation.usedAt) {
+        return false;
+      }
+
+      if (!invitation.expiresAt) {
+        return true;
+      }
+
+      return new Date(invitation.expiresAt).getTime() > Date.now();
+    });
+  },
   async getLastActiveClubId(userId, client) {
     if (shouldUseSupabaseDatabase()) {
       return getRealLastActiveClubId(userId, client);
@@ -709,6 +887,58 @@ export const accessRepository: AccessRepository = {
     }
 
     getStore().preferences.set(userId, clubId);
+  },
+  async createClubInvitation(clubId, email, role, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealClubInvitation(clubId, email, role, client);
+    }
+
+    const invitation: ClubInvitation = {
+      id: `invitation-${Date.now()}`,
+      clubId,
+      email: email.trim().toLowerCase(),
+      role,
+      status: "pending",
+      expiresAt: null,
+      usedAt: null,
+      createdAt: now()
+    };
+
+    getStore().invitations.push(invitation);
+    return invitation;
+  },
+  async createMembership(userId, clubId, role, status, approvedByUserId, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealMembership(userId, clubId, role, status, approvedByUserId, client);
+    }
+
+    const timestamp = now();
+    const membership: Membership = {
+      id: `membership-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      userId,
+      clubId,
+      role,
+      status,
+      joinedAt: status === "activo" ? timestamp : timestamp
+    };
+
+    getStore().memberships.push(membership);
+    return membership;
+  },
+  async markInvitationAsUsed(invitationId, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return markRealInvitationAsUsed(invitationId, client);
+    }
+
+    const invitation = getStore().invitations.find((entry) => entry.id === invitationId);
+
+    if (!invitation) {
+      return false;
+    }
+
+    invitation.status = "used";
+    invitation.usedAt = now();
+    return true;
   },
   async approveMembership(membershipId, role, approvedByUserId, client) {
     if (shouldUseSupabaseDatabase()) {

@@ -66,6 +66,27 @@
       "forbidden_title": "No tienes permisos para abrir esta configuracion",
       "forbidden_description": "Solo un usuario admin del club activo puede acceder a esta pagina.",
       "back_to_dashboard_cta": "Volver al dashboard",
+      "invitations": {
+        "section_title": "Invitar usuario",
+        "section_description": "Genera una invitacion para sumar un usuario al club activo con el rol correcto.",
+        "toggle_cta": "Invitar usuario",
+        "email_label": "Email del usuario",
+        "role_label": "Rol a asignar",
+        "invite_cta": "Invitar",
+        "cancel_cta": "Cancelar",
+        "email_placeholder": "usuario@ejemplo.com",
+        "feedback": {
+          "invitation_created": "La invitacion fue registrada correctamente para el club activo.",
+          "already_member": "Ese usuario ya pertenece al club activo.",
+          "already_invited": "Ya existe una invitacion pendiente para ese email en el club activo.",
+          "email_required": "Debes completar un email para enviar la invitacion.",
+          "email_invalid": "Debes ingresar un email valido.",
+          "role_required": "Debes seleccionar un rol para la invitacion.",
+          "invalid_role": "El rol seleccionado no es valido.",
+          "forbidden": "No tienes permisos para invitar usuarios en este club.",
+          "unknown_error": "No pudimos registrar la invitacion. Vuelve a intentarlo."
+        }
+      },
       "members": {
         "section_title": "Miembros del club",
         "section_description": "Aprueba ingresos, actualiza roles y administra quienes pueden operar en el club activo.",

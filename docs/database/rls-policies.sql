@@ -5,6 +5,7 @@
 alter table users enable row level security;
 alter table clubs enable row level security;
 alter table memberships enable row level security;
+alter table club_invitations enable row level security;
 alter table user_club_preferences enable row level security;
 alter table treasury_accounts enable row level security;
 alter table treasury_movements enable row level security;
@@ -155,6 +156,24 @@ using (user_id = current_user_id());
 
 create policy "Admins manage memberships in current club"
 on memberships
+for all
+using (
+  club_id = current_club_id()
+  and current_user_role() = 'admin'
+)
+with check (
+  club_id = current_club_id()
+  and current_user_role() = 'admin'
+);
+
+-- =========================================
+-- CLUB INVITATIONS
+-- =========================================
+
+drop policy if exists "Admins manage invitations in current club" on club_invitations;
+
+create policy "Admins manage invitations in current club"
+on club_invitations
 for all
 using (
   club_id = current_club_id()

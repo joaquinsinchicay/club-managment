@@ -8,6 +8,7 @@ import {
   removeClubMembership,
   updateClubMembershipRole
 } from "@/lib/services/club-members-service";
+import { inviteUserToActiveClub } from "@/lib/services/club-invitations-service";
 import { clearStoredActiveClubId, storeCurrentActiveClubId } from "@/lib/auth/session";
 
 function redirectToSettings(code: string) {
@@ -45,6 +46,14 @@ export async function removeClubMembershipAction(formData: FormData) {
     revalidatePath("/dashboard");
     redirect(result.redirectPath);
   }
+
+  redirectToSettings(result.code);
+}
+
+export async function inviteClubUserAction(formData: FormData) {
+  const email = String(formData.get("email") ?? "");
+  const role = String(formData.get("role") ?? "");
+  const result = await inviteUserToActiveClub(email, role);
 
   redirectToSettings(result.code);
 }

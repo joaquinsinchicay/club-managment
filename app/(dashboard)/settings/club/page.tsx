@@ -5,6 +5,7 @@ import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { getClubMembersForActiveClub } from "@/lib/services/club-members-service";
 import {
   approveClubMembershipAction,
+  inviteClubUserAction,
   removeClubMembershipAction,
   updateClubMembershipRoleAction
 } from "@/app/(dashboard)/settings/club/actions";
@@ -54,6 +55,7 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
         context={context}
         members={clubMembersData.members}
         feedbackCode={searchParams?.feedback}
+        inviteUserAction={inviteClubUserAction}
         approveMembershipAction={approveClubMembershipAction}
         updateMembershipRoleAction={updateClubMembershipRoleAction}
         removeMembershipAction={removeClubMembershipAction}

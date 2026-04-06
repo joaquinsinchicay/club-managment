@@ -11,6 +11,7 @@ import type {
   User
 } from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
+import { processPendingInvitationsForUser } from "@/lib/services/club-invitations-service";
 import {
   clearCurrentAuthUserId,
   clearCurrentActiveClubId,
@@ -36,6 +37,10 @@ type StartGoogleSignInInput = {
   requestUrl: string;
   mockProfile?: string;
 };
+
+function resolveAppUrl(requestUrl: string) {
+  return appConfig.canonicalAppUrl || new URL(requestUrl).origin;
+}
 
 function getRequestedProfile(mockProfile?: string): GoogleProfileKey {
   if (
@@ -260,10 +265,11 @@ export async function startGoogleSignIn({
 }: StartGoogleSignInInput): Promise<NextResponse> {
   if (appConfig.authProviderMode !== "mock") {
     const supabase = createServerSupabaseClient();
+    const appUrl = resolveAppUrl(requestUrl);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: new URL("/auth/callback", requestUrl).toString()
+        redirectTo: new URL("/auth/callback", appUrl).toString()
       }
     });
 
@@ -279,6 +285,7 @@ export async function startGoogleSignIn({
   const user = existingUser
     ? await accessRepository.updateUserFromGoogleProfile(existingUser.id, profile)
     : await accessRepository.createUserFromGoogleProfile(profile);
+  await processPendingInvitationsForUser(user.id, user.email);
 
   const resolution = await resolveDestinationForUser(user.id);
   const response = NextResponse.redirect(new URL(resolution.destination, requestUrl));
@@ -312,6 +319,7 @@ export async function finishGoogleSignIn(requestUrl: string, code: string): Prom
 
   const identity = buildAuthIdentityFromSupabaseUser(user);
   const syncedUser = await accessRepository.syncUserProfileFromAuthIdentity(identity, supabase);
+  await processPendingInvitationsForUser(syncedUser.id, syncedUser.email);
   const resolution = await resolveDestinationForUser(
     syncedUser.id,
     await getCurrentActiveClubId(),

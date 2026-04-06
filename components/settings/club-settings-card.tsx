@@ -1,3 +1,4 @@
+import { ClubInvitationManager } from "@/components/settings/club-invitation-manager";
 import { ClubMembersManager } from "@/components/settings/club-members-manager";
 import { StatusMessage } from "@/components/ui/status-message";
 import { CardShell } from "@/components/ui/card-shell";
@@ -5,17 +6,20 @@ import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { ClubMember } from "@/lib/domain/access";
 import type { ClubMemberActionCode } from "@/lib/services/club-members-service";
+import type { ClubInvitationActionCode } from "@/lib/services/club-invitations-service";
 
 type ClubSettingsCardProps = {
   context: SessionContext;
   members: ClubMember[];
   feedbackCode?: string;
+  inviteUserAction: (formData: FormData) => Promise<void>;
   approveMembershipAction: (formData: FormData) => Promise<void>;
   updateMembershipRoleAction: (formData: FormData) => Promise<void>;
   removeMembershipAction: (formData: FormData) => Promise<void>;
 };
 
-const successFeedbackCodes: ClubMemberActionCode[] = [
+const successFeedbackCodes: Array<ClubMemberActionCode | ClubInvitationActionCode> = [
+  "invitation_created",
   "membership_approved",
   "membership_role_updated",
   "membership_removed",
@@ -27,7 +31,10 @@ function getFeedbackMessage(feedbackCode?: string) {
     return null;
   }
 
-  const feedbackMessages = texts.settings.club.members.feedback as Record<string, string>;
+  const feedbackMessages = {
+    ...(texts.settings.club.members.feedback as Record<string, string>),
+    ...(texts.settings.club.invitations.feedback as Record<string, string>)
+  };
   const message = feedbackMessages[feedbackCode];
 
   if (!message) {
@@ -44,6 +51,7 @@ export function ClubSettingsCard({
   context,
   members,
   feedbackCode,
+  inviteUserAction,
   approveMembershipAction,
   updateMembershipRoleAction,
   removeMembershipAction
@@ -78,6 +86,8 @@ export function ClubSettingsCard({
           </div>
 
           {feedback ? <StatusMessage tone={feedback.tone} message={feedback.message} /> : null}
+
+          <ClubInvitationManager inviteUserAction={inviteUserAction} />
 
           <ClubMembersManager
             members={members}

@@ -46,6 +46,17 @@ export type ClubMember = {
   joinedAt: string;
 };
 
+export type ClubInvitation = {
+  id: string;
+  clubId: string;
+  email: string;
+  role: MembershipRole;
+  status: "pending" | "used";
+  expiresAt: string | null;
+  usedAt: string | null;
+  createdAt: string;
+};
+
 export type Session = {
   userId: string;
   activeClubId: string | null;
