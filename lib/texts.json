@@ -19,6 +19,24 @@
       "title": "Tu acceso esta pendiente de aprobacion",
       "description": "Tu cuenta existe, pero todavia no tienes una membresia activa en ningun club.",
       "next_step": "Un administrador debe aprobar tu acceso y asignarte un rol para habilitar el ingreso operativo."
+    },
+    "sign_out": {
+      "confirm_title": "Cerrar sesion",
+      "confirm_description": "Vas a cerrar tu sesion y volver a la pantalla de login.",
+      "confirm_cta": "Confirmar cierre",
+      "cancel_cta": "Cancelar",
+      "loading": "Cerrando sesion..."
+    }
+  },
+  "header": {
+    "pending_club_label": "Sin club activo",
+    "welcome_message": "Bienvenido/a {name}, tu rol es {role}",
+    "avatar_menu": {
+      "club_settings": "Configuracion del club",
+      "sign_out": "Cerrar sesion",
+      "trigger_aria_label": "Abrir menu de sesion",
+      "menu_aria_label": "Menu de sesion del usuario",
+      "fallback_initials_label": "Avatar del usuario sin foto de perfil"
     }
   },
   "dashboard": {
@@ -28,6 +46,169 @@
     "club_label": "Club activo",
     "user_label": "Usuario",
     "role_label": "Rol",
-    "role_pending": "pendiente"
+    "role_pending": "pendiente",
+    "feedback": {
+      "active_club_updated": "Actualizamos el club activo correctamente.",
+      "club_not_available": "No tienes acceso al club seleccionado.",
+      "forbidden": "No pudimos actualizar el club activo.",
+      "session_opened": "La jornada del dia fue abierta correctamente.",
+      "session_closed": "La jornada del dia fue cerrada correctamente.",
+      "movement_created": "El movimiento fue registrado correctamente.",
+      "session_already_exists": "La jornada del dia ya fue abierta.",
+      "session_not_open": "No hay una jornada abierta para cerrar.",
+      "session_required": "Debes abrir la jornada antes de registrar movimientos.",
+      "account_required": "Debes seleccionar una cuenta.",
+      "category_required": "Debes seleccionar una categoria.",
+      "movement_type_required": "Debes seleccionar un tipo de movimiento.",
+      "concept_required": "Debes completar el concepto.",
+      "currency_required": "Debes seleccionar una moneda.",
+      "amount_required": "Debes completar el importe.",
+      "amount_must_be_positive": "El importe debe ser mayor a cero.",
+      "invalid_account": "La cuenta seleccionada no es valida para el club activo.",
+      "invalid_category": "La categoria seleccionada no es valida para el club activo.",
+      "invalid_currency": "La moneda seleccionada no es valida para la cuenta.",
+      "no_accounts_available": "No hay cuentas disponibles para validar la jornada en el club activo.",
+      "declared_balance_required": "Debes completar el saldo declarado de todas las cuentas.",
+      "declared_balance_invalid": "Todos los saldos declarados deben ser importes validos.",
+      "adjustment_category_missing": "No encontramos la categoria Ajuste para registrar diferencias.",
+      "unknown_error": "No pudimos completar la accion de tesoreria."
+    },
+    "club_selector": {
+      "label": "Cambiar club activo",
+      "helper": "Selecciona otro club para cambiar el contexto operativo.",
+      "loading": "Actualizando club activo..."
+    },
+    "treasury": {
+      "title": "Saldos de cuentas",
+      "description": "Opera la jornada diaria y registra movimientos del club activo.",
+      "detail_cta": "Ver detalle",
+      "detail_eyebrow": "Detalle",
+      "detail_title": "Detalle de cuenta",
+      "detail_description": "Consulta saldos y movimientos del dia para la cuenta seleccionada.",
+      "detail_account_label": "Cuenta seleccionada",
+      "detail_create_movement_cta": "Registrar movimiento",
+      "detail_empty_movements": "No hay movimientos registrados para esta cuenta en la jornada actual.",
+      "account_switch_label": "Cambiar cuenta",
+      "session_label": "Estado de jornada",
+      "session_open": "Abierta",
+      "session_closed": "Cerrada",
+      "session_not_started": "Sin apertura",
+      "empty_accounts": "No hay cuentas disponibles para Secretaria en el club activo.",
+      "open_session_cta": "Abrir jornada",
+      "close_session_cta": "Cerrar jornada",
+      "open_session_flow_cta": "Validar apertura",
+      "close_session_flow_cta": "Validar cierre",
+      "movement_form_title": "Registrar movimiento",
+      "movement_form_description": "Carga ingresos y egresos del dia sobre la jornada abierta.",
+      "date_label": "Fecha",
+      "account_label": "Cuenta",
+      "movement_type_label": "Tipo",
+      "category_label": "Categoria",
+      "concept_label": "Concepto",
+      "currency_label": "Moneda",
+      "amount_label": "Importe",
+      "expected_balance_label": "Saldo esperado",
+      "declared_balance_label": "Saldo declarado",
+      "difference_label": "Diferencia",
+      "opening_eyebrow": "Apertura",
+      "opening_title": "Apertura de jornada",
+      "opening_description": "Valida los saldos iniciales de cada cuenta de Secretaria antes de habilitar la operatoria del dia.",
+      "closing_eyebrow": "Cierre",
+      "closing_title": "Cierre de jornada",
+      "closing_description": "Valida los saldos finales de cada cuenta de Secretaria antes de cerrar la operatoria del dia.",
+      "session_validation_description": "Revisa todas las cuentas visibles, ajusta los saldos declarados si hace falta y confirma la operacion.",
+      "session_validation_empty": "No hay cuentas habilitadas para Secretaria en el club activo, por lo que no puedes confirmar la operacion.",
+      "adjustment_preview_title": "Movimientos por diferencia",
+      "adjustment_preview_description": "Si confirmas, el sistema generara un movimiento por cada diferencia detectada con categoria Ajuste.",
+      "adjustment_message": "Se registrara un ajuste para reflejar la diferencia declarada.",
+      "confirm_open_session_cta": "Confirmar apertura",
+      "confirm_close_session_cta": "Confirmar cierre",
+      "cancel_session_cta": "Cancelar",
+      "back_to_dashboard_cta": "Volver al dashboard",
+      "create_cta": "Crear",
+      "reset_cta": "Borrar formulario",
+      "movement_types": {
+        "ingreso": "Ingreso",
+        "egreso": "Egreso"
+      }
+    }
+  },
+  "settings": {
+    "club": {
+      "eyebrow": "Configuracion",
+      "title": "Configuracion del club",
+      "description": "Gestiona la configuracion operativa del club activo.",
+      "forbidden_title": "No tienes permisos para abrir esta configuracion",
+      "forbidden_description": "Solo un usuario admin del club activo puede acceder a esta pagina.",
+      "back_to_dashboard_cta": "Volver al dashboard",
+      "invitations": {
+        "section_title": "Invitar usuario",
+        "section_description": "Genera una invitacion para sumar un usuario al club activo con el rol correcto.",
+        "toggle_cta": "Invitar usuario",
+        "email_label": "Email del usuario",
+        "role_label": "Rol a asignar",
+        "invite_cta": "Invitar",
+        "cancel_cta": "Cancelar",
+        "email_placeholder": "usuario@ejemplo.com",
+        "feedback": {
+          "invitation_created": "La invitacion fue registrada correctamente para el club activo.",
+          "already_member": "Ese usuario ya pertenece al club activo.",
+          "already_invited": "Ya existe una invitacion pendiente para ese email en el club activo.",
+          "email_required": "Debes completar un email para enviar la invitacion.",
+          "email_invalid": "Debes ingresar un email valido.",
+          "role_required": "Debes seleccionar un rol para la invitacion.",
+          "invalid_role": "El rol seleccionado no es valido.",
+          "forbidden": "No tienes permisos para invitar usuarios en este club.",
+          "unknown_error": "No pudimos registrar la invitacion. Vuelve a intentarlo."
+        }
+      },
+      "members": {
+        "section_title": "Miembros del club",
+        "section_description": "Aprueba ingresos, actualiza roles y administra quienes pueden operar en el club activo.",
+        "empty_title": "No hay miembros para mostrar",
+        "empty_description": "Cuando existan membresias en este club, apareceran listadas aqui.",
+        "current_user_badge": "Tu usuario",
+        "pending_badge": "Pendiente de aprobacion",
+        "name_label": "Nombre",
+        "email_label": "Email",
+        "role_label": "Rol",
+        "status_label": "Estado",
+        "actions_label": "Acciones",
+        "joined_at_label": "Ingreso al club",
+        "approve_cta": "Aprobar acceso",
+        "update_role_cta": "Actualizar rol",
+        "remove_cta": "Remover miembro",
+        "leave_club_cta": "Salir del club",
+        "remove_dialog_title": "Confirmar remocion",
+        "remove_dialog_description": "Esta accion eliminara la membresia del club activo.",
+        "remove_dialog_member_label": "Miembro seleccionado",
+        "remove_dialog_confirm_cta": "Confirmar remocion",
+        "remove_dialog_cancel_cta": "Cancelar",
+        "role_placeholder": "Selecciona un rol",
+        "roles": {
+          "admin": "Admin",
+          "secretaria": "Secretaria",
+          "tesoreria": "Tesoreria"
+        },
+        "statuses": {
+          "pendiente_aprobacion": "Pendiente de aprobacion",
+          "activo": "Activo",
+          "inactivo": "Inactivo"
+        },
+        "feedback": {
+          "membership_approved": "La membresia fue aprobada y el rol quedo asignado.",
+          "membership_role_updated": "El rol del miembro se actualizo correctamente.",
+          "membership_removed": "La membresia fue removida del club activo.",
+          "self_removed": "Tu membresia fue removida del club activo.",
+          "forbidden": "No tienes permisos para realizar esta accion.",
+          "invalid_role": "Debes seleccionar un rol valido.",
+          "member_not_found": "No encontramos la membresia seleccionada en el club activo.",
+          "membership_not_pending": "Solo puedes aprobar membresias que sigan pendientes.",
+          "membership_not_active": "Solo puedes cambiar el rol de membresias activas.",
+          "last_admin_required": "Debe existir al menos un admin activo en el club.",
+          "unknown_error": "No pudimos completar la accion. Vuelve a intentarlo."
+        }
+      }
+    }
   }
 }

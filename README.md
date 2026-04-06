@@ -231,7 +231,7 @@ El repositorio ya incluye una base ejecutable minima con:
 * capa base de `lib/auth`, `lib/domain` y `lib/repositories`
 * validacion documental por script
 * pipeline CI con `lint`, `typecheck` y `build`
-* implementacion inicial de US-01 sobre un proveedor de auth mockeable
+* implementacion de US-01 y US-02 sobre un proveedor de auth mockeable
 
 ### Correr local
 
@@ -245,6 +245,13 @@ npm run dev
 Por defecto el proyecto corre con `AUTH_PROVIDER_MODE=mock`.
 
 Esto permite validar la primera vertical funcional sin depender todavia de credenciales reales de Supabase. La integracion real queda preparada como siguiente iteracion.
+
+Perfiles mock disponibles para probar flujos y permisos:
+
+* `/auth/google/start?mockProfile=existing_active` → usuario admin con acceso a configuracion del club
+* `/auth/google/start?mockProfile=existing_secretaria` → usuario no admin sin acceso a configuracion del club
+* `/auth/google/start?mockProfile=existing_pending` → usuario sin membresia activa
+* `/auth/google/start` → usuario nuevo sin membresia activa
 
 ### Conexion con Supabase
 
@@ -267,6 +274,8 @@ npx supabase link --project-ref qfiyxpaxbdhbeapksyjp
 Sin `SUPABASE_ACCESS_TOKEN` o `supabase login`, la CLI no puede terminar el `link` remoto.
 
 La app cambia automaticamente a auth real cuando existen `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Si esas variables no estan disponibles, conserva el fallback `mock` para CI y bootstrap local.
+
+Si el login OAuth se usa desde un deployment de Vercel protegido, configurar `APP_URL` o `NEXT_PUBLIC_APP_URL` con la URL publica canonica de la app para que el callback de Supabase no vuelva a un preview privado.
 
 ---
 

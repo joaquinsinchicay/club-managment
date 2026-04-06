@@ -2,20 +2,35 @@ import { NextResponse } from "next/server";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 import { appConfig } from "@/lib/config";
-import type { AuthIdentity, Club, GoogleProfileKey, Membership, User } from "@/lib/domain/access";
+import type {
+  AuthIdentity,
+  AvailableClub,
+  Club,
+  GoogleProfileKey,
+  Membership,
+  User
+} from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
+import { processPendingInvitationsForUser } from "@/lib/services/club-invitations-service";
 import {
+  clearCurrentAuthUserId,
   clearCurrentActiveClubId,
+  getCurrentAuthUserId,
   getCurrentActiveClubId,
+  setCurrentAuthUserId,
   setCurrentActiveClubId
 } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+type AuthServiceClient = ReturnType<typeof createServerSupabaseClient>;
 
 export type SessionContext = {
   user: User;
   memberships: Membership[];
   activeMemberships: Membership[];
+  activeMembership: Membership | null;
   activeClub: Club | null;
+  availableClubs: AvailableClub[];
 };
 
 type StartGoogleSignInInput = {
@@ -23,12 +38,53 @@ type StartGoogleSignInInput = {
   mockProfile?: string;
 };
 
+function resolveAppUrl(requestUrl: string) {
+  return appConfig.canonicalAppUrl || new URL(requestUrl).origin;
+}
+
+function shouldUseVercelProtectionBypass(appUrl: string) {
+  const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  const isPreviewDeployment = process.env.VERCEL_TARGET_ENV === "preview";
+  const isVercelHostname = new URL(appUrl).hostname.endsWith(".vercel.app");
+
+  return Boolean(bypassSecret && isPreviewDeployment && isVercelHostname);
+}
+
+function buildOAuthCallbackUrl(appUrl: string) {
+  const callbackUrl = new URL("/auth/callback", appUrl);
+
+  if (!shouldUseVercelProtectionBypass(appUrl)) {
+    return callbackUrl.toString();
+  }
+
+  const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET!;
+  callbackUrl.searchParams.set("x-vercel-protection-bypass", bypassSecret);
+  callbackUrl.searchParams.set("x-vercel-set-bypass-cookie", "samesitenone");
+
+  return callbackUrl.toString();
+}
+
 function getRequestedProfile(mockProfile?: string): GoogleProfileKey {
-  if (mockProfile === "existing_pending" || mockProfile === "existing_active") {
+  if (
+    mockProfile === "existing_pending" ||
+    mockProfile === "existing_active" ||
+    mockProfile === "existing_secretaria"
+  ) {
     return mockProfile;
   }
 
   return "new_pending";
+}
+
+function mapAuthIdentityToUser(identity: AuthIdentity): User {
+  return {
+    id: identity.id,
+    email: identity.email,
+    fullName: identity.fullName,
+    avatarUrl: identity.avatarUrl,
+    createdAt: identity.createdAt,
+    updatedAt: identity.updatedAt
+  };
 }
 
 function buildAuthIdentityFromSupabaseUser(user: SupabaseUser): AuthIdentity {
@@ -50,8 +106,34 @@ function buildAuthIdentityFromSupabaseUser(user: SupabaseUser): AuthIdentity {
   };
 }
 
-async function resolveDestinationForUser(userId: string, currentActiveClubId?: string | null) {
-  const activeMemberships = await accessRepository.listActiveMembershipsForUser(userId);
+async function buildAvailableClubs(activeMemberships: Membership[], client?: AuthServiceClient) {
+  const clubs = await Promise.all(
+    activeMemberships.map(async (membership) => {
+      const club = await accessRepository.findClubById(membership.clubId, client);
+
+      if (!club) {
+        return null;
+      }
+
+      return {
+        id: club.id,
+        name: club.name,
+        slug: club.slug,
+        role: membership.role,
+        status: membership.status
+      } satisfies AvailableClub;
+    })
+  );
+
+  return clubs.filter((club): club is AvailableClub => Boolean(club));
+}
+
+async function resolveDestinationForUser(
+  userId: string,
+  currentActiveClubId?: string | null,
+  client?: AuthServiceClient
+) {
+  const activeMemberships = await accessRepository.listActiveMembershipsForUser(userId, client);
 
   if (activeMemberships.length === 0) {
     return {
@@ -62,7 +144,7 @@ async function resolveDestinationForUser(userId: string, currentActiveClubId?: s
 
   const preferredClubId =
     currentActiveClubId ??
-    (await accessRepository.getLastActiveClubId(userId)) ??
+    (await accessRepository.getLastActiveClubId(userId, client)) ??
     activeMemberships[0]?.clubId ??
     null;
 
@@ -72,7 +154,7 @@ async function resolveDestinationForUser(userId: string, currentActiveClubId?: s
       : activeMemberships[0]?.clubId ?? null;
 
   if (resolvedClubId) {
-    await accessRepository.setLastActiveClubId(userId, resolvedClubId);
+    await accessRepository.setLastActiveClubId(userId, resolvedClubId, client);
   }
 
   return {
@@ -81,37 +163,28 @@ async function resolveDestinationForUser(userId: string, currentActiveClubId?: s
   };
 }
 
-export async function getSessionContext(userId: string, activeClubId?: string | null): Promise<SessionContext> {
-  const user = await accessRepository.findUserById(userId);
-
-  if (!user) {
-    throw new Error("Session user was not found");
-  }
-
-  const memberships = await accessRepository.listMembershipsForUser(userId);
-  const activeMemberships = memberships.filter((membership) => membership.status === "activo");
-
-  const resolvedClubId =
-    activeClubId && activeMemberships.some((membership) => membership.clubId === activeClubId)
-      ? activeClubId
-      : activeMemberships[0]?.clubId ?? null;
-  const activeClub = resolvedClubId ? await accessRepository.findClubById(resolvedClubId) : null;
-
-  return {
-    user,
-    memberships,
-    activeMemberships,
-    activeClub
-  };
-}
-
-export async function resolveCurrentUserDestination(): Promise<string> {
+async function getAuthenticatedIdentity(): Promise<AuthIdentity | null> {
   if (appConfig.authProviderMode === "mock") {
-    const activeClubId = await getCurrentActiveClubId();
+    const userId = await getCurrentAuthUserId();
 
-    if (!activeClubId) {
-      return "/login";
+    if (!userId) {
+      return null;
     }
+
+    const user = await accessRepository.findUserById(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
   }
 
   const supabase = createServerSupabaseClient();
@@ -119,12 +192,93 @@ export async function resolveCurrentUserDestination(): Promise<string> {
     data: { user }
   } = await supabase.auth.getUser();
 
+  return user ? buildAuthIdentityFromSupabaseUser(user) : null;
+}
+
+export async function getSessionContext(
+  userId: string,
+  activeClubId?: string | null,
+  fallbackUser?: User
+): Promise<SessionContext> {
+  const user = (await accessRepository.findUserById(userId)) ?? fallbackUser;
+
   if (!user) {
+    throw new Error("Session user was not found");
+  }
+
+  const memberships = await accessRepository.listMembershipsForUser(userId);
+  const activeMemberships = memberships.filter((membership) => membership.status === "activo");
+  const preferredClubId = activeClubId ?? (await accessRepository.getLastActiveClubId(userId));
+
+  const resolvedClubId =
+    preferredClubId && activeMemberships.some((membership) => membership.clubId === preferredClubId)
+      ? preferredClubId
+      : activeMemberships[0]?.clubId ?? null;
+  const activeMembership =
+    activeMemberships.find((membership) => membership.clubId === resolvedClubId) ?? null;
+  const activeClub = resolvedClubId ? await accessRepository.findClubById(resolvedClubId) : null;
+  const availableClubs = await buildAvailableClubs(activeMemberships);
+
+  return {
+    user,
+    memberships,
+    activeMemberships,
+    activeMembership,
+    activeClub,
+    availableClubs
+  };
+}
+
+export async function getAuthenticatedSessionContext(): Promise<SessionContext | null> {
+  const identity = await getAuthenticatedIdentity();
+
+  if (!identity) {
+    return null;
+  }
+
+  const fallbackUser = mapAuthIdentityToUser(identity);
+  const persistedUser = identity.email
+    ? await accessRepository.findUserByEmail(identity.email)
+    : await accessRepository.findUserById(identity.id);
+  const user = persistedUser ?? fallbackUser;
+  const userId = persistedUser?.id ?? identity.id;
+  const memberships = await accessRepository.listMembershipsForUser(userId);
+  const activeMemberships = memberships.filter((membership) => membership.status === "activo");
+  const preferredClubId = await getCurrentActiveClubId();
+  const storedClubId = await accessRepository.getLastActiveClubId(userId);
+  const resolvedClubId =
+    preferredClubId && activeMemberships.some((membership) => membership.clubId === preferredClubId)
+      ? preferredClubId
+      : storedClubId && activeMemberships.some((membership) => membership.clubId === storedClubId)
+        ? storedClubId
+        : activeMemberships[0]?.clubId ?? null;
+  const activeMembership =
+    activeMemberships.find((membership) => membership.clubId === resolvedClubId) ?? null;
+  const activeClub = resolvedClubId ? await accessRepository.findClubById(resolvedClubId) : null;
+  const availableClubs = await buildAvailableClubs(activeMemberships);
+
+  return {
+    user,
+    memberships,
+    activeMemberships,
+    activeMembership,
+    activeClub,
+    availableClubs
+  };
+}
+
+export async function resolveCurrentUserDestination(): Promise<string> {
+  const context = await getAuthenticatedSessionContext();
+
+  if (!context) {
     return "/login";
   }
 
-  const resolution = await resolveDestinationForUser(user.id, await getCurrentActiveClubId());
-  return resolution.destination;
+  if (context.activeMemberships.length === 0 || !context.activeClub) {
+    return "/pending-approval";
+  }
+
+  return "/dashboard";
 }
 
 export async function startGoogleSignIn({
@@ -133,10 +287,11 @@ export async function startGoogleSignIn({
 }: StartGoogleSignInInput): Promise<NextResponse> {
   if (appConfig.authProviderMode !== "mock") {
     const supabase = createServerSupabaseClient();
+    const appUrl = resolveAppUrl(requestUrl);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: new URL("/auth/callback", requestUrl).toString()
+        redirectTo: buildOAuthCallbackUrl(appUrl)
       }
     });
 
@@ -152,12 +307,17 @@ export async function startGoogleSignIn({
   const user = existingUser
     ? await accessRepository.updateUserFromGoogleProfile(existingUser.id, profile)
     : await accessRepository.createUserFromGoogleProfile(profile);
+  await processPendingInvitationsForUser(user.id, user.email);
 
   const resolution = await resolveDestinationForUser(user.id);
   const response = NextResponse.redirect(new URL(resolution.destination, requestUrl));
 
+  setCurrentAuthUserId(response, user.id);
+
   if (resolution.activeClubId) {
     setCurrentActiveClubId(response, resolution.activeClubId);
+  } else {
+    clearCurrentActiveClubId(response);
   }
 
   return response;
@@ -180,9 +340,13 @@ export async function finishGoogleSignIn(requestUrl: string, code: string): Prom
   }
 
   const identity = buildAuthIdentityFromSupabaseUser(user);
-  await accessRepository.syncUserProfileFromAuthIdentity(identity);
-
-  const resolution = await resolveDestinationForUser(user.id, await getCurrentActiveClubId());
+  const syncedUser = await accessRepository.syncUserProfileFromAuthIdentity(identity, supabase);
+  await processPendingInvitationsForUser(syncedUser.id, syncedUser.email);
+  const resolution = await resolveDestinationForUser(
+    syncedUser.id,
+    await getCurrentActiveClubId(),
+    supabase
+  );
   const response = NextResponse.redirect(new URL(resolution.destination, requestUrl));
 
   if (resolution.activeClubId) {
@@ -202,5 +366,6 @@ export async function signOut(requestUrl: string): Promise<NextResponse> {
 
   const response = NextResponse.redirect(new URL("/login", requestUrl));
   clearCurrentActiveClubId(response);
+  clearCurrentAuthUserId(response);
   return response;
 }

@@ -1,28 +1,57 @@
 import { redirect } from "next/navigation";
 
+import { setActiveClubAction } from "@/app/(dashboard)/dashboard/actions";
+import {
+  createTreasuryMovementAction,
+} from "@/app/(dashboard)/dashboard/treasury-actions";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
-import { getSessionContext } from "@/lib/auth/service";
-import { appConfig } from "@/lib/config";
-import { getCurrentActiveClubId } from "@/lib/auth/session";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import { getDashboardTreasuryCardForActiveClub } from "@/lib/services/treasury-service";
+import { accessRepository } from "@/lib/repositories/access-repository";
 
-export default async function DashboardPage() {
-  const supabase = createServerSupabaseClient();
-  const {
-    data: { user }
-  } = appConfig.authProviderMode === "mock"
-    ? { data: { user: null } }
-    : await supabase.auth.getUser();
+type DashboardPageProps = {
+  searchParams?: {
+    feedback?: string;
+  };
+};
 
-  if (!user) {
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const context = await getAuthenticatedSessionContext();
+
+  if (!context) {
     redirect("/login");
   }
-
-  const context = await getSessionContext(user.id, await getCurrentActiveClubId());
 
   if (context.activeMemberships.length === 0 || !context.activeClub) {
     redirect("/pending-approval");
   }
 
-  return <DashboardCard context={context} />;
+  const activeMembership = context.activeMembership;
+
+  if (!activeMembership) {
+    redirect("/pending-approval");
+  }
+
+  const treasuryCard = await getDashboardTreasuryCardForActiveClub();
+  const treasuryAccounts = activeMembership.role === "secretaria"
+    ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
+        (account) => account.accountScope === "secretaria"
+      )
+    : [];
+  const treasuryCategories =
+    activeMembership.role === "secretaria"
+      ? await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id)
+      : [];
+
+  return (
+    <DashboardCard
+      context={context}
+      feedbackCode={searchParams?.feedback}
+      setActiveClubAction={setActiveClubAction}
+      treasuryCard={treasuryCard}
+      treasuryAccounts={treasuryAccounts}
+      treasuryCategories={treasuryCategories}
+      createTreasuryMovementAction={createTreasuryMovementAction}
+    />
+  );
 }
