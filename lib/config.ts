@@ -3,10 +3,9 @@ import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 function resolveAuthProviderMode() {
   const configuredMode = process.env.AUTH_PROVIDER_MODE;
   const hasSupabaseConfig = hasSupabaseBrowserConfig();
-  const isProductionDeployment =
-    process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+  const isVercelDeployment = process.env.VERCEL === "1";
 
-  if (hasSupabaseConfig && (!configuredMode || isProductionDeployment)) {
+  if (hasSupabaseConfig && (!configuredMode || isVercelDeployment)) {
     return "supabase";
   }
 
