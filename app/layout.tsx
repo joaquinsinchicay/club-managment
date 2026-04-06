@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
+import { GlobalFeedbackToast } from "@/components/ui/global-feedback-toast";
 import "./globals.css";
 import { texts } from "@/lib/texts";
 
@@ -15,7 +17,12 @@ type RootLayoutProps = Readonly<{
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <Suspense fallback={null}>
+          <GlobalFeedbackToast />
+        </Suspense>
+        {children}
+      </body>
     </html>
   );
 }

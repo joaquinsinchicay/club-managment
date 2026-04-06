@@ -111,6 +111,8 @@ Una User Story está "Done" solo si:
 * [ ] Flujos son claros y consistentes
 * [ ] Formularios tienen validación correcta
 * [ ] Estados (loading / empty / error) están contemplados
+* [ ] El feedback post-acción usa toast salvo excepción justificada
+* [ ] Si la pantalla tenía feedback inline legacy transitorio, fue migrado
 
 ---
 
@@ -151,6 +153,7 @@ La US NO puede considerarse terminada si:
 * ❌ hay acceso cross-club
 * ❌ no respeta roles
 * ❌ no respeta estados del sistema
+* ❌ introduce feedback post-acción inline fuera del patrón definido
 * ❌ rompe el dominio definido
 
 ---

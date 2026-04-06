@@ -144,7 +144,8 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 - Debe existir una acción explícita para volver al dashboard desde la pantalla de configuración.
 - La UI de edición de roles debe permitir multi-selección explícita y comprensible.
 - Los mensajes de error o éxito deben ser breves, visibles y no ambiguos.
-- Luego de aprobar, actualizar roles o remover, la pantalla debe volver al bloque de feedback para evitar que el mensaje quede fuera del viewport.
+- Luego de aprobar, actualizar roles o remover, el sistema debe mostrar feedback visible mediante toast sin depender de la posición del viewport.
+- El modal debe reservarse para confirmación previa de remoción y no para feedback post-acción.
 - No debe haber textos hardcodeados.
 
 ---

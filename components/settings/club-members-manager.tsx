@@ -75,7 +75,7 @@ export function ClubMembersManager({
             className="rounded-[24px] border border-warning/40 bg-warning/10 p-4 shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
                 <span aria-hidden="true">{getInitials(invitation.email, invitation.email)}</span>
               </div>
 
@@ -88,19 +88,19 @@ export function ClubMembersManager({
                 </div>
                 <p className="mt-1 truncate text-sm text-muted-foreground">{invitation.email}</p>
 
-                <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                  <div className="rounded-2xl border border-border/70 bg-card px-3 py-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+                    <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       {texts.settings.club.members.status_label}
-                    </p>
-                    <p className="mt-1 font-medium text-foreground">{getStatusLabel(invitation.status)}</p>
-                  </div>
-                  <div className="rounded-2xl border border-border/70 bg-card px-3 py-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    </span>
+                    <span className="font-medium">{getStatusLabel(invitation.status)}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+                    <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       {texts.settings.club.members.role_label}
-                    </p>
-                    <p className="mt-1 font-medium text-foreground">{getRoleLabel(invitation.role)}</p>
-                  </div>
+                    </span>
+                    <span className="font-medium">{getRoleLabel(invitation.role)}</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -121,15 +121,15 @@ export function ClubMembersManager({
               className={`rounded-[24px] border p-4 shadow-sm ${memberToneClass}`}
             >
               <div className="flex items-start gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
                   {member.avatarUrl ? (
                     <Image
                       src={member.avatarUrl}
                       alt=""
-                      width={48}
-                      height={48}
+                      width={44}
+                      height={44}
                       unoptimized
-                      className="h-12 w-12 object-cover"
+                      className="h-11 w-11 object-cover"
                     />
                   ) : (
                     <span aria-hidden="true">{initials}</span>
@@ -152,19 +152,19 @@ export function ClubMembersManager({
                   </div>
                   <p className="mt-1 truncate text-sm text-muted-foreground">{member.email}</p>
 
-                  <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                    <div className="rounded-2xl border border-border/70 bg-card px-3 py-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+                      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {texts.settings.club.members.status_label}
-                      </p>
-                      <p className="mt-1 font-medium text-foreground">{getStatusLabel(member.status)}</p>
-                    </div>
-                    <div className="rounded-2xl border border-border/70 bg-card px-3 py-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      </span>
+                      <span className="font-medium">{getStatusLabel(member.status)}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+                      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {texts.settings.club.members.roles_label}
-                      </p>
-                      <p className="mt-1 font-medium text-foreground">{formatMembershipRoles(member.roles)}</p>
-                    </div>
+                      </span>
+                      <span className="font-medium">{formatMembershipRoles(member.roles)}</span>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -176,10 +176,10 @@ export function ClubMembersManager({
                       ? approveMembershipAction
                       : updateMembershipRoleAction
                   }
-                  className="grid gap-3"
+                  className="grid gap-2"
                 >
                   <input type="hidden" name="membership_id" value={member.membershipId} />
-                  <fieldset className="grid gap-3 rounded-2xl border border-border/70 bg-card px-4 py-4">
+                  <fieldset className="grid gap-3 rounded-2xl border border-border/70 bg-card px-3 py-3">
                     <legend className="px-1 text-sm font-medium text-foreground">
                       {texts.settings.club.members.roles_label}
                     </legend>
@@ -192,7 +192,7 @@ export function ClubMembersManager({
                           <label
                             key={role}
                             htmlFor={inputId}
-                            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground transition hover:bg-secondary"
+                            className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground transition hover:bg-secondary"
                           >
                             <input
                               id={inputId}

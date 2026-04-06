@@ -2,7 +2,6 @@ import { ActiveClubSelector } from "@/components/dashboard/active-club-selector"
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { AppHeader } from "@/components/navigation/app-header";
 import { CardShell } from "@/components/ui/card-shell";
-import { StatusMessage } from "@/components/ui/status-message";
 import { formatMembershipRoles } from "@/lib/domain/membership-roles";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
@@ -10,7 +9,6 @@ import type { DashboardTreasuryCard as DashboardTreasuryCardData, TreasuryAccoun
 
 type DashboardCardProps = {
   context: SessionContext;
-  feedbackCode?: string;
   setActiveClubAction: (formData: FormData) => Promise<void>;
   treasuryCard: DashboardTreasuryCardData | null;
   treasuryAccounts: TreasuryAccount[];
@@ -18,35 +16,14 @@ type DashboardCardProps = {
   createTreasuryMovementAction: (formData: FormData) => Promise<void>;
 };
 
-function getFeedbackMessage(feedbackCode?: string) {
-  if (!feedbackCode) {
-    return null;
-  }
-
-  const feedbackMessages = texts.dashboard.feedback as Record<string, string>;
-  const message = feedbackMessages[feedbackCode];
-
-  if (!message) {
-    return null;
-  }
-
-  return {
-    tone: feedbackCode === "active_club_updated" ? "success" : "destructive",
-    message
-  } as const;
-}
-
 export function DashboardCard({
   context,
-  feedbackCode,
   setActiveClubAction,
   treasuryCard,
   treasuryAccounts,
   treasuryCategories,
   createTreasuryMovementAction
 }: DashboardCardProps) {
-  const feedbackMessage = getFeedbackMessage(feedbackCode);
-
   return (
     <div className="min-h-screen">
       <AppHeader context={context} />
@@ -58,9 +35,6 @@ export function DashboardCard({
           description={texts.dashboard.description}
         >
           <div className="space-y-4 text-sm text-muted-foreground">
-            {feedbackMessage ? (
-              <StatusMessage tone={feedbackMessage.tone} message={feedbackMessage.message} />
-            ) : null}
             <div className="grid gap-3 rounded-2xl border border-border bg-secondary/70 p-4">
               {context.availableClubs.length > 1 ? (
                 <ActiveClubSelector

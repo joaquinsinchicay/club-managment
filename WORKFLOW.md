@@ -106,6 +106,7 @@ Do not introduce behavior not defined in PDD.
 * Respetar roles
 * No hardcodear textos
 * Usar `lib/texts.json`
+* Migrar feedback inline transitorio a toast si la pantalla es modificada
 
 **Output**
 
@@ -220,6 +221,19 @@ No permitido:
 * hardcoded strings
 * textos en componentes
 * textos en server actions
+
+---
+
+### 2.1 Regla de feedback UX
+
+Todo feedback post-acción de éxito o error debe usar toast reusable.
+
+Solo se permite:
+
+* inline para validación de formularios o estados persistentes
+* modal para confirmaciones previas o acciones irreversibles
+
+Si una implementación toca una pantalla con feedback inline legacy transitorio, debe migrarlo dentro del mismo alcance.
 
 ---
 

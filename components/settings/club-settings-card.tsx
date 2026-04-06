@@ -2,66 +2,30 @@ import Link from "next/link";
 
 import { ClubInvitationManager } from "@/components/settings/club-invitation-manager";
 import { ClubMembersManager } from "@/components/settings/club-members-manager";
-import { StatusMessage } from "@/components/ui/status-message";
 import { CardShell } from "@/components/ui/card-shell";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { ClubMember, PendingClubInvitation } from "@/lib/domain/access";
-import type { ClubMemberActionCode } from "@/lib/services/club-members-service";
-import type { ClubInvitationActionCode } from "@/lib/services/club-invitations-service";
 
 type ClubSettingsCardProps = {
   context: SessionContext;
   members: ClubMember[];
   pendingInvitations: PendingClubInvitation[];
-  feedbackCode?: string;
   inviteUserAction: (formData: FormData) => Promise<void>;
   approveMembershipAction: (formData: FormData) => Promise<void>;
   updateMembershipRolesAction: (formData: FormData) => Promise<void>;
   removeMembershipAction: (formData: FormData) => Promise<void>;
 };
 
-const successFeedbackCodes: Array<ClubMemberActionCode | ClubInvitationActionCode> = [
-  "invitation_created",
-  "membership_approved",
-  "membership_roles_updated",
-  "membership_removed",
-  "self_removed"
-];
-
-function getFeedbackMessage(feedbackCode?: string) {
-  if (!feedbackCode) {
-    return null;
-  }
-
-  const feedbackMessages = {
-    ...(texts.settings.club.members.feedback as Record<string, string>),
-    ...(texts.settings.club.invitations.feedback as Record<string, string>)
-  };
-  const message = feedbackMessages[feedbackCode];
-
-  if (!message) {
-    return null;
-  }
-
-  return {
-    tone: successFeedbackCodes.includes(feedbackCode as ClubMemberActionCode) ? "success" : "destructive",
-    message
-  } as const;
-}
-
 export function ClubSettingsCard({
   context,
   members,
   pendingInvitations,
-  feedbackCode,
   inviteUserAction,
   approveMembershipAction,
   updateMembershipRolesAction,
   removeMembershipAction
 }: ClubSettingsCardProps) {
-  const feedback = getFeedbackMessage(feedbackCode);
-
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-10">
       <CardShell
@@ -95,12 +59,6 @@ export function ClubSettingsCard({
               {texts.settings.club.members.section_description}
             </p>
           </div>
-
-          {feedback ? (
-            <div id="feedback">
-              <StatusMessage tone={feedback.tone} message={feedback.message} />
-            </div>
-          ) : null}
 
           <ClubInvitationManager inviteUserAction={inviteUserAction} />
 

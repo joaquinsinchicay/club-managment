@@ -10,13 +10,7 @@ import { hasMembershipRole } from "@/lib/domain/membership-roles";
 import { getDashboardTreasuryCardForActiveClub } from "@/lib/services/treasury-service";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
-type DashboardPageProps = {
-  searchParams?: {
-    feedback?: string;
-  };
-};
-
-export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+export default async function DashboardPage() {
   const context = await getAuthenticatedSessionContext();
 
   if (!context) {
@@ -48,7 +42,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   return (
     <DashboardCard
       context={context}
-      feedbackCode={searchParams?.feedback}
       setActiveClubAction={setActiveClubAction}
       treasuryCard={treasuryCard}
       treasuryAccounts={treasuryAccounts}

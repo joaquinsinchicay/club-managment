@@ -1,22 +1,7 @@
 import { CardShell } from "@/components/ui/card-shell";
-import { StatusMessage } from "@/components/ui/status-message";
 import { texts } from "@/lib/texts";
 
-type GoogleLoginCardProps = {
-  searchParams?: {
-    error?: string;
-  };
-};
-
-const ERROR_MESSAGES = {
-  oauth_cancelled: texts.auth.login.oauth_cancelled,
-  oauth_generic_error: texts.auth.login.oauth_generic_error
-} as const;
-
-export function GoogleLoginCard({ searchParams }: GoogleLoginCardProps) {
-  const errorKey = searchParams?.error as keyof typeof ERROR_MESSAGES | undefined;
-  const errorMessage = errorKey ? ERROR_MESSAGES[errorKey] : null;
-
+export function GoogleLoginCard() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <CardShell
@@ -25,7 +10,6 @@ export function GoogleLoginCard({ searchParams }: GoogleLoginCardProps) {
         description={texts.auth.login.description}
       >
         <div className="space-y-4">
-          {errorMessage ? <StatusMessage tone="destructive" message={errorMessage} /> : null}
           <a
             className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-foreground px-4 py-3 text-center text-sm font-semibold text-primary-foreground transition hover:opacity-95"
             href="/auth/google/start"

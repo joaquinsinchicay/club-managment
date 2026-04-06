@@ -55,6 +55,24 @@ CORRECTO:
 
 ---
 
+## 🔔 Regla crítica: feedback al usuario
+
+### Patrón obligatorio
+- Todo feedback post-acción de éxito o error debe mostrarse en toast.
+- El toast debe ser reutilizable y consistente con el design system.
+- El mensaje debe ser breve, visible y no depender del scroll de la página.
+
+### Excepciones válidas
+- Validación inline de campos dentro de formularios.
+- Estados persistentes que forman parte principal de una pantalla.
+- Modales o diálogos solo para confirmaciones previas o acciones irreversibles.
+
+### Migración de legacy UI
+- Si se toca una pantalla que todavía usa feedback inline transitorio, debe migrarse a toast en la misma tarea.
+- No se deben introducir nuevos mensajes inline para feedback post-acción.
+
+---
+
 ## 🧩 Flujo de desarrollo
 
 Para cada US:
@@ -79,6 +97,7 @@ Antes de cerrar:
 - No hardcodea textos
 - No duplica lógica
 - Respeta arquitectura
+- Usa toast para feedback post-acción o justifica correctamente una excepción
 
 ---
 
@@ -171,6 +190,7 @@ Reglas:
 - Hardcode de textos
 - Lógica en UI
 - Acceso directo a DB desde UI
+- Feedback post-acción inline dentro de la página
 - Ignorar AC
 - Crear sin US
 - Duplicar lógica

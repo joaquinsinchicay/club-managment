@@ -12,13 +12,7 @@ import {
 } from "@/app/(dashboard)/settings/club/actions";
 import { redirect } from "next/navigation";
 
-type ClubSettingsPageProps = {
-  searchParams?: {
-    feedback?: string;
-  };
-};
-
-export default async function ClubSettingsPage({ searchParams }: ClubSettingsPageProps) {
+export default async function ClubSettingsPage() {
   const context = await getAuthenticatedSessionContext();
 
   if (!context) {
@@ -56,7 +50,6 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
         context={context}
         members={clubMembersData.members}
         pendingInvitations={clubMembersData.pendingInvitations}
-        feedbackCode={searchParams?.feedback}
         inviteUserAction={inviteClubUserAction}
         approveMembershipAction={approveClubMembershipAction}
         updateMembershipRolesAction={updateClubMembershipRoleAction}

@@ -138,6 +138,20 @@ No permitido:
 
 ---
 
+## 🔔 Estándar de feedback UX
+
+El feedback post-acción de éxito o error debe mostrarse mediante toast reusable.
+
+Excepciones permitidas:
+
+* validación inline de formularios
+* estados persistentes que forman parte del contenido principal
+* modales solo para confirmaciones o acciones irreversibles
+
+Si una pantalla tocada todavía usa feedback inline transitorio, debe migrarse en la misma tarea.
+
+---
+
 ## 🔄 Workflow de desarrollo
 
 Resumen:
