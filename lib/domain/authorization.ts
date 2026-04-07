@@ -23,7 +23,7 @@ export function canAccessClubSettingsPage(membership: MembershipLike) {
 }
 
 export function canAccessClubSettingsNavigation(membership: MembershipLike) {
-  return canManageClubMembers(membership);
+  return canAccessClubSettingsPage(membership);
 }
 
 export function canOperateSecretaria(membership: MembershipLike) {
