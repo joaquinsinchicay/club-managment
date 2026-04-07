@@ -39,6 +39,7 @@ El dashboard debe mostrar una card de saldos únicamente para usuarios con rol `
 - Detalle de movimientos por cuenta.
 - Validación avanzada de saldos declarados en apertura/cierre.
 - Operaciones de Tesorería.
+- El modulo separado de Tesorería bajo `/dashboard/treasury`.
 
 ---
 
@@ -70,6 +71,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ## 8. Reglas de negocio
 
 - Solo `secretaria` ve la card en este bloque.
+- Esta historia no cubre accesos ni cards del modulo propio de `tesoreria`.
 - La card usa únicamente datos del club activo.
 - Las acciones visibles dependen del estado de la jornada.
 - Los saldos se calculan a partir de movimientos del día de las cuentas con visibilidad `secretaria`.

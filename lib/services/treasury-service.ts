@@ -1,5 +1,5 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { canOperateSecretaria } from "@/lib/domain/authorization";
+import { canOperateSecretaria, canOperateTesoreria } from "@/lib/domain/authorization";
 import type {
   ClubActivity,
   DailyCashSessionValidation,
@@ -8,11 +8,14 @@ import type {
   ReceiptFormat,
   SessionBalanceDraft,
   TreasuryAccount,
+  TreasuryRoleDashboard,
   TreasuryCurrencyConfig,
   TreasuryMovementType,
   TreasuryAccountDetail
 } from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
+
+type TreasuryVisibilityRole = "secretaria" | "tesoreria";
 
 type TreasuryActionCode =
   | "session_opened"
@@ -65,6 +68,20 @@ async function getSecretariaSession() {
   return context;
 }
 
+async function getTesoreriaSession() {
+  const context = await getAuthenticatedSessionContext();
+
+  if (!context || !context.activeClub || !context.activeMembership) {
+    return null;
+  }
+
+  if (!canOperateTesoreria(context.activeMembership)) {
+    return null;
+  }
+
+  return context;
+}
+
 function buildMovementSignedAmount(movementType: "ingreso" | "egreso", amount: number) {
   return movementType === "ingreso" ? amount : amount * -1;
 }
@@ -72,6 +89,32 @@ function buildMovementSignedAmount(movementType: "ingreso" | "egreso", amount: n
 async function getSecretariaAccounts(clubId: string) {
   const accounts = await accessRepository.listTreasuryAccountsForClub(clubId);
   return accounts.filter((account) => account.visibleForSecretaria);
+}
+
+function getAccountsVisibleForRole(
+  accounts: TreasuryAccount[],
+  role: TreasuryVisibilityRole
+) {
+  return accounts.filter((account) =>
+    role === "secretaria" ? account.visibleForSecretaria : account.visibleForTesoreria
+  );
+}
+
+function buildAccountBalances(
+  account: TreasuryAccount,
+  movements: Array<{
+    accountId: string;
+    currencyCode: string;
+    movementType: "ingreso" | "egreso";
+    amount: number;
+  }>
+) {
+  return account.currencies.map((currencyCode) => ({
+    currencyCode,
+    amount: movements
+      .filter((movement) => movement.accountId === account.id && movement.currencyCode === currencyCode)
+      .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0)
+  }));
 }
 
 async function getConfiguredTreasuryCurrencies(clubId: string): Promise<TreasuryCurrencyConfig[]> {
@@ -464,24 +507,47 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     accounts: secretaryAccounts.map((account) => ({
       accountId: account.id,
       name: account.name,
-      balances: account.currencies.map((currencyCode) => {
-        const amount = movements
-          .filter((movement) => movement.accountId === account.id && movement.currencyCode === currencyCode)
-          .reduce((total, movement) => {
-            const signedAmount = buildMovementSignedAmount(movement.movementType, movement.amount);
-            return total + signedAmount;
-          }, 0);
-
-        return {
-          currencyCode,
-          amount
-        };
-      })
+      balances: buildAccountBalances(account, movements)
     })),
     availableActions:
       session?.status === "open"
         ? ["close_session", "create_movement"]
         : ["open_session"]
+  };
+}
+
+export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryRoleDashboard | null> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return null;
+  }
+
+  const clubId = context.activeClub.id;
+  const sessionDate = getTodayDate();
+  const accounts = getAccountsVisibleForRole(
+    await accessRepository.listTreasuryAccountsForClub(clubId),
+    "tesoreria"
+  );
+
+  const movementsByAccount = await Promise.all(
+    accounts.map(async (account) => ({
+      account,
+      movements: await accessRepository.listTreasuryMovementsByAccount(
+        clubId,
+        account.id,
+        sessionDate
+      )
+    }))
+  );
+
+  return {
+    sessionDate,
+    accounts: movementsByAccount.map(({ account, movements }) => ({
+      accountId: account.id,
+      name: account.name,
+      balances: buildAccountBalances(account, movements)
+    }))
   };
 }
 
@@ -729,13 +795,14 @@ function validateReceiptNumberAgainstFormat(
 }
 
 export async function getTreasuryAccountDetailForActiveClub(
-  accountId: string
+  accountId: string,
+  role: TreasuryVisibilityRole = "secretaria"
 ): Promise<{
   accounts: Awaited<ReturnType<typeof accessRepository.listTreasuryAccountsForClub>>;
   detail: TreasuryAccountDetail | null;
   canCreateMovement: boolean;
 } | null> {
-  const context = await getSecretariaSession();
+  const context = role === "secretaria" ? await getSecretariaSession() : await getTesoreriaSession();
 
   if (!context?.activeClub) {
     return null;
@@ -748,8 +815,8 @@ export async function getTreasuryAccountDetailForActiveClub(
     accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
   ]);
 
-  const secretariaAccounts = accounts.filter((account) => account.visibleForSecretaria);
-  const selectedAccount = secretariaAccounts.find((account) => account.id === accountId) ?? secretariaAccounts[0] ?? null;
+  const visibleAccounts = getAccountsVisibleForRole(accounts, role);
+  const selectedAccount = visibleAccounts.find((account) => account.id === accountId) ?? visibleAccounts[0] ?? null;
 
   if (!selectedAccount) {
     return {
@@ -765,12 +832,7 @@ export async function getTreasuryAccountDetailForActiveClub(
     sessionDate
   );
 
-  const balances = selectedAccount.currencies.map((currencyCode) => ({
-    currencyCode,
-    amount: movements
-      .filter((movement) => movement.currencyCode === currencyCode)
-      .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0)
-  }));
+  const balances = buildAccountBalances(selectedAccount, movements);
 
   const detail: TreasuryAccountDetail = {
     account: {
@@ -786,7 +848,7 @@ export async function getTreasuryAccountDetailForActiveClub(
           movementId: movement.id,
           movementDate: movement.movementDate,
           movementType: movement.movementType,
-          categoryName: category?.name ?? "Sin categoria",
+          categoryName: category?.name ?? "",
           concept: movement.concept,
           currencyCode: movement.currencyCode,
           amount: movement.amount,
@@ -798,8 +860,8 @@ export async function getTreasuryAccountDetailForActiveClub(
   };
 
   return {
-    accounts: secretariaAccounts,
+    accounts: visibleAccounts,
     detail,
-    canCreateMovement: session?.status === "open"
+    canCreateMovement: role === "secretaria" && session?.status === "open"
   };
 }

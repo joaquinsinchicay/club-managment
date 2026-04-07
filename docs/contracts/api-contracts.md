@@ -712,6 +712,42 @@ Sí
 
 ---
 
+### 6.1B Get treasury role dashboard
+
+**Purpose**
+Obtener el modulo resumido de saldos visibles para Tesorería.
+
+**Auth required**
+Sí
+
+**Allowed roles**
+`tesoreria`
+
+**Input**
+
+```json
+{}
+```
+
+**Output**
+
+```json
+{
+  "session_date": "2026-04-02",
+  "accounts": [
+    {
+      "account_id": "uuid",
+      "name": "Caja dolares",
+      "balances": [
+        { "currency_code": "USD", "amount": 950.00 }
+      ]
+    }
+  ]
+}
+```
+
+---
+
 ### 6.2 Open daily cash session
 
 **Purpose**
@@ -1253,6 +1289,7 @@ Puede:
 
 Puede:
 
+* consultar dashboard de saldos de Tesorería
 * registrar movimientos de Tesorería
 * consultar detalle de cuentas de Tesorería
 * revisar pendientes de consolidación

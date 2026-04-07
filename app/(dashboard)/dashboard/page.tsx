@@ -5,10 +5,11 @@ import {
   createTreasuryMovementAction,
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { ActiveClubSelector } from "@/components/dashboard/active-club-selector";
+import { TreasuryRoleShortcutCard } from "@/components/dashboard/treasury-role-shortcut-card";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { AppHeader } from "@/components/navigation/app-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { canOperateSecretaria } from "@/lib/domain/authorization";
+import { canOperateSecretaria, canOperateTesoreria } from "@/lib/domain/authorization";
 import {
   getActiveActivitiesForSecretaria,
   getActiveTreasuryCurrenciesForSecretaria,
@@ -36,13 +37,14 @@ export default async function DashboardPage() {
   }
 
   const treasuryCard = await getDashboardTreasuryCardForActiveClub();
-  const canOperateTreasury = canOperateSecretaria(activeMembership);
-  const treasuryAccounts = canOperateTreasury
+  const canOperateSecretariaRole = canOperateSecretaria(activeMembership);
+  const canOperateTesoreriaRole = canOperateTesoreria(activeMembership);
+  const treasuryAccounts = canOperateSecretariaRole
     ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
         (account) => account.visibleForSecretaria
       )
     : [];
-  const [treasuryCategories, treasuryActivities, treasuryCurrencies, movementTypes, receiptFormats] = canOperateTreasury
+  const [treasuryCategories, treasuryActivities, treasuryCurrencies, movementTypes, receiptFormats] = canOperateSecretariaRole
     ? await Promise.all([
         accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
         getActiveActivitiesForSecretaria(),
@@ -66,6 +68,8 @@ export default async function DashboardPage() {
             />
           </section>
         ) : null}
+
+        {canOperateTesoreriaRole ? <TreasuryRoleShortcutCard /> : null}
 
         {treasuryCard ? (
           <TreasuryCard

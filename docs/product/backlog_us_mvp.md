@@ -946,23 +946,23 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
 
 ### E03 💰 Tesorería / US-13 — Consulta detallada de movimientos y saldos por cuenta
 
-> *Como Secretaria del club, quiero consultar el detalle de movimientos y saldos por cuenta, para controlar la operatoria diaria y verificar el estado de cada cuenta del club activo.*
+> *Como usuario operativo del club con rol Secretaría o Tesorería, quiero consultar el detalle de movimientos y saldos por cuenta, para controlar el estado de cada cuenta visible dentro del club activo.*
 
 **Acceptance Criteria — Gherkin**
 
 ```gherkin
 Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
 
-  Scenario 01: Acceso al detalle desde la card del dashboard
+  Scenario 01: Acceso al detalle desde la vista origen
     Given estoy autenticado
-    And tengo rol "Secretaria" en el club activo
-    And existen cuentas configuradas en el club activo
-    When selecciono una cuenta o la acción de ver detalle desde la card de saldos
+    And tengo rol "Secretaria" o "Tesorería" en el club activo
+    And existen cuentas visibles para mi rol en el club activo
+    When selecciono una cuenta o la acción de ver detalle desde mi vista origen
     Then accedo a la vista detallada de esa cuenta
 
-  Scenario 02: Usuario sin rol Secretaria no accede al detalle
+  Scenario 02: Usuario sin rol habilitado no accede al detalle
     Given estoy autenticado
-    And no tengo rol "Secretaria" en el club activo
+    And no tengo rol "Secretaria" ni "Tesorería" en el club activo
     When intento acceder al detalle de movimientos y saldos por cuenta
     Then no tengo acceso a la funcionalidad
 
@@ -2494,6 +2494,60 @@ Feature: US-26 — Registro de compra y venta de moneda extranjera
     When registro una compra o venta de moneda
     Then la operación se registra únicamente en el club activo
     And no impacta cuentas ni jornadas de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-30 — Módulo de Tesorería para consulta de saldos de cuentas
+
+> *Como usuario con rol Tesorería, quiero acceder a un módulo propio con los saldos de mis cuentas visibles, para consultar rápidamente el estado de las cuentas del club sin usar el dashboard operativo de Secretaría.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-30 — Módulo de Tesorería para consulta de saldos de cuentas
+
+  Scenario 01: Acceso al módulo propio de Tesorería
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso a "/dashboard/treasury"
+    Then veo el módulo de Tesorería
+    And veo las cuentas visibles para Tesorería en el club activo
+
+  Scenario 02: Usuario sin rol Tesorería no accede al módulo
+    Given estoy autenticado
+    And no tengo rol "Tesorería" en el club activo
+    When intento ingresar a "/dashboard/treasury"
+    Then no tengo acceso al módulo
+
+  Scenario 03: El dashboard operativo de Secretaría no se reutiliza como módulo de Tesorería
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso a "/dashboard"
+    Then no veo la card operativa de saldos de Secretaría
+    And veo un acceso visible al módulo de Tesorería
+
+  Scenario 04: Visualización de saldos por cuenta y moneda
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And existen cuentas visibles para Tesorería con saldos registrados
+    When ingreso al módulo de Tesorería
+    Then veo cada cuenta visible para Tesorería
+    And veo el saldo de cada moneda habilitada por separado
+
+  Scenario 05: Estado vacío sin cuentas visibles para Tesorería
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And no existen cuentas visibles para Tesorería
+    When ingreso al módulo de Tesorería
+    Then veo un estado vacío indicando que no hay cuentas visibles para Tesorería
+
+  Scenario 06: Acceso al detalle desde el módulo
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And existen cuentas visibles para Tesorería
+    When selecciono "Ver detalle" en una cuenta
+    Then accedo al detalle de esa cuenta dentro del club activo
 ```
 
 ---

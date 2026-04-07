@@ -76,7 +76,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - Las monedas de la cuenta solo pueden ser `ARS` y/o `USD`.
 - No puede existir otra cuenta `active` con el mismo nombre en el mismo club.
 - Si la cuenta tiene visibilidad `secretaria`, Secretaría la ve en formularios y dashboard con todas sus monedas.
-- Si la cuenta tiene visibilidad `tesoreria`, Tesorería la ve en sus formularios y dashboards presentes o futuros con todas sus monedas.
+- Si la cuenta tiene visibilidad `tesoreria`, Tesorería la ve en sus formularios y en el modulo `/dashboard/treasury` con todas sus monedas.
 - Si la cuenta tiene ambas visibilidades, ambos roles la visualizan.
 - La representación persistida puede conservar `account_scope` como dato legacy no funcional, pero la fuente de verdad de negocio pasa a ser la visibilidad por rol.
 

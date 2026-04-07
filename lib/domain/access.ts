@@ -201,6 +201,18 @@ export type DashboardTreasuryCard = {
   availableActions: Array<"open_session" | "close_session" | "create_movement">;
 };
 
+export type TreasuryRoleDashboard = {
+  sessionDate: string;
+  accounts: Array<{
+    accountId: string;
+    name: string;
+    balances: Array<{
+      currencyCode: string;
+      amount: number;
+    }>;
+  }>;
+};
+
 export type TreasuryAccountDetail = {
   account: {
     accountId: string;

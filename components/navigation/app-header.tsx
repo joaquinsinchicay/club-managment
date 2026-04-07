@@ -1,5 +1,8 @@
+import Link from "next/link";
+
 import { AvatarSessionMenu } from "@/components/navigation/avatar-session-menu";
 import type { SessionContext } from "@/lib/auth/service";
+import { canOperateTesoreria } from "@/lib/domain/authorization";
 import { formatMembershipRoles } from "@/lib/domain/membership-roles";
 import { canAccessClubSettingsNavigation } from "@/lib/domain/authorization";
 import { texts } from "@/lib/texts";
@@ -31,6 +34,7 @@ export function AppHeader({ context }: AppHeaderProps) {
         }
       )
     : null;
+  const canAccessTreasuryModule = canOperateTesoreria(context.activeMembership);
 
   return (
     <header className="sticky top-0 z-10 border-b border-border/70 bg-background/90 backdrop-blur">
@@ -44,12 +48,23 @@ export function AppHeader({ context }: AppHeaderProps) {
           )}
         </div>
 
-        <AvatarSessionMenu
-          fullName={context.user.fullName}
-          email={context.user.email}
-          avatarUrl={context.user.avatarUrl}
-          canAccessClubSettings={canAccessClubSettingsNavigation(context.activeMembership)}
-        />
+        <div className="flex items-center gap-3">
+          {canAccessTreasuryModule ? (
+            <Link
+              href="/dashboard/treasury"
+              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            >
+              {texts.header.treasury_module_cta}
+            </Link>
+          ) : null}
+
+          <AvatarSessionMenu
+            fullName={context.user.fullName}
+            email={context.user.email}
+            avatarUrl={context.user.avatarUrl}
+            canAccessClubSettings={canAccessClubSettingsNavigation(context.activeMembership)}
+          />
+        </div>
       </div>
     </header>
   );

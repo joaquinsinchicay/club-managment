@@ -12,6 +12,10 @@ type AccountDetailCardProps = {
   accounts: TreasuryAccount[];
   currentAccountId?: string;
   canCreateMovement: boolean;
+  accountHrefBase: string;
+  secondaryActionHref?: string;
+  secondaryActionLabel?: string;
+  emptyAccountsLabel?: string;
 };
 
 function getSessionLabel(status: TreasuryAccountDetail["sessionStatus"]) {
@@ -31,7 +35,11 @@ export function AccountDetailCard({
   detail,
   accounts,
   currentAccountId,
-  canCreateMovement
+  canCreateMovement,
+  accountHrefBase,
+  secondaryActionHref,
+  secondaryActionLabel,
+  emptyAccountsLabel = texts.dashboard.treasury.empty_accounts
 }: AccountDetailCardProps) {
   return (
     <div className="min-h-screen">
@@ -54,7 +62,7 @@ export function AccountDetailCard({
                   {accounts.map((account) => (
                     <Link
                       key={account.id}
-                      href={`/dashboard/accounts/${account.id}`}
+                      href={`${accountHrefBase}/${account.id}`}
                       className={`rounded-full px-3 py-2 text-sm font-medium transition ${
                         account.id === currentAccountId
                           ? "bg-foreground text-primary-foreground"
@@ -68,7 +76,7 @@ export function AccountDetailCard({
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
-                {texts.dashboard.treasury.empty_accounts}
+                {emptyAccountsLabel}
               </div>
             )}
 
@@ -136,7 +144,7 @@ export function AccountDetailCard({
                           </span>
                         </div>
                         <div className="mt-2 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-                          <p>{movement.categoryName}</p>
+                          <p>{movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}</p>
                           <p className="capitalize">{movement.movementType}</p>
                           <p>{movement.movementDate}</p>
                           <p>{movement.createdByUserName}</p>
@@ -145,6 +153,15 @@ export function AccountDetailCard({
                     ))}
                   </div>
                 )}
+
+                {secondaryActionHref && secondaryActionLabel ? (
+                  <Link
+                    href={secondaryActionHref}
+                    className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                  >
+                    {secondaryActionLabel}
+                  </Link>
+                ) : null}
               </>
             ) : null}
           </div>

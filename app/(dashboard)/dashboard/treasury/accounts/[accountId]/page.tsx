@@ -1,17 +1,20 @@
 import { redirect } from "next/navigation";
 
-import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { canOperateSecretaria } from "@/lib/domain/authorization";
-import { getTreasuryAccountDetailForActiveClub } from "@/lib/services/treasury-service";
 import { AccountDetailCard } from "@/components/dashboard/account-detail-card";
+import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import { canOperateTesoreria } from "@/lib/domain/authorization";
+import { getTreasuryAccountDetailForActiveClub } from "@/lib/services/treasury-service";
+import { texts } from "@/lib/texts";
 
-type AccountDetailPageProps = {
+type TreasuryAccountDetailPageProps = {
   params: {
     accountId: string;
   };
 };
 
-export default async function AccountDetailPage({ params }: AccountDetailPageProps) {
+export default async function TreasuryAccountDetailPage({
+  params
+}: TreasuryAccountDetailPageProps) {
   const context = await getAuthenticatedSessionContext();
 
   if (!context) {
@@ -22,11 +25,11 @@ export default async function AccountDetailPage({ params }: AccountDetailPagePro
     redirect("/pending-approval");
   }
 
-  if (!canOperateSecretaria(context.activeMembership)) {
+  if (!canOperateTesoreria(context.activeMembership)) {
     redirect("/dashboard");
   }
 
-  const accountDetailData = await getTreasuryAccountDetailForActiveClub(params.accountId);
+  const accountDetailData = await getTreasuryAccountDetailForActiveClub(params.accountId, "tesoreria");
 
   if (!accountDetailData) {
     redirect("/dashboard");
@@ -38,8 +41,11 @@ export default async function AccountDetailPage({ params }: AccountDetailPagePro
       detail={accountDetailData.detail}
       accounts={accountDetailData.accounts}
       currentAccountId={params.accountId}
-      canCreateMovement={accountDetailData.canCreateMovement}
-      accountHrefBase="/dashboard/accounts"
+      canCreateMovement={false}
+      accountHrefBase="/dashboard/treasury/accounts"
+      secondaryActionHref="/dashboard/treasury"
+      secondaryActionLabel={texts.dashboard.treasury_role.back_to_module_cta}
+      emptyAccountsLabel={texts.dashboard.treasury_role.empty_accounts}
     />
   );
 }
