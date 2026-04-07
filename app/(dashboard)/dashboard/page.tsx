@@ -3,19 +3,25 @@ import { redirect } from "next/navigation";
 import { setActiveClubAction } from "@/app/(dashboard)/dashboard/actions";
 import {
   createTreasuryMovementAction,
+  createTreasuryRoleMovementAction,
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { ActiveClubSelector } from "@/components/dashboard/active-club-selector";
-import { TreasuryRoleShortcutCard } from "@/components/dashboard/treasury-role-shortcut-card";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
+import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
 import { AppHeader } from "@/components/navigation/app-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateSecretaria, canOperateTesoreria } from "@/lib/domain/authorization";
 import {
+  getActiveActivitiesForTesoreria,
   getActiveActivitiesForSecretaria,
+  getActiveTreasuryCurrenciesForTesoreria,
   getActiveTreasuryCurrenciesForSecretaria,
+  getEnabledMovementTypesForTesoreria,
   getEnabledMovementTypesForSecretaria,
+  getActiveReceiptFormatsForTesoreria,
   getActiveReceiptFormatsForSecretaria,
-  getDashboardTreasuryCardForActiveClub
+  getDashboardTreasuryCardForActiveClub,
+  getTreasuryRoleDashboardForActiveClub
 } from "@/lib/services/treasury-service";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
@@ -37,11 +43,17 @@ export default async function DashboardPage() {
   }
 
   const treasuryCard = await getDashboardTreasuryCardForActiveClub();
+  const treasuryRoleDashboard = await getTreasuryRoleDashboardForActiveClub();
   const canOperateSecretariaRole = canOperateSecretaria(activeMembership);
   const canOperateTesoreriaRole = canOperateTesoreria(activeMembership);
   const treasuryAccounts = canOperateSecretariaRole
     ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
         (account) => account.visibleForSecretaria
+      )
+    : [];
+  const treasuryRoleAccounts = !canOperateSecretariaRole && canOperateTesoreriaRole
+    ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
+        (account) => account.visibleForTesoreria
       )
     : [];
   const [treasuryCategories, treasuryActivities, treasuryCurrencies, movementTypes, receiptFormats] = canOperateSecretariaRole
@@ -53,6 +65,18 @@ export default async function DashboardPage() {
         getActiveReceiptFormatsForSecretaria()
       ])
     : [[], [], [], [], []];
+  const [treasuryRoleCategories, treasuryRoleActivities, treasuryRoleCurrencies, treasuryRoleMovementTypes, treasuryRoleReceiptFormats] =
+    !canOperateSecretariaRole && canOperateTesoreriaRole
+      ? await Promise.all([
+          accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
+            categories.filter((category) => category.visibleForTesoreria && category.status === "active")
+          ),
+          getActiveActivitiesForTesoreria(),
+          getActiveTreasuryCurrenciesForTesoreria(),
+          getEnabledMovementTypesForTesoreria(),
+          getActiveReceiptFormatsForTesoreria()
+        ])
+      : [[], [], [], [], []];
 
   return (
     <div className="min-h-screen">
@@ -69,9 +93,7 @@ export default async function DashboardPage() {
           </section>
         ) : null}
 
-        {canOperateTesoreriaRole ? <TreasuryRoleShortcutCard /> : null}
-
-        {treasuryCard ? (
+        {canOperateSecretariaRole && treasuryCard ? (
           <TreasuryCard
             treasuryCard={treasuryCard}
             accounts={treasuryAccounts}
@@ -81,6 +103,19 @@ export default async function DashboardPage() {
             movementTypes={movementTypes}
             receiptFormats={receiptFormats}
             createTreasuryMovementAction={createTreasuryMovementAction}
+          />
+        ) : null}
+
+        {!canOperateSecretariaRole && canOperateTesoreriaRole && treasuryRoleDashboard ? (
+          <TreasuryRoleCard
+            dashboard={treasuryRoleDashboard}
+            accounts={treasuryRoleAccounts}
+            categories={treasuryRoleCategories}
+            activities={treasuryRoleActivities}
+            currencies={treasuryRoleCurrencies}
+            movementTypes={treasuryRoleMovementTypes}
+            receiptFormats={treasuryRoleReceiptFormats}
+            createTreasuryRoleMovementAction={createTreasuryRoleMovementAction}
           />
         ) : null}
       </main>

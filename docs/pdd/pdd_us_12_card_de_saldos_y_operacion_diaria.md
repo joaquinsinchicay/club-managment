@@ -39,7 +39,7 @@ El dashboard debe mostrar una card de saldos únicamente para usuarios con rol `
 - Detalle de movimientos por cuenta.
 - Validación avanzada de saldos declarados en apertura/cierre.
 - Operaciones de Tesorería.
-- El modulo separado de Tesorería bajo `/dashboard/treasury`.
+- La card operativa de Tesorería dentro de `/dashboard`.
 
 ---
 

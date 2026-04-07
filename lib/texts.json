@@ -33,7 +33,6 @@
     "pending_club_label": "Sin club activo",
     "welcome_message_single": "Bienvenido/a {name}, tu rol es {role}",
     "welcome_message_multiple": "Bienvenido/a {name}, tus roles son {role}",
-    "treasury_module_cta": "Modulo Tesoreria",
     "avatar_menu": {
       "club_settings": "Configuracion del club",
       "sign_out": "Cerrar sesion",
@@ -141,15 +140,15 @@
       }
     },
     "treasury_role": {
-      "eyebrow": "Tesoreria",
-      "title": "Saldos de cuentas de Tesoreria",
-      "description": "Consulta las cuentas visibles para Tesoreria del club activo y revisa sus saldos por moneda.",
+      "title": "Saldos de cuentas",
+      "description": "Consulta saldos y registra movimientos de Tesoreria en el club activo.",
       "empty_accounts": "No hay cuentas visibles para Tesoreria en el club activo.",
       "detail_cta": "Ver detalle",
-      "shortcut_title": "Acceso a Tesoreria",
-      "shortcut_description": "Abre el modulo de Tesoreria para consultar cuentas y saldos visibles para tu rol.",
-      "shortcut_cta": "Abrir modulo de Tesoreria",
-      "back_to_module_cta": "Volver al modulo de Tesoreria"
+      "movement_form_title": "Registrar movimiento de Tesoreria",
+      "movement_form_description": "Carga ingresos y egresos en las cuentas visibles para Tesoreria del club activo.",
+      "create_cta": "Crear",
+      "create_loading": "Registrando movimiento...",
+      "back_to_dashboard_cta": "Volver al dashboard"
     }
   },
   "settings": {

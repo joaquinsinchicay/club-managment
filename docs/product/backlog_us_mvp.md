@@ -2498,40 +2498,40 @@ Feature: US-26 — Registro de compra y venta de moneda extranjera
 
 ---
 
-### E03 💰 Tesorería / US-30 — Módulo de Tesorería para consulta de saldos de cuentas
+### E03 💰 Tesorería / US-30 — Dashboard de Tesorería para consulta de saldos de cuentas
 
-> *Como usuario con rol Tesorería, quiero acceder a un módulo propio con los saldos de mis cuentas visibles, para consultar rápidamente el estado de las cuentas del club sin usar el dashboard operativo de Secretaría.*
+> *Como usuario con rol Tesorería, quiero ver en el dashboard los saldos de mis cuentas visibles, para consultar rápidamente el estado de las cuentas del club y registrar movimientos sin usar la operatoria de Secretaría.*
 
 **Acceptance Criteria — Gherkin**
 
 ```gherkin
-Feature: US-30 — Módulo de Tesorería para consulta de saldos de cuentas
+Feature: US-30 — Dashboard de Tesorería para consulta de saldos de cuentas
 
-  Scenario 01: Acceso al módulo propio de Tesorería
-    Given estoy autenticado
-    And tengo rol "Tesorería" en el club activo
-    When ingreso a "/dashboard/treasury"
-    Then veo el módulo de Tesorería
-    And veo las cuentas visibles para Tesorería en el club activo
-
-  Scenario 02: Usuario sin rol Tesorería no accede al módulo
-    Given estoy autenticado
-    And no tengo rol "Tesorería" en el club activo
-    When intento ingresar a "/dashboard/treasury"
-    Then no tengo acceso al módulo
-
-  Scenario 03: El dashboard operativo de Secretaría no se reutiliza como módulo de Tesorería
+  Scenario 01: Acceso al dashboard de Tesorería
     Given estoy autenticado
     And tengo rol "Tesorería" en el club activo
     When ingreso a "/dashboard"
-    Then no veo la card operativa de saldos de Secretaría
-    And veo un acceso visible al módulo de Tesorería
+    Then veo la card de Tesorería
+    And veo las cuentas visibles para Tesorería en el club activo
+
+  Scenario 02: Usuario sin rol Tesorería no ve la card de Tesorería
+    Given estoy autenticado
+    And no tengo rol "Tesorería" en el club activo
+    When ingreso a "/dashboard"
+    Then no veo la card de Tesorería
+
+  Scenario 03: Tesorería no ve controles de jornada
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso a "/dashboard"
+    Then no veo el bloque de estado de jornada
+    And no veo acciones de apertura o cierre
 
   Scenario 04: Visualización de saldos por cuenta y moneda
     Given estoy autenticado
     And tengo rol "Tesorería" en el club activo
     And existen cuentas visibles para Tesorería con saldos registrados
-    When ingreso al módulo de Tesorería
+    When ingreso al dashboard
     Then veo cada cuenta visible para Tesorería
     And veo el saldo de cada moneda habilitada por separado
 
@@ -2539,15 +2539,22 @@ Feature: US-30 — Módulo de Tesorería para consulta de saldos de cuentas
     Given estoy autenticado
     And tengo rol "Tesorería" en el club activo
     And no existen cuentas visibles para Tesorería
-    When ingreso al módulo de Tesorería
+    When ingreso al dashboard
     Then veo un estado vacío indicando que no hay cuentas visibles para Tesorería
 
-  Scenario 06: Acceso al detalle desde el módulo
+  Scenario 06: Acceso al detalle desde el dashboard
     Given estoy autenticado
     And tengo rol "Tesorería" en el club activo
     And existen cuentas visibles para Tesorería
     When selecciono "Ver detalle" en una cuenta
     Then accedo al detalle de esa cuenta dentro del club activo
+
+  Scenario 07: Formulario inline de movimientos para Tesorería
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso al dashboard
+    Then veo un formulario inline para registrar movimientos de Tesorería
+    And no necesito abrir jornada para usarlo
 ```
 
 ---

@@ -43,8 +43,8 @@ export default async function TreasuryAccountDetailPage({
       currentAccountId={params.accountId}
       canCreateMovement={false}
       accountHrefBase="/dashboard/treasury/accounts"
-      secondaryActionHref="/dashboard/treasury"
-      secondaryActionLabel={texts.dashboard.treasury_role.back_to_module_cta}
+      secondaryActionHref="/dashboard"
+      secondaryActionLabel={texts.dashboard.treasury_role.back_to_dashboard_cta}
       emptyAccountsLabel={texts.dashboard.treasury_role.empty_accounts}
     />
   );

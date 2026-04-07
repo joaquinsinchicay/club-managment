@@ -715,7 +715,7 @@ Sí
 ### 6.1B Get treasury role dashboard
 
 **Purpose**
-Obtener el modulo resumido de saldos visibles para Tesorería.
+Obtener la card resumida de Tesorería visible en `/dashboard`.
 
 **Auth required**
 Sí

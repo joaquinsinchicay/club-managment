@@ -169,7 +169,7 @@ type AccessRepository = {
   listTreasuryMovementsByAccount(clubId: string, accountId: string, movementDate: string): Promise<TreasuryMovement[]>;
   createTreasuryMovement(input: {
     clubId: string;
-    dailyCashSessionId: string;
+    dailyCashSessionId: string | null;
     accountId: string;
     movementType: TreasuryMovementType;
     categoryId: string;

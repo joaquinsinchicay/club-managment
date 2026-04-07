@@ -151,7 +151,7 @@ export type DailyCashSession = {
 export type TreasuryMovement = {
   id: string;
   clubId: string;
-  dailyCashSessionId: string;
+  dailyCashSessionId: string | null;
   accountId: string;
   movementType: TreasuryMovementType;
   categoryId: string;
@@ -211,6 +211,7 @@ export type TreasuryRoleDashboard = {
       amount: number;
     }>;
   }>;
+  availableActions: Array<"create_movement">;
 };
 
 export type TreasuryAccountDetail = {

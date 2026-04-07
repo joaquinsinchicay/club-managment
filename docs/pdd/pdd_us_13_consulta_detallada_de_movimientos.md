@@ -21,7 +21,7 @@ Las vistas resumidas de saldos no muestran el detalle de movimientos por cuenta.
 
 ## 3. Objetivo funcional
 
-Desde la card del dashboard de Secretaría o desde el modulo propio de Tesorería, el usuario con rol habilitado debe poder entrar al detalle de una cuenta del club activo, ver su saldo actual, el estado del día, el listado cronológico de movimientos y cambiar entre cuentas disponibles para su rol.
+Desde la card del dashboard de Secretaría o desde la card de Tesorería en `/dashboard`, el usuario con rol habilitado debe poder entrar al detalle de una cuenta del club activo, ver su saldo actual, el estado del día, el listado cronológico de movimientos y cambiar entre cuentas disponibles para su rol.
 
 ---
 
@@ -29,7 +29,7 @@ Desde la card del dashboard de Secretaría o desde el modulo propio de Tesorerí
 
 ### Incluye
 - Navegación desde la card del dashboard al detalle por cuenta.
-- Navegación desde el modulo de Tesorería al detalle por cuenta cuando corresponda.
+- Navegación desde la card de Tesorería al detalle por cuenta cuando corresponda.
 - Visualización de saldo actual por cuenta.
 - Visualización del estado de jornada del día.
 - Listado de movimientos del día de la cuenta seleccionada.
@@ -53,7 +53,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 
 - El club activo está resuelto.
 - Existe al menos cero o más cuentas visibles para el rol del acceso.
-- Existe un punto de entrada desde la card de Secretaría o desde el modulo de Tesorería.
+- Existe un punto de entrada desde la card de Secretaría o desde la card de Tesorería en `/dashboard`.
 
 ---
 
@@ -162,7 +162,7 @@ Do not reference current code files.
 
 - contracts: `Get account detail`.
 - domain entities: `treasury_accounts`, `treasury_movements`, `daily_cash_sessions`.
-- other US if relevant: US-12 para el acceso desde la card de Secretaría; US-30 para el acceso desde el modulo de Tesorería; US-11 para la creación de movimientos del día.
+- other US if relevant: US-12 para el acceso desde la card de Secretaría; US-30 para el acceso desde la card de Tesorería en `/dashboard`; US-11 para la creación de movimientos del día.
 
 ---
 

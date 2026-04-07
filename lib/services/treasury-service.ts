@@ -547,7 +547,8 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       accountId: account.id,
       name: account.name,
       balances: buildAccountBalances(account, movements)
-    }))
+    })),
+    availableActions: ["create_movement"]
   };
 }
 
@@ -723,6 +724,144 @@ export async function createTreasuryMovement(input: {
   return { ok: true, code: "movement_created" };
 }
 
+export async function createTreasuryRoleMovement(input: {
+  movementDate: string;
+  accountId: string;
+  movementType: string;
+  categoryId: string;
+  activityId: string;
+  receiptNumber: string;
+  concept: string;
+  currencyCode: string;
+  amount: string;
+}): Promise<TreasuryActionResult> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  if (!input.accountId) {
+    return { ok: false, code: "account_required" };
+  }
+
+  if (!input.movementType) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  if (!input.categoryId) {
+    return { ok: false, code: "category_required" };
+  }
+
+  if (!input.concept.trim()) {
+    return { ok: false, code: "concept_required" };
+  }
+
+  if (!input.currencyCode) {
+    return { ok: false, code: "currency_required" };
+  }
+
+  if (!input.amount) {
+    return { ok: false, code: "amount_required" };
+  }
+
+  const movementDate = input.movementDate.trim() || getTodayDate();
+  const parsedAmount = Number(input.amount);
+
+  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    return { ok: false, code: "amount_must_be_positive" };
+  }
+
+  if (input.movementType !== "ingreso" && input.movementType !== "egreso") {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const [accounts, categories, activities, receiptFormats, configuredCurrencies, configuredMovementTypes] = await Promise.all([
+    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
+    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+    accessRepository.listClubActivitiesForClub(context.activeClub.id),
+    accessRepository.listReceiptFormatsForClub(context.activeClub.id),
+    getConfiguredTreasuryCurrencies(context.activeClub.id),
+    getConfiguredMovementTypes(context.activeClub.id)
+  ]);
+
+  if (
+    !configuredMovementTypes.some(
+      (movementType) =>
+        movementType.movementType === input.movementType && movementType.isEnabled
+    )
+  ) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const account = accounts.find(
+    (entry) => entry.id === input.accountId && entry.visibleForTesoreria
+  );
+
+  if (!account) {
+    return { ok: false, code: "invalid_account" };
+  }
+
+  const category = categories.find(
+    (entry) => entry.id === input.categoryId && entry.visibleForTesoreria && entry.status === "active"
+  );
+
+  if (!category) {
+    return { ok: false, code: "invalid_category" };
+  }
+
+  if (!configuredCurrencies.some((currency) => currency.currencyCode === input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  if (!account.currencies.includes(input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  const activity =
+    input.activityId.trim().length > 0
+      ? activities.find((entry) => entry.id === input.activityId && entry.status === "active") ?? null
+      : null;
+
+  if (input.activityId.trim().length > 0 && !activity) {
+    return { ok: false, code: "invalid_activity" };
+  }
+
+  const receiptNumber = input.receiptNumber.trim();
+  const activeReceiptFormats = receiptFormats.filter((format) => format.status === "active");
+
+  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
+    const isValidReceipt = activeReceiptFormats.some((format) =>
+      validateReceiptNumberAgainstFormat(receiptNumber, format)
+    );
+
+    if (!isValidReceipt) {
+      return { ok: false, code: "invalid_receipt_format" };
+    }
+  }
+
+  const created = await accessRepository.createTreasuryMovement({
+    clubId: context.activeClub.id,
+    dailyCashSessionId: "",
+    accountId: account.id,
+    movementType: input.movementType,
+    categoryId: category.id,
+    concept: input.concept.trim(),
+    currencyCode: input.currencyCode,
+    amount: parsedAmount,
+    activityId: activity?.id ?? null,
+    receiptNumber: receiptNumber || null,
+    movementDate,
+    createdByUserId: context.user.id
+  });
+
+  if (!created) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  return { ok: true, code: "movement_created" };
+}
+
 export async function getActiveActivitiesForSecretaria(): Promise<ClubActivity[]> {
   const context = await getSecretariaSession();
 
@@ -734,8 +873,29 @@ export async function getActiveActivitiesForSecretaria(): Promise<ClubActivity[]
   return activities.filter((activity) => activity.status === "active");
 }
 
+export async function getActiveActivitiesForTesoreria(): Promise<ClubActivity[]> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
+  return activities.filter((activity) => activity.status === "active");
+}
+
 export async function getActiveTreasuryCurrenciesForSecretaria(): Promise<TreasuryCurrencyConfig[]> {
   const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  return getConfiguredTreasuryCurrencies(context.activeClub.id);
+}
+
+export async function getActiveTreasuryCurrenciesForTesoreria(): Promise<TreasuryCurrencyConfig[]> {
+  const context = await getTesoreriaSession();
 
   if (!context?.activeClub) {
     return [];
@@ -758,8 +918,33 @@ export async function getEnabledMovementTypesForSecretaria(): Promise<TreasuryMo
     .map((movementType) => movementType.movementType);
 }
 
+export async function getEnabledMovementTypesForTesoreria(): Promise<TreasuryMovementType[]> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const movementTypes = await getConfiguredMovementTypes(context.activeClub.id);
+
+  return movementTypes
+    .filter((movementType) => movementType.isEnabled)
+    .map((movementType) => movementType.movementType);
+}
+
 export async function getActiveReceiptFormatsForSecretaria(): Promise<ReceiptFormat[]> {
   const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
+  return receiptFormats.filter((receiptFormat) => receiptFormat.status === "active");
+}
+
+export async function getActiveReceiptFormatsForTesoreria(): Promise<ReceiptFormat[]> {
+  const context = await getTesoreriaSession();
 
   if (!context?.activeClub) {
     return [];
