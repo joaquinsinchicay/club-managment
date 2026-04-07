@@ -1339,7 +1339,7 @@ async function syncRealTreasuryCurrenciesToAccounts(
   }>,
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return;
@@ -1396,7 +1396,7 @@ async function setRealTreasuryCurrenciesForClub(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return [];
@@ -1435,7 +1435,7 @@ async function setRealMovementTypeConfigForClub(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return [];
@@ -1471,7 +1471,7 @@ async function createRealTreasuryAccount(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -1526,7 +1526,7 @@ async function updateRealTreasuryAccount(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -1581,7 +1581,7 @@ async function createRealTreasuryCategory(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -1619,7 +1619,7 @@ async function updateRealTreasuryCategory(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -1655,7 +1655,7 @@ async function createRealClubActivity(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -1689,7 +1689,7 @@ async function updateRealClubActivity(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;
@@ -1726,7 +1726,7 @@ async function createRealReceiptFormat(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
+  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
 
   if (!supabase) {
     return null;

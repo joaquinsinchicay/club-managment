@@ -332,6 +332,7 @@ with check (user_id = current_user_id());
 
 drop policy if exists "Members can view accounts" on treasury_accounts;
 drop policy if exists "Admins manage accounts in current club" on treasury_accounts;
+drop policy if exists "Treasury manage accounts in current club" on treasury_accounts;
 
 create policy "Members can view accounts"
 on treasury_accounts
@@ -342,17 +343,17 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Admins manage accounts in current club"
+create policy "Treasury manage accounts in current club"
 on treasury_accounts
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 );
 
 -- =========================================
