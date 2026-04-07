@@ -9,7 +9,12 @@ import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { AppHeader } from "@/components/navigation/app-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { hasMembershipRole } from "@/lib/domain/membership-roles";
-import { getDashboardTreasuryCardForActiveClub } from "@/lib/services/treasury-service";
+import {
+  getActiveActivitiesForSecretaria,
+  getActiveTreasuryCurrenciesForSecretaria,
+  getActiveReceiptFormatsForSecretaria,
+  getDashboardTreasuryCardForActiveClub
+} from "@/lib/services/treasury-service";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
 export default async function DashboardPage() {
@@ -36,10 +41,14 @@ export default async function DashboardPage() {
         (account) => account.accountScope === "secretaria"
       )
     : [];
-  const treasuryCategories =
-    canOperateTreasury
-      ? await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id)
-      : [];
+  const [treasuryCategories, treasuryActivities, treasuryCurrencies, receiptFormats] = canOperateTreasury
+    ? await Promise.all([
+        accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+        getActiveActivitiesForSecretaria(),
+        getActiveTreasuryCurrenciesForSecretaria(),
+        getActiveReceiptFormatsForSecretaria()
+      ])
+    : [[], [], [], []];
 
   return (
     <div className="min-h-screen">
@@ -61,6 +70,9 @@ export default async function DashboardPage() {
             treasuryCard={treasuryCard}
             accounts={treasuryAccounts}
             categories={treasuryCategories}
+            activities={treasuryActivities}
+            currencies={treasuryCurrencies}
+            receiptFormats={receiptFormats}
             createTreasuryMovementAction={createTreasuryMovementAction}
           />
         ) : null}

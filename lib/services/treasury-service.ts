@@ -1,10 +1,13 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { hasMembershipRole } from "@/lib/domain/membership-roles";
 import type {
+  ClubActivity,
   DailyCashSessionValidation,
   DashboardTreasuryCard,
+  ReceiptFormat,
   SessionBalanceDraft,
   TreasuryAccount,
+  TreasuryCurrencyConfig,
   TreasuryAccountDetail
 } from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
@@ -26,7 +29,9 @@ type TreasuryActionCode =
   | "amount_must_be_positive"
   | "invalid_account"
   | "invalid_category"
+  | "invalid_activity"
   | "invalid_currency"
+  | "invalid_receipt_format"
   | "no_accounts_available"
   | "declared_balance_required"
   | "declared_balance_invalid"
@@ -65,6 +70,22 @@ function buildMovementSignedAmount(movementType: "ingreso" | "egreso", amount: n
 async function getSecretariaAccounts(clubId: string) {
   const accounts = await accessRepository.listTreasuryAccountsForClub(clubId);
   return accounts.filter((account) => account.accountScope === "secretaria");
+}
+
+async function getConfiguredTreasuryCurrencies(clubId: string): Promise<TreasuryCurrencyConfig[]> {
+  const currencies = await accessRepository.listTreasuryCurrenciesForClub(clubId);
+
+  if (currencies.length > 0) {
+    return currencies;
+  }
+
+  return [
+    {
+      clubId,
+      currencyCode: "ARS",
+      isPrimary: true
+    }
+  ];
 }
 
 async function buildAccountBalanceDrafts(
@@ -484,6 +505,8 @@ export async function createTreasuryMovement(input: {
   accountId: string;
   movementType: string;
   categoryId: string;
+  activityId: string;
+  receiptNumber: string;
   concept: string;
   currencyCode: string;
   amount: string;
@@ -534,9 +557,12 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "movement_type_required" };
   }
 
-  const [accounts, categories] = await Promise.all([
+  const [accounts, categories, activities, receiptFormats, configuredCurrencies] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
-    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id)
+    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+    accessRepository.listClubActivitiesForClub(context.activeClub.id),
+    accessRepository.listReceiptFormatsForClub(context.activeClub.id),
+    getConfiguredTreasuryCurrencies(context.activeClub.id)
   ]);
 
   const account = accounts.find(
@@ -553,8 +579,34 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "invalid_category" };
   }
 
+  if (!configuredCurrencies.some((currency) => currency.currencyCode === input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
   if (!account.currencies.includes(input.currencyCode)) {
     return { ok: false, code: "invalid_currency" };
+  }
+
+  const activity =
+    input.activityId.trim().length > 0
+      ? activities.find((entry) => entry.id === input.activityId && entry.status === "active") ?? null
+      : null;
+
+  if (input.activityId.trim().length > 0 && !activity) {
+    return { ok: false, code: "invalid_activity" };
+  }
+
+  const receiptNumber = input.receiptNumber.trim();
+  const activeReceiptFormats = receiptFormats.filter((format) => format.status === "active");
+
+  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
+    const isValidReceipt = activeReceiptFormats.some((format) =>
+      validateReceiptNumberAgainstFormat(receiptNumber, format)
+    );
+
+    if (!isValidReceipt) {
+      return { ok: false, code: "invalid_receipt_format" };
+    }
   }
 
   const created = await accessRepository.createTreasuryMovement({
@@ -566,6 +618,8 @@ export async function createTreasuryMovement(input: {
     concept: input.concept.trim(),
     currencyCode: input.currencyCode,
     amount: parsedAmount,
+    activityId: activity?.id ?? null,
+    receiptNumber: receiptNumber || null,
     movementDate: getTodayDate(),
     createdByUserId: context.user.id
   });
@@ -575,6 +629,63 @@ export async function createTreasuryMovement(input: {
   }
 
   return { ok: true, code: "movement_created" };
+}
+
+export async function getActiveActivitiesForSecretaria(): Promise<ClubActivity[]> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
+  return activities.filter((activity) => activity.status === "active");
+}
+
+export async function getActiveTreasuryCurrenciesForSecretaria(): Promise<TreasuryCurrencyConfig[]> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  return getConfiguredTreasuryCurrencies(context.activeClub.id);
+}
+
+export async function getActiveReceiptFormatsForSecretaria(): Promise<ReceiptFormat[]> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
+  return receiptFormats.filter((receiptFormat) => receiptFormat.status === "active");
+}
+
+function validateReceiptNumberAgainstFormat(
+  receiptNumber: string,
+  receiptFormat: ReceiptFormat
+) {
+  if (receiptFormat.validationType === "numeric") {
+    const parsedValue = Number(receiptNumber);
+
+    if (!Number.isFinite(parsedValue)) {
+      return false;
+    }
+
+    return parsedValue >= (receiptFormat.minNumericValue ?? 0);
+  }
+
+  if (!receiptFormat.pattern) {
+    return false;
+  }
+
+  try {
+    return new RegExp(receiptFormat.pattern).test(receiptNumber);
+  } catch {
+    return false;
+  }
 }
 
 export async function getTreasuryAccountDetailForActiveClub(

@@ -66,11 +66,26 @@ export type PendingClubInvitation = {
   createdAt: string;
 };
 
+export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
+export type TreasuryConfigStatus = "active" | "inactive";
+export type TreasuryCurrencyCode = "ARS" | "USD" | "EUR";
+
+export type TreasuryCurrencyConfig = {
+  clubId: string;
+  currencyCode: TreasuryCurrencyCode;
+  isPrimary: boolean;
+};
+
 export type TreasuryAccount = {
   id: string;
   clubId: string;
   name: string;
+  accountType: TreasuryAccountType;
   accountScope: "secretaria" | "tesoreria";
+  status: TreasuryConfigStatus;
+  visibleForSecretaria: boolean;
+  visibleForTesoreria: boolean;
+  emoji: string | null;
   currencies: string[];
 };
 
@@ -78,6 +93,39 @@ export type TreasuryCategory = {
   id: string;
   clubId: string;
   name: string;
+  status: TreasuryConfigStatus;
+  visibleForSecretaria: boolean;
+  visibleForTesoreria: boolean;
+  emoji: string | null;
+};
+
+export type ClubActivity = {
+  id: string;
+  clubId: string;
+  name: string;
+  status: TreasuryConfigStatus;
+  emoji: string | null;
+};
+
+export type ReceiptValidationType = "numeric" | "pattern";
+
+export type ReceiptFormat = {
+  id: string;
+  clubId: string;
+  name: string;
+  validationType: ReceiptValidationType;
+  pattern: string | null;
+  minNumericValue: number | null;
+  example: string | null;
+  status: TreasuryConfigStatus;
+};
+
+export type TreasurySettings = {
+  accounts: TreasuryAccount[];
+  categories: TreasuryCategory[];
+  activities: ClubActivity[];
+  receiptFormats: ReceiptFormat[];
+  currencies: TreasuryCurrencyConfig[];
 };
 
 export type TreasurySessionStatus = "open" | "closed";
@@ -103,6 +151,8 @@ export type TreasuryMovement = {
   concept: string;
   currencyCode: string;
   amount: number;
+  activityId?: string | null;
+  receiptNumber?: string | null;
   movementDate: string;
   createdByUserId: string;
   status: "pending_consolidation";

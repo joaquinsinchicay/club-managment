@@ -1,12 +1,22 @@
 import Link from "next/link";
 
-import type { DashboardTreasuryCard as DashboardTreasuryCardData, TreasuryCategory, TreasuryAccount } from "@/lib/domain/access";
+import type {
+  ClubActivity,
+  DashboardTreasuryCard as DashboardTreasuryCardData,
+  ReceiptFormat,
+  TreasuryAccount,
+  TreasuryCategory,
+  TreasuryCurrencyConfig
+} from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 
 type TreasuryCardProps = {
   treasuryCard: DashboardTreasuryCardData;
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
+  activities: ClubActivity[];
+  currencies: TreasuryCurrencyConfig[];
+  receiptFormats: ReceiptFormat[];
   createTreasuryMovementAction: (formData: FormData) => Promise<void>;
 };
 
@@ -26,11 +36,16 @@ export function TreasuryCard({
   treasuryCard,
   accounts,
   categories,
+  activities,
+  currencies,
+  receiptFormats,
   createTreasuryMovementAction
 }: TreasuryCardProps) {
   const canCreateMovement = treasuryCard.availableActions.includes("create_movement");
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
+  const primaryCurrencyCode =
+    currencies.find((currency) => currency.isPrimary)?.currencyCode ?? currencies[0]?.currencyCode ?? "";
 
   return (
     <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
@@ -178,6 +193,41 @@ export function TreasuryCard({
                 </select>
               </label>
 
+              {activities.length > 0 ? (
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
+                  <select
+                    name="activity_id"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
+                    {activities.map((activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
+              <label className="grid gap-2 text-sm text-foreground">
+                <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
+                <input
+                  type="text"
+                  name="receipt_number"
+                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                />
+                {receiptFormats.length > 0 ? (
+                  <span className="text-xs leading-5 text-muted-foreground">
+                    {texts.dashboard.treasury.receipt_helper}{" "}
+                    {receiptFormats
+                      .map((receiptFormat) => receiptFormat.example || receiptFormat.name)
+                      .join(" · ")}
+                  </span>
+                ) : null}
+              </label>
+
               <label className="grid gap-2 text-sm text-foreground">
                 <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
                 <input
@@ -191,13 +241,17 @@ export function TreasuryCard({
                 <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
                 <select
                   name="currency_code"
-                  defaultValue=""
+                  defaultValue={primaryCurrencyCode}
                   className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                 >
                   <option value="" disabled>
                     {texts.settings.club.members.role_placeholder}
                   </option>
-                  <option value="ARS">ARS</option>
+                  {currencies.map((currency) => (
+                    <option key={currency.currencyCode} value={currency.currencyCode}>
+                      {currency.currencyCode}
+                    </option>
+                  ))}
                 </select>
               </label>
 

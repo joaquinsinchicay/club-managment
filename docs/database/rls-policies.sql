@@ -9,6 +9,7 @@ alter table membership_roles enable row level security;
 alter table club_invitations enable row level security;
 alter table user_club_preferences enable row level security;
 alter table treasury_accounts enable row level security;
+alter table club_treasury_currencies enable row level security;
 alter table treasury_movements enable row level security;
 alter table daily_cash_sessions enable row level security;
 
@@ -342,6 +343,122 @@ using (
 
 create policy "Admins manage accounts in current club"
 on treasury_accounts
+for all
+to authenticated
+using (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+)
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+);
+
+-- =========================================
+-- CLUB TREASURY CURRENCIES
+-- =========================================
+
+drop policy if exists "Members can view treasury currencies" on club_treasury_currencies;
+drop policy if exists "Admins manage treasury currencies in current club" on club_treasury_currencies;
+
+create policy "Members can view treasury currencies"
+on club_treasury_currencies
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Admins manage treasury currencies in current club"
+on club_treasury_currencies
+for all
+to authenticated
+using (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+)
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+);
+
+-- =========================================
+-- TREASURY CATEGORIES
+-- =========================================
+
+drop policy if exists "Members can view categories" on treasury_categories;
+drop policy if exists "Admins manage categories in current club" on treasury_categories;
+
+create policy "Members can view categories"
+on treasury_categories
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Admins manage categories in current club"
+on treasury_categories
+for all
+to authenticated
+using (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+)
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+);
+
+-- =========================================
+-- CLUB ACTIVITIES
+-- =========================================
+
+drop policy if exists "Members can view activities" on club_activities;
+drop policy if exists "Admins manage activities in current club" on club_activities;
+
+create policy "Members can view activities"
+on club_activities
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Admins manage activities in current club"
+on club_activities
+for all
+to authenticated
+using (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+)
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+);
+
+-- =========================================
+-- RECEIPT FORMATS
+-- =========================================
+
+drop policy if exists "Members can view receipt formats" on receipt_formats;
+drop policy if exists "Admins manage receipt formats in current club" on receipt_formats;
+
+create policy "Members can view receipt formats"
+on receipt_formats
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Admins manage receipt formats in current club"
+on receipt_formats
 for all
 to authenticated
 using (

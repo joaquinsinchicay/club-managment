@@ -5,6 +5,7 @@ import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 import type {
   AuthIdentity,
   BalanceAdjustment,
+  ClubActivity,
   Club,
   ClubInvitation,
   ClubMember,
@@ -15,7 +16,10 @@ import type {
   Membership,
   MembershipRole,
   PendingClubInvitation,
+  ReceiptFormat,
   TreasuryAccount,
+  TreasuryCurrencyCode,
+  TreasuryCurrencyConfig,
   TreasuryCategory,
   TreasuryMovement,
   User
@@ -38,6 +42,88 @@ type AccessRepository = {
   listPendingInvitationsByEmail(email: string, client?: AccessRepositoryClient): Promise<ClubInvitation[]>;
   listTreasuryAccountsForClub(clubId: string): Promise<TreasuryAccount[]>;
   listTreasuryCategoriesForClub(clubId: string): Promise<TreasuryCategory[]>;
+  listClubActivitiesForClub(clubId: string): Promise<ClubActivity[]>;
+  listReceiptFormatsForClub(clubId: string): Promise<ReceiptFormat[]>;
+  listTreasuryCurrenciesForClub(clubId: string): Promise<TreasuryCurrencyConfig[]>;
+  setTreasuryCurrenciesForClub(input: {
+    clubId: string;
+    currencies: Array<{
+      currencyCode: TreasuryCurrencyCode;
+      isPrimary: boolean;
+    }>;
+  }): Promise<TreasuryCurrencyConfig[]>;
+  createTreasuryAccount(input: {
+    clubId: string;
+    name: string;
+    accountType: TreasuryAccount["accountType"];
+    accountScope: TreasuryAccount["accountScope"];
+    status: TreasuryAccount["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
+    emoji: string | null;
+    currencies: string[];
+  }): Promise<TreasuryAccount | null>;
+  updateTreasuryAccount(input: {
+    accountId: string;
+    clubId: string;
+    name: string;
+    accountType: TreasuryAccount["accountType"];
+    accountScope: TreasuryAccount["accountScope"];
+    status: TreasuryAccount["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
+    emoji: string | null;
+    currencies: string[];
+  }): Promise<TreasuryAccount | null>;
+  createTreasuryCategory(input: {
+    clubId: string;
+    name: string;
+    status: TreasuryCategory["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
+    emoji: string | null;
+  }): Promise<TreasuryCategory | null>;
+  updateTreasuryCategory(input: {
+    categoryId: string;
+    clubId: string;
+    name: string;
+    status: TreasuryCategory["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
+    emoji: string | null;
+  }): Promise<TreasuryCategory | null>;
+  createClubActivity(input: {
+    clubId: string;
+    name: string;
+    status: ClubActivity["status"];
+    emoji: string | null;
+  }): Promise<ClubActivity | null>;
+  updateClubActivity(input: {
+    activityId: string;
+    clubId: string;
+    name: string;
+    status: ClubActivity["status"];
+    emoji: string | null;
+  }): Promise<ClubActivity | null>;
+  createReceiptFormat(input: {
+    clubId: string;
+    name: string;
+    validationType: ReceiptFormat["validationType"];
+    pattern: string | null;
+    minNumericValue: number | null;
+    example: string | null;
+    status: ReceiptFormat["status"];
+  }): Promise<ReceiptFormat | null>;
+  updateReceiptFormat(input: {
+    receiptFormatId: string;
+    clubId: string;
+    name: string;
+    validationType: ReceiptFormat["validationType"];
+    pattern: string | null;
+    minNumericValue: number | null;
+    example: string | null;
+    status: ReceiptFormat["status"];
+  }): Promise<ReceiptFormat | null>;
   findTreasuryAdjustmentCategory(clubId: string): Promise<TreasuryCategory | null>;
   getDailyCashSessionByDate(clubId: string, sessionDate: string): Promise<DailyCashSession | null>;
   createDailyCashSession(
@@ -57,6 +143,8 @@ type AccessRepository = {
     concept: string;
     currencyCode: string;
     amount: number;
+    activityId?: string | null;
+    receiptNumber?: string | null;
     movementDate: string;
     createdByUserId: string;
   }): Promise<TreasuryMovement | null>;
@@ -127,6 +215,9 @@ type MockStore = {
   invitations: ClubInvitation[];
   treasuryAccounts: TreasuryAccount[];
   treasuryCategories: TreasuryCategory[];
+  clubActivities: ClubActivity[];
+  receiptFormats: ReceiptFormat[];
+  clubTreasuryCurrencies: TreasuryCurrencyConfig[];
   dailyCashSessions: DailyCashSession[];
   dailyCashSessionBalances: DailyCashSessionBalance[];
   balanceAdjustments: BalanceAdjustment[];
@@ -285,21 +376,36 @@ function createStore(): MockStore {
       id: "account-secretaria-caja-001",
       clubId: CLUB_ID,
       name: "Caja principal",
+      accountType: "efectivo",
       accountScope: "secretaria",
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false,
+      emoji: "💵",
       currencies: ["ARS"]
     },
     {
       id: "account-secretaria-banco-001",
       clubId: CLUB_ID,
       name: "Banco operativo",
+      accountType: "bancaria",
       accountScope: "secretaria",
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false,
+      emoji: "🏦",
       currencies: ["ARS"]
     },
     {
       id: "account-secretaria-sur-001",
       clubId: CLUB_SUR_ID,
       name: "Caja Sur",
+      accountType: "efectivo",
       accountScope: "secretaria",
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false,
+      emoji: "💼",
       currencies: ["ARS"]
     }
   ];
@@ -308,27 +414,117 @@ function createStore(): MockStore {
     {
       id: "category-cuotas-001",
       clubId: CLUB_ID,
-      name: "Cuotas"
+      name: "Cuotas",
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: true,
+      emoji: "📄"
     },
     {
       id: "category-gastos-001",
       clubId: CLUB_ID,
-      name: "Gastos operativos"
+      name: "Gastos operativos",
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: true,
+      emoji: "🧾"
     },
     {
       id: "category-ajuste-001",
       clubId: CLUB_ID,
-      name: "Ajuste"
+      name: "Ajuste",
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false,
+      emoji: "⚖️"
     },
     {
       id: "category-sur-001",
       clubId: CLUB_SUR_ID,
-      name: "Cuotas Sur"
+      name: "Cuotas Sur",
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: true,
+      emoji: "📄"
     },
     {
       id: "category-ajuste-sur-001",
       clubId: CLUB_SUR_ID,
-      name: "Ajuste"
+      name: "Ajuste",
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false,
+      emoji: "⚖️"
+    }
+  ];
+
+  const clubActivities: ClubActivity[] = [
+    {
+      id: "activity-boxeo-001",
+      clubId: CLUB_ID,
+      name: "Boxeo",
+      status: "active",
+      emoji: "🥊"
+    },
+    {
+      id: "activity-futsal-001",
+      clubId: CLUB_ID,
+      name: "Futsal",
+      status: "inactive",
+      emoji: "⚽"
+    },
+    {
+      id: "activity-sur-001",
+      clubId: CLUB_SUR_ID,
+      name: "Hockey",
+      status: "active",
+      emoji: "🏑"
+    }
+  ];
+
+  const receiptFormats: ReceiptFormat[] = [
+    {
+      id: "receipt-format-legacy-001",
+      clubId: CLUB_ID,
+      name: "Recibo legacy",
+      validationType: "numeric",
+      pattern: null,
+      minNumericValue: 1,
+      example: "12345",
+      status: "active"
+    },
+    {
+      id: "receipt-format-modern-001",
+      clubId: CLUB_ID,
+      name: "Recibo moderno",
+      validationType: "pattern",
+      pattern: "^RC-[0-9]{6}$",
+      minNumericValue: null,
+      example: "RC-000123",
+      status: "active"
+    },
+    {
+      id: "receipt-format-sur-001",
+      clubId: CLUB_SUR_ID,
+      name: "Recibo Sur",
+      validationType: "pattern",
+      pattern: "^SUR-[0-9]{4}$",
+      minNumericValue: null,
+      example: "SUR-0101",
+      status: "active"
+    }
+  ];
+
+  const clubTreasuryCurrencies: TreasuryCurrencyConfig[] = [
+    {
+      clubId: CLUB_ID,
+      currencyCode: "ARS",
+      isPrimary: true
+    },
+    {
+      clubId: CLUB_SUR_ID,
+      currencyCode: "ARS",
+      isPrimary: true
     }
   ];
 
@@ -344,6 +540,9 @@ function createStore(): MockStore {
     invitations,
     treasuryAccounts,
     treasuryCategories,
+    clubActivities,
+    receiptFormats,
+    clubTreasuryCurrencies,
     dailyCashSessions,
     dailyCashSessionBalances,
     balanceAdjustments,
@@ -527,6 +726,104 @@ function mapInvitationRow(row: {
     expiresAt: row.expires_at,
     usedAt: row.used_at,
     createdAt: row.created_at ?? now()
+  };
+}
+
+function mapTreasuryAccountRow(
+  row: {
+    id: string;
+    club_id: string;
+    name: string;
+    account_type: TreasuryAccount["accountType"];
+    account_scope: TreasuryAccount["accountScope"];
+    status: TreasuryAccount["status"];
+    visible_for_secretaria: boolean | null;
+    visible_for_tesoreria: boolean | null;
+    emoji: string | null;
+  },
+  currencies: string[]
+): TreasuryAccount {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    name: row.name,
+    accountType: row.account_type,
+    accountScope: row.account_scope,
+    status: row.status,
+    visibleForSecretaria: row.visible_for_secretaria ?? true,
+    visibleForTesoreria: row.visible_for_tesoreria ?? true,
+    emoji: row.emoji,
+    currencies
+  };
+}
+
+function mapTreasuryCategoryRow(row: {
+  id: string;
+  club_id: string;
+  name: string;
+  status: TreasuryCategory["status"];
+  visible_for_secretaria: boolean | null;
+  visible_for_tesoreria: boolean | null;
+  emoji: string | null;
+}): TreasuryCategory {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    name: row.name,
+    status: row.status,
+    visibleForSecretaria: row.visible_for_secretaria ?? true,
+    visibleForTesoreria: row.visible_for_tesoreria ?? true,
+    emoji: row.emoji
+  };
+}
+
+function mapClubActivityRow(row: {
+  id: string;
+  club_id: string;
+  name: string;
+  status: ClubActivity["status"];
+  emoji: string | null;
+}): ClubActivity {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    name: row.name,
+    status: row.status,
+    emoji: row.emoji
+  };
+}
+
+function mapReceiptFormatRow(row: {
+  id: string;
+  club_id: string;
+  name: string;
+  validation_type: ReceiptFormat["validationType"];
+  pattern: string | null;
+  min_numeric_value: number | null;
+  example: string | null;
+  status: ReceiptFormat["status"];
+}): ReceiptFormat {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    name: row.name,
+    validationType: row.validation_type,
+    pattern: row.pattern,
+    minNumericValue: row.min_numeric_value,
+    example: row.example,
+    status: row.status
+  };
+}
+
+function mapTreasuryCurrencyRow(row: {
+  club_id: string;
+  currency_code: TreasuryCurrencyCode;
+  is_primary: boolean | null;
+}): TreasuryCurrencyConfig {
+  return {
+    clubId: row.club_id,
+    currencyCode: row.currency_code,
+    isPrimary: row.is_primary ?? false
   };
 }
 
@@ -808,6 +1105,543 @@ async function listRealPendingInvitationsForClub(clubId: string, client?: Access
     status: "pendiente_aprobacion" as const,
     createdAt: row.created_at ?? now()
   }));
+}
+
+async function listRealTreasuryAccountsForClub(clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("treasury_accounts")
+    .select(
+      "id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji,treasury_account_currencies(currency_code)"
+    )
+    .eq("club_id", clubId)
+    .order("name", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row: {
+    id: string;
+    club_id: string;
+    name: string;
+    account_type: TreasuryAccount["accountType"];
+    account_scope: TreasuryAccount["accountScope"];
+    status: TreasuryAccount["status"];
+    visible_for_secretaria: boolean | null;
+    visible_for_tesoreria: boolean | null;
+    emoji: string | null;
+    treasury_account_currencies?: Array<{ currency_code: string }>;
+  }) =>
+    mapTreasuryAccountRow(
+      row,
+      (row.treasury_account_currencies ?? []).map((currency) => currency.currency_code)
+    )
+  );
+}
+
+async function listRealTreasuryCategoriesForClub(clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("treasury_categories")
+    .select("id,club_id,name,status,visible_for_secretaria,visible_for_tesoreria,emoji")
+    .eq("club_id", clubId)
+    .order("name", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map(mapTreasuryCategoryRow);
+}
+
+async function listRealClubActivitiesForClub(clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("club_activities")
+    .select("id,club_id,name,status,emoji")
+    .eq("club_id", clubId)
+    .order("name", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map(mapClubActivityRow);
+}
+
+async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("receipt_formats")
+    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status")
+    .eq("club_id", clubId)
+    .order("name", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map(mapReceiptFormatRow);
+}
+
+async function listRealTreasuryCurrenciesForClub(clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("club_treasury_currencies")
+    .select("club_id,currency_code,is_primary")
+    .eq("club_id", clubId)
+    .order("currency_code", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map(mapTreasuryCurrencyRow);
+}
+
+async function syncRealTreasuryCurrenciesToAccounts(
+  clubId: string,
+  currencies: TreasuryCurrencyCode[],
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return;
+  }
+
+  const { data: accounts, error: accountsError } = await supabase
+    .from("treasury_accounts")
+    .select("id")
+    .eq("club_id", clubId);
+
+  if (accountsError || !accounts) {
+    return;
+  }
+
+  const accountIds = accounts.map((account: { id: string }) => account.id);
+
+  if (accountIds.length === 0) {
+    return;
+  }
+
+  await supabase.from("treasury_account_currencies").delete().in("account_id", accountIds);
+
+  if (currencies.length === 0) {
+    return;
+  }
+
+  await supabase.from("treasury_account_currencies").insert(
+    accountIds.flatMap((accountId) =>
+      currencies.map((currencyCode) => ({
+        account_id: accountId,
+        currency_code: currencyCode
+      }))
+    )
+  );
+}
+
+async function setRealTreasuryCurrenciesForClub(
+  input: {
+    clubId: string;
+    currencies: Array<{
+      currencyCode: TreasuryCurrencyCode;
+      isPrimary: boolean;
+    }>;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  await supabase.from("club_treasury_currencies").delete().eq("club_id", input.clubId);
+
+  const { error } = await supabase.from("club_treasury_currencies").insert(
+    input.currencies.map((currency) => ({
+      club_id: input.clubId,
+      currency_code: currency.currencyCode,
+      is_primary: currency.isPrimary
+    }))
+  );
+
+  if (error) {
+    return [];
+  }
+
+  await syncRealTreasuryCurrenciesToAccounts(
+    input.clubId,
+    input.currencies.map((currency) => currency.currencyCode),
+    client
+  );
+
+  return listRealTreasuryCurrenciesForClub(input.clubId, client);
+}
+
+async function createRealTreasuryAccount(
+  input: {
+    clubId: string;
+    name: string;
+    accountType: TreasuryAccount["accountType"];
+    accountScope: TreasuryAccount["accountScope"];
+    status: TreasuryAccount["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
+    emoji: string | null;
+    currencies: string[];
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("treasury_accounts")
+    .insert({
+      club_id: input.clubId,
+      name: input.name,
+      account_type: input.accountType,
+      account_scope: input.accountScope,
+      status: input.status,
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria,
+      emoji: input.emoji
+    })
+    .select("id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji")
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  if (input.currencies.length > 0) {
+    const { error: currenciesError } = await supabase.from("treasury_account_currencies").insert(
+      input.currencies.map((currencyCode) => ({
+        account_id: data.id,
+        currency_code: currencyCode
+      }))
+    );
+
+    if (currenciesError) {
+      return null;
+    }
+  }
+
+  return mapTreasuryAccountRow(data, input.currencies);
+}
+
+async function updateRealTreasuryAccount(
+  input: {
+    accountId: string;
+    clubId: string;
+    name: string;
+    accountType: TreasuryAccount["accountType"];
+    accountScope: TreasuryAccount["accountScope"];
+    status: TreasuryAccount["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
+    emoji: string | null;
+    currencies: string[];
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("treasury_accounts")
+    .update({
+      name: input.name,
+      account_type: input.accountType,
+      account_scope: input.accountScope,
+      status: input.status,
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria,
+      emoji: input.emoji
+    })
+    .eq("id", input.accountId)
+    .eq("club_id", input.clubId)
+    .select("id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  await supabase.from("treasury_account_currencies").delete().eq("account_id", input.accountId);
+
+  if (input.currencies.length > 0) {
+    const { error: currenciesError } = await supabase.from("treasury_account_currencies").insert(
+      input.currencies.map((currencyCode) => ({
+        account_id: input.accountId,
+        currency_code: currencyCode
+      }))
+    );
+
+    if (currenciesError) {
+      return null;
+    }
+  }
+
+  return mapTreasuryAccountRow(data, input.currencies);
+}
+
+async function createRealTreasuryCategory(
+  input: {
+    clubId: string;
+    name: string;
+    status: TreasuryCategory["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
+    emoji: string | null;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("treasury_categories")
+    .insert({
+      club_id: input.clubId,
+      name: input.name,
+      status: input.status,
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria,
+      emoji: input.emoji
+    })
+    .select("id,club_id,name,status,visible_for_secretaria,visible_for_tesoreria,emoji")
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapTreasuryCategoryRow(data);
+}
+
+async function updateRealTreasuryCategory(
+  input: {
+    categoryId: string;
+    clubId: string;
+    name: string;
+    status: TreasuryCategory["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
+    emoji: string | null;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("treasury_categories")
+    .update({
+      name: input.name,
+      status: input.status,
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria,
+      emoji: input.emoji
+    })
+    .eq("id", input.categoryId)
+    .eq("club_id", input.clubId)
+    .select("id,club_id,name,status,visible_for_secretaria,visible_for_tesoreria,emoji")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapTreasuryCategoryRow(data);
+}
+
+async function createRealClubActivity(
+  input: {
+    clubId: string;
+    name: string;
+    status: ClubActivity["status"];
+    emoji: string | null;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("club_activities")
+    .insert({
+      club_id: input.clubId,
+      name: input.name,
+      status: input.status,
+      emoji: input.emoji
+    })
+    .select("id,club_id,name,status,emoji")
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapClubActivityRow(data);
+}
+
+async function updateRealClubActivity(
+  input: {
+    activityId: string;
+    clubId: string;
+    name: string;
+    status: ClubActivity["status"];
+    emoji: string | null;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("club_activities")
+    .update({
+      name: input.name,
+      status: input.status,
+      emoji: input.emoji
+    })
+    .eq("id", input.activityId)
+    .eq("club_id", input.clubId)
+    .select("id,club_id,name,status,emoji")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapClubActivityRow(data);
+}
+
+async function createRealReceiptFormat(
+  input: {
+    clubId: string;
+    name: string;
+    validationType: ReceiptFormat["validationType"];
+    pattern: string | null;
+    minNumericValue: number | null;
+    example: string | null;
+    status: ReceiptFormat["status"];
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("receipt_formats")
+    .insert({
+      club_id: input.clubId,
+      name: input.name,
+      validation_type: input.validationType,
+      pattern: input.pattern,
+      min_numeric_value: input.minNumericValue,
+      example: input.example,
+      status: input.status
+    })
+    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status")
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapReceiptFormatRow(data);
+}
+
+async function updateRealReceiptFormat(
+  input: {
+    receiptFormatId: string;
+    clubId: string;
+    name: string;
+    validationType: ReceiptFormat["validationType"];
+    pattern: string | null;
+    minNumericValue: number | null;
+    example: string | null;
+    status: ReceiptFormat["status"];
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("receipt_formats")
+    .update({
+      name: input.name,
+      validation_type: input.validationType,
+      pattern: input.pattern,
+      min_numeric_value: input.minNumericValue,
+      example: input.example,
+      status: input.status
+    })
+    .eq("id", input.receiptFormatId)
+    .eq("club_id", input.clubId)
+    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapReceiptFormatRow(data);
 }
 
 async function setRealLastActiveClubId(userId: string, clubId: string, client?: AccessRepositoryClient) {
@@ -1277,12 +2111,234 @@ export const accessRepository: AccessRepository = {
     });
   },
   async listTreasuryAccountsForClub(clubId) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealTreasuryAccountsForClub(clubId);
+    }
+
     return getStore().treasuryAccounts.filter((account) => account.clubId === clubId);
   },
   async listTreasuryCategoriesForClub(clubId) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealTreasuryCategoriesForClub(clubId);
+    }
+
     return getStore().treasuryCategories.filter((category) => category.clubId === clubId);
   },
+  async listClubActivitiesForClub(clubId) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealClubActivitiesForClub(clubId);
+    }
+
+    return getStore().clubActivities.filter((activity) => activity.clubId === clubId);
+  },
+  async listReceiptFormatsForClub(clubId) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealReceiptFormatsForClub(clubId);
+    }
+
+    return getStore().receiptFormats.filter((format) => format.clubId === clubId);
+  },
+  async listTreasuryCurrenciesForClub(clubId) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealTreasuryCurrenciesForClub(clubId);
+    }
+
+    return getStore().clubTreasuryCurrencies.filter((currency) => currency.clubId === clubId);
+  },
+  async setTreasuryCurrenciesForClub(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return setRealTreasuryCurrenciesForClub(input);
+    }
+
+    const store = getStore();
+    store.clubTreasuryCurrencies = store.clubTreasuryCurrencies.filter(
+      (currency) => currency.clubId !== input.clubId
+    );
+
+    const nextCurrencies = input.currencies.map((currency) => ({
+      clubId: input.clubId,
+      currencyCode: currency.currencyCode,
+      isPrimary: currency.isPrimary
+    }));
+
+    store.clubTreasuryCurrencies.push(...nextCurrencies);
+
+    store.treasuryAccounts.forEach((account) => {
+      if (account.clubId === input.clubId) {
+        account.currencies = input.currencies.map((currency) => currency.currencyCode);
+      }
+    });
+
+    return nextCurrencies;
+  },
+  async createTreasuryAccount(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealTreasuryAccount(input);
+    }
+
+    const account: TreasuryAccount = {
+      id: `account-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      clubId: input.clubId,
+      name: input.name,
+      accountType: input.accountType,
+      accountScope: input.accountScope,
+      status: input.status,
+      visibleForSecretaria: input.visibleForSecretaria,
+      visibleForTesoreria: input.visibleForTesoreria,
+      emoji: input.emoji,
+      currencies: input.currencies
+    };
+
+    getStore().treasuryAccounts.push(account);
+    return account;
+  },
+  async updateTreasuryAccount(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return updateRealTreasuryAccount(input);
+    }
+
+    const store = getStore();
+    const account = store.treasuryAccounts.find(
+      (entry) => entry.id === input.accountId && entry.clubId === input.clubId
+    );
+
+    if (!account) {
+      return null;
+    }
+
+    account.name = input.name;
+    account.accountType = input.accountType;
+    account.accountScope = input.accountScope;
+    account.status = input.status;
+    account.visibleForSecretaria = input.visibleForSecretaria;
+    account.visibleForTesoreria = input.visibleForTesoreria;
+    account.emoji = input.emoji;
+    account.currencies = input.currencies;
+
+    return account;
+  },
+  async createTreasuryCategory(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealTreasuryCategory(input);
+    }
+
+    const category: TreasuryCategory = {
+      id: `category-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      clubId: input.clubId,
+      name: input.name,
+      status: input.status,
+      visibleForSecretaria: input.visibleForSecretaria,
+      visibleForTesoreria: input.visibleForTesoreria,
+      emoji: input.emoji
+    };
+
+    getStore().treasuryCategories.push(category);
+    return category;
+  },
+  async updateTreasuryCategory(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return updateRealTreasuryCategory(input);
+    }
+
+    const store = getStore();
+    const category = store.treasuryCategories.find(
+      (entry) => entry.id === input.categoryId && entry.clubId === input.clubId
+    );
+
+    if (!category) {
+      return null;
+    }
+
+    category.name = input.name;
+    category.status = input.status;
+    category.visibleForSecretaria = input.visibleForSecretaria;
+    category.visibleForTesoreria = input.visibleForTesoreria;
+    category.emoji = input.emoji;
+
+    return category;
+  },
+  async createClubActivity(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealClubActivity(input);
+    }
+
+    const activity: ClubActivity = {
+      id: `activity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      clubId: input.clubId,
+      name: input.name,
+      status: input.status,
+      emoji: input.emoji
+    };
+
+    getStore().clubActivities.push(activity);
+    return activity;
+  },
+  async updateClubActivity(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return updateRealClubActivity(input);
+    }
+
+    const activity = getStore().clubActivities.find(
+      (entry) => entry.id === input.activityId && entry.clubId === input.clubId
+    );
+
+    if (!activity) {
+      return null;
+    }
+
+    activity.name = input.name;
+    activity.status = input.status;
+    activity.emoji = input.emoji;
+    return activity;
+  },
+  async createReceiptFormat(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealReceiptFormat(input);
+    }
+
+    const receiptFormat: ReceiptFormat = {
+      id: `receipt-format-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      clubId: input.clubId,
+      name: input.name,
+      validationType: input.validationType,
+      pattern: input.pattern,
+      minNumericValue: input.minNumericValue,
+      example: input.example,
+      status: input.status
+    };
+
+    getStore().receiptFormats.push(receiptFormat);
+    return receiptFormat;
+  },
+  async updateReceiptFormat(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return updateRealReceiptFormat(input);
+    }
+
+    const receiptFormat = getStore().receiptFormats.find(
+      (entry) => entry.id === input.receiptFormatId && entry.clubId === input.clubId
+    );
+
+    if (!receiptFormat) {
+      return null;
+    }
+
+    receiptFormat.name = input.name;
+    receiptFormat.validationType = input.validationType;
+    receiptFormat.pattern = input.pattern;
+    receiptFormat.minNumericValue = input.minNumericValue;
+    receiptFormat.example = input.example;
+    receiptFormat.status = input.status;
+    return receiptFormat;
+  },
   async findTreasuryAdjustmentCategory(clubId) {
+    if (shouldUseSupabaseDatabase()) {
+      const categories = await listRealTreasuryCategoriesForClub(clubId);
+      return (
+        categories.find((category) => category.name.toLowerCase() === "ajuste") ?? null
+      );
+    }
+
     return (
       getStore().treasuryCategories.find(
         (category) => category.clubId === clubId && category.name.toLowerCase() === "ajuste"
@@ -1346,6 +2402,8 @@ export const accessRepository: AccessRepository = {
       concept: input.concept,
       currencyCode: input.currencyCode,
       amount: input.amount,
+      activityId: input.activityId ?? null,
+      receiptNumber: input.receiptNumber ?? null,
       movementDate: input.movementDate,
       createdByUserId: input.createdByUserId,
       status: "pending_consolidation",
