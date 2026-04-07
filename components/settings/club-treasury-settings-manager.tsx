@@ -162,8 +162,39 @@ function TreasuryAccountForm({
   defaultAccount,
   availableCurrencies
 }: TreasuryAccountFormProps) {
+  const [selectedCurrencies, setSelectedCurrencies] = useState<TreasuryCurrencyCode[]>(
+    defaultAccount?.currencies.filter((currency): currency is TreasuryCurrencyCode =>
+      TREASURY_CURRENCY_OPTIONS.includes(currency as TreasuryCurrencyCode)
+    ) ?? []
+  );
+  const [currenciesTouched, setCurrenciesTouched] = useState(false);
+
+  function handleCurrencyToggle(currencyCode: TreasuryCurrencyCode, checked: boolean) {
+    setCurrenciesTouched(true);
+    setSelectedCurrencies((currentCurrencies) => {
+      if (checked) {
+        return currentCurrencies.includes(currencyCode)
+          ? currentCurrencies
+          : [...currentCurrencies, currencyCode];
+      }
+
+      return currentCurrencies.filter((currentCurrency) => currentCurrency !== currencyCode);
+    });
+  }
+
   return (
-    <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
+    <form
+      action={action}
+      onSubmit={(event) => {
+        if (selectedCurrencies.length > 0) {
+          return;
+        }
+
+        event.preventDefault();
+        setCurrenciesTouched(true);
+      }}
+      className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4"
+    >
       <PendingFieldset className="grid gap-4">
         {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
 
@@ -266,18 +297,25 @@ function TreasuryAccountForm({
                   type="checkbox"
                   name="currencies"
                   value={currencyCode}
-                  defaultChecked={defaultAccount?.currencies.includes(currencyCode) ?? false}
+                  checked={selectedCurrencies.includes(currencyCode)}
+                  onChange={(event) => handleCurrencyToggle(currencyCode, event.target.checked)}
                   className="size-4 rounded border-border"
                 />
                 <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
               </label>
             ))}
           </div>
+          {currenciesTouched && selectedCurrencies.length === 0 ? (
+            <p aria-live="assertive" className="text-sm text-destructive">
+              {texts.settings.club.treasury.feedback.account_currencies_required}
+            </p>
+          ) : null}
         </fieldset>
 
         <PendingSubmitButton
           idleLabel={submitLabel}
           pendingLabel={pendingLabel}
+          disabled={selectedCurrencies.length === 0}
           className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
       </PendingFieldset>

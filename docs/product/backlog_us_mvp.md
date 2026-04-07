@@ -2824,6 +2824,7 @@ Feature: US-28 — Configuración de cuentas de Tesorería y monedas habilitadas
     When intento guardar sin seleccionar ninguna moneda
     Then veo un mensaje indicando que debo habilitar al menos una moneda
     And la cuenta no se registra
+    And el CTA de guardado permanece deshabilitado hasta seleccionar al menos una moneda
 
   Scenario 07: Creación exitosa de cuenta monomonetaria
     Given estoy autenticado
@@ -2863,6 +2864,15 @@ Feature: US-28 — Configuración de cuentas de Tesorería y monedas habilitadas
     And existe una cuenta de Tesorería configurada
     When edito su nombre, estado, emoji o monedas habilitadas
     Then el sistema actualiza la cuenta en el club activo
+
+  Scenario 10B: No se puede editar una cuenta y dejarla sin monedas
+    Given estoy autenticado
+    And soy admin del club activo
+    And existe una cuenta de Tesorería configurada
+    When desmarco todas las monedas habilitadas
+    Then veo un mensaje indicando que debo habilitar al menos una moneda
+    And la cuenta no se actualiza
+    And el CTA de guardado permanece deshabilitado hasta seleccionar al menos una moneda
 
   Scenario 11: Cuenta inactiva no aparece para Tesorería
     Given existe una cuenta de Tesorería inactiva en el club activo

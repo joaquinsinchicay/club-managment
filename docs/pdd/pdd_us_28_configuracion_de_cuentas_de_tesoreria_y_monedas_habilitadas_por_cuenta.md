@@ -131,6 +131,8 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - El formulario debe seguir siendo mobile-first.
 - El listado debe mostrar al menos nombre, estado, visibilidad y monedas habilitadas.
 - `Visibilidad` debe resolverse como multicheck con `Secretaría` y `Tesorería`.
+- `Monedas habilitadas` debe resolverse como multicheck con `ARS` y `USD`.
+- El formulario no debe permitir guardar una cuenta mientras no haya al menos una moneda seleccionada.
 - El campo `Emoji` debe resolverse con un selector simple de opciones predefinidas del sistema.
 - No debe existir un segundo campo redundante de “Visible para Secretaría” en cuentas.
 - Al crear o editar cuentas, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
