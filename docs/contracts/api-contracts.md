@@ -630,7 +630,7 @@ Sí
 ### 5.11 Set receipt formats
 
 **Purpose**
-Configurar formatos válidos del campo recibo.
+Exponer la integración predefinida del campo recibo.
 
 **Auth required**
 Sí
@@ -638,32 +638,26 @@ Sí
 **Allowed roles**
 `tesoreria`
 
-**Input**
+**Behavior**
 
-```json
-{
-  "formats": [
-    {
-      "name": "Recibo viejo",
-      "validation_type": "numeric",
-      "min_numeric_value": 1,
-      "status": "active"
-    },
-    {
-      "name": "Recibo nuevo",
-      "validation_type": "pattern",
-      "pattern": "^RC-[0-9]{6}$",
-      "status": "active"
-    }
-  ]
-}
-```
+- La integración soportada por defecto es `PAY-SOC-<número de 5 dígitos>`.
+- El ejemplo visible es `PAY-SOC-26205`.
+- El mínimo inclusivo es `PAY-SOC-10556`.
+- No existe máximo.
+- La UI no administra colecciones libres de formatos en esta iteración.
 
 **Output**
 
 ```json
 {
-  "saved": true
+  "receipt_integration": {
+    "name": "Sistema de socios",
+    "example": "PAY-SOC-26205",
+    "pattern": "^PAY-SOC-[0-9]{5}$",
+    "min_receipt": "PAY-SOC-10556",
+    "max_receipt": null,
+    "editable": false
+  }
 }
 ```
 
@@ -886,7 +880,7 @@ Sí
   "currency_code": "ARS",
   "amount": 25000,
   "movement_date": "2026-04-02",
-  "receipt_number": "RC-000123",
+  "receipt_number": "PAY-SOC-26205",
   "activity_id": "uuid",
   "calendar_event_id": "uuid"
 }
@@ -898,6 +892,7 @@ Sí
 * categoría válida y visible para el rol
 * movement_type habilitado en el club
 * currency_code válida para la cuenta
+* receipt_number debe cumplir `^PAY-SOC-[0-9]{5}$` y ser `>= PAY-SOC-10556` cuando se informa
 * amount > 0
 * campos dinámicos obligatorios según categoría
 * si el rol es `secretaria`, debe existir jornada abierta

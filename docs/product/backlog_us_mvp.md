@@ -1651,138 +1651,61 @@ Feature: US-18 — Configuración de formatos válidos para recibos
     When intento acceder a la configuración de formatos de recibo
     Then no tengo acceso a la funcionalidad
 
-  Scenario 03: Visualización de formatos configurados
+  Scenario 03: Visualización de integración predefinida
     Given estoy autenticado
     And soy admin del club activo
-    And existen formatos de recibo configurados
     When ingreso a la configuración de formatos de recibo
-    Then veo el listado de formatos configurados para el club activo
-    And cada formato muestra nombre, estado, tipo de validación y ejemplo
+    Then veo la información de la integración de recibos del sistema de socios
+    And se muestran como solo lectura los campos "Nombre del sistema de socios", "Ejemplo", "Patrón" y "Próximo recibo"
 
-  Scenario 04: Alta de formato numérico
+  Scenario 04: Visualización del formato fijo por defecto
     Given estoy autenticado
     And soy admin del club activo
-    When selecciono crear un formato de recibo
-    And elijo el tipo de validación "Numérico"
-    Then veo un formulario con los campos "Nombre", "Estado", "Valor mínimo" y "Ejemplo"
+    When ingreso a la configuración de formatos de recibo
+    Then veo el ejemplo "PAY-SOC-26205"
+    And veo el patrón "^PAY-SOC-[0-9]{5}$"
+    And veo "Próximo recibo" con valor "PAY-SOC-10556"
 
-  Scenario 05: Creación exitosa de formato numérico
+  Scenario 05: La integración no se edita desde la UI
     Given estoy autenticado
     And soy admin del club activo
-    And estoy viendo el formulario de formato numérico
-    When completo un nombre válido
-    And defino un valor mínimo válido
-    And defino su estado
-    And confirmo la creación
-    Then el sistema registra el formato en el club activo
-    And el formato queda disponible según su estado
+    When ingreso a la configuración de formatos de recibo
+    Then no veo acciones para crear o editar formatos
+    And la integración se muestra solo como referencia operativa
 
-  Scenario 06: Alta de formato con nomenclatura
-    Given estoy autenticado
-    And soy admin del club activo
-    When selecciono crear un formato de recibo
-    And elijo el tipo de validación "Nomenclatura"
-    Then veo un formulario con los campos "Nombre", "Estado", "Patrón" y "Ejemplo"
-
-  Scenario 07: Creación exitosa de formato con nomenclatura
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy viendo el formulario de formato con nomenclatura
-    When completo un nombre válido
-    And defino un patrón válido
-    And defino su estado
-    And confirmo la creación
-    Then el sistema registra el formato en el club activo
-    And el formato queda disponible según su estado
-
-  Scenario 08: No se permite guardar un formato sin nombre
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy viendo el formulario de formato
-    When intento guardar sin completar el nombre
-    Then veo un mensaje indicando que el nombre es obligatorio
-    And el formato no se registra
-
-  Scenario 09: No se permite guardar un formato numérico sin valor mínimo
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy viendo el formulario de formato numérico
-    When intento guardar sin completar el valor mínimo
-    Then veo un mensaje indicando que el valor mínimo es obligatorio
-    And el formato no se registra
-
-  Scenario 10: No se permite guardar un formato de nomenclatura sin patrón
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy viendo el formulario de formato con nomenclatura
-    When intento guardar sin completar el patrón
-    Then veo un mensaje indicando que el patrón es obligatorio
-    And el formato no se registra
-
-  Scenario 11: Edición de formato de recibo
-    Given estoy autenticado
-    And soy admin del club activo
-    And existe un formato de recibo configurado
-    When edito su nombre, estado, valor mínimo, patrón o ejemplo
-    Then el sistema actualiza el formato en el club activo
-
-  Scenario 12: Formato inactivo no participa en validación
-    Given existe un formato de recibo inactivo en el club activo
-    When Secretaria ingresa un número de recibo
-    Then ese formato no se considera válido para la validación
-
-  Scenario 13: Múltiples formatos activos permitidos
-    Given estoy autenticado
-    And soy admin del club activo
-    And existen múltiples formatos de recibo activos
-    When Secretaria ingresa un número de recibo
-    Then el sistema acepta el valor si cumple al menos uno de los formatos activos
-
-  Scenario 14: Recibo válido según formato numérico
-    Given existe un formato numérico activo con valor mínimo configurado
+  Scenario 06: Recibo válido según formato predefinido
+    Given existe la integración por defecto de recibos del sistema de socios
     And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo numérico igual o mayor al mínimo permitido
+    When ingreso un recibo "PAY-SOC-10556"
     Then el sistema considera válido el recibo
 
-  Scenario 15: Recibo inválido según formato numérico
-    Given existe un formato numérico activo con valor mínimo configurado
+  Scenario 07: Recibo válido con número superior al mínimo
+    Given existe la integración por defecto de recibos del sistema de socios
     And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo numérico menor al mínimo permitido
+    When ingreso un recibo "PAY-SOC-26205"
+    Then el sistema considera válido el recibo
+
+  Scenario 08: Recibo inválido por estar debajo del mínimo
+    Given existe la integración por defecto de recibos del sistema de socios
+    And tengo rol "Secretaria" en el club activo
+    When ingreso un recibo "PAY-SOC-10555"
     Then el sistema muestra un mensaje indicando que el recibo no cumple un formato válido
     And el movimiento no se registra
 
-  Scenario 16: Recibo válido según formato con nomenclatura
-    Given existe un formato de nomenclatura activo con patrón configurado
+  Scenario 09: Recibo inválido por no cumplir el patrón
+    Given existe la integración por defecto de recibos del sistema de socios
     And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo que cumple el patrón definido
-    Then el sistema considera válido el recibo
-
-  Scenario 17: Recibo inválido según formato con nomenclatura
-    Given existe un formato de nomenclatura activo con patrón configurado
-    And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo que no cumple el patrón definido
+    When ingreso un recibo con prefijo o estructura distinta a "PAY-SOC-<número de 5 dígitos>"
     Then el sistema muestra un mensaje indicando que el recibo no cumple un formato válido
     And el movimiento no se registra
 
-  Scenario 18: Helper visible para Secretaria con ejemplos válidos
-    Given existen formatos de recibo activos en el club activo
+  Scenario 10: Helper visible para Secretaria con formato y recibos disponibles
+    Given existe la integración por defecto de recibos del sistema de socios
     And tengo rol "Secretaria" en el club activo
     When veo el campo "Recibo" en el formulario de movimientos
-    Then veo ayuda contextual con ejemplos de formatos válidos
-
-  Scenario 19: Convivencia entre sistema viejo y sistema nuevo
-    Given existe un formato numérico activo para recibos del sistema viejo
-    And existe un formato con nomenclatura activo para recibos del sistema nuevo
-    And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo que cumple uno de los dos formatos
-    Then el sistema permite guardar el movimiento
-
-  Scenario 20: Configuración por club activo
-    Given estoy autenticado
-    And soy admin en más de un club
-    When creo, edito o desactivo formatos de recibo
-    Then la configuración aplica únicamente al club activo
-    And no afecta la configuración de otros clubes
+    Then veo ayuda contextual con el patrón válido
+    And veo el ejemplo "PAY-SOC-26205"
+    And veo el texto "Disponibles desde PAY-SOC-10556"
 ```
 
 ---

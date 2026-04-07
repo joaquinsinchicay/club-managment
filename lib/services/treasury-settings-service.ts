@@ -9,6 +9,7 @@ import type {
   TreasurySettings
 } from "@/lib/domain/access";
 import { canAccessTreasurySettings } from "@/lib/domain/authorization";
+import { getDefaultReceiptFormats } from "@/lib/receipt-formats";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { texts } from "@/lib/texts";
 
@@ -231,18 +232,17 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
 
   const activeClubId = context.activeClub.id;
 
-  const [accounts, categories, activities, receiptFormats] = await Promise.all([
+  const [accounts, categories, activities] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(activeClubId),
     accessRepository.listTreasuryCategoriesForClub(activeClubId),
-    accessRepository.listClubActivitiesForClub(activeClubId),
-    accessRepository.listReceiptFormatsForClub(activeClubId)
+    accessRepository.listClubActivitiesForClub(activeClubId)
   ]);
 
   return {
     accounts,
     categories,
     activities,
-    receiptFormats,
+    receiptFormats: getDefaultReceiptFormats(activeClubId),
     currencies: FIXED_TREASURY_CURRENCIES.map((currency) => ({
       clubId: activeClubId,
       currencyCode: currency.currencyCode,

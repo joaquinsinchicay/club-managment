@@ -13,6 +13,7 @@ import type {
   TreasuryMovementType,
   TreasuryAccountDetail
 } from "@/lib/domain/access";
+import { getDefaultReceiptFormats, isDefaultReceiptNumberValid } from "@/lib/receipt-formats";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
 type TreasuryVisibilityRole = "secretaria" | "tesoreria";
@@ -640,11 +641,10 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "movement_type_required" };
   }
 
-  const [accounts, categories, activities, receiptFormats, configuredCurrencies, configuredMovementTypes] = await Promise.all([
+  const [accounts, categories, activities, configuredCurrencies, configuredMovementTypes] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
     accessRepository.listClubActivitiesForClub(context.activeClub.id),
-    accessRepository.listReceiptFormatsForClub(context.activeClub.id),
     getConfiguredTreasuryCurrencies(context.activeClub.id),
     getConfiguredMovementTypes(context.activeClub.id)
   ]);
@@ -690,7 +690,7 @@ export async function createTreasuryMovement(input: {
   }
 
   const receiptNumber = input.receiptNumber.trim();
-  const activeReceiptFormats = receiptFormats.filter((format) => format.status === "active");
+  const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
 
   if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
     const isValidReceipt = activeReceiptFormats.some((format) =>
@@ -776,11 +776,10 @@ export async function createTreasuryRoleMovement(input: {
     return { ok: false, code: "movement_type_required" };
   }
 
-  const [accounts, categories, activities, receiptFormats, configuredCurrencies, configuredMovementTypes] = await Promise.all([
+  const [accounts, categories, activities, configuredCurrencies, configuredMovementTypes] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
     accessRepository.listClubActivitiesForClub(context.activeClub.id),
-    accessRepository.listReceiptFormatsForClub(context.activeClub.id),
     getConfiguredTreasuryCurrencies(context.activeClub.id),
     getConfiguredMovementTypes(context.activeClub.id)
   ]);
@@ -828,7 +827,7 @@ export async function createTreasuryRoleMovement(input: {
   }
 
   const receiptNumber = input.receiptNumber.trim();
-  const activeReceiptFormats = receiptFormats.filter((format) => format.status === "active");
+  const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
 
   if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
     const isValidReceipt = activeReceiptFormats.some((format) =>
@@ -939,8 +938,7 @@ export async function getActiveReceiptFormatsForSecretaria(): Promise<ReceiptFor
     return [];
   }
 
-  const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
-  return receiptFormats.filter((receiptFormat) => receiptFormat.status === "active");
+  return getDefaultReceiptFormats(context.activeClub.id);
 }
 
 export async function getActiveReceiptFormatsForTesoreria(): Promise<ReceiptFormat[]> {
@@ -950,22 +948,15 @@ export async function getActiveReceiptFormatsForTesoreria(): Promise<ReceiptForm
     return [];
   }
 
-  const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
-  return receiptFormats.filter((receiptFormat) => receiptFormat.status === "active");
+  return getDefaultReceiptFormats(context.activeClub.id);
 }
 
 function validateReceiptNumberAgainstFormat(
   receiptNumber: string,
   receiptFormat: ReceiptFormat
 ) {
-  if (receiptFormat.validationType === "numeric") {
-    const parsedValue = Number(receiptNumber);
-
-    if (!Number.isFinite(parsedValue)) {
-      return false;
-    }
-
-    return parsedValue >= (receiptFormat.minNumericValue ?? 0);
+  if (receiptFormat.example === "PAY-SOC-26205") {
+    return isDefaultReceiptNumberValid(receiptNumber);
   }
 
   if (!receiptFormat.pattern) {
@@ -973,7 +964,16 @@ function validateReceiptNumberAgainstFormat(
   }
 
   try {
-    return new RegExp(receiptFormat.pattern).test(receiptNumber);
+    if (!new RegExp(receiptFormat.pattern).test(receiptNumber)) {
+      return false;
+    }
+
+    if (receiptFormat.minNumericValue === null) {
+      return true;
+    }
+
+    const parsedValue = Number(receiptNumber);
+    return Number.isFinite(parsedValue) && parsedValue >= receiptFormat.minNumericValue;
   } catch {
     return false;
   }

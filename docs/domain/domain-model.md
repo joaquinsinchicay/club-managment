@@ -211,7 +211,7 @@ Atributos:
 
 ### 4.6 ReceiptFormat
 
-Formato de recibos.
+Integración de recibos consumida por la operatoria diaria. Funcionalmente, en esta iteración el club trabaja con una integración predefinida del sistema de socios y la UI la muestra como referencia read-only.
 
 Atributos:
 
@@ -221,6 +221,7 @@ Atributos:
 * validation_type
 * pattern
 * min_numeric_value
+* example
 * status
 
 ---
