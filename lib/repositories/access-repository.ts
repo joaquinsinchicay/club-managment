@@ -1273,210 +1273,116 @@ async function listRealPendingInvitationsForClub(clubId: string, client?: Access
 }
 
 async function listRealTreasuryAccountsForClub(clubId: string, client?: AccessRepositoryClient) {
-  const supabase = createAccessSupabaseClient(client);
+  const rows = await runClubScopedReadRpc<
+    Array<{
+      id: string;
+      club_id: string;
+      name: string;
+      account_type: TreasuryAccount["accountType"];
+      account_scope: string;
+      status: TreasuryAccount["status"];
+      visible_for_secretaria: boolean | null;
+      visible_for_tesoreria: boolean | null;
+      emoji: string | null;
+      currencies: string[] | null;
+    }>
+  >("get_treasury_accounts_for_current_club", clubId, client);
 
-  if (!supabase) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("treasury_accounts")
-    .select("id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji")
-    .eq("club_id", clubId)
-    .order("name", { ascending: true });
-
-  if (error || !data) {
-    logTreasurySettingsReadFailure("list_treasury_accounts_for_club", { clubId }, error);
-    return [];
-  }
-
-  const rows = data as Array<{
-    id: string;
-    club_id: string;
-    name: string;
-    account_type: TreasuryAccount["accountType"];
-    account_scope: string;
-    status: TreasuryAccount["status"];
-    visible_for_secretaria: boolean | null;
-    visible_for_tesoreria: boolean | null;
-    emoji: string | null;
-  }>;
-
-  if (rows.length === 0) {
-    return [];
-  }
-
-  const accountIds = rows.map((row) => row.id);
-  const currencyRows = await listTreasuryAccountCurrenciesForAccountIds(accountIds, client);
-  const currenciesByAccountId = currencyRows.reduce<Record<string, string[]>>((accumulator, row) => {
-    if (!accumulator[row.account_id]) {
-      accumulator[row.account_id] = [];
-    }
-
-    accumulator[row.account_id].push(row.currency_code);
-    return accumulator;
-  }, {});
-
-  return rows.map((row) => mapTreasuryAccountRow(row, currenciesByAccountId[row.id] ?? []));
-}
-
-async function listTreasuryAccountCurrenciesForAccountIds(
-  accountIds: string[],
-  client?: AccessRepositoryClient
-) {
-  if (accountIds.length === 0) {
-    return [];
-  }
-
-  const supabase = createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("treasury_account_currencies")
-    .select("account_id,currency_code")
-    .in("account_id", accountIds);
-
-  if (!error && data) {
-    return data as Array<{ account_id: string; currency_code: string }>;
-  }
-
-  logTreasurySettingsReadFailure(
-    "list_treasury_account_currencies_for_accounts",
-    { accountIds },
-    error
-  );
-
-  try {
-    const adminSupabase = createRequiredTreasurySettingsAdminClient(
-      "list_treasury_account_currencies_for_accounts",
-      { accountIds }
-    );
-    const { data: adminData, error: adminError } = await adminSupabase
-      .from("treasury_account_currencies")
-      .select("account_id,currency_code")
-      .in("account_id", accountIds);
-
-    if (!adminError && adminData) {
-      return adminData as Array<{ account_id: string; currency_code: string }>;
-    }
-
-    logTreasurySettingsReadFailure(
-      "list_treasury_account_currencies_for_accounts_admin_fallback",
-      { accountIds },
-      adminError
-    );
-  } catch (adminClientError) {
-    logTreasurySettingsReadFailure(
-      "list_treasury_account_currencies_for_accounts_admin_client",
-      { accountIds },
-      adminClientError
-    );
-  }
-
-  return [];
+  return rows.map((row) => mapTreasuryAccountRow(row, row.currencies ?? []));
 }
 
 async function listRealTreasuryCategoriesForClub(clubId: string, client?: AccessRepositoryClient) {
-  const supabase = createAccessSupabaseClient(client);
+  const rows = await runClubScopedReadRpc<
+    Array<{
+      id: string;
+      club_id: string;
+      name: string;
+      status: TreasuryCategory["status"];
+      visible_for_secretaria: boolean | null;
+      visible_for_tesoreria: boolean | null;
+      emoji: string | null;
+    }>
+  >("get_treasury_categories_for_current_club", clubId, client);
 
-  if (!supabase) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("treasury_categories")
-    .select("id,club_id,name,status,visible_for_secretaria,visible_for_tesoreria,emoji")
-    .eq("club_id", clubId)
-    .order("name", { ascending: true });
-
-  if (error || !data) {
-    return [];
-  }
-
-  return data.map(mapTreasuryCategoryRow);
+  return rows.map(mapTreasuryCategoryRow);
 }
 
 async function listRealClubActivitiesForClub(clubId: string, client?: AccessRepositoryClient) {
-  const supabase = createAccessSupabaseClient(client);
+  const rows = await runClubScopedReadRpc<
+    Array<{
+      id: string;
+      club_id: string;
+      name: string;
+      status: ClubActivity["status"];
+      emoji: string | null;
+    }>
+  >("get_club_activities_for_current_club", clubId, client);
 
-  if (!supabase) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("club_activities")
-    .select("id,club_id,name,status,emoji")
-    .eq("club_id", clubId)
-    .order("name", { ascending: true });
-
-  if (error || !data) {
-    return [];
-  }
-
-  return data.map(mapClubActivityRow);
+  return rows.map(mapClubActivityRow);
 }
 
 async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepositoryClient) {
-  const supabase = createAccessSupabaseClient(client);
+  const rows = await runClubScopedReadRpc<
+    Array<{
+      id: string;
+      club_id: string;
+      name: string;
+      validation_type: ReceiptFormat["validationType"];
+      pattern: string | null;
+      min_numeric_value: number | null;
+      example: string | null;
+      status: ReceiptFormat["status"];
+    }>
+  >("get_receipt_formats_for_current_club", clubId, client);
 
-  if (!supabase) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("receipt_formats")
-    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status")
-    .eq("club_id", clubId)
-    .order("name", { ascending: true });
-
-  if (error || !data) {
-    return [];
-  }
-
-  return data.map(mapReceiptFormatRow);
+  return rows.map(mapReceiptFormatRow);
 }
 
 async function listRealTreasuryCurrenciesForClub(clubId: string, client?: AccessRepositoryClient) {
-  const supabase = createAccessSupabaseClient(client);
+  const rows = await runClubScopedReadRpc<
+    Array<{
+      club_id: string;
+      currency_code: TreasuryCurrencyCode;
+      is_primary: boolean | null;
+    }>
+  >("get_treasury_currencies_for_current_club", clubId, client);
 
-  if (!supabase) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("club_treasury_currencies")
-    .select("club_id,currency_code,is_primary")
-    .eq("club_id", clubId)
-    .order("currency_code", { ascending: true });
-
-  if (error || !data) {
-    return [];
-  }
-
-  return data.map(mapTreasuryCurrencyRow);
+  return rows.map(mapTreasuryCurrencyRow);
 }
 
 async function listRealMovementTypeConfigForClub(clubId: string, client?: AccessRepositoryClient) {
+  const rows = await runClubScopedReadRpc<
+    Array<{
+      club_id: string;
+      movement_type: TreasuryMovementType;
+      is_enabled: boolean | null;
+    }>
+  >("get_movement_type_config_for_current_club", clubId, client);
+
+  return rows.map(mapMovementTypeConfigRow);
+}
+
+async function runClubScopedReadRpc<T>(
+  rpcName: string,
+  clubId: string,
+  client?: AccessRepositoryClient
+) {
   const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
-    return [];
+    return [] as unknown as T;
   }
 
-  const { data, error } = await supabase
-    .from("club_movement_type_config")
-    .select("club_id,movement_type,is_enabled")
-    .eq("club_id", clubId)
-    .order("movement_type", { ascending: true });
+  const { data, error } = await supabase.rpc(rpcName, {
+    p_club_id: clubId
+  });
 
   if (error || !data) {
-    return [];
+    logTreasurySettingsReadFailure(rpcName, { clubId }, error);
+    return [] as unknown as T;
   }
 
-  return data.map(mapMovementTypeConfigRow);
+  return data as T;
 }
 
 async function syncRealTreasuryCurrenciesToAccounts(
