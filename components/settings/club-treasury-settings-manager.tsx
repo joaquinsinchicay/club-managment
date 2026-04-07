@@ -14,6 +14,7 @@ import type {
 } from "@/lib/domain/access";
 import { DEFAULT_RECEIPT_EXAMPLE, DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
+import { isSystemTreasuryCategoryName } from "@/lib/treasury-system-categories";
 
 type ClubTreasurySettingsManagerProps = {
   treasurySettings: TreasurySettings;
@@ -25,10 +26,18 @@ type ClubTreasurySettingsManagerProps = {
   updateClubActivityAction: (formData: FormData) => Promise<void>;
 };
 
-function getVisibilityLabel(visibleForSecretaria: boolean) {
-  return visibleForSecretaria
-    ? texts.settings.club.treasury.visibility_visible
-    : texts.settings.club.treasury.visibility_hidden;
+function getRoleVisibilityLabel(visibleForSecretaria: boolean, visibleForTesoreria: boolean) {
+  const labels = [];
+
+  if (visibleForSecretaria) {
+    labels.push(texts.settings.club.treasury.account_visibility_options.secretaria);
+  }
+
+  if (visibleForTesoreria) {
+    labels.push(texts.settings.club.treasury.account_visibility_options.tesoreria);
+  }
+
+  return labels.join(" + ") || texts.settings.club.treasury.visibility_hidden;
 }
 
 function getAccountTypeLabel(accountType: TreasuryAccount["accountType"]) {
@@ -36,17 +45,7 @@ function getAccountTypeLabel(accountType: TreasuryAccount["accountType"]) {
 }
 
 function getAccountVisibilityLabel(account: TreasuryAccount) {
-  const labels = [];
-
-  if (account.visibleForSecretaria) {
-    labels.push(texts.settings.club.treasury.account_visibility_options.secretaria);
-  }
-
-  if (account.visibleForTesoreria) {
-    labels.push(texts.settings.club.treasury.account_visibility_options.tesoreria);
-  }
-
-  return labels.join(" + ");
+  return getRoleVisibilityLabel(account.visibleForSecretaria, account.visibleForTesoreria);
 }
 
 function getStatusLabel(status: TreasuryAccount["status"]) {
@@ -331,60 +330,88 @@ function TreasuryCategoryForm({
   pendingLabel,
   defaultCategory
 }: TreasuryCategoryFormProps) {
+  const isSystemCategory = defaultCategory ? isSystemTreasuryCategoryName(defaultCategory.name) : false;
+
   return (
     <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
       <PendingFieldset className="grid gap-4">
         {defaultCategory ? <input type="hidden" name="category_id" value={defaultCategory.id} /> : null}
+        {isSystemCategory ? (
+          <>
+            <input type="hidden" name="name" value={defaultCategory?.name ?? ""} />
+            <input type="hidden" name="status" value="active" />
+            <input type="hidden" name="emoji" value={defaultCategory?.emoji ?? ""} />
+          </>
+        ) : (
+          <>
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.category_name_label}</span>
+              <input
+                type="text"
+                name="name"
+                defaultValue={defaultCategory?.name ?? ""}
+                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              />
+            </label>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.category_name_label}</span>
-          <input
-            type="text"
-            name="name"
-            defaultValue={defaultCategory?.name ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
+              <select
+                name="status"
+                defaultValue={defaultCategory?.status ?? "active"}
+                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              >
+                <option value="active">{texts.settings.club.treasury.statuses.active}</option>
+                <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
+              </select>
+            </label>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.visibility_label}</span>
-          <select
-            name="visible_for_secretaria"
-            defaultValue={String(defaultCategory?.visibleForSecretaria ?? true)}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="true">{texts.settings.club.treasury.visibility_visible}</option>
-            <option value="false">{texts.settings.club.treasury.visibility_hidden}</option>
-          </select>
-        </label>
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
+              <select
+                name="emoji"
+                defaultValue={defaultCategory?.emoji ?? ""}
+                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              >
+                <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+                {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
+                  <option key={`category-emoji-${emoji}`} value={emoji}>
+                    {emoji}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-          <select
-            name="status"
-            defaultValue={defaultCategory?.status ?? "active"}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-            <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-          <select
-            name="emoji"
-            defaultValue={defaultCategory?.emoji ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
-            {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
-              <option key={`category-emoji-${emoji}`} value={emoji}>
-                {emoji}
-              </option>
+        <fieldset className="grid gap-3">
+          <legend className="text-sm font-medium text-foreground">
+            {texts.settings.club.treasury.account_visibility_label}
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
+              <label
+                key={`category-visibility-${visibility}`}
+                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              >
+                <input
+                  type="checkbox"
+                  name="visibility"
+                  value={visibility}
+                  defaultChecked={
+                    visibility === "secretaria"
+                      ? (defaultCategory?.visibleForSecretaria ?? true)
+                      : (defaultCategory?.visibleForTesoreria ?? false)
+                  }
+                  className="size-4 rounded border-border"
+                />
+                <span className="font-medium">
+                  {texts.settings.club.treasury.account_visibility_options[visibility]}
+                </span>
+              </label>
             ))}
-          </select>
-        </label>
+          </div>
+        </fieldset>
 
         <PendingSubmitButton
           idleLabel={submitLabel}
@@ -675,9 +702,14 @@ export function ClubTreasurySettingsManager({
                       </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.visibility_label}
+                          {texts.settings.club.treasury.account_visibility_label}
                         </span>
-                        <span className="font-medium">{getVisibilityLabel(category.visibleForSecretaria)}</span>
+                        <span className="font-medium">
+                          {getRoleVisibilityLabel(
+                            category.visibleForSecretaria,
+                            category.visibleForTesoreria
+                          )}
+                        </span>
                       </span>
                     </div>
                   </div>

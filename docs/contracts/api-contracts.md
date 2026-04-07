@@ -461,8 +461,7 @@ Sí
 {
   "name": "Cuotas",
   "status": "active",
-  "visible_for_secretaria": true,
-  "visible_for_tesoreria": true,
+  "visibility": ["secretaria", "tesoreria"],
   "emoji": "📄"
 }
 ```
@@ -499,8 +498,7 @@ Sí
   "category_id": "uuid",
   "name": "Sueldos",
   "status": "active",
-  "visible_for_secretaria": true,
-  "visible_for_tesoreria": true,
+  "visibility": ["secretaria", "tesoreria"],
   "emoji": "💼"
 }
 ```

@@ -12,6 +12,7 @@ import { canAccessTreasurySettings } from "@/lib/domain/authorization";
 import { getDefaultReceiptFormats } from "@/lib/receipt-formats";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { texts } from "@/lib/texts";
+import { getSystemTreasuryCategoryDefinition } from "@/lib/treasury-system-categories";
 
 type TreasurySettingsActionCode =
   | "forbidden"
@@ -58,7 +59,7 @@ const TREASURY_ACCOUNT_TYPES: Array<TreasuryAccount["accountType"]> = [
   "bancaria",
   "billetera_virtual"
 ];
-const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
+const TREASURY_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_ACCOUNT_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.accounts;
 const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
 const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
@@ -124,13 +125,17 @@ function normalizeAccountVisibility(input: string[]) {
         .filter(
           (
             visibility
-          ): visibility is (typeof TREASURY_ACCOUNT_VISIBILITY_OPTIONS)[number] =>
-            TREASURY_ACCOUNT_VISIBILITY_OPTIONS.includes(
-              visibility as (typeof TREASURY_ACCOUNT_VISIBILITY_OPTIONS)[number]
+          ): visibility is (typeof TREASURY_VISIBILITY_OPTIONS)[number] =>
+            TREASURY_VISIBILITY_OPTIONS.includes(
+              visibility as (typeof TREASURY_VISIBILITY_OPTIONS)[number]
             )
         )
     )
   );
+}
+
+function normalizeCategoryVisibility(input: string[]) {
+  return normalizeAccountVisibility(input);
 }
 
 function resolveTreasurySettingsMutationError(
@@ -451,7 +456,7 @@ export async function updateTreasuryAccountForActiveClub(input: {
 
 export async function createTreasuryCategoryForActiveClub(input: {
   name: string;
-  visibleForSecretaria: boolean;
+  visibility: string[];
   status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
@@ -472,6 +477,7 @@ export async function createTreasuryCategoryForActiveClub(input: {
   }
 
   const categories = await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id);
+  const selectedVisibility = normalizeCategoryVisibility(input.visibility);
 
   if (hasDuplicateActiveCategoryName(categories, name)) {
     return { ok: false, code: "duplicate_category_name" };
@@ -490,8 +496,8 @@ export async function createTreasuryCategoryForActiveClub(input: {
       clubId: context.activeClub.id,
       name,
       status: input.status as TreasuryCategory["status"],
-      visibleForSecretaria: input.visibleForSecretaria,
-      visibleForTesoreria: false,
+      visibleForSecretaria: selectedVisibility.includes("secretaria"),
+      visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji
     });
   } catch (error) {
@@ -508,7 +514,7 @@ export async function createTreasuryCategoryForActiveClub(input: {
 export async function updateTreasuryCategoryForActiveClub(input: {
   categoryId: string;
   name: string;
-  visibleForSecretaria: boolean;
+  visibility: string[];
   status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
@@ -535,14 +541,20 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "category_not_found" };
   }
 
-  if (hasDuplicateActiveCategoryName(categories, name, input.categoryId)) {
+  const systemCategoryDefinition = getSystemTreasuryCategoryDefinition(existingCategory.name);
+  const nextName = systemCategoryDefinition?.name ?? name;
+  const nextStatus = systemCategoryDefinition ? "active" : input.status;
+  const nextEmojiInput = systemCategoryDefinition?.emoji ?? input.emoji;
+  const selectedVisibility = normalizeCategoryVisibility(input.visibility);
+
+  if (hasDuplicateActiveCategoryName(categories, nextName, input.categoryId)) {
     return { ok: false, code: "duplicate_category_name" };
   }
 
   const resolvedEmoji = resolveConfiguredEmoji(
-    input.emoji,
+    nextEmojiInput,
     TREASURY_CATEGORY_EMOJI_OPTIONS,
-    existingCategory.emoji
+    systemCategoryDefinition?.emoji ?? existingCategory.emoji
   );
 
   if (!resolvedEmoji.valid) {
@@ -555,10 +567,10 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     updated = await accessRepository.updateTreasuryCategory({
       categoryId: input.categoryId,
       clubId: context.activeClub.id,
-      name,
-      status: input.status as TreasuryCategory["status"],
-      visibleForSecretaria: input.visibleForSecretaria,
-      visibleForTesoreria: false,
+      name: nextName,
+      status: nextStatus as TreasuryCategory["status"],
+      visibleForSecretaria: selectedVisibility.includes("secretaria"),
+      visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji
     });
   } catch (error) {

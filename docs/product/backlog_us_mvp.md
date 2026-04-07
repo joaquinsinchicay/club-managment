@@ -1317,7 +1317,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And estoy en la solapa "Tesorería"
     When la pantalla carga
     Then veo el listado de categorías del club activo
-    And cada categoría muestra nombre, estado, visibilidad para Secretaria y emoji
+    And cada categoría muestra nombre, visibilidad por rol, estado y emoji
 
   Scenario 05: Alta de cuenta
     Given estoy autenticado
@@ -1379,8 +1379,9 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And soy admin del club activo
     And estoy en la solapa "Tesorería"
     When selecciono crear una categoría
-    Then veo un formulario con los campos "Nombre", "Visible para Secretaria", "Estado" y "Emoji"
+    Then veo un formulario con los campos "Nombre", "Visibilidad", "Estado" y "Emoji"
     And el campo "Nombre" permite seleccionar o cargar una categoría para el club
+    And el campo "Visibilidad" ofrece las opciones "Secretaria" y "Tesoreria"
     And el campo "Emoji" ofrece un listado simple de emojis predefinidos
 
   Scenario 12: Creación exitosa de categoría
@@ -1388,7 +1389,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And soy admin del club activo
     And estoy viendo el formulario de categoría
     When completo un nombre válido
-    And defino su visibilidad para Secretaria
+    And defino su visibilidad por rol
     And selecciono un emoji del listado
     And defino su estado
     And confirmo la creación
@@ -1423,7 +1424,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     Given estoy autenticado
     And soy admin del club activo
     And existe una categoría en el club activo
-    When edito su nombre, visibilidad para Secretaria, estado o emoji
+    When edito su nombre, visibilidad por rol, estado o emoji
     Then el sistema actualiza la categoría
     And los cambios aplican solo al club activo
 
@@ -1469,7 +1470,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     Given estoy autenticado
     And soy admin del club activo
     When consulto el template base de categorías
-    Then veo las categorías "Alquileres", "Cuotas", "Eventos", "Fichajes", "Impuestos", "Indumentaria", "Inversiones", "Ligas/Jornadas", "Mantenimiento", "Obra", "Otros", "Préstamo", "Servicios", "Sponsor", "Subsidios", "Sueldos", "Utilería" y "Transferencias e/cuentas"
+    Then veo las categorías "Alquileres", "Cuotas", "Eventos", "Fichajes", "Impuestos", "Indumentaria", "Inversiones", "Ligas/Jornadas", "Mantenimiento", "Obra", "Otros", "Préstamo", "Servicios", "Sponsor", "Subsidios", "Sueldos", "Utilería" y "Ajuste"
 
   Scenario 23: Consistencia por club activo
     Given estoy autenticado

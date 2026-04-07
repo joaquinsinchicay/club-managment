@@ -27,6 +27,11 @@ import type {
   User
 } from "@/lib/domain/access";
 import { MEMBERSHIP_ROLES, sortMembershipRoles } from "@/lib/domain/membership-roles";
+import {
+  SYSTEM_TREASURY_CATEGORY_DEFINITIONS,
+  getSystemTreasuryCategoryDefinition,
+  sortTreasuryCategories
+} from "@/lib/treasury-system-categories";
 
 type AccessRepositoryClient = ReturnType<typeof createServerSupabaseClient>;
 
@@ -464,17 +469,17 @@ function createStore(): MockStore {
   ];
 
   const treasuryCategories: TreasuryCategory[] = [
-    {
-      id: "category-cuotas-001",
+    ...SYSTEM_TREASURY_CATEGORY_DEFINITIONS.map((definition, index) => ({
+      id: `category-system-${index + 1}`,
       clubId: CLUB_ID,
-      name: "Cuotas",
-      status: "active",
-      visibleForSecretaria: true,
-      visibleForTesoreria: true,
-      emoji: "📄"
-    },
+      name: definition.name,
+      status: "active" as const,
+      visibleForSecretaria: definition.visibleForSecretaria,
+      visibleForTesoreria: definition.visibleForTesoreria,
+      emoji: definition.emoji
+    })),
     {
-      id: "category-gastos-001",
+      id: "category-manual-gastos-001",
       clubId: CLUB_ID,
       name: "Gastos operativos",
       status: "active",
@@ -483,31 +488,13 @@ function createStore(): MockStore {
       emoji: "🧾"
     },
     {
-      id: "category-ajuste-001",
-      clubId: CLUB_ID,
-      name: "Ajuste",
-      status: "active",
-      visibleForSecretaria: true,
-      visibleForTesoreria: false,
-      emoji: "⚖️"
-    },
-    {
-      id: "category-sur-001",
+      id: "category-sur-manual-001",
       clubId: CLUB_SUR_ID,
       name: "Cuotas Sur",
       status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: true,
-      emoji: "📄"
-    },
-    {
-      id: "category-ajuste-sur-001",
-      clubId: CLUB_SUR_ID,
-      name: "Ajuste",
-      status: "active",
-      visibleForSecretaria: true,
-      visibleForTesoreria: false,
-      emoji: "⚖️"
+      emoji: "🧾"
     }
   ];
 
@@ -860,6 +847,59 @@ function mapTreasuryCategoryRow(row: {
   };
 }
 
+async function reconcileRealSystemTreasuryCategories(
+  clubId: string,
+  categories: TreasuryCategory[]
+) {
+  const categoriesByName = new Map(
+    categories.map((category) => [category.name.trim().toLowerCase(), category])
+  );
+  const resolvedCategories = [...categories];
+
+  for (const definition of SYSTEM_TREASURY_CATEGORY_DEFINITIONS) {
+    const existingCategory = categoriesByName.get(definition.name.trim().toLowerCase());
+
+    if (!existingCategory) {
+      const createdCategory = await createRealTreasuryCategory({
+        clubId,
+        name: definition.name,
+        status: "active",
+        visibleForSecretaria: definition.visibleForSecretaria,
+        visibleForTesoreria: definition.visibleForTesoreria,
+        emoji: definition.emoji
+      });
+
+      resolvedCategories.push(createdCategory);
+      categoriesByName.set(definition.name.trim().toLowerCase(), createdCategory);
+      continue;
+    }
+
+    if (existingCategory.status === "active" && existingCategory.emoji === definition.emoji) {
+      continue;
+    }
+
+    const updatedCategory = await updateRealTreasuryCategory({
+      categoryId: existingCategory.id,
+      clubId,
+      name: definition.name,
+      status: "active",
+      visibleForSecretaria: existingCategory.visibleForSecretaria,
+      visibleForTesoreria: existingCategory.visibleForTesoreria,
+      emoji: definition.emoji
+    });
+
+    const categoryIndex = resolvedCategories.findIndex((category) => category.id === existingCategory.id);
+
+    if (categoryIndex >= 0) {
+      resolvedCategories[categoryIndex] = updatedCategory;
+    }
+
+    categoriesByName.set(definition.name.trim().toLowerCase(), updatedCategory);
+  }
+
+  return sortTreasuryCategories(resolvedCategories);
+}
+
 function mapClubActivityRow(row: {
   id: string;
   club_id: string;
@@ -896,6 +936,39 @@ function mapReceiptFormatRow(row: {
     example: row.example,
     status: row.status
   };
+}
+
+function reconcileMockSystemTreasuryCategories(clubId: string) {
+  const store = getStore();
+  const clubCategories = store.treasuryCategories.filter((category) => category.clubId === clubId);
+  const categoriesByName = new Map(
+    clubCategories.map((category) => [category.name.trim().toLowerCase(), category])
+  );
+
+  for (const definition of SYSTEM_TREASURY_CATEGORY_DEFINITIONS) {
+    const existingCategory = categoriesByName.get(definition.name.trim().toLowerCase());
+
+    if (!existingCategory) {
+      store.treasuryCategories.push({
+        id: `category-system-${clubId}-${definition.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        clubId,
+        name: definition.name,
+        status: "active",
+        visibleForSecretaria: definition.visibleForSecretaria,
+        visibleForTesoreria: definition.visibleForTesoreria,
+        emoji: definition.emoji
+      });
+      continue;
+    }
+
+    existingCategory.name = definition.name;
+    existingCategory.status = "active";
+    existingCategory.emoji = definition.emoji;
+  }
+
+  return sortTreasuryCategories(
+    store.treasuryCategories.filter((category) => category.clubId === clubId)
+  );
 }
 
 function mapTreasuryCurrencyRow(row: {
@@ -1304,7 +1377,10 @@ async function listRealTreasuryCategoriesForClub(clubId: string, client?: Access
     }>
   >("get_treasury_categories_for_current_club", clubId, client);
 
-  return rows.map(mapTreasuryCategoryRow);
+  return reconcileRealSystemTreasuryCategories(
+    clubId,
+    rows.map(mapTreasuryCategoryRow)
+  );
 }
 
 async function listRealClubActivitiesForClub(clubId: string, client?: AccessRepositoryClient) {
@@ -2396,7 +2472,7 @@ export const accessRepository: AccessRepository = {
       return listRealTreasuryCategoriesForClub(clubId);
     }
 
-    return getStore().treasuryCategories.filter((category) => category.clubId === clubId);
+    return reconcileMockSystemTreasuryCategories(clubId);
   },
   async listClubActivitiesForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
@@ -2639,17 +2715,12 @@ export const accessRepository: AccessRepository = {
     return receiptFormat;
   },
   async findTreasuryAdjustmentCategory(clubId) {
-    if (shouldUseSupabaseDatabase()) {
-      const categories = await listRealTreasuryCategoriesForClub(clubId);
-      return (
-        categories.find((category) => category.name.toLowerCase() === "ajuste") ?? null
-      );
-    }
+    const categories = shouldUseSupabaseDatabase()
+      ? await listRealTreasuryCategoriesForClub(clubId)
+      : reconcileMockSystemTreasuryCategories(clubId);
 
     return (
-      getStore().treasuryCategories.find(
-        (category) => category.clubId === clubId && category.name.toLowerCase() === "ajuste"
-      ) ?? null
+      categories.find((category) => getSystemTreasuryCategoryDefinition(category.name)?.name === "Ajuste") ?? null
     );
   },
   async getDailyCashSessionByDate(clubId, sessionDate) {
