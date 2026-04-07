@@ -21,7 +21,7 @@ La configuración inicial de cuentas quedó limitada a Secretaría y heredaba de
 
 ## 3. Objetivo funcional
 
-Un usuario `admin` debe poder crear y editar cuentas del club con ámbito `secretaria` o `tesoreria`, definiendo además las monedas habilitadas para cada cuenta como subconjunto de las monedas habilitadas del club activo.
+Un usuario `admin` debe poder crear y editar cuentas del club con ámbito `secretaria` o `tesoreria`, definiendo además las monedas habilitadas para cada cuenta dentro del catálogo fijo `ARS` y `USD`.
 
 ---
 
@@ -30,10 +30,10 @@ Un usuario `admin` debe poder crear y editar cuentas del club con ámbito `secre
 ### Incluye
 - Extensión de la configuración de cuentas dentro de `Tesorería`.
 - Soporte para cuentas con ámbito `tesoreria`.
-- Selección de una o más monedas habilitadas por cuenta.
+- Selección obligatoria de una o más monedas por cuenta entre `ARS` y `USD`.
 - Visualización del ámbito y monedas configuradas en el listado.
 - Validación de nombre obligatorio y al menos una moneda por cuenta.
-- Validación de que las monedas seleccionadas pertenezcan al set habilitado para el club.
+- Validación de que las monedas seleccionadas pertenezcan al catálogo fijo del MVP.
 
 ### No incluye
 - Pantalla operativa final para usuarios `tesoreria`.
@@ -51,7 +51,6 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 ## 6. Precondiciones
 
 - El club activo está resuelto.
-- Existe configuración global de monedas del club o el fallback del MVP.
 - El usuario actual tiene permisos de `admin`.
 
 ---
@@ -62,7 +61,6 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 |---|---|
 | Admin crea cuenta válida | La cuenta queda asociada al club activo con sus monedas habilitadas. |
 | Admin edita cuenta válida | La cuenta queda actualizada sin afectar otros clubes. |
-| Se reduce el set global de monedas | Las cuentas conservan solo monedas válidas dentro del nuevo set y mantienen al menos una moneda operativa. |
 
 ---
 
@@ -73,7 +71,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - El nombre de cuenta es obligatorio.
 - El tipo de cuenta es obligatorio.
 - Debe existir al menos una moneda habilitada para la cuenta.
-- Las monedas de la cuenta deben pertenecer al set de monedas habilitadas del club activo.
+- Las monedas de la cuenta solo pueden ser `ARS` y/o `USD`.
 - No puede existir otra cuenta `active` con el mismo nombre en el mismo club.
 - Las cuentas `tesoreria` no deben quedar visibles para Secretaría.
 - Las cuentas `secretaria` mantienen su comportamiento actual y siguen consumiendo sus monedas configuradas.
@@ -104,7 +102,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 
 ### C. Cuenta con moneda inválida
 
-1. El admin intenta guardar una moneda no habilitada globalmente.
+1. El admin intenta guardar una moneda fuera de `ARS` o `USD`.
 2. El sistema devuelve `invalid_account_currency`.
 
 ### D. Duplicado activo
@@ -145,7 +143,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 | label | `settings.club.treasury.account_scopes.tesoreria` | Scope Tesorería. |
 | feedback | `settings.club.treasury.feedback.account_currencies_required` | Cuenta sin monedas seleccionadas. |
 | feedback | `settings.club.treasury.feedback.invalid_account_scope` | Scope inválido. |
-| feedback | `settings.club.treasury.feedback.invalid_account_currency` | Monedas fuera del set global del club. |
+| feedback | `settings.club.treasury.feedback.invalid_account_currency` | Monedas fuera del catálogo `ARS`/`USD`. |
 
 ---
 
@@ -154,7 +152,6 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 ### Entidades afectadas
 - `treasury_accounts`: READ, INSERT y UPDATE con `account_scope`.
 - `treasury_account_currencies`: READ, INSERT y UPDATE por cuenta.
-- `club_treasury_currencies`: usada como restricción superior del set permitido.
 
 Do not reference current code files.
 
@@ -170,8 +167,8 @@ Do not reference current code files.
 
 ## 15. Dependencias
 
-- contracts: `Get treasury settings`, `Create treasury account`, `Update treasury account`, `Set treasury currencies`.
-- domain entities: `treasury_accounts`, `treasury_account_currencies`, `club_treasury_currencies`.
+- contracts: `Get treasury settings`, `Create treasury account`, `Update treasury account`.
+- domain entities: `treasury_accounts`, `treasury_account_currencies`.
 - other US if relevant: US-15, US-23.
 
 ---
@@ -180,6 +177,5 @@ Do not reference current code files.
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
-| Perder configuración por cuenta al cambiar monedas globales | Media | Alta | Ajustar monedas por intersección y mantener fallback operativo. |
 | Mezclar cuentas de Secretaría y Tesorería | Media | Media | Persistir `account_scope` y mostrarlo explícitamente en la UI. |
-| Permitir monedas no habilitadas para el club | Media | Alta | Validar server-side contra `club_treasury_currencies`. |
+| Permitir monedas fuera de `ARS`/`USD` | Media | Alta | Validar server-side contra el catálogo fijo del MVP. |

@@ -68,7 +68,7 @@ export type PendingClubInvitation = {
 
 export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
 export type TreasuryConfigStatus = "active" | "inactive";
-export type TreasuryCurrencyCode = "ARS" | "USD" | "EUR";
+export type TreasuryCurrencyCode = "ARS" | "USD";
 export type TreasuryMovementType = "ingreso" | "egreso";
 
 export type TreasuryCurrencyConfig = {

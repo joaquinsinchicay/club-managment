@@ -429,7 +429,7 @@ function createStore(): MockStore {
       visibleForSecretaria: false,
       visibleForTesoreria: true,
       emoji: "📈",
-      currencies: ["USD", "EUR"]
+      currencies: ["USD"]
     },
     {
       id: "account-tesoreria-reserva-001",

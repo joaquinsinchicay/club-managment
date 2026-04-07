@@ -25,7 +25,6 @@ type ClubSettingsCardProps = {
   approveMembershipAction: (formData: FormData) => Promise<void>;
   updateMembershipRolesAction: (formData: FormData) => Promise<void>;
   removeMembershipAction: (formData: FormData) => Promise<void>;
-  setTreasuryCurrenciesAction: (formData: FormData) => Promise<void>;
   setMovementTypesAction: (formData: FormData) => Promise<void>;
   createTreasuryAccountAction: (formData: FormData) => Promise<void>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<void>;
@@ -49,7 +48,6 @@ export function ClubSettingsCard({
   approveMembershipAction,
   updateMembershipRolesAction,
   removeMembershipAction,
-  setTreasuryCurrenciesAction,
   setMovementTypesAction,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
@@ -148,7 +146,6 @@ export function ClubSettingsCard({
           ) : canManageTreasury && treasurySettings ? (
             <ClubTreasurySettingsManager
               treasurySettings={treasurySettings}
-              setTreasuryCurrenciesAction={setTreasuryCurrenciesAction}
               setMovementTypesAction={setMovementTypesAction}
               createTreasuryAccountAction={createTreasuryAccountAction}
               updateTreasuryAccountAction={updateTreasuryAccountAction}

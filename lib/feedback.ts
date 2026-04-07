@@ -23,7 +23,6 @@ const settingsSuccessFeedbackCodes = new Set([
   "activity_updated",
   "receipt_format_created",
   "receipt_format_updated",
-  "treasury_currencies_updated",
   "movement_types_updated"
 ]);
 

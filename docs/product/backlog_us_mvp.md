@@ -2101,96 +2101,38 @@ Feature: US-22 — Disponibilización de eventos sincronizados para imputación 
 
 ### E03 💰 Tesorería / US-23 — Configuración de monedas disponibles para tesorería
 
-> *Como Admin del club, quiero configurar las monedas disponibles para tesorería, para definir qué moneda puede utilizar Secretaria en la carga de movimientos y en la visualización de saldos del club.*
+> *Como equipo de producto, queremos que Tesorería opere con un catálogo fijo de monedas `ARS` y `USD`, para evitar una configuración global por club y delegar la selección al alta de cada cuenta.*
 
 **Acceptance Criteria — Gherkin**
 
 ```gherkin
 Feature: US-23 — Configuración de monedas disponibles para tesorería
 
-  Scenario 01: Acceso a la configuración de monedas
+  Scenario 01: No existe configuración global de monedas
     Given estoy autenticado
     And soy admin del club activo
     And estoy en "Configuración del club"
     When ingreso a la solapa "Tesorería"
-    Then veo una sección de configuración de monedas
+    Then no veo una sección de configuración global de monedas
 
-  Scenario 02: Usuario no admin no accede a la configuración de monedas
-    Given estoy autenticado
-    And no soy admin del club activo
-    When intento acceder a la configuración de monedas
-    Then no tengo acceso a la funcionalidad
-
-  Scenario 03: Visualización del listado predefinido de monedas
+  Scenario 02: Catálogo fijo del MVP
     Given estoy autenticado
     And soy admin del club activo
-    When ingreso a la configuración de monedas
-    Then veo el listado predefinido de monedas "ARS", "USD" y "EUR"
+    When ingreso a la configuración de cuentas de Tesorería
+    Then las monedas operativas disponibles son "ARS" y "USD"
+    And "EUR" no aparece como opción operativa
 
-  Scenario 04: Selección de monedas disponibles para el club
+  Scenario 03: La moneda se define por cuenta
     Given estoy autenticado
     And soy admin del club activo
-    And estoy en la configuración de monedas
-    When selecciono una o más monedas del listado predefinido
-    And confirmo la configuración
-    Then el sistema guarda esas monedas como disponibles para el club activo
+    When creo o edito una cuenta
+    Then debo seleccionar "ARS", "USD" o ambas para esa cuenta
 
-  Scenario 05: Al menos una moneda debe estar configurada
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy en la configuración de monedas
-    When intento guardar sin seleccionar ninguna moneda
-    Then veo un mensaje indicando que debo seleccionar al menos una moneda
-    And la configuración no se guarda
-
-  Scenario 06: Definición de moneda principal para Secretaria
-    Given estoy autenticado
-    And soy admin del club activo
-    And seleccioné una o más monedas disponibles
-    When marco una de ellas como moneda principal
-    And confirmo la configuración
-    Then el sistema guarda esa moneda como moneda principal del club activo para tesorería
-
-  Scenario 07: La moneda principal debe estar dentro de las monedas disponibles
-    Given estoy autenticado
-    And soy admin del club activo
-    When intento definir como moneda principal una moneda no seleccionada como disponible
-    Then el sistema bloquea la acción
-    And veo un mensaje indicando que la moneda principal debe ser una de las monedas disponibles
-
-  Scenario 08: Secretaria ve solo las monedas habilitadas
-    Given existe una configuración de monedas para el club activo
+  Scenario 04: Secretaría no usa moneda principal por defecto
     And tengo rol "Secretaria" en el club activo
     When accedo al formulario de registro de movimientos
-    Then en el campo "Moneda" veo únicamente las monedas habilitadas para el club activo
-
-  Scenario 09: Moneda principal precargada en el formulario de Secretaria
-    Given existe una moneda principal configurada para el club activo
-    And tengo rol "Secretaria" en el club activo
-    When accedo al formulario de registro de movimientos
-    Then el campo "Moneda" aparece precargado con la moneda principal del club activo
-
-  Scenario 10: La moneda principal se utiliza en la visualización de saldos
-    Given existe una moneda principal configurada para el club activo
-    And tengo rol "Secretaria" en el club activo
-    When visualizo saldos en el dashboard o en el detalle de cuentas
-    Then los saldos se muestran en la moneda propia de cada cuenta
-    And la moneda principal se utiliza como valor por defecto en la carga de movimientos
-
-  Scenario 11: Cambio de moneda principal impacta en la operatoria de Secretaria
-    Given estoy autenticado
-    And soy admin del club activo
-    And existe una moneda principal configurada
-    When modifico la moneda principal del club activo
-    Then el cambio se refleja en el formulario de movimientos de Secretaria
-    And el cambio se refleja en la visualización de saldos del club activo
-
-  Scenario 12: Configuración por club activo
-    Given estoy autenticado
-    And soy admin en más de un club
-    When selecciono monedas disponibles o cambio la moneda principal
-    Then la configuración aplica únicamente al club activo
-    And no afecta la configuración de otros clubes
+    Then el campo "Moneda" no aparece precargado por configuración global del club
+    And las opciones válidas quedan determinadas por la cuenta seleccionada
 ```
 
 ---

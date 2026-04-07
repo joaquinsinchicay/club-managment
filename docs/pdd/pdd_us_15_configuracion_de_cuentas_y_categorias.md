@@ -77,7 +77,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - Solo `tesoreria` puede acceder y mutar esta configuración.
 - Toda configuración aplica exclusivamente al club activo.
 - Las cuentas creadas en esta historia quedan orientadas a la operatoria de `secretaria`.
-- En este MVP, las cuentas creadas desde esta historia se inicializan con moneda `ARS`.
+- La definición explícita de monedas por cuenta queda superseded por US-28.
 - El nombre de cuenta es obligatorio.
 - El tipo de cuenta es obligatorio.
 - El nombre de categoría es obligatorio.
@@ -172,7 +172,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 ### Entidades afectadas
 - `treasury_accounts`: READ, INSERT y UPDATE.
-- `treasury_account_currencies`: INSERT y UPDATE implícito para mantener moneda `ARS` en este MVP.
+- `treasury_account_currencies`: se mantiene como entidad asociada, pero la selección explícita de monedas por cuenta queda definida en US-28.
 - `treasury_categories`: READ, INSERT y UPDATE.
 
 Do not reference current code files.
@@ -202,4 +202,4 @@ Do not reference current code files.
 |---|---|---|---|
 | Mezclar configuración de otro club | Media | Alta | Resolver siempre sobre club activo y validar ids server-side. |
 | Crear cuentas duplicadas activas | Media | Media | Validar nombres activos antes de persistir. |
-| Configuración incoherente con el MVP actual | Baja | Media | Fijar `account_scope = secretaria`, `visible_for_tesoreria = false` y moneda `ARS` en esta historia. |
+| Configuración incoherente con historias posteriores | Baja | Media | Tomar US-28 como fuente de verdad para monedas por cuenta y ámbitos extendidos. |

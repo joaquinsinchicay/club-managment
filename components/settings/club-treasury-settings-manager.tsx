@@ -16,7 +16,6 @@ import { texts } from "@/lib/texts";
 
 type ClubTreasurySettingsManagerProps = {
   treasurySettings: TreasurySettings;
-  setTreasuryCurrenciesAction: (formData: FormData) => Promise<void>;
   setMovementTypesAction: (formData: FormData) => Promise<void>;
   createTreasuryAccountAction: (formData: FormData) => Promise<void>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<void>;
@@ -58,7 +57,7 @@ function getMovementTypeLabel(movementType: TreasuryMovementType) {
   return texts.dashboard.treasury.movement_types[movementType];
 }
 
-const TREASURY_CURRENCY_OPTIONS: TreasuryCurrencyCode[] = ["ARS", "USD", "EUR"];
+const TREASURY_CURRENCY_OPTIONS: TreasuryCurrencyCode[] = ["ARS", "USD"];
 const TREASURY_MOVEMENT_TYPE_OPTIONS: TreasuryMovementType[] = ["ingreso", "egreso"];
 
 type ClubActivityFormProps = {
@@ -422,7 +421,6 @@ function ReceiptFormatForm({
 
 export function ClubTreasurySettingsManager({
   treasurySettings,
-  setTreasuryCurrenciesAction,
   setMovementTypesAction,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
@@ -441,17 +439,10 @@ export function ClubTreasurySettingsManager({
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
   const [isCreatingReceiptFormat, setIsCreatingReceiptFormat] = useState(false);
   const [editingReceiptFormatId, setEditingReceiptFormatId] = useState<string | null>(null);
-  const selectedCurrencies = treasurySettings.currencies.map((currency) => currency.currencyCode);
-  const primaryCurrencyCode =
-    treasurySettings.currencies.find((currency) => currency.isPrimary)?.currencyCode ??
-    treasurySettings.currencies[0]?.currencyCode ??
-    "ARS";
   const enabledMovementTypes = treasurySettings.movementTypes
     .filter((movementType) => movementType.isEnabled)
     .map((movementType) => movementType.movementType);
-  const availableAccountCurrencies: TreasuryCurrencyCode[] = treasurySettings.currencies.length > 0
-    ? treasurySettings.currencies.map((currency) => currency.currencyCode)
-    : ["ARS"];
+  const availableAccountCurrencies: TreasuryCurrencyCode[] = TREASURY_CURRENCY_OPTIONS;
 
   return (
     <div className="space-y-6">
@@ -463,73 +454,6 @@ export function ClubTreasurySettingsManager({
           {texts.settings.club.treasury.section_description}
         </p>
       </div>
-
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold text-foreground">
-            {texts.settings.club.treasury.currencies_title}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {texts.settings.club.treasury.currencies_description}
-          </p>
-        </div>
-
-        <form action={setTreasuryCurrenciesAction} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
-          <PendingFieldset className="grid gap-4">
-            <fieldset className="grid gap-3">
-              <legend className="text-sm font-medium text-foreground">
-                {texts.settings.club.treasury.currency_selection_label}
-              </legend>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {TREASURY_CURRENCY_OPTIONS.map((currencyCode) => (
-                  <label
-                    key={currencyCode}
-                    className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <input
-                      type="checkbox"
-                      name="currencies"
-                      value={currencyCode}
-                      defaultChecked={selectedCurrencies.includes(currencyCode)}
-                      className="size-4 rounded border-border"
-                    />
-                    <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <fieldset className="grid gap-3">
-              <legend className="text-sm font-medium text-foreground">
-                {texts.settings.club.treasury.primary_currency_label}
-              </legend>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {TREASURY_CURRENCY_OPTIONS.map((currencyCode) => (
-                  <label
-                    key={`primary-${currencyCode}`}
-                    className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <input
-                      type="radio"
-                      name="primary_currency_code"
-                      value={currencyCode}
-                      defaultChecked={primaryCurrencyCode === currencyCode}
-                      className="size-4 border-border"
-                    />
-                    <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <PendingSubmitButton
-              idleLabel={texts.settings.club.treasury.save_currencies_cta}
-              pendingLabel={texts.settings.club.treasury.save_currencies_loading}
-              className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-            />
-          </PendingFieldset>
-        </form>
-      </section>
 
       <section className="space-y-4">
         <div className="space-y-1">

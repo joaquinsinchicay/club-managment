@@ -15,7 +15,6 @@ import {
   createTreasuryAccountForActiveClub,
   createTreasuryCategoryForActiveClub,
   setMovementTypesForActiveClub,
-  setTreasuryCurrenciesForActiveClub,
   updateClubActivityForActiveClub,
   updateReceiptFormatForActiveClub,
   updateTreasuryAccountForActiveClub,
@@ -82,15 +81,6 @@ export async function createTreasuryAccountAction(formData: FormData) {
     currencies: formData.getAll("currencies").map((value) => String(value)),
     status: String(formData.get("status") ?? ""),
     emoji: String(formData.get("emoji") ?? "")
-  });
-
-  redirectToSettings(result.code, "treasury");
-}
-
-export async function setTreasuryCurrenciesAction(formData: FormData) {
-  const result = await setTreasuryCurrenciesForActiveClub({
-    currencies: formData.getAll("currencies").map((value) => String(value)),
-    primaryCurrencyCode: String(formData.get("primary_currency_code") ?? "")
   });
 
   redirectToSettings(result.code, "treasury");

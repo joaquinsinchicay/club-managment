@@ -75,17 +75,16 @@ async function getSecretariaAccounts(clubId: string) {
 }
 
 async function getConfiguredTreasuryCurrencies(clubId: string): Promise<TreasuryCurrencyConfig[]> {
-  const currencies = await accessRepository.listTreasuryCurrenciesForClub(clubId);
-
-  if (currencies.length > 0) {
-    return currencies;
-  }
-
   return [
     {
       clubId,
       currencyCode: "ARS",
       isPrimary: true
+    },
+    {
+      clubId,
+      currencyCode: "USD",
+      isPrimary: false
     }
   ];
 }

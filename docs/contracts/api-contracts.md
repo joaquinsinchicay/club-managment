@@ -394,7 +394,8 @@ Sí
 * name obligatorio
 * account_type obligatorio
 * account_scope obligatorio
-* al menos una moneda
+* `currencies` debe incluir al menos una moneda
+* `currencies` solo admite `ARS` y/o `USD`
 * no duplicar nombre activo en el club según regla de negocio
 
 **Output**
@@ -572,44 +573,6 @@ Sí
 {
   "activity_id": "uuid",
   "updated": true
-}
-```
-
----
-
-### 5.8 Set treasury currencies
-
-**Purpose**
-Configurar monedas del club y moneda principal.
-
-**Auth required**
-Sí
-
-**Allowed roles**
-`tesoreria`
-
-**Input**
-
-```json
-{
-  "currencies": [
-    { "currency_code": "ARS", "is_primary": true },
-    { "currency_code": "USD", "is_primary": false }
-  ]
-}
-```
-
-**Validations**
-
-* al menos una moneda
-* solo una moneda principal
-* la principal debe estar incluida en el listado
-
-**Output**
-
-```json
-{
-  "saved": true
 }
 ```
 

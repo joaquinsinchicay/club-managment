@@ -25,12 +25,10 @@ type TreasurySettingsActionCode =
   | "activity_name_required"
   | "receipt_format_created"
   | "receipt_format_updated"
-  | "treasury_currencies_updated"
   | "movement_types_updated"
   | "receipt_format_name_required"
   | "receipt_format_min_required"
   | "receipt_format_pattern_required"
-  | "treasury_currencies_required"
   | "movement_types_required"
   | "account_currencies_required"
   | "duplicate_account_name"
@@ -42,7 +40,6 @@ type TreasurySettingsActionCode =
   | "invalid_account_currency"
   | "invalid_config_status"
   | "invalid_receipt_validation_type"
-  | "primary_currency_invalid"
   | "account_not_found"
   | "category_not_found"
   | "activity_not_found"
@@ -65,8 +62,12 @@ const TREASURY_ACCOUNT_SCOPES: Array<TreasuryAccount["accountScope"]> = [
 ];
 
 const TREASURY_STATUSES: Array<TreasuryAccount["status"]> = ["active", "inactive"];
-const TREASURY_CURRENCY_CODES: TreasuryCurrencyCode[] = ["ARS", "USD", "EUR"];
+const TREASURY_CURRENCY_CODES: TreasuryCurrencyCode[] = ["ARS", "USD"];
 const TREASURY_MOVEMENT_TYPES: TreasuryMovementType[] = ["ingreso", "egreso"];
+const FIXED_TREASURY_CURRENCIES = TREASURY_CURRENCY_CODES.map((currencyCode, index) => ({
+  currencyCode,
+  isPrimary: index === 0
+}));
 
 async function getTreasurySettingsContext() {
   const context = await getAuthenticatedSessionContext();
@@ -160,12 +161,11 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
 
   const activeClubId = context.activeClub.id;
 
-  const [accounts, categories, activities, receiptFormats, currencies, movementTypes] = await Promise.all([
+  const [accounts, categories, activities, receiptFormats, movementTypes] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(activeClubId),
     accessRepository.listTreasuryCategoriesForClub(activeClubId),
     accessRepository.listClubActivitiesForClub(activeClubId),
     accessRepository.listReceiptFormatsForClub(activeClubId),
-    accessRepository.listTreasuryCurrenciesForClub(activeClubId),
     accessRepository.listMovementTypeConfigForClub(activeClubId)
   ]);
 
@@ -174,7 +174,11 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
     categories,
     activities,
     receiptFormats,
-    currencies,
+    currencies: FIXED_TREASURY_CURRENCIES.map((currency) => ({
+      clubId: activeClubId,
+      currencyCode: currency.currencyCode,
+      isPrimary: currency.isPrimary
+    })),
     movementTypes:
       movementTypes.length > 0
         ? movementTypes
@@ -184,51 +188,6 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
             isEnabled: true
           }))
   };
-}
-
-export async function setTreasuryCurrenciesForActiveClub(input: {
-  currencies: string[];
-  primaryCurrencyCode: string;
-}): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
-
-  if (!context?.activeClub) {
-    return { ok: false, code: "forbidden" };
-  }
-
-  const selectedCurrencies = Array.from(
-    new Set(
-      input.currencies
-        .map((currency) => currency.trim().toUpperCase())
-        .filter((currency): currency is TreasuryCurrencyCode =>
-          TREASURY_CURRENCY_CODES.includes(currency as TreasuryCurrencyCode)
-        )
-    )
-  );
-
-  if (selectedCurrencies.length === 0) {
-    return { ok: false, code: "treasury_currencies_required" };
-  }
-
-  const primaryCurrencyCode = input.primaryCurrencyCode.trim().toUpperCase();
-
-  if (!selectedCurrencies.includes(primaryCurrencyCode as TreasuryCurrencyCode)) {
-    return { ok: false, code: "primary_currency_invalid" };
-  }
-
-  const savedCurrencies = await accessRepository.setTreasuryCurrenciesForClub({
-    clubId: context.activeClub.id,
-    currencies: selectedCurrencies.map((currencyCode) => ({
-      currencyCode,
-      isPrimary: currencyCode === primaryCurrencyCode
-    }))
-  });
-
-  if (savedCurrencies.length === 0) {
-    return { ok: false, code: "unknown_error" };
-  }
-
-  return { ok: true, code: "treasury_currencies_updated" };
 }
 
 export async function setMovementTypesForActiveClub(input: {
@@ -307,11 +266,6 @@ export async function createTreasuryAccountForActiveClub(input: {
   }
 
   const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
-  const configuredCurrencies = await accessRepository.listTreasuryCurrenciesForClub(context.activeClub.id);
-  const clubCurrencyCodes =
-    configuredCurrencies.length > 0
-      ? configuredCurrencies.map((currency) => currency.currencyCode)
-      : ["ARS"];
   const selectedCurrencies = Array.from(
     new Set(
       input.currencies
@@ -330,7 +284,7 @@ export async function createTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "account_currencies_required" };
   }
 
-  if (!selectedCurrencies.every((currency) => clubCurrencyCodes.includes(currency))) {
+  if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
     return { ok: false, code: "invalid_account_currency" };
   }
 
@@ -393,11 +347,6 @@ export async function updateTreasuryAccountForActiveClub(input: {
   }
 
   const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
-  const configuredCurrencies = await accessRepository.listTreasuryCurrenciesForClub(context.activeClub.id);
-  const clubCurrencyCodes =
-    configuredCurrencies.length > 0
-      ? configuredCurrencies.map((currency) => currency.currencyCode)
-      : ["ARS"];
   const selectedCurrencies = Array.from(
     new Set(
       input.currencies
@@ -421,7 +370,7 @@ export async function updateTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "account_currencies_required" };
   }
 
-  if (!selectedCurrencies.every((currency) => clubCurrencyCodes.includes(currency))) {
+  if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
     return { ok: false, code: "invalid_account_currency" };
   }
 

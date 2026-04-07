@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
@@ -48,8 +51,16 @@ export function TreasuryCard({
   const canCreateMovement = treasuryCard.availableActions.includes("create_movement");
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
-  const primaryCurrencyCode =
-    currencies.find((currency) => currency.isPrimary)?.currencyCode ?? currencies[0]?.currencyCode ?? "";
+  const [selectedAccountId, setSelectedAccountId] = useState("");
+  const availableCurrencies = useMemo(() => {
+    const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
+
+    if (!selectedAccount) {
+      return currencies;
+    }
+
+    return currencies.filter((currency) => selectedAccount.currencies.includes(currency.currencyCode));
+  }, [accounts, currencies, selectedAccountId]);
 
   return (
     <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
@@ -152,6 +163,7 @@ export function TreasuryCard({
                   <select
                     name="account_id"
                     defaultValue=""
+                    onChange={(event) => setSelectedAccountId(event.target.value)}
                     className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                   >
                     <option value="" disabled>
@@ -249,13 +261,14 @@ export function TreasuryCard({
                   <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
                   <select
                     name="currency_code"
-                    defaultValue={primaryCurrencyCode}
+                    key={selectedAccountId || "currency-select"}
+                    defaultValue=""
                     className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                   >
                     <option value="" disabled>
                       {texts.settings.club.members.role_placeholder}
                     </option>
-                    {currencies.map((currency) => (
+                    {availableCurrencies.map((currency) => (
                       <option key={currency.currencyCode} value={currency.currencyCode}>
                         {currency.currencyCode}
                       </option>
