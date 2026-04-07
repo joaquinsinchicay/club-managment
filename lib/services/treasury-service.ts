@@ -1,5 +1,5 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { canOperateSecretaria } from "@/lib/domain/authorization";
+import { canOperateSecretaria, canOperateTesoreria } from "@/lib/domain/authorization";
 import type {
   ClubActivity,
   DailyCashSessionValidation,
@@ -8,11 +8,15 @@ import type {
   ReceiptFormat,
   SessionBalanceDraft,
   TreasuryAccount,
+  TreasuryRoleDashboard,
   TreasuryCurrencyConfig,
   TreasuryMovementType,
   TreasuryAccountDetail
 } from "@/lib/domain/access";
+import { getDefaultReceiptFormats, isDefaultReceiptNumberValid } from "@/lib/receipt-formats";
 import { accessRepository } from "@/lib/repositories/access-repository";
+
+type TreasuryVisibilityRole = "secretaria" | "tesoreria";
 
 type TreasuryActionCode =
   | "session_opened"
@@ -65,6 +69,20 @@ async function getSecretariaSession() {
   return context;
 }
 
+async function getTesoreriaSession() {
+  const context = await getAuthenticatedSessionContext();
+
+  if (!context || !context.activeClub || !context.activeMembership) {
+    return null;
+  }
+
+  if (!canOperateTesoreria(context.activeMembership)) {
+    return null;
+  }
+
+  return context;
+}
+
 function buildMovementSignedAmount(movementType: "ingreso" | "egreso", amount: number) {
   return movementType === "ingreso" ? amount : amount * -1;
 }
@@ -72,6 +90,32 @@ function buildMovementSignedAmount(movementType: "ingreso" | "egreso", amount: n
 async function getSecretariaAccounts(clubId: string) {
   const accounts = await accessRepository.listTreasuryAccountsForClub(clubId);
   return accounts.filter((account) => account.visibleForSecretaria);
+}
+
+function getAccountsVisibleForRole(
+  accounts: TreasuryAccount[],
+  role: TreasuryVisibilityRole
+) {
+  return accounts.filter((account) =>
+    role === "secretaria" ? account.visibleForSecretaria : account.visibleForTesoreria
+  );
+}
+
+function buildAccountBalances(
+  account: TreasuryAccount,
+  movements: Array<{
+    accountId: string;
+    currencyCode: string;
+    movementType: "ingreso" | "egreso";
+    amount: number;
+  }>
+) {
+  return account.currencies.map((currencyCode) => ({
+    currencyCode,
+    amount: movements
+      .filter((movement) => movement.accountId === account.id && movement.currencyCode === currencyCode)
+      .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0)
+  }));
 }
 
 async function getConfiguredTreasuryCurrencies(clubId: string): Promise<TreasuryCurrencyConfig[]> {
@@ -464,24 +508,48 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     accounts: secretaryAccounts.map((account) => ({
       accountId: account.id,
       name: account.name,
-      balances: account.currencies.map((currencyCode) => {
-        const amount = movements
-          .filter((movement) => movement.accountId === account.id && movement.currencyCode === currencyCode)
-          .reduce((total, movement) => {
-            const signedAmount = buildMovementSignedAmount(movement.movementType, movement.amount);
-            return total + signedAmount;
-          }, 0);
-
-        return {
-          currencyCode,
-          amount
-        };
-      })
+      balances: buildAccountBalances(account, movements)
     })),
     availableActions:
       session?.status === "open"
         ? ["close_session", "create_movement"]
         : ["open_session"]
+  };
+}
+
+export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryRoleDashboard | null> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return null;
+  }
+
+  const clubId = context.activeClub.id;
+  const sessionDate = getTodayDate();
+  const accounts = getAccountsVisibleForRole(
+    await accessRepository.listTreasuryAccountsForClub(clubId),
+    "tesoreria"
+  );
+
+  const movementsByAccount = await Promise.all(
+    accounts.map(async (account) => ({
+      account,
+      movements: await accessRepository.listTreasuryMovementsByAccount(
+        clubId,
+        account.id,
+        sessionDate
+      )
+    }))
+  );
+
+  return {
+    sessionDate,
+    accounts: movementsByAccount.map(({ account, movements }) => ({
+      accountId: account.id,
+      name: account.name,
+      balances: buildAccountBalances(account, movements)
+    })),
+    availableActions: ["create_movement"]
   };
 }
 
@@ -573,11 +641,10 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "movement_type_required" };
   }
 
-  const [accounts, categories, activities, receiptFormats, configuredCurrencies, configuredMovementTypes] = await Promise.all([
+  const [accounts, categories, activities, configuredCurrencies, configuredMovementTypes] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
     accessRepository.listClubActivitiesForClub(context.activeClub.id),
-    accessRepository.listReceiptFormatsForClub(context.activeClub.id),
     getConfiguredTreasuryCurrencies(context.activeClub.id),
     getConfiguredMovementTypes(context.activeClub.id)
   ]);
@@ -623,7 +690,7 @@ export async function createTreasuryMovement(input: {
   }
 
   const receiptNumber = input.receiptNumber.trim();
-  const activeReceiptFormats = receiptFormats.filter((format) => format.status === "active");
+  const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
 
   if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
     const isValidReceipt = activeReceiptFormats.some((format) =>
@@ -657,6 +724,143 @@ export async function createTreasuryMovement(input: {
   return { ok: true, code: "movement_created" };
 }
 
+export async function createTreasuryRoleMovement(input: {
+  movementDate: string;
+  accountId: string;
+  movementType: string;
+  categoryId: string;
+  activityId: string;
+  receiptNumber: string;
+  concept: string;
+  currencyCode: string;
+  amount: string;
+}): Promise<TreasuryActionResult> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  if (!input.accountId) {
+    return { ok: false, code: "account_required" };
+  }
+
+  if (!input.movementType) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  if (!input.categoryId) {
+    return { ok: false, code: "category_required" };
+  }
+
+  if (!input.concept.trim()) {
+    return { ok: false, code: "concept_required" };
+  }
+
+  if (!input.currencyCode) {
+    return { ok: false, code: "currency_required" };
+  }
+
+  if (!input.amount) {
+    return { ok: false, code: "amount_required" };
+  }
+
+  const movementDate = input.movementDate.trim() || getTodayDate();
+  const parsedAmount = Number(input.amount);
+
+  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    return { ok: false, code: "amount_must_be_positive" };
+  }
+
+  if (input.movementType !== "ingreso" && input.movementType !== "egreso") {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const [accounts, categories, activities, configuredCurrencies, configuredMovementTypes] = await Promise.all([
+    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
+    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+    accessRepository.listClubActivitiesForClub(context.activeClub.id),
+    getConfiguredTreasuryCurrencies(context.activeClub.id),
+    getConfiguredMovementTypes(context.activeClub.id)
+  ]);
+
+  if (
+    !configuredMovementTypes.some(
+      (movementType) =>
+        movementType.movementType === input.movementType && movementType.isEnabled
+    )
+  ) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const account = accounts.find(
+    (entry) => entry.id === input.accountId && entry.visibleForTesoreria
+  );
+
+  if (!account) {
+    return { ok: false, code: "invalid_account" };
+  }
+
+  const category = categories.find(
+    (entry) => entry.id === input.categoryId && entry.visibleForTesoreria && entry.status === "active"
+  );
+
+  if (!category) {
+    return { ok: false, code: "invalid_category" };
+  }
+
+  if (!configuredCurrencies.some((currency) => currency.currencyCode === input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  if (!account.currencies.includes(input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  const activity =
+    input.activityId.trim().length > 0
+      ? activities.find((entry) => entry.id === input.activityId && entry.status === "active") ?? null
+      : null;
+
+  if (input.activityId.trim().length > 0 && !activity) {
+    return { ok: false, code: "invalid_activity" };
+  }
+
+  const receiptNumber = input.receiptNumber.trim();
+  const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
+
+  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
+    const isValidReceipt = activeReceiptFormats.some((format) =>
+      validateReceiptNumberAgainstFormat(receiptNumber, format)
+    );
+
+    if (!isValidReceipt) {
+      return { ok: false, code: "invalid_receipt_format" };
+    }
+  }
+
+  const created = await accessRepository.createTreasuryMovement({
+    clubId: context.activeClub.id,
+    dailyCashSessionId: "",
+    accountId: account.id,
+    movementType: input.movementType,
+    categoryId: category.id,
+    concept: input.concept.trim(),
+    currencyCode: input.currencyCode,
+    amount: parsedAmount,
+    activityId: activity?.id ?? null,
+    receiptNumber: receiptNumber || null,
+    movementDate,
+    createdByUserId: context.user.id
+  });
+
+  if (!created) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  return { ok: true, code: "movement_created" };
+}
+
 export async function getActiveActivitiesForSecretaria(): Promise<ClubActivity[]> {
   const context = await getSecretariaSession();
 
@@ -668,8 +872,29 @@ export async function getActiveActivitiesForSecretaria(): Promise<ClubActivity[]
   return activities.filter((activity) => activity.status === "active");
 }
 
+export async function getActiveActivitiesForTesoreria(): Promise<ClubActivity[]> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
+  return activities.filter((activity) => activity.status === "active");
+}
+
 export async function getActiveTreasuryCurrenciesForSecretaria(): Promise<TreasuryCurrencyConfig[]> {
   const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  return getConfiguredTreasuryCurrencies(context.activeClub.id);
+}
+
+export async function getActiveTreasuryCurrenciesForTesoreria(): Promise<TreasuryCurrencyConfig[]> {
+  const context = await getTesoreriaSession();
 
   if (!context?.activeClub) {
     return [];
@@ -692,6 +917,20 @@ export async function getEnabledMovementTypesForSecretaria(): Promise<TreasuryMo
     .map((movementType) => movementType.movementType);
 }
 
+export async function getEnabledMovementTypesForTesoreria(): Promise<TreasuryMovementType[]> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const movementTypes = await getConfiguredMovementTypes(context.activeClub.id);
+
+  return movementTypes
+    .filter((movementType) => movementType.isEnabled)
+    .map((movementType) => movementType.movementType);
+}
+
 export async function getActiveReceiptFormatsForSecretaria(): Promise<ReceiptFormat[]> {
   const context = await getSecretariaSession();
 
@@ -699,22 +938,25 @@ export async function getActiveReceiptFormatsForSecretaria(): Promise<ReceiptFor
     return [];
   }
 
-  const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
-  return receiptFormats.filter((receiptFormat) => receiptFormat.status === "active");
+  return getDefaultReceiptFormats(context.activeClub.id);
+}
+
+export async function getActiveReceiptFormatsForTesoreria(): Promise<ReceiptFormat[]> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  return getDefaultReceiptFormats(context.activeClub.id);
 }
 
 function validateReceiptNumberAgainstFormat(
   receiptNumber: string,
   receiptFormat: ReceiptFormat
 ) {
-  if (receiptFormat.validationType === "numeric") {
-    const parsedValue = Number(receiptNumber);
-
-    if (!Number.isFinite(parsedValue)) {
-      return false;
-    }
-
-    return parsedValue >= (receiptFormat.minNumericValue ?? 0);
+  if (receiptFormat.example === "PAY-SOC-26205") {
+    return isDefaultReceiptNumberValid(receiptNumber);
   }
 
   if (!receiptFormat.pattern) {
@@ -722,20 +964,30 @@ function validateReceiptNumberAgainstFormat(
   }
 
   try {
-    return new RegExp(receiptFormat.pattern).test(receiptNumber);
+    if (!new RegExp(receiptFormat.pattern).test(receiptNumber)) {
+      return false;
+    }
+
+    if (receiptFormat.minNumericValue === null) {
+      return true;
+    }
+
+    const parsedValue = Number(receiptNumber);
+    return Number.isFinite(parsedValue) && parsedValue >= receiptFormat.minNumericValue;
   } catch {
     return false;
   }
 }
 
 export async function getTreasuryAccountDetailForActiveClub(
-  accountId: string
+  accountId: string,
+  role: TreasuryVisibilityRole = "secretaria"
 ): Promise<{
   accounts: Awaited<ReturnType<typeof accessRepository.listTreasuryAccountsForClub>>;
   detail: TreasuryAccountDetail | null;
   canCreateMovement: boolean;
 } | null> {
-  const context = await getSecretariaSession();
+  const context = role === "secretaria" ? await getSecretariaSession() : await getTesoreriaSession();
 
   if (!context?.activeClub) {
     return null;
@@ -748,8 +1000,8 @@ export async function getTreasuryAccountDetailForActiveClub(
     accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
   ]);
 
-  const secretariaAccounts = accounts.filter((account) => account.visibleForSecretaria);
-  const selectedAccount = secretariaAccounts.find((account) => account.id === accountId) ?? secretariaAccounts[0] ?? null;
+  const visibleAccounts = getAccountsVisibleForRole(accounts, role);
+  const selectedAccount = visibleAccounts.find((account) => account.id === accountId) ?? visibleAccounts[0] ?? null;
 
   if (!selectedAccount) {
     return {
@@ -765,12 +1017,7 @@ export async function getTreasuryAccountDetailForActiveClub(
     sessionDate
   );
 
-  const balances = selectedAccount.currencies.map((currencyCode) => ({
-    currencyCode,
-    amount: movements
-      .filter((movement) => movement.currencyCode === currencyCode)
-      .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0)
-  }));
+  const balances = buildAccountBalances(selectedAccount, movements);
 
   const detail: TreasuryAccountDetail = {
     account: {
@@ -786,7 +1033,7 @@ export async function getTreasuryAccountDetailForActiveClub(
           movementId: movement.id,
           movementDate: movement.movementDate,
           movementType: movement.movementType,
-          categoryName: category?.name ?? "Sin categoria",
+          categoryName: category?.name ?? "",
           concept: movement.concept,
           currencyCode: movement.currencyCode,
           amount: movement.amount,
@@ -798,8 +1045,8 @@ export async function getTreasuryAccountDetailForActiveClub(
   };
 
   return {
-    accounts: secretariaAccounts,
+    accounts: visibleAccounts,
     detail,
-    canCreateMovement: session?.status === "open"
+    canCreateMovement: role === "secretaria" && session?.status === "open"
   };
 }

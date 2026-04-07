@@ -151,7 +151,7 @@ export type DailyCashSession = {
 export type TreasuryMovement = {
   id: string;
   clubId: string;
-  dailyCashSessionId: string;
+  dailyCashSessionId: string | null;
   accountId: string;
   movementType: TreasuryMovementType;
   categoryId: string;
@@ -199,6 +199,19 @@ export type DashboardTreasuryCard = {
     }>;
   }>;
   availableActions: Array<"open_session" | "close_session" | "create_movement">;
+};
+
+export type TreasuryRoleDashboard = {
+  sessionDate: string;
+  accounts: Array<{
+    accountId: string;
+    name: string;
+    balances: Array<{
+      currencyCode: string;
+      amount: number;
+    }>;
+  }>;
+  availableActions: Array<"create_movement">;
 };
 
 export type TreasuryAccountDetail = {

@@ -946,23 +946,23 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
 
 ### E03 💰 Tesorería / US-13 — Consulta detallada de movimientos y saldos por cuenta
 
-> *Como Secretaria del club, quiero consultar el detalle de movimientos y saldos por cuenta, para controlar la operatoria diaria y verificar el estado de cada cuenta del club activo.*
+> *Como usuario operativo del club con rol Secretaría o Tesorería, quiero consultar el detalle de movimientos y saldos por cuenta, para controlar el estado de cada cuenta visible dentro del club activo.*
 
 **Acceptance Criteria — Gherkin**
 
 ```gherkin
 Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
 
-  Scenario 01: Acceso al detalle desde la card del dashboard
+  Scenario 01: Acceso al detalle desde la vista origen
     Given estoy autenticado
-    And tengo rol "Secretaria" en el club activo
-    And existen cuentas configuradas en el club activo
-    When selecciono una cuenta o la acción de ver detalle desde la card de saldos
+    And tengo rol "Secretaria" o "Tesorería" en el club activo
+    And existen cuentas visibles para mi rol en el club activo
+    When selecciono una cuenta o la acción de ver detalle desde mi vista origen
     Then accedo a la vista detallada de esa cuenta
 
-  Scenario 02: Usuario sin rol Secretaria no accede al detalle
+  Scenario 02: Usuario sin rol habilitado no accede al detalle
     Given estoy autenticado
-    And no tengo rol "Secretaria" en el club activo
+    And no tengo rol "Secretaria" ni "Tesorería" en el club activo
     When intento acceder al detalle de movimientos y saldos por cuenta
     Then no tengo acceso a la funcionalidad
 
@@ -1317,7 +1317,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And estoy en la solapa "Tesorería"
     When la pantalla carga
     Then veo el listado de categorías del club activo
-    And cada categoría muestra nombre, estado, visibilidad para Secretaria y emoji
+    And cada categoría muestra nombre, visibilidad por rol, estado y emoji
 
   Scenario 05: Alta de cuenta
     Given estoy autenticado
@@ -1379,8 +1379,9 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And soy admin del club activo
     And estoy en la solapa "Tesorería"
     When selecciono crear una categoría
-    Then veo un formulario con los campos "Nombre", "Visible para Secretaria", "Estado" y "Emoji"
+    Then veo un formulario con los campos "Nombre", "Visibilidad", "Estado" y "Emoji"
     And el campo "Nombre" permite seleccionar o cargar una categoría para el club
+    And el campo "Visibilidad" ofrece las opciones "Secretaria" y "Tesoreria"
     And el campo "Emoji" ofrece un listado simple de emojis predefinidos
 
   Scenario 12: Creación exitosa de categoría
@@ -1388,7 +1389,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And soy admin del club activo
     And estoy viendo el formulario de categoría
     When completo un nombre válido
-    And defino su visibilidad para Secretaria
+    And defino su visibilidad por rol
     And selecciono un emoji del listado
     And defino su estado
     And confirmo la creación
@@ -1423,7 +1424,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     Given estoy autenticado
     And soy admin del club activo
     And existe una categoría en el club activo
-    When edito su nombre, visibilidad para Secretaria, estado o emoji
+    When edito su nombre, visibilidad por rol, estado o emoji
     Then el sistema actualiza la categoría
     And los cambios aplican solo al club activo
 
@@ -1469,7 +1470,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     Given estoy autenticado
     And soy admin del club activo
     When consulto el template base de categorías
-    Then veo las categorías "Alquileres", "Cuotas", "Eventos", "Fichajes", "Impuestos", "Indumentaria", "Inversiones", "Ligas/Jornadas", "Mantenimiento", "Obra", "Otros", "Préstamo", "Servicios", "Sponsor", "Subsidios", "Sueldos", "Utilería" y "Transferencias e/cuentas"
+    Then veo las categorías "Alquileres", "Cuotas", "Eventos", "Fichajes", "Impuestos", "Indumentaria", "Inversiones", "Ligas/Jornadas", "Mantenimiento", "Obra", "Otros", "Préstamo", "Servicios", "Sponsor", "Subsidios", "Sueldos", "Utilería" y "Ajuste"
 
   Scenario 23: Consistencia por club activo
     Given estoy autenticado
@@ -1651,138 +1652,61 @@ Feature: US-18 — Configuración de formatos válidos para recibos
     When intento acceder a la configuración de formatos de recibo
     Then no tengo acceso a la funcionalidad
 
-  Scenario 03: Visualización de formatos configurados
+  Scenario 03: Visualización de integración predefinida
     Given estoy autenticado
     And soy admin del club activo
-    And existen formatos de recibo configurados
     When ingreso a la configuración de formatos de recibo
-    Then veo el listado de formatos configurados para el club activo
-    And cada formato muestra nombre, estado, tipo de validación y ejemplo
+    Then veo la información de la integración de recibos del sistema de socios
+    And se muestran como solo lectura los campos "Nombre del sistema de socios", "Ejemplo", "Patrón" y "Próximo recibo"
 
-  Scenario 04: Alta de formato numérico
+  Scenario 04: Visualización del formato fijo por defecto
     Given estoy autenticado
     And soy admin del club activo
-    When selecciono crear un formato de recibo
-    And elijo el tipo de validación "Numérico"
-    Then veo un formulario con los campos "Nombre", "Estado", "Valor mínimo" y "Ejemplo"
+    When ingreso a la configuración de formatos de recibo
+    Then veo el ejemplo "PAY-SOC-26205"
+    And veo el patrón "^PAY-SOC-[0-9]{5}$"
+    And veo "Próximo recibo" con valor "PAY-SOC-10556"
 
-  Scenario 05: Creación exitosa de formato numérico
+  Scenario 05: La integración no se edita desde la UI
     Given estoy autenticado
     And soy admin del club activo
-    And estoy viendo el formulario de formato numérico
-    When completo un nombre válido
-    And defino un valor mínimo válido
-    And defino su estado
-    And confirmo la creación
-    Then el sistema registra el formato en el club activo
-    And el formato queda disponible según su estado
+    When ingreso a la configuración de formatos de recibo
+    Then no veo acciones para crear o editar formatos
+    And la integración se muestra solo como referencia operativa
 
-  Scenario 06: Alta de formato con nomenclatura
-    Given estoy autenticado
-    And soy admin del club activo
-    When selecciono crear un formato de recibo
-    And elijo el tipo de validación "Nomenclatura"
-    Then veo un formulario con los campos "Nombre", "Estado", "Patrón" y "Ejemplo"
-
-  Scenario 07: Creación exitosa de formato con nomenclatura
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy viendo el formulario de formato con nomenclatura
-    When completo un nombre válido
-    And defino un patrón válido
-    And defino su estado
-    And confirmo la creación
-    Then el sistema registra el formato en el club activo
-    And el formato queda disponible según su estado
-
-  Scenario 08: No se permite guardar un formato sin nombre
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy viendo el formulario de formato
-    When intento guardar sin completar el nombre
-    Then veo un mensaje indicando que el nombre es obligatorio
-    And el formato no se registra
-
-  Scenario 09: No se permite guardar un formato numérico sin valor mínimo
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy viendo el formulario de formato numérico
-    When intento guardar sin completar el valor mínimo
-    Then veo un mensaje indicando que el valor mínimo es obligatorio
-    And el formato no se registra
-
-  Scenario 10: No se permite guardar un formato de nomenclatura sin patrón
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy viendo el formulario de formato con nomenclatura
-    When intento guardar sin completar el patrón
-    Then veo un mensaje indicando que el patrón es obligatorio
-    And el formato no se registra
-
-  Scenario 11: Edición de formato de recibo
-    Given estoy autenticado
-    And soy admin del club activo
-    And existe un formato de recibo configurado
-    When edito su nombre, estado, valor mínimo, patrón o ejemplo
-    Then el sistema actualiza el formato en el club activo
-
-  Scenario 12: Formato inactivo no participa en validación
-    Given existe un formato de recibo inactivo en el club activo
-    When Secretaria ingresa un número de recibo
-    Then ese formato no se considera válido para la validación
-
-  Scenario 13: Múltiples formatos activos permitidos
-    Given estoy autenticado
-    And soy admin del club activo
-    And existen múltiples formatos de recibo activos
-    When Secretaria ingresa un número de recibo
-    Then el sistema acepta el valor si cumple al menos uno de los formatos activos
-
-  Scenario 14: Recibo válido según formato numérico
-    Given existe un formato numérico activo con valor mínimo configurado
+  Scenario 06: Recibo válido según formato predefinido
+    Given existe la integración por defecto de recibos del sistema de socios
     And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo numérico igual o mayor al mínimo permitido
+    When ingreso un recibo "PAY-SOC-10556"
     Then el sistema considera válido el recibo
 
-  Scenario 15: Recibo inválido según formato numérico
-    Given existe un formato numérico activo con valor mínimo configurado
+  Scenario 07: Recibo válido con número superior al mínimo
+    Given existe la integración por defecto de recibos del sistema de socios
     And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo numérico menor al mínimo permitido
+    When ingreso un recibo "PAY-SOC-26205"
+    Then el sistema considera válido el recibo
+
+  Scenario 08: Recibo inválido por estar debajo del mínimo
+    Given existe la integración por defecto de recibos del sistema de socios
+    And tengo rol "Secretaria" en el club activo
+    When ingreso un recibo "PAY-SOC-10555"
     Then el sistema muestra un mensaje indicando que el recibo no cumple un formato válido
     And el movimiento no se registra
 
-  Scenario 16: Recibo válido según formato con nomenclatura
-    Given existe un formato de nomenclatura activo con patrón configurado
+  Scenario 09: Recibo inválido por no cumplir el patrón
+    Given existe la integración por defecto de recibos del sistema de socios
     And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo que cumple el patrón definido
-    Then el sistema considera válido el recibo
-
-  Scenario 17: Recibo inválido según formato con nomenclatura
-    Given existe un formato de nomenclatura activo con patrón configurado
-    And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo que no cumple el patrón definido
+    When ingreso un recibo con prefijo o estructura distinta a "PAY-SOC-<número de 5 dígitos>"
     Then el sistema muestra un mensaje indicando que el recibo no cumple un formato válido
     And el movimiento no se registra
 
-  Scenario 18: Helper visible para Secretaria con ejemplos válidos
-    Given existen formatos de recibo activos en el club activo
+  Scenario 10: Helper visible para Secretaria con formato y recibos disponibles
+    Given existe la integración por defecto de recibos del sistema de socios
     And tengo rol "Secretaria" en el club activo
     When veo el campo "Recibo" en el formulario de movimientos
-    Then veo ayuda contextual con ejemplos de formatos válidos
-
-  Scenario 19: Convivencia entre sistema viejo y sistema nuevo
-    Given existe un formato numérico activo para recibos del sistema viejo
-    And existe un formato con nomenclatura activo para recibos del sistema nuevo
-    And tengo rol "Secretaria" en el club activo
-    When ingreso un recibo que cumple uno de los dos formatos
-    Then el sistema permite guardar el movimiento
-
-  Scenario 20: Configuración por club activo
-    Given estoy autenticado
-    And soy admin en más de un club
-    When creo, edito o desactivo formatos de recibo
-    Then la configuración aplica únicamente al club activo
-    And no afecta la configuración de otros clubes
+    Then veo ayuda contextual con el patrón válido
+    And veo el ejemplo "PAY-SOC-26205"
+    And veo el texto "Disponibles desde PAY-SOC-10556"
 ```
 
 ---
@@ -2494,6 +2418,67 @@ Feature: US-26 — Registro de compra y venta de moneda extranjera
     When registro una compra o venta de moneda
     Then la operación se registra únicamente en el club activo
     And no impacta cuentas ni jornadas de otros clubes
+```
+
+---
+
+### E03 💰 Tesorería / US-30 — Dashboard de Tesorería para consulta de saldos de cuentas
+
+> *Como usuario con rol Tesorería, quiero ver en el dashboard los saldos de mis cuentas visibles, para consultar rápidamente el estado de las cuentas del club y registrar movimientos sin usar la operatoria de Secretaría.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-30 — Dashboard de Tesorería para consulta de saldos de cuentas
+
+  Scenario 01: Acceso al dashboard de Tesorería
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso a "/dashboard"
+    Then veo la card de Tesorería
+    And veo las cuentas visibles para Tesorería en el club activo
+
+  Scenario 02: Usuario sin rol Tesorería no ve la card de Tesorería
+    Given estoy autenticado
+    And no tengo rol "Tesorería" en el club activo
+    When ingreso a "/dashboard"
+    Then no veo la card de Tesorería
+
+  Scenario 03: Tesorería no ve controles de jornada
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso a "/dashboard"
+    Then no veo el bloque de estado de jornada
+    And no veo acciones de apertura o cierre
+
+  Scenario 04: Visualización de saldos por cuenta y moneda
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And existen cuentas visibles para Tesorería con saldos registrados
+    When ingreso al dashboard
+    Then veo cada cuenta visible para Tesorería
+    And veo el saldo de cada moneda habilitada por separado
+
+  Scenario 05: Estado vacío sin cuentas visibles para Tesorería
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And no existen cuentas visibles para Tesorería
+    When ingreso al dashboard
+    Then veo un estado vacío indicando que no hay cuentas visibles para Tesorería
+
+  Scenario 06: Acceso al detalle desde el dashboard
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    And existen cuentas visibles para Tesorería
+    When selecciono "Ver detalle" en una cuenta
+    Then accedo al detalle de esa cuenta dentro del club activo
+
+  Scenario 07: Formulario inline de movimientos para Tesorería
+    Given estoy autenticado
+    And tengo rol "Tesorería" en el club activo
+    When ingreso al dashboard
+    Then veo un formulario inline para registrar movimientos de Tesorería
+    And no necesito abrir jornada para usarlo
 ```
 
 ---

@@ -12,14 +12,12 @@ import { getTreasurySettingsForActiveClub } from "@/lib/services/treasury-settin
 import {
   approveClubMembershipAction,
   createClubActivityAction,
-  createReceiptFormatAction,
   createTreasuryAccountAction,
   createTreasuryCategoryAction,
   inviteClubUserAction,
   removeClubMembershipAction,
   updateClubActivityAction,
   updateClubMembershipRoleAction,
-  updateReceiptFormatAction,
   updateTreasuryAccountAction,
   updateTreasuryCategoryAction
 } from "@/app/(dashboard)/settings/club/actions";
@@ -90,8 +88,6 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
         updateTreasuryCategoryAction={updateTreasuryCategoryAction}
         createClubActivityAction={createClubActivityAction}
         updateClubActivityAction={updateClubActivityAction}
-        createReceiptFormatAction={createReceiptFormatAction}
-        updateReceiptFormatAction={updateReceiptFormatAction}
       />
     </div>
   );

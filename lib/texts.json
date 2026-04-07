@@ -87,6 +87,7 @@
       "detail_account_label": "Cuenta seleccionada",
       "detail_create_movement_cta": "Registrar movimiento",
       "detail_empty_movements": "No hay movimientos registrados para esta cuenta en la jornada actual.",
+      "detail_uncategorized_category": "Sin categoria",
       "account_switch_label": "Cambiar cuenta",
       "session_label": "Estado de jornada",
       "session_open": "Abierta",
@@ -107,7 +108,9 @@
       "activity_label": "Actividad",
       "activity_placeholder": "Sin actividad",
       "receipt_label": "Recibo",
-      "receipt_helper": "Ejemplos validos:",
+      "receipt_helper_format": "Formato valido:",
+      "receipt_helper_example": "Ejemplo:",
+      "receipt_helper_available_from": "Disponibles desde:",
       "concept_label": "Concepto",
       "currency_label": "Moneda",
       "amount_label": "Importe",
@@ -137,6 +140,17 @@
         "ingreso": "Ingreso",
         "egreso": "Egreso"
       }
+    },
+    "treasury_role": {
+      "title": "Saldos de cuentas",
+      "description": "Consulta saldos y registra movimientos de Tesoreria en el club activo.",
+      "empty_accounts": "No hay cuentas visibles para Tesoreria en el club activo.",
+      "detail_cta": "Ver detalle",
+      "movement_form_title": "Registrar movimiento de Tesoreria",
+      "movement_form_description": "Carga ingresos y egresos en las cuentas visibles para Tesoreria del club activo.",
+      "create_cta": "Crear",
+      "create_loading": "Registrando movimiento...",
+      "back_to_dashboard_cta": "Volver al dashboard"
     }
   },
   "settings": {
@@ -265,16 +279,17 @@
         "account_name_label": "Nombre",
         "category_name_label": "Nombre",
         "activity_name_label": "Nombre",
-        "receipt_name_label": "Nombre",
+        "receipt_name_label": "Nombre del sistema de socios",
         "account_type_label": "Tipo",
         "account_visibility_label": "Visibilidad",
         "account_scope_label": "Ambito",
         "account_currencies_label": "Monedas habilitadas",
         "account_type_placeholder": "Selecciona un tipo",
         "receipt_validation_type_label": "Tipo de validacion",
-        "receipt_min_label": "Valor minimo",
+        "receipt_min_label": "Proximo recibo",
         "receipt_pattern_label": "Patron",
         "receipt_example_label": "Ejemplo",
+        "receipt_formats_read_only": "La integracion de recibos del sistema de socios se muestra como referencia operativa y no se puede editar desde esta pantalla.",
         "movement_type_selection_label": "Tipos del sistema",
         "visibility_label": "Visible para Secretaria",
         "visibility_visible": "Visible",
@@ -288,7 +303,7 @@
         "empty_accounts": "Todavia no hay cuentas configuradas para el club activo.",
         "empty_categories": "Todavia no hay categorias configuradas para el club activo.",
         "empty_activities": "Todavia no hay actividades configuradas para el club activo.",
-        "empty_receipt_formats": "Todavia no hay formatos de recibo configurados para el club activo.",
+        "empty_receipt_formats": "No hay una integracion de recibos disponible para el club activo.",
         "account_types": {
           "efectivo": "Efectivo",
           "bancaria": "Bancaria",
@@ -304,7 +319,7 @@
         },
         "emoji_options": {
           "accounts": ["💵", "🏦", "💼", "📈", "🏛️"],
-          "categories": ["📄", "🧾", "⚖️", "📁", "💳"],
+          "categories": ["🏠", "🧾", "🎉", "📝", "🏛️", "👕", "📈", "🏆", "🛠️", "🏗️", "📁", "🤝", "🔌", "💼", "🎯", "💸", "🎽", "⚖️", "💳"],
           "activities": ["🏅", "⚽", "🥊", "🏑", "🏀"]
         },
         "statuses": {

@@ -6,14 +6,15 @@ import { useSearchParams } from "next/navigation";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
-  ReceiptFormat,
   TreasuryAccount,
   TreasuryCurrencyCode,
   TreasuryMovementType,
   TreasuryCategory,
   TreasurySettings
 } from "@/lib/domain/access";
+import { DEFAULT_RECEIPT_EXAMPLE, DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
+import { isSystemTreasuryCategoryName } from "@/lib/treasury-system-categories";
 
 type ClubTreasurySettingsManagerProps = {
   treasurySettings: TreasurySettings;
@@ -23,14 +24,20 @@ type ClubTreasurySettingsManagerProps = {
   updateTreasuryCategoryAction: (formData: FormData) => Promise<void>;
   createClubActivityAction: (formData: FormData) => Promise<void>;
   updateClubActivityAction: (formData: FormData) => Promise<void>;
-  createReceiptFormatAction: (formData: FormData) => Promise<void>;
-  updateReceiptFormatAction: (formData: FormData) => Promise<void>;
 };
 
-function getVisibilityLabel(visibleForSecretaria: boolean) {
-  return visibleForSecretaria
-    ? texts.settings.club.treasury.visibility_visible
-    : texts.settings.club.treasury.visibility_hidden;
+function getRoleVisibilityLabel(visibleForSecretaria: boolean, visibleForTesoreria: boolean) {
+  const labels = [];
+
+  if (visibleForSecretaria) {
+    labels.push(texts.settings.club.treasury.account_visibility_options.secretaria);
+  }
+
+  if (visibleForTesoreria) {
+    labels.push(texts.settings.club.treasury.account_visibility_options.tesoreria);
+  }
+
+  return labels.join(" + ") || texts.settings.club.treasury.visibility_hidden;
 }
 
 function getAccountTypeLabel(accountType: TreasuryAccount["accountType"]) {
@@ -38,25 +45,11 @@ function getAccountTypeLabel(accountType: TreasuryAccount["accountType"]) {
 }
 
 function getAccountVisibilityLabel(account: TreasuryAccount) {
-  const labels = [];
-
-  if (account.visibleForSecretaria) {
-    labels.push(texts.settings.club.treasury.account_visibility_options.secretaria);
-  }
-
-  if (account.visibleForTesoreria) {
-    labels.push(texts.settings.club.treasury.account_visibility_options.tesoreria);
-  }
-
-  return labels.join(" + ");
+  return getRoleVisibilityLabel(account.visibleForSecretaria, account.visibleForTesoreria);
 }
 
 function getStatusLabel(status: TreasuryAccount["status"]) {
   return texts.settings.club.treasury.statuses[status];
-}
-
-function getReceiptValidationTypeLabel(type: ReceiptFormat["validationType"]) {
-  return texts.settings.club.treasury.receipt_validation_types[type];
 }
 
 function getCurrencyLabel(currencyCode: TreasuryCurrencyCode) {
@@ -337,160 +330,88 @@ function TreasuryCategoryForm({
   pendingLabel,
   defaultCategory
 }: TreasuryCategoryFormProps) {
+  const isSystemCategory = defaultCategory ? isSystemTreasuryCategoryName(defaultCategory.name) : false;
+
   return (
     <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
       <PendingFieldset className="grid gap-4">
         {defaultCategory ? <input type="hidden" name="category_id" value={defaultCategory.id} /> : null}
+        {isSystemCategory ? (
+          <>
+            <input type="hidden" name="name" value={defaultCategory?.name ?? ""} />
+            <input type="hidden" name="status" value="active" />
+            <input type="hidden" name="emoji" value={defaultCategory?.emoji ?? ""} />
+          </>
+        ) : (
+          <>
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.category_name_label}</span>
+              <input
+                type="text"
+                name="name"
+                defaultValue={defaultCategory?.name ?? ""}
+                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              />
+            </label>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.category_name_label}</span>
-          <input
-            type="text"
-            name="name"
-            defaultValue={defaultCategory?.name ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
+              <select
+                name="status"
+                defaultValue={defaultCategory?.status ?? "active"}
+                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              >
+                <option value="active">{texts.settings.club.treasury.statuses.active}</option>
+                <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
+              </select>
+            </label>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.visibility_label}</span>
-          <select
-            name="visible_for_secretaria"
-            defaultValue={String(defaultCategory?.visibleForSecretaria ?? true)}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="true">{texts.settings.club.treasury.visibility_visible}</option>
-            <option value="false">{texts.settings.club.treasury.visibility_hidden}</option>
-          </select>
-        </label>
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
+              <select
+                name="emoji"
+                defaultValue={defaultCategory?.emoji ?? ""}
+                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              >
+                <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+                {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
+                  <option key={`category-emoji-${emoji}`} value={emoji}>
+                    {emoji}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-          <select
-            name="status"
-            defaultValue={defaultCategory?.status ?? "active"}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-            <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-          <select
-            name="emoji"
-            defaultValue={defaultCategory?.emoji ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
-            {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
-              <option key={`category-emoji-${emoji}`} value={emoji}>
-                {emoji}
-              </option>
+        <fieldset className="grid gap-3">
+          <legend className="text-sm font-medium text-foreground">
+            {texts.settings.club.treasury.account_visibility_label}
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
+              <label
+                key={`category-visibility-${visibility}`}
+                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              >
+                <input
+                  type="checkbox"
+                  name="visibility"
+                  value={visibility}
+                  defaultChecked={
+                    visibility === "secretaria"
+                      ? (defaultCategory?.visibleForSecretaria ?? true)
+                      : (defaultCategory?.visibleForTesoreria ?? false)
+                  }
+                  className="size-4 rounded border-border"
+                />
+                <span className="font-medium">
+                  {texts.settings.club.treasury.account_visibility_options[visibility]}
+                </span>
+              </label>
             ))}
-          </select>
-        </label>
-
-        <PendingSubmitButton
-          idleLabel={submitLabel}
-          pendingLabel={pendingLabel}
-          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-        />
-      </PendingFieldset>
-    </form>
-  );
-}
-
-type ReceiptFormatFormProps = {
-  action: (formData: FormData) => Promise<void>;
-  submitLabel: string;
-  pendingLabel: string;
-  defaultReceiptFormat?: ReceiptFormat;
-};
-
-function ReceiptFormatForm({
-  action,
-  submitLabel,
-  pendingLabel,
-  defaultReceiptFormat
-}: ReceiptFormatFormProps) {
-  const validationType = defaultReceiptFormat?.validationType ?? "numeric";
-
-  return (
-    <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
-      <PendingFieldset className="grid gap-4">
-        {defaultReceiptFormat ? (
-          <input type="hidden" name="receipt_format_id" value={defaultReceiptFormat.id} />
-        ) : null}
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.receipt_name_label}</span>
-          <input
-            type="text"
-            name="name"
-            defaultValue={defaultReceiptFormat?.name ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.receipt_validation_type_label}</span>
-          <select
-            name="validation_type"
-            defaultValue={validationType}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="numeric">
-              {texts.settings.club.treasury.receipt_validation_types.numeric}
-            </option>
-            <option value="pattern">
-              {texts.settings.club.treasury.receipt_validation_types.pattern}
-            </option>
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.receipt_min_label}</span>
-          <input
-            type="number"
-            name="min_numeric_value"
-            defaultValue={defaultReceiptFormat?.minNumericValue ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.receipt_pattern_label}</span>
-          <input
-            type="text"
-            name="pattern"
-            defaultValue={defaultReceiptFormat?.pattern ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.receipt_example_label}</span>
-          <input
-            type="text"
-            name="example"
-            defaultValue={defaultReceiptFormat?.example ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-          <select
-            name="status"
-            defaultValue={defaultReceiptFormat?.status ?? "active"}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-            <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-          </select>
-        </label>
+          </div>
+        </fieldset>
 
         <PendingSubmitButton
           idleLabel={submitLabel}
@@ -509,9 +430,7 @@ export function ClubTreasurySettingsManager({
   createTreasuryCategoryAction,
   updateTreasuryCategoryAction,
   createClubActivityAction,
-  updateClubActivityAction,
-  createReceiptFormatAction,
-  updateReceiptFormatAction
+  updateClubActivityAction
 }: ClubTreasurySettingsManagerProps) {
   const searchParams = useSearchParams();
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -521,10 +440,9 @@ export function ClubTreasurySettingsManager({
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [isCreatingActivity, setIsCreatingActivity] = useState(false);
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
-  const [isCreatingReceiptFormat, setIsCreatingReceiptFormat] = useState(false);
-  const [editingReceiptFormatId, setEditingReceiptFormatId] = useState<string | null>(null);
   const availableAccountCurrencies: TreasuryCurrencyCode[] = TREASURY_CURRENCY_OPTIONS;
   const feedbackCode = searchParams.get("feedback");
+  const receiptFormat = treasurySettings.receiptFormats[0];
 
   useEffect(() => {
     if (feedbackCode !== "account_created") {
@@ -681,7 +599,7 @@ export function ClubTreasurySettingsManager({
       </section>
 
       <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
           <div>
             <h3 className="text-base font-semibold text-foreground">
               {texts.settings.club.treasury.receipt_formats_title}
@@ -690,90 +608,43 @@ export function ClubTreasurySettingsManager({
               {texts.settings.club.treasury.receipt_formats_description}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setIsCreatingReceiptFormat((current) => !current);
-              setEditingReceiptFormatId(null);
-            }}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {texts.settings.club.treasury.create_receipt_format_cta}
-          </button>
         </div>
 
-        {isCreatingReceiptFormat ? (
-          <ReceiptFormatForm
-            action={createReceiptFormatAction}
-            submitLabel={texts.settings.club.treasury.save_receipt_format_cta}
-            pendingLabel={texts.settings.club.treasury.save_receipt_format_loading}
-          />
-        ) : null}
+        <div className="grid gap-4 rounded-[24px] border border-border bg-secondary/50 p-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.receipt_name_label}</span>
+              <div className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+                {receiptFormat?.name ?? texts.settings.club.treasury.empty_receipt_formats}
+              </div>
+            </div>
 
-        {treasurySettings.receiptFormats.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-border bg-secondary/40 p-5 text-sm text-muted-foreground">
-            {texts.settings.club.treasury.empty_receipt_formats}
+            <div className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.receipt_example_label}</span>
+              <div className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+                {receiptFormat?.example ?? DEFAULT_RECEIPT_EXAMPLE}
+              </div>
+            </div>
+
+            <div className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.receipt_pattern_label}</span>
+              <div className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+                {receiptFormat?.pattern ?? DEFAULT_RECEIPT_PATTERN}
+              </div>
+            </div>
+
+            <div className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.receipt_min_label}</span>
+              <div className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+                {DEFAULT_RECEIPT_MIN_LABEL}
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="grid gap-4">
-            {treasurySettings.receiptFormats.map((receiptFormat) => (
-              <article key={receiptFormat.id} className="rounded-[24px] border border-border bg-secondary/50 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-semibold text-foreground">{receiptFormat.name}</p>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.status_label}
-                        </span>
-                        <span className="font-medium">{getStatusLabel(receiptFormat.status)}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.receipt_validation_type_label}
-                        </span>
-                        <span className="font-medium">
-                          {getReceiptValidationTypeLabel(receiptFormat.validationType)}
-                        </span>
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.receipt_example_label}
-                        </span>
-                        <span className="font-medium">{receiptFormat.example ?? "-"}</span>
-                      </span>
-                    </div>
-                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEditingReceiptFormatId((current) =>
-                        current === receiptFormat.id ? null : receiptFormat.id
-                      )
-                    }
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                  >
-                    {texts.settings.club.treasury.edit_receipt_format_cta}
-                  </button>
-                </div>
-
-                {editingReceiptFormatId === receiptFormat.id ? (
-                  <div className="mt-4">
-                    <ReceiptFormatForm
-                      action={updateReceiptFormatAction}
-                      submitLabel={texts.settings.club.treasury.update_receipt_format_cta}
-                      pendingLabel={texts.settings.club.treasury.update_receipt_format_loading}
-                      defaultReceiptFormat={receiptFormat}
-                    />
-                  </div>
-                ) : null}
-              </article>
-            ))}
-          </div>
-        )}
+          <p className="text-xs leading-5 text-muted-foreground">
+            {texts.settings.club.treasury.receipt_formats_read_only}
+          </p>
+        </div>
       </section>
 
       <section className="space-y-4">
@@ -831,9 +702,14 @@ export function ClubTreasurySettingsManager({
                       </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.visibility_label}
+                          {texts.settings.club.treasury.account_visibility_label}
                         </span>
-                        <span className="font-medium">{getVisibilityLabel(category.visibleForSecretaria)}</span>
+                        <span className="font-medium">
+                          {getRoleVisibilityLabel(
+                            category.visibleForSecretaria,
+                            category.visibleForTesoreria
+                          )}
+                        </span>
                       </span>
                     </div>
                   </div>

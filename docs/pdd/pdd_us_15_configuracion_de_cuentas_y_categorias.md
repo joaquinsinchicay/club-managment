@@ -80,6 +80,9 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - Las cuentas creadas en esta historia quedan orientadas a la operatoria de `secretaria`.
 - La definición explícita de monedas por cuenta queda superseded por US-28.
 - La visibilidad operativa de cuentas se define por rol y no por la combinación de `ámbito` más un campo visible redundante.
+- El club debe contar con un catálogo fijo de categorías del sistema, siempre presente y no eliminable.
+- Las categorías del sistema solo permiten editar su visibilidad por rol.
+- Las categorías manuales adicionales mantienen edición completa de nombre, visibilidad, estado y emoji.
 - El nombre de cuenta es obligatorio.
 - El tipo de cuenta es obligatorio.
 - El nombre de categoría es obligatorio.
@@ -95,7 +98,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 2. La UI muestra tabs y una de ellas es `Tesorería`.
 3. Tesorería abre la solapa `Tesorería`.
 4. El sistema muestra cuentas y categorías del club activo.
-5. Tesorería crea o edita cuentas y categorías.
+5. Tesorería crea o edita cuentas y categorías; para categorías del sistema solo ajusta visibilidad por rol.
 6. El sistema valida, persiste y vuelve a mostrar la configuración actualizada con feedback.
 
 ---
@@ -130,6 +133,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - Un usuario con ambos roles puede alternar entre `Miembros` y `Tesorería` sin salir de la página.
 - La pantalla puede incluir bloques informativos read-only de catálogos fijos del sistema, sin convertirlos en configuraciones editables.
 - Al crear o editar cuentas/categorías, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
+- El campo `Visibilidad` de categorías debe usar el mismo patrón UI que el de cuentas, con selección por rol para `Secretaria` y `Tesoreria`.
 - El campo `Emoji` en cuentas y categorías debe resolverse con un selector simple de opciones predefinidas del sistema.
 - Los formularios deben ser mobile-first y no incluir textos hardcodeados.
 
@@ -161,7 +165,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 | status | `settings.club.treasury.update_category_loading` | Estado visible mientras se actualiza una categoría. |
 | label | `settings.club.treasury.account_name_label` | Nombre de cuenta. |
 | label | `settings.club.treasury.account_type_label` | Tipo de cuenta. |
-| label | `settings.club.treasury.visibility_label` | Visibilidad para Secretaría en categorías. |
+| label | `settings.club.treasury.account_visibility_label` | Visibilidad por rol en cuentas y categorías. |
 | label | `settings.club.treasury.status_label` | Estado. |
 | label | `settings.club.treasury.emoji_label` | Emoji. |
 | label | `settings.club.treasury.emoji_placeholder` | Placeholder del selector de emoji. |

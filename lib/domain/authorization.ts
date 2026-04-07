@@ -15,6 +15,10 @@ export function canAccessTreasurySettings(membership: MembershipLike) {
   return isActiveMembership(membership) && hasMembershipRole(membership, "tesoreria");
 }
 
+export function canOperateTesoreria(membership: MembershipLike) {
+  return isActiveMembership(membership) && hasMembershipRole(membership, "tesoreria");
+}
+
 export function canAccessClubSettingsPage(membership: MembershipLike) {
   return (
     isActiveMembership(membership) &&

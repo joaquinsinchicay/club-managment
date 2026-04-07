@@ -92,6 +92,7 @@ Roles disponibles:
 
 | Acción              | Admin | Secretaria | Tesoreria |
 | ------------------- | ----- | ---------- | --------- |
+| Ver dashboard de Tesorería | ❌     | ❌          | ✅         |
 | Ver movimientos     | ✅     | ✅          | ✅         |
 | Crear movimiento    | ⚠️    | ⚠️         | ⚠️        |
 | Editar movimiento   | ❌     | ❌          | ⚠️        |

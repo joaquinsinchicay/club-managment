@@ -7,21 +7,21 @@
 | Campo | Valor |
 |---|---|
 | Epic | E03 · Tesorería |
-| User Story | Como Secretaria del club, quiero consultar el detalle de movimientos y saldos por cuenta, para controlar la operatoria diaria y verificar el estado de cada cuenta del club activo. |
+| User Story | Como usuario operativo con rol Secretaria o Tesoreria del club, quiero consultar el detalle de movimientos y saldos por cuenta, para controlar el estado de cada cuenta visible dentro del club activo. |
 | Prioridad | Alta |
-| Objetivo de negocio | Dar visibilidad detallada de la jornada actual por cuenta para que Secretaría pueda auditar su operatoria diaria sin perder el contexto del club activo. |
+| Objetivo de negocio | Dar visibilidad detallada del dia por cuenta para que los roles operativos puedan auditar sus cuentas visibles sin perder el contexto del club activo. |
 
 ---
 
 ## 2. Problema a resolver
 
-La card del dashboard resume saldos, pero no muestra el detalle de movimientos por cuenta. Secretaría necesita inspeccionar una cuenta específica, revisar movimientos del día y cambiar entre cuentas cuando hay más de una.
+Las vistas resumidas de saldos no muestran el detalle de movimientos por cuenta. Los roles operativos necesitan inspeccionar una cuenta específica, revisar movimientos del día y cambiar entre cuentas visibles cuando hay más de una.
 
 ---
 
 ## 3. Objetivo funcional
 
-Desde la card del dashboard, el usuario `secretaria` debe poder entrar al detalle de una cuenta del club activo, ver su saldo actual, el estado de la jornada, el listado cronológico de movimientos del día y cambiar entre cuentas disponibles.
+Desde la card del dashboard de Secretaría o desde la card de Tesorería en `/dashboard`, el usuario con rol habilitado debe poder entrar al detalle de una cuenta del club activo, ver su saldo actual, el estado del día, el listado cronológico de movimientos y cambiar entre cuentas disponibles para su rol.
 
 ---
 
@@ -29,10 +29,11 @@ Desde la card del dashboard, el usuario `secretaria` debe poder entrar al detall
 
 ### Incluye
 - Navegación desde la card del dashboard al detalle por cuenta.
+- Navegación desde la card de Tesorería al detalle por cuenta cuando corresponda.
 - Visualización de saldo actual por cuenta.
 - Visualización del estado de jornada del día.
 - Listado de movimientos del día de la cuenta seleccionada.
-- Cambio entre cuentas visibles para Secretaría.
+- Cambio entre cuentas visibles para el rol operativo del acceso.
 - Estado vacío cuando la cuenta no tiene movimientos.
 
 ### No incluye
@@ -44,15 +45,15 @@ Desde la card del dashboard, el usuario `secretaria` debe poder entrar al detall
 
 ## 5. Actor principal
 
-Usuario autenticado con membership `activo` y rol `secretaria` en el club activo.
+Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en el club activo.
 
 ---
 
 ## 6. Precondiciones
 
 - El club activo está resuelto.
-- Existe al menos cero o más cuentas visibles para Secretaría.
-- El dashboard ya expone la card de saldos.
+- Existe al menos cero o más cuentas visibles para el rol del acceso.
+- Existe un punto de entrada desde la card de Secretaría o desde la card de Tesorería en `/dashboard`.
 
 ---
 
@@ -60,7 +61,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 | Escenario | Resultado esperado |
 |---|---|
-| Secretaria entra al detalle desde dashboard | Ve la vista detallada de la cuenta seleccionada. |
+| Usuario habilitado entra al detalle desde su vista origen | Ve la vista detallada de la cuenta seleccionada. |
 | La cuenta tiene movimientos | Se listan ordenados cronológicamente. |
 | La cuenta no tiene movimientos | Se muestra estado vacío y saldo actual. |
 | Se cambia de cuenta | La vista se actualiza con saldos y movimientos de la nueva cuenta. |
@@ -69,18 +70,19 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 ## 8. Reglas de negocio
 
-- Solo `secretaria` puede acceder a esta vista en este bloque.
+- Puede acceder `secretaria` o `tesoreria` segun visibilidad de la cuenta.
 - La vista solo muestra información de la cuenta seleccionada en el club activo.
 - Los movimientos se limitan a la jornada actual.
 - El orden visible debe ser cronológico.
-- Si hay jornada abierta, la vista puede ofrecer acceso rápido a registrar un nuevo movimiento.
+- Si el acceso es desde Secretaría y hay jornada abierta, la vista puede ofrecer acceso rápido a registrar un nuevo movimiento.
+- Si el acceso es desde Tesorería, la vista no expone CTAs de operatoria de Secretaría.
 
 ---
 
 ## 9. Flujo principal
 
-1. Secretaría abre el dashboard y selecciona ver detalle de una cuenta.
-2. El sistema resuelve la cuenta seleccionada dentro del club activo.
+1. El usuario abre su vista origen y selecciona ver detalle de una cuenta visible.
+2. El sistema resuelve la cuenta seleccionada dentro del club activo y valida visibilidad para el rol del acceso.
 3. La UI muestra saldo actual, estado de jornada y listado de movimientos del día.
 4. El usuario puede cambiar de cuenta desde la misma vista.
 
@@ -96,7 +98,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 ### B. Sin cuentas disponibles
 
-1. No existen cuentas visibles para Secretaría en el club activo.
+1. No existen cuentas visibles para el rol del acceso en el club activo.
 2. La vista informa que no hay cuentas disponibles.
 
 ---
@@ -150,7 +152,7 @@ Do not reference current code files.
 
 ## 14. Seguridad
 
-- El detalle debe limitarse al club activo y a cuentas visibles para Secretaría.
+- El detalle debe limitarse al club activo y a cuentas visibles para el rol del acceso.
 - No debe permitir acceso a cuentas de otros clubes por id manipulado.
 - La resolución de cuenta válida debe hacerse server-side.
 
@@ -160,7 +162,7 @@ Do not reference current code files.
 
 - contracts: `Get account detail`.
 - domain entities: `treasury_accounts`, `treasury_movements`, `daily_cash_sessions`.
-- other US if relevant: US-12 para el acceso desde la card del dashboard; US-11 para la creación de movimientos del día.
+- other US if relevant: US-12 para el acceso desde la card de Secretaría; US-30 para el acceso desde la card de Tesorería en `/dashboard`; US-11 para la creación de movimientos del día.
 
 ---
 
@@ -171,4 +173,3 @@ Do not reference current code files.
 | Exponer movimientos de otra cuenta o club | Media | Alta | Validar cuenta seleccionada contra las cuentas visibles del club activo. |
 | Orden incorrecto de movimientos | Media | Media | Ordenar cronológicamente antes de renderizar. |
 | Vista vacía poco informativa | Baja | Media | Mantener saldo y estado aunque no existan movimientos. |
-

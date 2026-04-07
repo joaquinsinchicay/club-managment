@@ -31,7 +31,6 @@ export function AppHeader({ context }: AppHeaderProps) {
         }
       )
     : null;
-
   return (
     <header className="sticky top-0 z-10 border-b border-border/70 bg-background/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3">
@@ -44,12 +43,14 @@ export function AppHeader({ context }: AppHeaderProps) {
           )}
         </div>
 
-        <AvatarSessionMenu
-          fullName={context.user.fullName}
-          email={context.user.email}
-          avatarUrl={context.user.avatarUrl}
-          canAccessClubSettings={canAccessClubSettingsNavigation(context.activeMembership)}
-        />
+        <div className="flex items-center gap-3">
+          <AvatarSessionMenu
+            fullName={context.user.fullName}
+            email={context.user.email}
+            avatarUrl={context.user.avatarUrl}
+            canAccessClubSettings={canAccessClubSettingsNavigation(context.activeMembership)}
+          />
+        </div>
       </div>
     </header>
   );

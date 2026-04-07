@@ -101,7 +101,7 @@ export async function updateTreasuryAccountAction(formData: FormData) {
 export async function createTreasuryCategoryAction(formData: FormData) {
   const result = await createTreasuryCategoryForActiveClub({
     name: String(formData.get("name") ?? ""),
-    visibleForSecretaria: String(formData.get("visible_for_secretaria") ?? "") === "true",
+    visibility: formData.getAll("visibility").map((value) => String(value)),
     status: String(formData.get("status") ?? ""),
     emoji: String(formData.get("emoji") ?? "")
   });
@@ -113,7 +113,7 @@ export async function updateTreasuryCategoryAction(formData: FormData) {
   const result = await updateTreasuryCategoryForActiveClub({
     categoryId: String(formData.get("category_id") ?? ""),
     name: String(formData.get("name") ?? ""),
-    visibleForSecretaria: String(formData.get("visible_for_secretaria") ?? "") === "true",
+    visibility: formData.getAll("visibility").map((value) => String(value)),
     status: String(formData.get("status") ?? ""),
     emoji: String(formData.get("emoji") ?? "")
   });

@@ -13,6 +13,7 @@ import type {
   TreasuryCurrencyConfig,
   TreasuryMovementType
 } from "@/lib/domain/access";
+import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
 
 type TreasuryCardProps = {
@@ -239,12 +240,17 @@ export function TreasuryCard({
                     className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                   />
                   {receiptFormats.length > 0 ? (
-                    <span className="text-xs leading-5 text-muted-foreground">
-                      {texts.dashboard.treasury.receipt_helper}{" "}
-                      {receiptFormats
-                        .map((receiptFormat) => receiptFormat.example || receiptFormat.name)
-                        .join(" · ")}
-                    </span>
+                    <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
+                      <span>
+                        {texts.dashboard.treasury.receipt_helper_format} {receiptFormats[0]?.pattern ?? DEFAULT_RECEIPT_PATTERN}
+                      </span>
+                      <span>
+                        {texts.dashboard.treasury.receipt_helper_example} {receiptFormats[0]?.example ?? "-"}
+                      </span>
+                      <span>
+                        {texts.dashboard.treasury.receipt_helper_available_from} {DEFAULT_RECEIPT_MIN_LABEL}
+                      </span>
+                    </div>
                   ) : null}
                 </label>
 
