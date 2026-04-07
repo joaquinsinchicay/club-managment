@@ -120,6 +120,7 @@ Usuario autenticado con membership `activo` y rol `admin` para configurar; usuar
 ### Reglas
 - La sección debe convivir con cuentas, categorías, actividades y formatos dentro de `Tesorería`.
 - La selección debe ser simple de usar en mobile: checkboxes para monedas habilitadas y radio buttons para moneda principal.
+- Al guardar, el CTA debe entrar en loading de inmediato y la sección debe quedar bloqueada hasta resolver.
 - No debe haber textos hardcodeados.
 
 ---
@@ -138,6 +139,7 @@ Usuario autenticado con membership `activo` y rol `admin` para configurar; usuar
 | label | `settings.club.treasury.currency_selection_label` | Grupo de monedas disponibles. |
 | label | `settings.club.treasury.primary_currency_label` | Selección de moneda principal. |
 | action | `settings.club.treasury.save_currencies_cta` | Guardado de configuración. |
+| status | `settings.club.treasury.save_currencies_loading` | Estado visible mientras se guardan monedas. |
 | label | `settings.club.treasury.currency_options.ARS` | Opción ARS. |
 | label | `settings.club.treasury.currency_options.USD` | Opción USD. |
 | label | `settings.club.treasury.currency_options.EUR` | Opción EUR. |

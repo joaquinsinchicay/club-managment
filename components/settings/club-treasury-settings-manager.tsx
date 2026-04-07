@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
   ReceiptFormat,
@@ -63,52 +64,59 @@ const TREASURY_MOVEMENT_TYPE_OPTIONS: TreasuryMovementType[] = ["ingreso", "egre
 type ClubActivityFormProps = {
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
+  pendingLabel: string;
   defaultActivity?: ClubActivity;
 };
 
-function ClubActivityForm({ action, submitLabel, defaultActivity }: ClubActivityFormProps) {
+function ClubActivityForm({
+  action,
+  submitLabel,
+  pendingLabel,
+  defaultActivity
+}: ClubActivityFormProps) {
   return (
     <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
-      {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
+      <PendingFieldset className="grid gap-4">
+        {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.activity_name_label}</span>
-        <input
-          type="text"
-          name="name"
-          defaultValue={defaultActivity?.name ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.activity_name_label}</span>
+          <input
+            type="text"
+            name="name"
+            defaultValue={defaultActivity?.name ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
+          <select
+            name="status"
+            defaultValue={defaultActivity?.status ?? "active"}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          >
+            <option value="active">{texts.settings.club.treasury.statuses.active}</option>
+            <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
+          <input
+            type="text"
+            name="emoji"
+            defaultValue={defaultActivity?.emoji ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <PendingSubmitButton
+          idleLabel={submitLabel}
+          pendingLabel={pendingLabel}
+          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-        <select
-          name="status"
-          defaultValue={defaultActivity?.status ?? "active"}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        >
-          <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-          <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-        <input
-          type="text"
-          name="emoji"
-          defaultValue={defaultActivity?.emoji ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        />
-      </label>
-
-      <button
-        type="submit"
-        className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-      >
-        {submitLabel}
-      </button>
+      </PendingFieldset>
     </form>
   );
 }
@@ -116,6 +124,7 @@ function ClubActivityForm({ action, submitLabel, defaultActivity }: ClubActivity
 type TreasuryAccountFormProps = {
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
+  pendingLabel: string;
   defaultAccount?: TreasuryAccount;
   availableCurrencies: TreasuryCurrencyCode[];
 };
@@ -123,116 +132,118 @@ type TreasuryAccountFormProps = {
 function TreasuryAccountForm({
   action,
   submitLabel,
+  pendingLabel,
   defaultAccount,
   availableCurrencies
 }: TreasuryAccountFormProps) {
   return (
     <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
-      {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
+      <PendingFieldset className="grid gap-4">
+        {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
 
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.account_name_label}</span>
-        <input
-          type="text"
-          name="name"
-          defaultValue={defaultAccount?.name ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.account_name_label}</span>
+          <input
+            type="text"
+            name="name"
+            defaultValue={defaultAccount?.name ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.account_type_label}</span>
+          <select
+            name="account_type"
+            defaultValue={defaultAccount?.accountType ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          >
+            <option value="" disabled>
+              {texts.settings.club.treasury.account_type_placeholder}
+            </option>
+            <option value="efectivo">{texts.settings.club.treasury.account_types.efectivo}</option>
+            <option value="bancaria">{texts.settings.club.treasury.account_types.bancaria}</option>
+            <option value="billetera_virtual">
+              {texts.settings.club.treasury.account_types.billetera_virtual}
+            </option>
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.account_scope_label}</span>
+          <select
+            name="account_scope"
+            defaultValue={defaultAccount?.accountScope ?? "secretaria"}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          >
+            <option value="secretaria">{texts.settings.club.treasury.account_scopes.secretaria}</option>
+            <option value="tesoreria">{texts.settings.club.treasury.account_scopes.tesoreria}</option>
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.visibility_label}</span>
+          <select
+            name="visible_for_secretaria"
+            defaultValue={String(defaultAccount?.visibleForSecretaria ?? true)}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          >
+            <option value="true">{texts.settings.club.treasury.visibility_visible}</option>
+            <option value="false">{texts.settings.club.treasury.visibility_hidden}</option>
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
+          <select
+            name="status"
+            defaultValue={defaultAccount?.status ?? "active"}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          >
+            <option value="active">{texts.settings.club.treasury.statuses.active}</option>
+            <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
+          <input
+            type="text"
+            name="emoji"
+            defaultValue={defaultAccount?.emoji ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <fieldset className="grid gap-3">
+          <legend className="text-sm font-medium text-foreground">
+            {texts.settings.club.treasury.account_currencies_label}
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {availableCurrencies.map((currencyCode) => (
+              <label
+                key={`account-currency-${currencyCode}`}
+                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              >
+                <input
+                  type="checkbox"
+                  name="currencies"
+                  value={currencyCode}
+                  defaultChecked={defaultAccount?.currencies.includes(currencyCode) ?? false}
+                  className="size-4 rounded border-border"
+                />
+                <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <PendingSubmitButton
+          idleLabel={submitLabel}
+          pendingLabel={pendingLabel}
+          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.account_type_label}</span>
-        <select
-          name="account_type"
-          defaultValue={defaultAccount?.accountType ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        >
-          <option value="" disabled>
-            {texts.settings.club.treasury.account_type_placeholder}
-          </option>
-          <option value="efectivo">{texts.settings.club.treasury.account_types.efectivo}</option>
-          <option value="bancaria">{texts.settings.club.treasury.account_types.bancaria}</option>
-          <option value="billetera_virtual">
-            {texts.settings.club.treasury.account_types.billetera_virtual}
-          </option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.account_scope_label}</span>
-        <select
-          name="account_scope"
-          defaultValue={defaultAccount?.accountScope ?? "secretaria"}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        >
-          <option value="secretaria">{texts.settings.club.treasury.account_scopes.secretaria}</option>
-          <option value="tesoreria">{texts.settings.club.treasury.account_scopes.tesoreria}</option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.visibility_label}</span>
-        <select
-          name="visible_for_secretaria"
-          defaultValue={String(defaultAccount?.visibleForSecretaria ?? true)}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        >
-          <option value="true">{texts.settings.club.treasury.visibility_visible}</option>
-          <option value="false">{texts.settings.club.treasury.visibility_hidden}</option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-        <select
-          name="status"
-          defaultValue={defaultAccount?.status ?? "active"}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        >
-          <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-          <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-        <input
-          type="text"
-          name="emoji"
-          defaultValue={defaultAccount?.emoji ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        />
-      </label>
-
-      <fieldset className="grid gap-3">
-        <legend className="text-sm font-medium text-foreground">
-          {texts.settings.club.treasury.account_currencies_label}
-        </legend>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {availableCurrencies.map((currencyCode) => (
-            <label
-              key={`account-currency-${currencyCode}`}
-              className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-            >
-              <input
-                type="checkbox"
-                name="currencies"
-                value={currencyCode}
-                defaultChecked={defaultAccount?.currencies.includes(currencyCode) ?? false}
-                className="size-4 rounded border-border"
-              />
-              <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <button
-        type="submit"
-        className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-      >
-        {submitLabel}
-      </button>
+      </PendingFieldset>
     </form>
   );
 }
@@ -240,68 +251,71 @@ function TreasuryAccountForm({
 type TreasuryCategoryFormProps = {
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
+  pendingLabel: string;
   defaultCategory?: TreasuryCategory;
 };
 
 function TreasuryCategoryForm({
   action,
   submitLabel,
+  pendingLabel,
   defaultCategory
 }: TreasuryCategoryFormProps) {
   return (
     <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
-      {defaultCategory ? <input type="hidden" name="category_id" value={defaultCategory.id} /> : null}
+      <PendingFieldset className="grid gap-4">
+        {defaultCategory ? <input type="hidden" name="category_id" value={defaultCategory.id} /> : null}
 
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.category_name_label}</span>
-        <input
-          type="text"
-          name="name"
-          defaultValue={defaultCategory?.name ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.category_name_label}</span>
+          <input
+            type="text"
+            name="name"
+            defaultValue={defaultCategory?.name ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.visibility_label}</span>
+          <select
+            name="visible_for_secretaria"
+            defaultValue={String(defaultCategory?.visibleForSecretaria ?? true)}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          >
+            <option value="true">{texts.settings.club.treasury.visibility_visible}</option>
+            <option value="false">{texts.settings.club.treasury.visibility_hidden}</option>
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
+          <select
+            name="status"
+            defaultValue={defaultCategory?.status ?? "active"}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          >
+            <option value="active">{texts.settings.club.treasury.statuses.active}</option>
+            <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
+          <input
+            type="text"
+            name="emoji"
+            defaultValue={defaultCategory?.emoji ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <PendingSubmitButton
+          idleLabel={submitLabel}
+          pendingLabel={pendingLabel}
+          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.visibility_label}</span>
-        <select
-          name="visible_for_secretaria"
-          defaultValue={String(defaultCategory?.visibleForSecretaria ?? true)}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        >
-          <option value="true">{texts.settings.club.treasury.visibility_visible}</option>
-          <option value="false">{texts.settings.club.treasury.visibility_hidden}</option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-        <select
-          name="status"
-          defaultValue={defaultCategory?.status ?? "active"}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        >
-          <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-          <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-        <input
-          type="text"
-          name="emoji"
-          defaultValue={defaultCategory?.emoji ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        />
-      </label>
-
-      <button
-        type="submit"
-        className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-      >
-        {submitLabel}
-      </button>
+      </PendingFieldset>
     </form>
   );
 }
@@ -309,96 +323,99 @@ function TreasuryCategoryForm({
 type ReceiptFormatFormProps = {
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
+  pendingLabel: string;
   defaultReceiptFormat?: ReceiptFormat;
 };
 
 function ReceiptFormatForm({
   action,
   submitLabel,
+  pendingLabel,
   defaultReceiptFormat
 }: ReceiptFormatFormProps) {
   const validationType = defaultReceiptFormat?.validationType ?? "numeric";
 
   return (
     <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
-      {defaultReceiptFormat ? (
-        <input type="hidden" name="receipt_format_id" value={defaultReceiptFormat.id} />
-      ) : null}
+      <PendingFieldset className="grid gap-4">
+        {defaultReceiptFormat ? (
+          <input type="hidden" name="receipt_format_id" value={defaultReceiptFormat.id} />
+        ) : null}
 
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.receipt_name_label}</span>
-        <input
-          type="text"
-          name="name"
-          defaultValue={defaultReceiptFormat?.name ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.receipt_name_label}</span>
+          <input
+            type="text"
+            name="name"
+            defaultValue={defaultReceiptFormat?.name ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.receipt_validation_type_label}</span>
+          <select
+            name="validation_type"
+            defaultValue={validationType}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          >
+            <option value="numeric">
+              {texts.settings.club.treasury.receipt_validation_types.numeric}
+            </option>
+            <option value="pattern">
+              {texts.settings.club.treasury.receipt_validation_types.pattern}
+            </option>
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.receipt_min_label}</span>
+          <input
+            type="number"
+            name="min_numeric_value"
+            defaultValue={defaultReceiptFormat?.minNumericValue ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.receipt_pattern_label}</span>
+          <input
+            type="text"
+            name="pattern"
+            defaultValue={defaultReceiptFormat?.pattern ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.receipt_example_label}</span>
+          <input
+            type="text"
+            name="example"
+            defaultValue={defaultReceiptFormat?.example ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
+          <select
+            name="status"
+            defaultValue={defaultReceiptFormat?.status ?? "active"}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          >
+            <option value="active">{texts.settings.club.treasury.statuses.active}</option>
+            <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
+          </select>
+        </label>
+
+        <PendingSubmitButton
+          idleLabel={submitLabel}
+          pendingLabel={pendingLabel}
+          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.receipt_validation_type_label}</span>
-        <select
-          name="validation_type"
-          defaultValue={validationType}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        >
-          <option value="numeric">
-            {texts.settings.club.treasury.receipt_validation_types.numeric}
-          </option>
-          <option value="pattern">
-            {texts.settings.club.treasury.receipt_validation_types.pattern}
-          </option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.receipt_min_label}</span>
-        <input
-          type="number"
-          name="min_numeric_value"
-          defaultValue={defaultReceiptFormat?.minNumericValue ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        />
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.receipt_pattern_label}</span>
-        <input
-          type="text"
-          name="pattern"
-          defaultValue={defaultReceiptFormat?.pattern ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        />
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.receipt_example_label}</span>
-        <input
-          type="text"
-          name="example"
-          defaultValue={defaultReceiptFormat?.example ?? ""}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        />
-      </label>
-
-      <label className="grid gap-2 text-sm text-foreground">
-        <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-        <select
-          name="status"
-          defaultValue={defaultReceiptFormat?.status ?? "active"}
-          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-        >
-          <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-          <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-        </select>
-      </label>
-
-      <button
-        type="submit"
-        className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-      >
-        {submitLabel}
-      </button>
+      </PendingFieldset>
     </form>
   );
 }
@@ -458,58 +475,59 @@ export function ClubTreasurySettingsManager({
         </div>
 
         <form action={setTreasuryCurrenciesAction} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
-          <fieldset className="grid gap-3">
-            <legend className="text-sm font-medium text-foreground">
-              {texts.settings.club.treasury.currency_selection_label}
-            </legend>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {TREASURY_CURRENCY_OPTIONS.map((currencyCode) => (
-                <label
-                  key={currencyCode}
-                  className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                >
-                  <input
-                    type="checkbox"
-                    name="currencies"
-                    value={currencyCode}
-                    defaultChecked={selectedCurrencies.includes(currencyCode)}
-                    className="size-4 rounded border-border"
-                  />
-                  <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+          <PendingFieldset className="grid gap-4">
+            <fieldset className="grid gap-3">
+              <legend className="text-sm font-medium text-foreground">
+                {texts.settings.club.treasury.currency_selection_label}
+              </legend>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {TREASURY_CURRENCY_OPTIONS.map((currencyCode) => (
+                  <label
+                    key={currencyCode}
+                    className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <input
+                      type="checkbox"
+                      name="currencies"
+                      value={currencyCode}
+                      defaultChecked={selectedCurrencies.includes(currencyCode)}
+                      className="size-4 rounded border-border"
+                    />
+                    <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
-          <fieldset className="grid gap-3">
-            <legend className="text-sm font-medium text-foreground">
-              {texts.settings.club.treasury.primary_currency_label}
-            </legend>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {TREASURY_CURRENCY_OPTIONS.map((currencyCode) => (
-                <label
-                  key={`primary-${currencyCode}`}
-                  className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                >
-                  <input
-                    type="radio"
-                    name="primary_currency_code"
-                    value={currencyCode}
-                    defaultChecked={primaryCurrencyCode === currencyCode}
-                    className="size-4 border-border"
-                  />
-                  <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+            <fieldset className="grid gap-3">
+              <legend className="text-sm font-medium text-foreground">
+                {texts.settings.club.treasury.primary_currency_label}
+              </legend>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {TREASURY_CURRENCY_OPTIONS.map((currencyCode) => (
+                  <label
+                    key={`primary-${currencyCode}`}
+                    className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <input
+                      type="radio"
+                      name="primary_currency_code"
+                      value={currencyCode}
+                      defaultChecked={primaryCurrencyCode === currencyCode}
+                      className="size-4 border-border"
+                    />
+                    <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
-          <button
-            type="submit"
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-          >
-            {texts.settings.club.treasury.save_currencies_cta}
-          </button>
+            <PendingSubmitButton
+              idleLabel={texts.settings.club.treasury.save_currencies_cta}
+              pendingLabel={texts.settings.club.treasury.save_currencies_loading}
+              className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+            />
+          </PendingFieldset>
         </form>
       </section>
 
@@ -524,35 +542,36 @@ export function ClubTreasurySettingsManager({
         </div>
 
         <form action={setMovementTypesAction} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
-          <fieldset className="grid gap-3">
-            <legend className="text-sm font-medium text-foreground">
-              {texts.settings.club.treasury.movement_type_selection_label}
-            </legend>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {TREASURY_MOVEMENT_TYPE_OPTIONS.map((movementType) => (
-                <label
-                  key={movementType}
-                  className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                >
-                  <input
-                    type="checkbox"
-                    name="movement_types"
-                    value={movementType}
-                    defaultChecked={enabledMovementTypes.includes(movementType)}
-                    className="size-4 rounded border-border"
-                  />
-                  <span className="font-medium">{getMovementTypeLabel(movementType)}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+          <PendingFieldset className="grid gap-4">
+            <fieldset className="grid gap-3">
+              <legend className="text-sm font-medium text-foreground">
+                {texts.settings.club.treasury.movement_type_selection_label}
+              </legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {TREASURY_MOVEMENT_TYPE_OPTIONS.map((movementType) => (
+                  <label
+                    key={movementType}
+                    className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <input
+                      type="checkbox"
+                      name="movement_types"
+                      value={movementType}
+                      defaultChecked={enabledMovementTypes.includes(movementType)}
+                      className="size-4 rounded border-border"
+                    />
+                    <span className="font-medium">{getMovementTypeLabel(movementType)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
-          <button
-            type="submit"
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-          >
-            {texts.settings.club.treasury.save_movement_types_cta}
-          </button>
+            <PendingSubmitButton
+              idleLabel={texts.settings.club.treasury.save_movement_types_cta}
+              pendingLabel={texts.settings.club.treasury.save_movement_types_loading}
+              className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+            />
+          </PendingFieldset>
         </form>
       </section>
 
@@ -582,6 +601,7 @@ export function ClubTreasurySettingsManager({
           <TreasuryAccountForm
             action={createTreasuryAccountAction}
             submitLabel={texts.settings.club.treasury.save_account_cta}
+            pendingLabel={texts.settings.club.treasury.save_account_loading}
             availableCurrencies={availableAccountCurrencies}
           />
         ) : null}
@@ -654,6 +674,7 @@ export function ClubTreasurySettingsManager({
                     <TreasuryAccountForm
                       action={updateTreasuryAccountAction}
                       submitLabel={texts.settings.club.treasury.update_account_cta}
+                      pendingLabel={texts.settings.club.treasury.update_account_loading}
                       defaultAccount={account}
                       availableCurrencies={availableAccountCurrencies}
                     />
@@ -691,6 +712,7 @@ export function ClubTreasurySettingsManager({
           <ReceiptFormatForm
             action={createReceiptFormatAction}
             submitLabel={texts.settings.club.treasury.save_receipt_format_cta}
+            pendingLabel={texts.settings.club.treasury.save_receipt_format_loading}
           />
         ) : null}
 
@@ -749,6 +771,7 @@ export function ClubTreasurySettingsManager({
                     <ReceiptFormatForm
                       action={updateReceiptFormatAction}
                       submitLabel={texts.settings.club.treasury.update_receipt_format_cta}
+                      pendingLabel={texts.settings.club.treasury.update_receipt_format_loading}
                       defaultReceiptFormat={receiptFormat}
                     />
                   </div>
@@ -785,6 +808,7 @@ export function ClubTreasurySettingsManager({
           <TreasuryCategoryForm
             action={createTreasuryCategoryAction}
             submitLabel={texts.settings.club.treasury.save_category_cta}
+            pendingLabel={texts.settings.club.treasury.save_category_loading}
           />
         ) : null}
 
@@ -836,6 +860,7 @@ export function ClubTreasurySettingsManager({
                     <TreasuryCategoryForm
                       action={updateTreasuryCategoryAction}
                       submitLabel={texts.settings.club.treasury.update_category_cta}
+                      pendingLabel={texts.settings.club.treasury.update_category_loading}
                       defaultCategory={category}
                     />
                   </div>
@@ -872,6 +897,7 @@ export function ClubTreasurySettingsManager({
           <ClubActivityForm
             action={createClubActivityAction}
             submitLabel={texts.settings.club.treasury.save_activity_cta}
+            pendingLabel={texts.settings.club.treasury.save_activity_loading}
           />
         ) : null}
 
@@ -917,6 +943,7 @@ export function ClubTreasurySettingsManager({
                     <ClubActivityForm
                       action={updateClubActivityAction}
                       submitLabel={texts.settings.club.treasury.update_activity_cta}
+                      pendingLabel={texts.settings.club.treasury.update_activity_loading}
                       defaultActivity={activity}
                     />
                   </div>

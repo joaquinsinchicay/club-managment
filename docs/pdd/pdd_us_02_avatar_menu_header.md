@@ -178,7 +178,7 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 | dialog_body | `auth.sign_out.confirm_description` | Texto descriptivo del diálogo de confirmación de logout. Missing |
 | dialog_action | `auth.sign_out.confirm_cta` | Botón de confirmación del cierre de sesión. Missing |
 | dialog_action | `auth.sign_out.cancel_cta` | Botón para cancelar el cierre de sesión. Missing |
-| status | `auth.sign_out.loading` | Estado visible mientras se cierra la sesión, si aplica. Missing |
+| status | `auth.sign_out.loading` | Estado visible mientras se cierra la sesión, si aplica. |
 | error | `settings.club.forbidden_title` | Título o mensaje principal cuando un no admin intenta entrar a configuración. Missing |
 | error | `settings.club.forbidden_description` | Explicación de permisos insuficientes o instrucción de volver al dashboard. Missing |
 | aria | `header.avatar_menu.trigger_aria_label` | Accessible label del botón de avatar. Missing |

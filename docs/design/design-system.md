@@ -351,6 +351,10 @@ Rules:
 
 * skeletons preferred
 * avoid long spinners
+* every async mutation must show immediate feedback in the affected CTA
+* the affected form or card must become non-interactive while the mutation is pending
+* use local loading states, not fullscreen overlays, unless the flow truly blocks the whole screen
+* keep the post-action result in toast; loading only covers the in-flight state
 
 ---
 

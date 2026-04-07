@@ -137,6 +137,8 @@ Usuario autenticado con una o más memberships activas.
 | feedback | `dashboard.feedback.active_club_updated` | Confirmación de cambio exitoso. |
 | feedback | `dashboard.feedback.club_not_available` | Error por club no disponible. |
 
+La interacción debe bloquear temporalmente el selector mientras se resuelve el cambio de contexto para evitar dobles submits.
+
 ---
 
 ## 13. Persistencia

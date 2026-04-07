@@ -125,6 +125,7 @@ Usuario autenticado con membership `activo` y rol `admin` para configuración; u
 - La sección debe convivir con cuentas, categorías y actividades dentro de `Tesorería`.
 - El formulario debe permitir cargar tanto mínimo numérico como patrón dentro del mismo layout.
 - La ayuda contextual del campo `Recibo` debe ser breve y fácil de escanear en mobile.
+- Al crear o editar, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - No debe haber textos hardcodeados.
 
 ---
@@ -145,6 +146,8 @@ Usuario autenticado con membership `activo` y rol `admin` para configuración; u
 | title | `settings.club.treasury.receipt_formats_title` | Encabezado de la sección. |
 | body | `settings.club.treasury.receipt_formats_description` | Descripción de formatos. |
 | action | `settings.club.treasury.create_receipt_format_cta` | Alta de formato. |
+| status | `settings.club.treasury.save_receipt_format_loading` | Estado visible mientras se crea un formato. |
+| status | `settings.club.treasury.update_receipt_format_loading` | Estado visible mientras se actualiza un formato. |
 | label | `settings.club.treasury.receipt_validation_type_label` | Tipo de validación. |
 | label | `settings.club.treasury.receipt_min_label` | Mínimo numérico. |
 | label | `settings.club.treasury.receipt_pattern_label` | Patrón. |

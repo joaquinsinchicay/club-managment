@@ -144,6 +144,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 - Debe existir una acción explícita para volver al dashboard desde la pantalla de configuración.
 - La UI de edición de roles debe permitir multi-selección explícita y comprensible.
 - Los mensajes de error o éxito deben ser breves, visibles y no ambiguos.
+- Al aprobar, actualizar roles o remover, la acción debe mostrar loading inmediato en el CTA y bloquear el formulario o diálogo afectado hasta resolver.
 - Luego de aprobar, actualizar roles o remover, el sistema debe mostrar feedback visible mediante toast sin depender de la posición del viewport.
 - El modal debe reservarse para confirmación previa de remoción y no para feedback post-acción.
 - No debe haber textos hardcodeados.
@@ -167,13 +168,16 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 | badge | `settings.club.members.current_user_badge` | Identifica al usuario actual en la lista. |
 | badge | `settings.club.members.pending_badge` | Indica membresía pendiente. |
 | label | `settings.club.members.roles_label` | Etiqueta para visualizar o editar múltiples roles. |
+| status | `settings.club.members.approve_loading` | Estado visible mientras se aprueba una membresía pendiente. |
 | action | `settings.club.members.update_roles_cta` | Confirmar actualización de roles. |
+| status | `settings.club.members.update_roles_loading` | Estado visible mientras se actualizan roles. |
 | action | `settings.club.members.remove_cta` | Remover miembro administrado por admin. |
 | action | `settings.club.members.leave_club_cta` | Auto-remoción del usuario actual. |
 | dialog | `settings.club.members.remove_dialog_title` | Título de confirmación de remoción. |
 | dialog | `settings.club.members.remove_dialog_description` | Explicación del impacto de la remoción. |
 | dialog | `settings.club.members.remove_dialog_confirm_cta` | Confirmar remoción. |
 | dialog | `settings.club.members.remove_dialog_cancel_cta` | Cancelar remoción. |
+| status | `settings.club.members.remove_loading` | Estado visible mientras se confirma una remoción. |
 | feedback | `settings.club.members.feedback.membership_removed` | Remoción exitosa de otro miembro. |
 | feedback | `settings.club.members.feedback.self_removed` | Auto-remoción exitosa. |
 | feedback | `settings.club.members.feedback.membership_roles_updated` | Confirmación de actualización de roles. |

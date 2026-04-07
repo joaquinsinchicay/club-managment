@@ -169,13 +169,13 @@ Usuario no autenticado o usuario ya autenticado que accede a la pantalla de logi
 | button | `auth.login.google_sign_in_cta` | Texto del botón principal para iniciar sesión con Google. Missing |
 | title | `auth.login.title` | Título de la pantalla de login. Missing |
 | body | `auth.login.description` | Texto breve de apoyo en la pantalla de login. Missing |
+| status | `auth.login.loading` | Estado visible mientras se inicia el flujo de autenticación. |
 | status | `auth.login.redirecting_authenticated_user` | Mensaje durante la redirección automática de un usuario con sesión activa. Missing |
 | title | `auth.pending_approval.title` | Título de la pantalla de espera de aprobación. Missing |
 | body | `auth.pending_approval.description` | Explicación del estado sin club o sin membership activa. Missing |
 | action | `auth.pending_approval.primary_action` | Acción principal disponible en pantalla de espera si se define una. Missing |
 | error | `auth.login.oauth_cancelled` | Mensaje opcional al volver al login tras cancelar OAuth, si la UX decide informarlo. Missing |
 | error | `auth.login.oauth_generic_error` | Mensaje de error genérico si la autenticación falla por una razón distinta a cancelación. Missing |
-| status | `auth.login.loading` | Estado visible mientras se inicia el flujo de autenticación. Missing |
 
 ---
 

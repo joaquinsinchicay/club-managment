@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Spinner } from "@/components/ui/pending-form";
 import { texts } from "@/lib/texts";
 
 type AvatarSessionMenuProps = {
@@ -164,7 +165,14 @@ export function AvatarSessionMenu({
                 onClick={() => setIsSigningOut(true)}
                 className="flex min-h-11 items-center justify-center rounded-2xl bg-destructive px-4 py-3 text-center text-sm font-semibold text-primary-foreground transition hover:opacity-95 aria-disabled:opacity-60"
               >
-                {isSigningOut ? texts.auth.sign_out.loading : texts.auth.sign_out.confirm_cta}
+                {isSigningOut ? (
+                  <>
+                    <Spinner />
+                    <span>{texts.auth.sign_out.loading}</span>
+                  </>
+                ) : (
+                  texts.auth.sign_out.confirm_cta
+                )}
               </Link>
             </div>
           </div>

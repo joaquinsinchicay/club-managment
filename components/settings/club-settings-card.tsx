@@ -6,7 +6,6 @@ import { useState } from "react";
 import { ClubInvitationManager } from "@/components/settings/club-invitation-manager";
 import { ClubMembersManager } from "@/components/settings/club-members-manager";
 import { ClubTreasurySettingsManager } from "@/components/settings/club-treasury-settings-manager";
-import { StatusMessage } from "@/components/ui/status-message";
 import { CardShell } from "@/components/ui/card-shell";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
@@ -16,7 +15,6 @@ type ClubSettingsTab = "members" | "treasury";
 
 type ClubSettingsCardProps = {
   context: SessionContext;
-  feedbackCode?: string;
   initialTab?: string;
   members: ClubMember[];
   pendingInvitations: PendingClubInvitation[];
@@ -37,50 +35,8 @@ type ClubSettingsCardProps = {
   updateReceiptFormatAction: (formData: FormData) => Promise<void>;
 };
 
-function getFeedbackMessage(feedbackCode?: string) {
-  if (!feedbackCode) {
-    return null;
-  }
-
-  const feedbackMessages = {
-    ...texts.settings.club.members.feedback,
-    ...texts.settings.club.invitations.feedback,
-    ...texts.settings.club.treasury.feedback
-  } as Record<string, string>;
-  const message = feedbackMessages[feedbackCode];
-
-  if (!message) {
-    return null;
-  }
-
-  const successCodes = new Set([
-    "invitation_created",
-    "membership_approved",
-    "membership_roles_updated",
-    "membership_removed",
-    "self_removed",
-    "account_created",
-    "account_updated",
-    "category_created",
-    "category_updated",
-    "activity_created",
-    "activity_updated",
-    "receipt_format_created",
-    "receipt_format_updated",
-    "treasury_currencies_updated",
-    "movement_types_updated"
-  ]);
-  const tone = successCodes.has(feedbackCode) ? "success" : "destructive";
-
-  return {
-    tone,
-    message
-  } as const;
-}
-
 export function ClubSettingsCard({
   context,
-  feedbackCode,
   initialTab,
   members,
   pendingInvitations,
@@ -103,7 +59,6 @@ export function ClubSettingsCard({
   const [activeTab, setActiveTab] = useState<ClubSettingsTab>(
     initialTab === "treasury" ? "treasury" : "members"
   );
-  const feedbackMessage = getFeedbackMessage(feedbackCode);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-10">
@@ -120,10 +75,6 @@ export function ClubSettingsCard({
           >
             {texts.settings.club.back_to_dashboard_cta}
           </Link>
-
-          {feedbackMessage ? (
-            <StatusMessage tone={feedbackMessage.tone} message={feedbackMessage.message} />
-          ) : null}
 
           <div className="rounded-2xl border border-border bg-secondary/70 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">

@@ -111,6 +111,7 @@ Una User Story está "Done" solo si:
 * [ ] Flujos son claros y consistentes
 * [ ] Formularios tienen validación correcta
 * [ ] Estados (loading / empty / error) están contemplados
+* [ ] Toda acción async mutante muestra loader inmediato en CTA y bloquea el formulario o bloque afectado
 * [ ] El feedback post-acción usa toast salvo excepción justificada
 * [ ] Si la pantalla tenía feedback inline legacy transitorio, fue migrado
 

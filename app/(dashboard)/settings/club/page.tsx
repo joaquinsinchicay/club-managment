@@ -69,7 +69,6 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
       <AppHeader context={context} />
       <ClubSettingsCard
         context={context}
-        feedbackCode={searchParams?.feedback}
         initialTab={searchParams?.tab}
         members={clubMembersData.members}
         pendingInvitations={clubMembersData.pendingInvitations}

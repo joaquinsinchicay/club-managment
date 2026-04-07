@@ -126,6 +126,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - La configuración debe mantenerse dentro de `settings/club`.
 - La solapa `Tesorería` debe ser visible al entrar a la pantalla.
 - El admin debe poder alternar entre `Miembros` y `Tesorería` sin salir de la página.
+- Al crear o editar cuentas/categorías, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - Los formularios deben ser mobile-first y no incluir textos hardcodeados.
 
 ---
@@ -148,8 +149,12 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 | body | `settings.club.treasury.section_description` | Descripción general. |
 | action | `settings.club.treasury.create_account_cta` | Alta de cuenta. |
 | action | `settings.club.treasury.edit_account_cta` | Edición de cuenta. |
+| status | `settings.club.treasury.save_account_loading` | Estado visible mientras se crea una cuenta. |
+| status | `settings.club.treasury.update_account_loading` | Estado visible mientras se actualiza una cuenta. |
 | action | `settings.club.treasury.create_category_cta` | Alta de categoría. |
 | action | `settings.club.treasury.edit_category_cta` | Edición de categoría. |
+| status | `settings.club.treasury.save_category_loading` | Estado visible mientras se crea una categoría. |
+| status | `settings.club.treasury.update_category_loading` | Estado visible mientras se actualiza una categoría. |
 | label | `settings.club.treasury.account_name_label` | Nombre de cuenta. |
 | label | `settings.club.treasury.account_type_label` | Tipo de cuenta. |
 | label | `settings.club.treasury.visibility_label` | Visibilidad para Secretaría. |

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
   DashboardTreasuryCard as DashboardTreasuryCardData,
@@ -135,157 +136,158 @@ export function TreasuryCard({
             </div>
 
             <form action={createTreasuryMovementAction} className="mt-4 grid gap-4">
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
-                <input
-                  type="text"
-                  value={treasuryCard.sessionDate}
-                  disabled
-                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
-                <select
-                  name="account_id"
-                  defaultValue=""
-                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                >
-                  <option value="" disabled>
-                    {texts.settings.club.members.role_placeholder}
-                  </option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.dashboard.treasury.movement_type_label}</span>
-                <select
-                  name="movement_type"
-                  defaultValue=""
-                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                >
-                  <option value="" disabled>
-                    {texts.settings.club.members.role_placeholder}
-                  </option>
-                  {movementTypes.map((movementType) => (
-                    <option key={movementType} value={movementType}>
-                      {texts.dashboard.treasury.movement_types[movementType]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.dashboard.treasury.category_label}</span>
-                <select
-                  name="category_id"
-                  defaultValue=""
-                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                >
-                  <option value="" disabled>
-                    {texts.settings.club.members.role_placeholder}
-                  </option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {activities.length > 0 ? (
+              <PendingFieldset className="grid gap-4">
                 <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
+                  <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+                  <input
+                    type="text"
+                    value={treasuryCard.sessionDate}
+                    disabled
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
                   <select
-                    name="activity_id"
+                    name="account_id"
                     defaultValue=""
                     className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                   >
-                    <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
-                    {activities.map((activity) => (
-                      <option key={activity.id} value={activity.id}>
-                        {activity.name}
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {accounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name}
                       </option>
                     ))}
                   </select>
                 </label>
-              ) : null}
 
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
-                <input
-                  type="text"
-                  name="receipt_number"
-                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                />
-                {receiptFormats.length > 0 ? (
-                  <span className="text-xs leading-5 text-muted-foreground">
-                    {texts.dashboard.treasury.receipt_helper}{" "}
-                    {receiptFormats
-                      .map((receiptFormat) => receiptFormat.example || receiptFormat.name)
-                      .join(" · ")}
-                  </span>
-                ) : null}
-              </label>
-
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-                <input
-                  type="text"
-                  name="concept"
-                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-                <select
-                  name="currency_code"
-                  defaultValue={primaryCurrencyCode}
-                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                >
-                  <option value="" disabled>
-                    {texts.settings.club.members.role_placeholder}
-                  </option>
-                  {currencies.map((currency) => (
-                    <option key={currency.currencyCode} value={currency.currencyCode}>
-                      {currency.currencyCode}
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.movement_type_label}</span>
+                  <select
+                    name="movement_type"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
                     </option>
-                  ))}
-                </select>
-              </label>
+                    {movementTypes.map((movementType) => (
+                      <option key={movementType} value={movementType}>
+                        {texts.dashboard.treasury.movement_types[movementType]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-                <input
-                  type="number"
-                  name="amount"
-                  min="0.01"
-                  step="0.01"
-                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                />
-              </label>
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.category_label}</span>
+                  <select
+                    name="category_id"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  type="submit"
-                  className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                >
-                  {texts.dashboard.treasury.create_cta}
-                </button>
-                <button
-                  type="reset"
-                  className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                >
-                  {texts.dashboard.treasury.reset_cta}
-                </button>
-              </div>
+                {activities.length > 0 ? (
+                  <label className="grid gap-2 text-sm text-foreground">
+                    <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
+                    <select
+                      name="activity_id"
+                      defaultValue=""
+                      className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                    >
+                      <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
+                      {activities.map((activity) => (
+                        <option key={activity.id} value={activity.id}>
+                          {activity.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
+                  <input
+                    type="text"
+                    name="receipt_number"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                  {receiptFormats.length > 0 ? (
+                    <span className="text-xs leading-5 text-muted-foreground">
+                      {texts.dashboard.treasury.receipt_helper}{" "}
+                      {receiptFormats
+                        .map((receiptFormat) => receiptFormat.example || receiptFormat.name)
+                        .join(" · ")}
+                    </span>
+                  ) : null}
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
+                  <input
+                    type="text"
+                    name="concept"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
+                  <select
+                    name="currency_code"
+                    defaultValue={primaryCurrencyCode}
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {currencies.map((currency) => (
+                      <option key={currency.currencyCode} value={currency.currencyCode}>
+                        {currency.currencyCode}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
+                  <input
+                    type="number"
+                    name="amount"
+                    min="0.01"
+                    step="0.01"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                </label>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <PendingSubmitButton
+                    idleLabel={texts.dashboard.treasury.create_cta}
+                    pendingLabel={texts.dashboard.treasury.create_loading}
+                    className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                  />
+                  <button
+                    type="reset"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                  >
+                    {texts.dashboard.treasury.reset_cta}
+                  </button>
+                </div>
+              </PendingFieldset>
             </form>
           </div>
         ) : null}

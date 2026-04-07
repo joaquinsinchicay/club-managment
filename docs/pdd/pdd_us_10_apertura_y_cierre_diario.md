@@ -112,6 +112,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - El estado de jornada debe verse de forma clara en dashboard.
 - Las acciones disponibles deben cambiar según la jornada.
 - La interacción debe ser mobile-first y de baja fricción.
+- Al confirmar apertura o cierre, el CTA debe entrar en loading de inmediato y el formulario de validación debe quedar bloqueado hasta resolver.
+- El resultado final de apertura o cierre debe mostrarse mediante toast.
 - No debe haber textos hardcodeados.
 
 ---
@@ -136,6 +138,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | label | `dashboard.treasury.session_not_started` | Jornada no iniciada. |
 | action | `dashboard.treasury.open_session_cta` | Acción de abrir jornada. |
 | action | `dashboard.treasury.close_session_cta` | Acción de cerrar jornada. |
+| status | `dashboard.treasury.confirm_open_session_loading` | Estado visible mientras se confirma la apertura. |
+| status | `dashboard.treasury.confirm_close_session_loading` | Estado visible mientras se confirma el cierre. |
 | feedback | `dashboard.feedback.session_opened` | Apertura exitosa. |
 | feedback | `dashboard.feedback.session_closed` | Cierre exitoso. |
 | feedback | `dashboard.feedback.session_already_exists` | Error de doble apertura. |
@@ -178,4 +182,3 @@ Do not reference current code files.
 | Permitir múltiples jornadas el mismo día | Media | Alta | Validar existencia previa antes de abrir. |
 | Cerrar jornada sin haber abierto una | Media | Media | Validar sesión `open` previa antes de cerrar. |
 | Mostrar estado ambiguo en dashboard | Media | Media | Exponer un único estado efectivo del día y accionar acorde. |
-

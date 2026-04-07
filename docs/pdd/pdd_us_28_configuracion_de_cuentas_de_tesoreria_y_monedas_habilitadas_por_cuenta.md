@@ -123,6 +123,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - La UI debe seguir dentro de la misma solapa `Tesorería`.
 - El formulario debe seguir siendo mobile-first.
 - El listado debe mostrar al menos nombre, estado, ámbito y monedas habilitadas.
+- Al crear o editar cuentas, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - No debe haber textos hardcodeados.
 
 ---
@@ -138,6 +139,8 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 |---|---|---|
 | label | `settings.club.treasury.account_scope_label` | Ámbito de la cuenta. |
 | label | `settings.club.treasury.account_currencies_label` | Monedas habilitadas por cuenta. |
+| status | `settings.club.treasury.save_account_loading` | Estado visible mientras se crea una cuenta con monedas por cuenta. |
+| status | `settings.club.treasury.update_account_loading` | Estado visible mientras se actualiza una cuenta con monedas por cuenta. |
 | label | `settings.club.treasury.account_scopes.secretaria` | Scope Secretaría. |
 | label | `settings.club.treasury.account_scopes.tesoreria` | Scope Tesorería. |
 | feedback | `settings.club.treasury.feedback.account_currencies_required` | Cuenta sin monedas seleccionadas. |

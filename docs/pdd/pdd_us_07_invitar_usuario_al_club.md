@@ -120,6 +120,8 @@ Usuario autenticado con rol `admin` y membership `activo` en el club activo.
 - Debe poder cerrarse sin crear efectos persistentes.
 - Las invitaciones pendientes deben poder distinguirse visualmente de las memberships activas.
 - Los errores deben mostrarse con feedback directo y breve.
+- Al enviar la invitación, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver la acción.
+- El resultado final debe informarse mediante toast y no con feedback inline transitorio.
 - No debe haber textos hardcodeados.
 
 ---
@@ -143,6 +145,7 @@ Usuario autenticado con rol `admin` y membership `activo` en el club activo.
 | label | `settings.club.invitations.email_label` | Campo email. |
 | label | `settings.club.invitations.role_label` | Campo rol. |
 | action | `settings.club.invitations.invite_cta` | Confirmar invitación. |
+| status | `settings.club.invitations.invite_loading` | Estado visible mientras se registra la invitación. |
 | action | `settings.club.invitations.cancel_cta` | Cancelar formulario. |
 | feedback | `settings.club.invitations.feedback.invitation_created` | Confirmación de éxito. |
 | feedback | `settings.club.invitations.feedback.already_member` | Usuario ya pertenece al club. |

@@ -142,6 +142,12 @@ No permitido:
 
 El feedback post-acción de éxito o error debe mostrarse mediante toast reusable.
 
+Toda acción async mutante debe mostrar feedback inmediato de ejecución:
+
+* CTA con spinner + texto de loading
+* bloqueo del formulario o bloque afectado mientras la acción está pending
+* sin overlays fullscreen salvo excepción explícita del flujo
+
 Excepciones permitidas:
 
 * validación inline de formularios

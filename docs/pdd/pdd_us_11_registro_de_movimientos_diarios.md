@@ -127,6 +127,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ### Reglas
 - No hardcoded strings are allowed.
 - All user-facing texts must map to `lib/texts.json`.
+- Al enviar el formulario, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
+- El resultado final del alta debe mostrarse mediante toast.
 
 ### Keys requeridas
 
@@ -142,6 +144,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | label | `dashboard.treasury.currency_label` | Campo moneda. |
 | label | `dashboard.treasury.amount_label` | Campo importe. |
 | action | `dashboard.treasury.create_cta` | Crear movimiento. |
+| status | `dashboard.treasury.create_loading` | Estado visible mientras se registra el movimiento. |
 | action | `dashboard.treasury.reset_cta` | Borrar formulario. |
 | feedback | `dashboard.feedback.movement_created` | Alta exitosa. |
 | feedback | `dashboard.feedback.session_required` | Error sin jornada abierta. |
@@ -185,4 +188,3 @@ Do not reference current code files.
 | Crear movimientos sin jornada activa | Media | Alta | Validar jornada `open` antes del insert. |
 | Registrar movimientos en cuenta o categoría inválida | Media | Alta | Validar contra catálogos del club activo. |
 | Permitir importes cero o negativos | Media | Media | Validar `amount > 0` antes de persistir. |
-

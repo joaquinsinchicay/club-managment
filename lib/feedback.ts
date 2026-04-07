@@ -14,7 +14,17 @@ const settingsSuccessFeedbackCodes = new Set([
   "membership_approved",
   "membership_roles_updated",
   "membership_removed",
-  "self_removed"
+  "self_removed",
+  "account_created",
+  "account_updated",
+  "category_created",
+  "category_updated",
+  "activity_created",
+  "activity_updated",
+  "receipt_format_created",
+  "receipt_format_updated",
+  "treasury_currencies_updated",
+  "movement_types_updated"
 ]);
 
 const dashboardSuccessFeedbackCodes = new Set([
@@ -32,7 +42,8 @@ const loginErrorMessages = {
 function resolveSettingsFeedback(code: string): FeedbackToast | null {
   const feedbackMessages = {
     ...(texts.settings.club.members.feedback as Record<string, string>),
-    ...(texts.settings.club.invitations.feedback as Record<string, string>)
+    ...(texts.settings.club.invitations.feedback as Record<string, string>),
+    ...(texts.settings.club.treasury.feedback as Record<string, string>)
   };
   const message = feedbackMessages[code];
 

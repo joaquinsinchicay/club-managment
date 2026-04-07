@@ -118,6 +118,7 @@ Usuario autenticado con membership `activo` y rol `admin` para configurar; usuar
 ### Reglas
 - La sección debe convivir con monedas, cuentas, categorías, actividades y formatos en `Tesorería`.
 - El selector puede resolverse con checkboxes porque el catálogo es fijo y pequeño.
+- Al guardar, el CTA debe entrar en loading de inmediato y la sección debe quedar bloqueada hasta resolver.
 - No debe haber textos hardcodeados.
 
 ---
@@ -135,6 +136,7 @@ Usuario autenticado con membership `activo` y rol `admin` para configurar; usuar
 | body | `settings.club.treasury.movement_types_description` | Descripción de la sección. |
 | label | `settings.club.treasury.movement_type_selection_label` | Grupo de tipos habilitados. |
 | action | `settings.club.treasury.save_movement_types_cta` | Guardado de configuración. |
+| status | `settings.club.treasury.save_movement_types_loading` | Estado visible mientras se guardan los tipos habilitados. |
 | feedback | `settings.club.treasury.feedback.movement_types_updated` | Guardado exitoso. |
 | feedback | `settings.club.treasury.feedback.movement_types_required` | Sin tipos seleccionados. |
 

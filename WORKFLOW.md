@@ -228,6 +228,12 @@ No permitido:
 
 Todo feedback post-acción de éxito o error debe usar toast reusable.
 
+Toda acción async mutante debe mostrar loading inmediato y local:
+
+* CTA con spinner y texto de carga
+* formulario o bloque afectado deshabilitado mientras `pending === true`
+* no usar overlay fullscreen salvo que el flujo completo quede bloqueado por diseño
+
 Solo se permite:
 
 * inline para validación de formularios o estados persistentes

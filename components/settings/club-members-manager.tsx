@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import { formatMembershipRoles, MEMBERSHIP_ROLES } from "@/lib/domain/membership-roles";
 import { texts } from "@/lib/texts";
 import type {
@@ -178,47 +179,50 @@ export function ClubMembersManager({
                   }
                   className="grid gap-2"
                 >
-                  <input type="hidden" name="membership_id" value={member.membershipId} />
-                  <fieldset className="grid gap-3 rounded-2xl border border-border/70 bg-card px-3 py-3">
-                    <legend className="px-1 text-sm font-medium text-foreground">
-                      {texts.settings.club.members.roles_label}
-                    </legend>
+                  <PendingFieldset className="grid gap-2">
+                    <input type="hidden" name="membership_id" value={member.membershipId} />
+                    <fieldset className="grid gap-3 rounded-2xl border border-border/70 bg-card px-3 py-3">
+                      <legend className="px-1 text-sm font-medium text-foreground">
+                        {texts.settings.club.members.roles_label}
+                      </legend>
 
-                    <div className="grid gap-2 sm:grid-cols-3">
-                      {MEMBERSHIP_ROLES.map((role) => {
-                        const inputId = `${member.membershipId}-${role}`;
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {MEMBERSHIP_ROLES.map((role) => {
+                          const inputId = `${member.membershipId}-${role}`;
 
-                        return (
-                          <label
-                            key={role}
-                            htmlFor={inputId}
-                            className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground transition hover:bg-secondary"
-                          >
-                            <input
-                              id={inputId}
-                              type={member.status === "pendiente_aprobacion" ? "radio" : "checkbox"}
-                              name={member.status === "pendiente_aprobacion" ? "role" : "roles"}
-                              value={role}
-                              defaultChecked={member.status === "pendiente_aprobacion"
-                                ? member.roles[0] === role
-                                : member.roles.includes(role)}
-                              className="h-4 w-4 border-border text-foreground focus:ring-foreground"
-                            />
-                            <span className="font-medium">{getRoleLabel(role)}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </fieldset>
+                          return (
+                            <label
+                              key={role}
+                              htmlFor={inputId}
+                              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground transition hover:bg-secondary"
+                            >
+                              <input
+                                id={inputId}
+                                type={member.status === "pendiente_aprobacion" ? "radio" : "checkbox"}
+                                name={member.status === "pendiente_aprobacion" ? "role" : "roles"}
+                                value={role}
+                                defaultChecked={member.status === "pendiente_aprobacion"
+                                  ? member.roles[0] === role
+                                  : member.roles.includes(role)}
+                                className="h-4 w-4 border-border text-foreground focus:ring-foreground"
+                              />
+                              <span className="font-medium">{getRoleLabel(role)}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
 
-                  <button
-                    type="submit"
-                    className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-                  >
-                    {member.status === "pendiente_aprobacion"
-                      ? texts.settings.club.members.approve_cta
-                      : texts.settings.club.members.update_roles_cta}
-                  </button>
+                    <PendingSubmitButton
+                      idleLabel={member.status === "pendiente_aprobacion"
+                        ? texts.settings.club.members.approve_cta
+                        : texts.settings.club.members.update_roles_cta}
+                      pendingLabel={member.status === "pendiente_aprobacion"
+                        ? texts.settings.club.members.approve_loading
+                        : texts.settings.club.members.update_roles_loading}
+                      className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+                    />
+                  </PendingFieldset>
                 </form>
 
                 <button
@@ -263,22 +267,23 @@ export function ClubMembersManager({
               <p className="text-sm text-muted-foreground">{selectedMember.email}</p>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setSelectedMembershipId(null)}
-                className="min-h-11 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
-              >
-                {texts.settings.club.members.remove_dialog_cancel_cta}
-              </button>
+            <div className="mt-6">
               <form action={removeMembershipAction}>
-                <input type="hidden" name="membership_id" value={selectedMember.membershipId} />
-                <button
-                  type="submit"
-                  className="min-h-11 w-full rounded-2xl bg-destructive px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                >
-                  {texts.settings.club.members.remove_dialog_confirm_cta}
-                </button>
+                <PendingFieldset className="grid gap-3 sm:grid-cols-2">
+                  <input type="hidden" name="membership_id" value={selectedMember.membershipId} />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMembershipId(null)}
+                    className="min-h-11 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
+                  >
+                    {texts.settings.club.members.remove_dialog_cancel_cta}
+                  </button>
+                  <PendingSubmitButton
+                    idleLabel={texts.settings.club.members.remove_dialog_confirm_cta}
+                    pendingLabel={texts.settings.club.members.remove_loading}
+                    className="min-h-11 w-full rounded-2xl bg-destructive px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                  />
+                </PendingFieldset>
               </form>
             </div>
           </div>

@@ -120,6 +120,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - La sección debe convivir con cuentas y categorías dentro de `Tesorería`.
 - El listado debe ser simple de escanear en mobile.
 - El estado vacío debe quedar claro y accionable.
+- Al crear o editar, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - No debe haber textos hardcodeados.
 
 ---
@@ -141,6 +142,8 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 | body | `settings.club.treasury.activities_description` | Descripción de la sección. |
 | action | `settings.club.treasury.create_activity_cta` | Alta de actividad. |
 | action | `settings.club.treasury.edit_activity_cta` | Edición de actividad. |
+| status | `settings.club.treasury.save_activity_loading` | Estado visible mientras se crea una actividad. |
+| status | `settings.club.treasury.update_activity_loading` | Estado visible mientras se actualiza una actividad. |
 | label | `settings.club.treasury.activity_name_label` | Nombre de la actividad. |
 | label | `settings.club.treasury.status_label` | Estado de la actividad. |
 | label | `settings.club.treasury.emoji_label` | Emoji. |
