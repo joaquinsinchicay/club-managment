@@ -9,6 +9,7 @@ alter table membership_roles enable row level security;
 alter table club_invitations enable row level security;
 alter table user_club_preferences enable row level security;
 alter table treasury_accounts enable row level security;
+alter table treasury_account_currencies enable row level security;
 alter table club_treasury_currencies enable row level security;
 alter table club_movement_type_config enable row level security;
 alter table treasury_movements enable row level security;
@@ -354,6 +355,50 @@ using (
 with check (
   club_id = current_club_id()
   and (select current_user_has_role('tesoreria'))
+);
+
+-- =========================================
+-- TREASURY ACCOUNT CURRENCIES
+-- =========================================
+
+drop policy if exists "Members can view account currencies" on treasury_account_currencies;
+drop policy if exists "Treasury manage account currencies in current club" on treasury_account_currencies;
+
+create policy "Members can view account currencies"
+on treasury_account_currencies
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from treasury_accounts
+    where treasury_accounts.id = treasury_account_currencies.account_id
+      and treasury_accounts.club_id = current_club_id()
+      and is_member_of_current_club()
+  )
+);
+
+create policy "Treasury manage account currencies in current club"
+on treasury_account_currencies
+for all
+to authenticated
+using (
+  exists (
+    select 1
+    from treasury_accounts
+    where treasury_accounts.id = treasury_account_currencies.account_id
+      and treasury_accounts.club_id = current_club_id()
+      and (select current_user_has_role('tesoreria'))
+  )
+)
+with check (
+  exists (
+    select 1
+    from treasury_accounts
+    where treasury_accounts.id = treasury_account_currencies.account_id
+      and treasury_accounts.club_id = current_club_id()
+      and (select current_user_has_role('tesoreria'))
+  )
 );
 
 -- =========================================

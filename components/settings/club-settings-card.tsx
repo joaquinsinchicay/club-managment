@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ClubInvitationManager } from "@/components/settings/club-invitation-manager";
 import { ClubMembersManager } from "@/components/settings/club-members-manager";
@@ -56,9 +56,16 @@ export function ClubSettingsCard({
   createReceiptFormatAction,
   updateReceiptFormatAction
 }: ClubSettingsCardProps) {
+  const resolvedInitialTab: ClubSettingsTab =
+    initialTab === "treasury" && canManageTreasury ? "treasury" : "members";
   const [activeTab, setActiveTab] = useState<ClubSettingsTab>(
-    initialTab === "treasury" && canManageTreasury ? "treasury" : "members"
+    resolvedInitialTab
   );
+
+  useEffect(() => {
+    setActiveTab(resolvedInitialTab);
+  }, [resolvedInitialTab]);
+
   const resolvedTab =
     activeTab === "treasury" && canManageTreasury
       ? "treasury"

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
@@ -512,8 +513,10 @@ export function ClubTreasurySettingsManager({
   createReceiptFormatAction,
   updateReceiptFormatAction
 }: ClubTreasurySettingsManagerProps) {
+  const searchParams = useSearchParams();
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [accountCreateFormKey, setAccountCreateFormKey] = useState(0);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [isCreatingActivity, setIsCreatingActivity] = useState(false);
@@ -521,6 +524,17 @@ export function ClubTreasurySettingsManager({
   const [isCreatingReceiptFormat, setIsCreatingReceiptFormat] = useState(false);
   const [editingReceiptFormatId, setEditingReceiptFormatId] = useState<string | null>(null);
   const availableAccountCurrencies: TreasuryCurrencyCode[] = TREASURY_CURRENCY_OPTIONS;
+  const feedbackCode = searchParams.get("feedback");
+
+  useEffect(() => {
+    if (feedbackCode !== "account_created") {
+      return;
+    }
+
+    setIsCreatingAccount(false);
+    setEditingAccountId(null);
+    setAccountCreateFormKey((currentKey) => currentKey + 1);
+  }, [feedbackCode]);
 
   return (
     <div className="space-y-6">
@@ -586,6 +600,7 @@ export function ClubTreasurySettingsManager({
 
         {isCreatingAccount ? (
           <TreasuryAccountForm
+            key={`create-account-form-${accountCreateFormKey}`}
             action={createTreasuryAccountAction}
             submitLabel={texts.settings.club.treasury.save_account_cta}
             pendingLabel={texts.settings.club.treasury.save_account_loading}

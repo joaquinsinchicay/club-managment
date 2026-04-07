@@ -954,6 +954,18 @@ function logTreasurySettingsWriteFailure(
   });
 }
 
+function logTreasurySettingsReadFailure(
+  operation: string,
+  details: Record<string, unknown>,
+  error?: unknown
+) {
+  console.error("[treasury-settings-read-failure]", {
+    operation,
+    ...details,
+    error
+  });
+}
+
 function createAccessSupabaseClient(client?: AccessRepositoryClient) {
   if (!shouldUseSupabaseDatabase()) {
     return null;
@@ -1269,17 +1281,16 @@ async function listRealTreasuryAccountsForClub(clubId: string, client?: AccessRe
 
   const { data, error } = await supabase
     .from("treasury_accounts")
-    .select(
-      "id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji,treasury_account_currencies(currency_code)"
-    )
+    .select("id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji")
     .eq("club_id", clubId)
     .order("name", { ascending: true });
 
   if (error || !data) {
+    logTreasurySettingsReadFailure("list_treasury_accounts_for_club", { clubId }, error);
     return [];
   }
 
-  return data.map((row: {
+  const rows = data as Array<{
     id: string;
     club_id: string;
     name: string;
@@ -1289,13 +1300,83 @@ async function listRealTreasuryAccountsForClub(clubId: string, client?: AccessRe
     visible_for_secretaria: boolean | null;
     visible_for_tesoreria: boolean | null;
     emoji: string | null;
-    treasury_account_currencies?: Array<{ currency_code: string }>;
-  }) =>
-    mapTreasuryAccountRow(
-      row,
-      (row.treasury_account_currencies ?? []).map((currency) => currency.currency_code)
-    )
+  }>;
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const accountIds = rows.map((row) => row.id);
+  const currencyRows = await listTreasuryAccountCurrenciesForAccountIds(accountIds, client);
+  const currenciesByAccountId = currencyRows.reduce<Record<string, string[]>>((accumulator, row) => {
+    if (!accumulator[row.account_id]) {
+      accumulator[row.account_id] = [];
+    }
+
+    accumulator[row.account_id].push(row.currency_code);
+    return accumulator;
+  }, {});
+
+  return rows.map((row) => mapTreasuryAccountRow(row, currenciesByAccountId[row.id] ?? []));
+}
+
+async function listTreasuryAccountCurrenciesForAccountIds(
+  accountIds: string[],
+  client?: AccessRepositoryClient
+) {
+  if (accountIds.length === 0) {
+    return [];
+  }
+
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("treasury_account_currencies")
+    .select("account_id,currency_code")
+    .in("account_id", accountIds);
+
+  if (!error && data) {
+    return data as Array<{ account_id: string; currency_code: string }>;
+  }
+
+  logTreasurySettingsReadFailure(
+    "list_treasury_account_currencies_for_accounts",
+    { accountIds },
+    error
   );
+
+  try {
+    const adminSupabase = createRequiredTreasurySettingsAdminClient(
+      "list_treasury_account_currencies_for_accounts",
+      { accountIds }
+    );
+    const { data: adminData, error: adminError } = await adminSupabase
+      .from("treasury_account_currencies")
+      .select("account_id,currency_code")
+      .in("account_id", accountIds);
+
+    if (!adminError && adminData) {
+      return adminData as Array<{ account_id: string; currency_code: string }>;
+    }
+
+    logTreasurySettingsReadFailure(
+      "list_treasury_account_currencies_for_accounts_admin_fallback",
+      { accountIds },
+      adminError
+    );
+  } catch (adminClientError) {
+    logTreasurySettingsReadFailure(
+      "list_treasury_account_currencies_for_accounts_admin_client",
+      { accountIds },
+      adminClientError
+    );
+  }
+
+  return [];
 }
 
 async function listRealTreasuryCategoriesForClub(clubId: string, client?: AccessRepositoryClient) {
