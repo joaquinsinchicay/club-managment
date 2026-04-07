@@ -9,6 +9,7 @@ import {
   approveClubMembershipAction,
   createClubActivityAction,
   createReceiptFormatAction,
+  setMovementTypesAction,
   setTreasuryCurrenciesAction,
   createTreasuryAccountAction,
   createTreasuryCategoryAction,
@@ -78,6 +79,7 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
         updateMembershipRolesAction={updateClubMembershipRoleAction}
         removeMembershipAction={removeClubMembershipAction}
         setTreasuryCurrenciesAction={setTreasuryCurrenciesAction}
+        setMovementTypesAction={setMovementTypesAction}
         createTreasuryAccountAction={createTreasuryAccountAction}
         updateTreasuryAccountAction={updateTreasuryAccountAction}
         createTreasuryCategoryAction={createTreasuryCategoryAction}

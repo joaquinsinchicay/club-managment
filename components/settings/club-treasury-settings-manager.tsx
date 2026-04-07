@@ -7,6 +7,7 @@ import type {
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCurrencyCode,
+  TreasuryMovementType,
   TreasuryCategory,
   TreasurySettings
 } from "@/lib/domain/access";
@@ -15,6 +16,7 @@ import { texts } from "@/lib/texts";
 type ClubTreasurySettingsManagerProps = {
   treasurySettings: TreasurySettings;
   setTreasuryCurrenciesAction: (formData: FormData) => Promise<void>;
+  setMovementTypesAction: (formData: FormData) => Promise<void>;
   createTreasuryAccountAction: (formData: FormData) => Promise<void>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<void>;
   createTreasuryCategoryAction: (formData: FormData) => Promise<void>;
@@ -35,6 +37,10 @@ function getAccountTypeLabel(accountType: TreasuryAccount["accountType"]) {
   return texts.settings.club.treasury.account_types[accountType];
 }
 
+function getAccountScopeLabel(accountScope: TreasuryAccount["accountScope"]) {
+  return texts.settings.club.treasury.account_scopes[accountScope];
+}
+
 function getStatusLabel(status: TreasuryAccount["status"]) {
   return texts.settings.club.treasury.statuses[status];
 }
@@ -47,7 +53,12 @@ function getCurrencyLabel(currencyCode: TreasuryCurrencyCode) {
   return texts.settings.club.treasury.currency_options[currencyCode];
 }
 
+function getMovementTypeLabel(movementType: TreasuryMovementType) {
+  return texts.dashboard.treasury.movement_types[movementType];
+}
+
 const TREASURY_CURRENCY_OPTIONS: TreasuryCurrencyCode[] = ["ARS", "USD", "EUR"];
+const TREASURY_MOVEMENT_TYPE_OPTIONS: TreasuryMovementType[] = ["ingreso", "egreso"];
 
 type ClubActivityFormProps = {
   action: (formData: FormData) => Promise<void>;
@@ -106,9 +117,15 @@ type TreasuryAccountFormProps = {
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
   defaultAccount?: TreasuryAccount;
+  availableCurrencies: TreasuryCurrencyCode[];
 };
 
-function TreasuryAccountForm({ action, submitLabel, defaultAccount }: TreasuryAccountFormProps) {
+function TreasuryAccountForm({
+  action,
+  submitLabel,
+  defaultAccount,
+  availableCurrencies
+}: TreasuryAccountFormProps) {
   return (
     <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
       {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
@@ -138,6 +155,18 @@ function TreasuryAccountForm({ action, submitLabel, defaultAccount }: TreasuryAc
           <option value="billetera_virtual">
             {texts.settings.club.treasury.account_types.billetera_virtual}
           </option>
+        </select>
+      </label>
+
+      <label className="grid gap-2 text-sm text-foreground">
+        <span className="font-medium">{texts.settings.club.treasury.account_scope_label}</span>
+        <select
+          name="account_scope"
+          defaultValue={defaultAccount?.accountScope ?? "secretaria"}
+          className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+        >
+          <option value="secretaria">{texts.settings.club.treasury.account_scopes.secretaria}</option>
+          <option value="tesoreria">{texts.settings.club.treasury.account_scopes.tesoreria}</option>
         </select>
       </label>
 
@@ -174,6 +203,29 @@ function TreasuryAccountForm({ action, submitLabel, defaultAccount }: TreasuryAc
           className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
         />
       </label>
+
+      <fieldset className="grid gap-3">
+        <legend className="text-sm font-medium text-foreground">
+          {texts.settings.club.treasury.account_currencies_label}
+        </legend>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {availableCurrencies.map((currencyCode) => (
+            <label
+              key={`account-currency-${currencyCode}`}
+              className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+            >
+              <input
+                type="checkbox"
+                name="currencies"
+                value={currencyCode}
+                defaultChecked={defaultAccount?.currencies.includes(currencyCode) ?? false}
+                className="size-4 rounded border-border"
+              />
+              <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <button
         type="submit"
@@ -354,6 +406,7 @@ function ReceiptFormatForm({
 export function ClubTreasurySettingsManager({
   treasurySettings,
   setTreasuryCurrenciesAction,
+  setMovementTypesAction,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
   createTreasuryCategoryAction,
@@ -376,6 +429,12 @@ export function ClubTreasurySettingsManager({
     treasurySettings.currencies.find((currency) => currency.isPrimary)?.currencyCode ??
     treasurySettings.currencies[0]?.currencyCode ??
     "ARS";
+  const enabledMovementTypes = treasurySettings.movementTypes
+    .filter((movementType) => movementType.isEnabled)
+    .map((movementType) => movementType.movementType);
+  const availableAccountCurrencies: TreasuryCurrencyCode[] = treasurySettings.currencies.length > 0
+    ? treasurySettings.currencies.map((currency) => currency.currencyCode)
+    : ["ARS"];
 
   return (
     <div className="space-y-6">
@@ -455,6 +514,49 @@ export function ClubTreasurySettingsManager({
       </section>
 
       <section className="space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold text-foreground">
+            {texts.settings.club.treasury.movement_types_title}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {texts.settings.club.treasury.movement_types_description}
+          </p>
+        </div>
+
+        <form action={setMovementTypesAction} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
+          <fieldset className="grid gap-3">
+            <legend className="text-sm font-medium text-foreground">
+              {texts.settings.club.treasury.movement_type_selection_label}
+            </legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {TREASURY_MOVEMENT_TYPE_OPTIONS.map((movementType) => (
+                <label
+                  key={movementType}
+                  className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                >
+                  <input
+                    type="checkbox"
+                    name="movement_types"
+                    value={movementType}
+                    defaultChecked={enabledMovementTypes.includes(movementType)}
+                    className="size-4 rounded border-border"
+                  />
+                  <span className="font-medium">{getMovementTypeLabel(movementType)}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <button
+            type="submit"
+            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+          >
+            {texts.settings.club.treasury.save_movement_types_cta}
+          </button>
+        </form>
+      </section>
+
+      <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold text-foreground">
@@ -480,6 +582,7 @@ export function ClubTreasurySettingsManager({
           <TreasuryAccountForm
             action={createTreasuryAccountAction}
             submitLabel={texts.settings.club.treasury.save_account_cta}
+            availableCurrencies={availableAccountCurrencies}
           />
         ) : null}
 
@@ -508,15 +611,29 @@ export function ClubTreasurySettingsManager({
                       </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {texts.settings.club.treasury.account_scope_label}
+                        </span>
+                        <span className="font-medium">{getAccountScopeLabel(account.accountScope)}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           {texts.settings.club.treasury.status_label}
                         </span>
                         <span className="font-medium">{getStatusLabel(account.status)}</span>
                       </span>
+                      {account.accountScope === "secretaria" ? (
+                        <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+                          <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            {texts.settings.club.treasury.visibility_label}
+                          </span>
+                          <span className="font-medium">{getVisibilityLabel(account.visibleForSecretaria)}</span>
+                        </span>
+                      ) : null}
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.visibility_label}
+                          {texts.settings.club.treasury.account_currencies_label}
                         </span>
-                        <span className="font-medium">{getVisibilityLabel(account.visibleForSecretaria)}</span>
+                        <span className="font-medium">{account.currencies.join(" · ")}</span>
                       </span>
                     </div>
                   </div>
@@ -538,6 +655,7 @@ export function ClubTreasurySettingsManager({
                       action={updateTreasuryAccountAction}
                       submitLabel={texts.settings.club.treasury.update_account_cta}
                       defaultAccount={account}
+                      availableCurrencies={availableAccountCurrencies}
                     />
                   </div>
                 ) : null}

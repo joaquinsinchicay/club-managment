@@ -6,7 +6,8 @@ import type {
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
-  TreasuryCurrencyConfig
+  TreasuryCurrencyConfig,
+  TreasuryMovementType
 } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 
@@ -16,6 +17,7 @@ type TreasuryCardProps = {
   categories: TreasuryCategory[];
   activities: ClubActivity[];
   currencies: TreasuryCurrencyConfig[];
+  movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
   createTreasuryMovementAction: (formData: FormData) => Promise<void>;
 };
@@ -38,6 +40,7 @@ export function TreasuryCard({
   categories,
   activities,
   currencies,
+  movementTypes,
   receiptFormats,
   createTreasuryMovementAction
 }: TreasuryCardProps) {
@@ -170,8 +173,11 @@ export function TreasuryCard({
                   <option value="" disabled>
                     {texts.settings.club.members.role_placeholder}
                   </option>
-                  <option value="ingreso">{texts.dashboard.treasury.movement_types.ingreso}</option>
-                  <option value="egreso">{texts.dashboard.treasury.movement_types.egreso}</option>
+                  {movementTypes.map((movementType) => (
+                    <option key={movementType} value={movementType}>
+                      {texts.dashboard.treasury.movement_types[movementType]}
+                    </option>
+                  ))}
                 </select>
               </label>
 

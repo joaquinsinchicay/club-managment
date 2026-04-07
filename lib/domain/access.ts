@@ -69,6 +69,7 @@ export type PendingClubInvitation = {
 export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
 export type TreasuryConfigStatus = "active" | "inactive";
 export type TreasuryCurrencyCode = "ARS" | "USD" | "EUR";
+export type TreasuryMovementType = "ingreso" | "egreso";
 
 export type TreasuryCurrencyConfig = {
   clubId: string;
@@ -120,12 +121,19 @@ export type ReceiptFormat = {
   status: TreasuryConfigStatus;
 };
 
+export type MovementTypeConfig = {
+  clubId: string;
+  movementType: TreasuryMovementType;
+  isEnabled: boolean;
+};
+
 export type TreasurySettings = {
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
   activities: ClubActivity[];
   receiptFormats: ReceiptFormat[];
   currencies: TreasuryCurrencyConfig[];
+  movementTypes: MovementTypeConfig[];
 };
 
 export type TreasurySessionStatus = "open" | "closed";
@@ -146,7 +154,7 @@ export type TreasuryMovement = {
   clubId: string;
   dailyCashSessionId: string;
   accountId: string;
-  movementType: "ingreso" | "egreso";
+  movementType: TreasuryMovementType;
   categoryId: string;
   concept: string;
   currencyCode: string;
@@ -207,7 +215,7 @@ export type TreasuryAccountDetail = {
   movements: Array<{
     movementId: string;
     movementDate: string;
-    movementType: "ingreso" | "egreso";
+    movementType: TreasuryMovementType;
     categoryName: string;
     concept: string;
     currencyCode: string;
@@ -224,7 +232,7 @@ export type SessionBalanceDraft = {
   expectedBalance: number;
   declaredBalance: number;
   differenceAmount: number;
-  adjustmentType: "ingreso" | "egreso" | null;
+  adjustmentType: TreasuryMovementType | null;
 };
 
 export type DailyCashSessionValidation = {

@@ -10,6 +10,7 @@ alter table club_invitations enable row level security;
 alter table user_club_preferences enable row level security;
 alter table treasury_accounts enable row level security;
 alter table club_treasury_currencies enable row level security;
+alter table club_movement_type_config enable row level security;
 alter table treasury_movements enable row level security;
 alter table daily_cash_sessions enable row level security;
 
@@ -372,6 +373,35 @@ using (
 
 create policy "Admins manage treasury currencies in current club"
 on club_treasury_currencies
+for all
+to authenticated
+using (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+)
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('admin'))
+);
+
+-- =========================================
+-- MOVEMENT TYPE CONFIG
+-- =========================================
+
+drop policy if exists "Members can view movement type config" on club_movement_type_config;
+drop policy if exists "Admins manage movement type config in current club" on club_movement_type_config;
+
+create policy "Members can view movement type config"
+on club_movement_type_config
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Admins manage movement type config in current club"
+on club_movement_type_config
 for all
 to authenticated
 using (

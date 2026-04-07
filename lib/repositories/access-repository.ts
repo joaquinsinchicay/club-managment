@@ -15,11 +15,13 @@ import type {
   DailyCashSession,
   Membership,
   MembershipRole,
+  MovementTypeConfig,
   PendingClubInvitation,
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCurrencyCode,
   TreasuryCurrencyConfig,
+  TreasuryMovementType,
   TreasuryCategory,
   TreasuryMovement,
   User
@@ -45,6 +47,7 @@ type AccessRepository = {
   listClubActivitiesForClub(clubId: string): Promise<ClubActivity[]>;
   listReceiptFormatsForClub(clubId: string): Promise<ReceiptFormat[]>;
   listTreasuryCurrenciesForClub(clubId: string): Promise<TreasuryCurrencyConfig[]>;
+  listMovementTypeConfigForClub(clubId: string): Promise<MovementTypeConfig[]>;
   setTreasuryCurrenciesForClub(input: {
     clubId: string;
     currencies: Array<{
@@ -52,6 +55,13 @@ type AccessRepository = {
       isPrimary: boolean;
     }>;
   }): Promise<TreasuryCurrencyConfig[]>;
+  setMovementTypeConfigForClub(input: {
+    clubId: string;
+    movementTypes: Array<{
+      movementType: TreasuryMovementType;
+      isEnabled: boolean;
+    }>;
+  }): Promise<MovementTypeConfig[]>;
   createTreasuryAccount(input: {
     clubId: string;
     name: string;
@@ -138,7 +148,7 @@ type AccessRepository = {
     clubId: string;
     dailyCashSessionId: string;
     accountId: string;
-    movementType: "ingreso" | "egreso";
+    movementType: TreasuryMovementType;
     categoryId: string;
     concept: string;
     currencyCode: string;
@@ -218,6 +228,7 @@ type MockStore = {
   clubActivities: ClubActivity[];
   receiptFormats: ReceiptFormat[];
   clubTreasuryCurrencies: TreasuryCurrencyConfig[];
+  movementTypeConfig: MovementTypeConfig[];
   dailyCashSessions: DailyCashSession[];
   dailyCashSessionBalances: DailyCashSessionBalance[];
   balanceAdjustments: BalanceAdjustment[];
@@ -407,6 +418,30 @@ function createStore(): MockStore {
       visibleForTesoreria: false,
       emoji: "💼",
       currencies: ["ARS"]
+    },
+    {
+      id: "account-tesoreria-inversion-001",
+      clubId: CLUB_ID,
+      name: "Caja de inversion",
+      accountType: "bancaria",
+      accountScope: "tesoreria",
+      status: "active",
+      visibleForSecretaria: false,
+      visibleForTesoreria: true,
+      emoji: "📈",
+      currencies: ["USD", "EUR"]
+    },
+    {
+      id: "account-tesoreria-reserva-001",
+      clubId: CLUB_ID,
+      name: "Reserva institucional",
+      accountType: "bancaria",
+      accountScope: "tesoreria",
+      status: "inactive",
+      visibleForSecretaria: false,
+      visibleForTesoreria: true,
+      emoji: "🏛️",
+      currencies: ["USD"]
     }
   ];
 
@@ -528,6 +563,29 @@ function createStore(): MockStore {
     }
   ];
 
+  const movementTypeConfig: MovementTypeConfig[] = [
+    {
+      clubId: CLUB_ID,
+      movementType: "ingreso",
+      isEnabled: true
+    },
+    {
+      clubId: CLUB_ID,
+      movementType: "egreso",
+      isEnabled: true
+    },
+    {
+      clubId: CLUB_SUR_ID,
+      movementType: "ingreso",
+      isEnabled: true
+    },
+    {
+      clubId: CLUB_SUR_ID,
+      movementType: "egreso",
+      isEnabled: true
+    }
+  ];
+
   const dailyCashSessions: DailyCashSession[] = [];
   const dailyCashSessionBalances: DailyCashSessionBalance[] = [];
   const balanceAdjustments: BalanceAdjustment[] = [];
@@ -543,6 +601,7 @@ function createStore(): MockStore {
     clubActivities,
     receiptFormats,
     clubTreasuryCurrencies,
+    movementTypeConfig,
     dailyCashSessions,
     dailyCashSessionBalances,
     balanceAdjustments,
@@ -825,6 +884,34 @@ function mapTreasuryCurrencyRow(row: {
     currencyCode: row.currency_code,
     isPrimary: row.is_primary ?? false
   };
+}
+
+function mapMovementTypeConfigRow(row: {
+  club_id: string;
+  movement_type: TreasuryMovementType;
+  is_enabled: boolean | null;
+}): MovementTypeConfig {
+  return {
+    clubId: row.club_id,
+    movementType: row.movement_type,
+    isEnabled: row.is_enabled ?? false
+  };
+}
+
+function alignAccountCurrenciesWithClubSelection(
+  currentCurrencies: string[],
+  allowedCurrencies: TreasuryCurrencyCode[],
+  fallbackCurrencyCode: TreasuryCurrencyCode
+) {
+  const nextCurrencies = currentCurrencies.filter((currency): currency is TreasuryCurrencyCode =>
+    allowedCurrencies.includes(currency as TreasuryCurrencyCode)
+  );
+
+  if (nextCurrencies.length > 0) {
+    return nextCurrencies;
+  }
+
+  return [fallbackCurrencyCode];
 }
 
 function shouldUseSupabaseDatabase() {
@@ -1225,9 +1312,32 @@ async function listRealTreasuryCurrenciesForClub(clubId: string, client?: Access
   return data.map(mapTreasuryCurrencyRow);
 }
 
+async function listRealMovementTypeConfigForClub(clubId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("club_movement_type_config")
+    .select("club_id,movement_type,is_enabled")
+    .eq("club_id", clubId)
+    .order("movement_type", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map(mapMovementTypeConfigRow);
+}
+
 async function syncRealTreasuryCurrenciesToAccounts(
   clubId: string,
-  currencies: TreasuryCurrencyCode[],
+  currencies: Array<{
+    currencyCode: TreasuryCurrencyCode;
+    isPrimary: boolean;
+  }>,
   client?: AccessRepositoryClient
 ) {
   const supabase = createAccessSupabaseClient(client);
@@ -1238,33 +1348,43 @@ async function syncRealTreasuryCurrenciesToAccounts(
 
   const { data: accounts, error: accountsError } = await supabase
     .from("treasury_accounts")
-    .select("id")
+    .select("id,treasury_account_currencies(currency_code)")
     .eq("club_id", clubId);
 
   if (accountsError || !accounts) {
     return;
   }
 
-  const accountIds = accounts.map((account: { id: string }) => account.id);
-
-  if (accountIds.length === 0) {
+  if (accounts.length === 0) {
     return;
   }
+  const allowedCurrencies = currencies.map((currency) => currency.currencyCode);
+  const fallbackCurrencyCode =
+    currencies.find((currency) => currency.isPrimary)?.currencyCode ?? allowedCurrencies[0];
 
-  await supabase.from("treasury_account_currencies").delete().in("account_id", accountIds);
+  for (const account of accounts as Array<{
+    id: string;
+    treasury_account_currencies?: Array<{ currency_code: TreasuryCurrencyCode }>;
+  }>) {
+    await supabase.from("treasury_account_currencies").delete().eq("account_id", account.id);
 
-  if (currencies.length === 0) {
-    return;
-  }
+    if (!fallbackCurrencyCode) {
+      continue;
+    }
 
-  await supabase.from("treasury_account_currencies").insert(
-    accountIds.flatMap((accountId) =>
-      currencies.map((currencyCode) => ({
-        account_id: accountId,
+    const nextCurrencies = alignAccountCurrenciesWithClubSelection(
+      (account.treasury_account_currencies ?? []).map((currency) => currency.currency_code),
+      allowedCurrencies,
+      fallbackCurrencyCode
+    );
+
+    await supabase.from("treasury_account_currencies").insert(
+      nextCurrencies.map((currencyCode) => ({
+        account_id: account.id,
         currency_code: currencyCode
       }))
-    )
-  );
+    );
+  }
 }
 
 async function setRealTreasuryCurrenciesForClub(
@@ -1299,11 +1419,44 @@ async function setRealTreasuryCurrenciesForClub(
 
   await syncRealTreasuryCurrenciesToAccounts(
     input.clubId,
-    input.currencies.map((currency) => currency.currencyCode),
+    input.currencies,
     client
   );
 
   return listRealTreasuryCurrenciesForClub(input.clubId, client);
+}
+
+async function setRealMovementTypeConfigForClub(
+  input: {
+    clubId: string;
+    movementTypes: Array<{
+      movementType: TreasuryMovementType;
+      isEnabled: boolean;
+    }>;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  await supabase.from("club_movement_type_config").delete().eq("club_id", input.clubId);
+
+  const { error } = await supabase.from("club_movement_type_config").insert(
+    input.movementTypes.map((movementType) => ({
+      club_id: input.clubId,
+      movement_type: movementType.movementType,
+      is_enabled: movementType.isEnabled
+    }))
+  );
+
+  if (error) {
+    return [];
+  }
+
+  return listRealMovementTypeConfigForClub(input.clubId, client);
 }
 
 async function createRealTreasuryAccount(
@@ -2145,6 +2298,13 @@ export const accessRepository: AccessRepository = {
 
     return getStore().clubTreasuryCurrencies.filter((currency) => currency.clubId === clubId);
   },
+  async listMovementTypeConfigForClub(clubId) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealMovementTypeConfigForClub(clubId);
+    }
+
+    return getStore().movementTypeConfig.filter((config) => config.clubId === clubId);
+  },
   async setTreasuryCurrenciesForClub(input) {
     if (shouldUseSupabaseDatabase()) {
       return setRealTreasuryCurrenciesForClub(input);
@@ -2163,13 +2323,41 @@ export const accessRepository: AccessRepository = {
 
     store.clubTreasuryCurrencies.push(...nextCurrencies);
 
+    const fallbackCurrencyCode =
+      input.currencies.find((currency) => currency.isPrimary)?.currencyCode ??
+      input.currencies[0]?.currencyCode;
+
     store.treasuryAccounts.forEach((account) => {
-      if (account.clubId === input.clubId) {
-        account.currencies = input.currencies.map((currency) => currency.currencyCode);
+      if (account.clubId === input.clubId && fallbackCurrencyCode) {
+        account.currencies = alignAccountCurrenciesWithClubSelection(
+          account.currencies,
+          input.currencies.map((currency) => currency.currencyCode),
+          fallbackCurrencyCode
+        );
       }
     });
 
     return nextCurrencies;
+  },
+  async setMovementTypeConfigForClub(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return setRealMovementTypeConfigForClub(input);
+    }
+
+    const store = getStore();
+    store.movementTypeConfig = store.movementTypeConfig.filter(
+      (movementType) => movementType.clubId !== input.clubId
+    );
+
+    const nextMovementTypes = input.movementTypes.map((movementType) => ({
+      clubId: input.clubId,
+      movementType: movementType.movementType,
+      isEnabled: movementType.isEnabled
+    }));
+
+    store.movementTypeConfig.push(...nextMovementTypes);
+
+    return nextMovementTypes;
   },
   async createTreasuryAccount(input) {
     if (shouldUseSupabaseDatabase()) {

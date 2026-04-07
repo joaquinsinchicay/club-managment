@@ -4,10 +4,12 @@ import type {
   ClubActivity,
   DailyCashSessionValidation,
   DashboardTreasuryCard,
+  MovementTypeConfig,
   ReceiptFormat,
   SessionBalanceDraft,
   TreasuryAccount,
   TreasuryCurrencyConfig,
+  TreasuryMovementType,
   TreasuryAccountDetail
 } from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
@@ -84,6 +86,27 @@ async function getConfiguredTreasuryCurrencies(clubId: string): Promise<Treasury
       clubId,
       currencyCode: "ARS",
       isPrimary: true
+    }
+  ];
+}
+
+async function getConfiguredMovementTypes(clubId: string): Promise<MovementTypeConfig[]> {
+  const movementTypes = await accessRepository.listMovementTypeConfigForClub(clubId);
+
+  if (movementTypes.length > 0) {
+    return movementTypes;
+  }
+
+  return [
+    {
+      clubId,
+      movementType: "ingreso",
+      isEnabled: true
+    },
+    {
+      clubId,
+      movementType: "egreso",
+      isEnabled: true
     }
   ];
 }
@@ -557,13 +580,23 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "movement_type_required" };
   }
 
-  const [accounts, categories, activities, receiptFormats, configuredCurrencies] = await Promise.all([
+  const [accounts, categories, activities, receiptFormats, configuredCurrencies, configuredMovementTypes] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
     accessRepository.listClubActivitiesForClub(context.activeClub.id),
     accessRepository.listReceiptFormatsForClub(context.activeClub.id),
-    getConfiguredTreasuryCurrencies(context.activeClub.id)
+    getConfiguredTreasuryCurrencies(context.activeClub.id),
+    getConfiguredMovementTypes(context.activeClub.id)
   ]);
+
+  if (
+    !configuredMovementTypes.some(
+      (movementType) =>
+        movementType.movementType === input.movementType && movementType.isEnabled
+    )
+  ) {
+    return { ok: false, code: "movement_type_required" };
+  }
 
   const account = accounts.find(
     (entry) => entry.id === input.accountId && entry.accountScope === "secretaria"
@@ -650,6 +683,20 @@ export async function getActiveTreasuryCurrenciesForSecretaria(): Promise<Treasu
   }
 
   return getConfiguredTreasuryCurrencies(context.activeClub.id);
+}
+
+export async function getEnabledMovementTypesForSecretaria(): Promise<TreasuryMovementType[]> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const movementTypes = await getConfiguredMovementTypes(context.activeClub.id);
+
+  return movementTypes
+    .filter((movementType) => movementType.isEnabled)
+    .map((movementType) => movementType.movementType);
 }
 
 export async function getActiveReceiptFormatsForSecretaria(): Promise<ReceiptFormat[]> {

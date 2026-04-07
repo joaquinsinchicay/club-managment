@@ -26,6 +26,7 @@ type ClubSettingsCardProps = {
   updateMembershipRolesAction: (formData: FormData) => Promise<void>;
   removeMembershipAction: (formData: FormData) => Promise<void>;
   setTreasuryCurrenciesAction: (formData: FormData) => Promise<void>;
+  setMovementTypesAction: (formData: FormData) => Promise<void>;
   createTreasuryAccountAction: (formData: FormData) => Promise<void>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<void>;
   createTreasuryCategoryAction: (formData: FormData) => Promise<void>;
@@ -66,7 +67,8 @@ function getFeedbackMessage(feedbackCode?: string) {
     "activity_updated",
     "receipt_format_created",
     "receipt_format_updated",
-    "treasury_currencies_updated"
+    "treasury_currencies_updated",
+    "movement_types_updated"
   ]);
   const tone = successCodes.has(feedbackCode) ? "success" : "destructive";
 
@@ -88,6 +90,7 @@ export function ClubSettingsCard({
   updateMembershipRolesAction,
   removeMembershipAction,
   setTreasuryCurrenciesAction,
+  setMovementTypesAction,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
   createTreasuryCategoryAction,
@@ -182,6 +185,7 @@ export function ClubSettingsCard({
             <ClubTreasurySettingsManager
               treasurySettings={treasurySettings}
               setTreasuryCurrenciesAction={setTreasuryCurrenciesAction}
+              setMovementTypesAction={setMovementTypesAction}
               createTreasuryAccountAction={createTreasuryAccountAction}
               updateTreasuryAccountAction={updateTreasuryAccountAction}
               createTreasuryCategoryAction={createTreasuryCategoryAction}
