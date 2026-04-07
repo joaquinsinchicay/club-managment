@@ -339,7 +339,7 @@ Obtener configuración de tesorería del club activo.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -372,7 +372,7 @@ Crear cuenta del club.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -416,7 +416,7 @@ Editar cuenta del club.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -454,7 +454,7 @@ Crear categoría del club.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -487,7 +487,7 @@ Editar categoría.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -522,7 +522,7 @@ Crear actividad del club.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -553,7 +553,7 @@ Editar actividad.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -586,7 +586,7 @@ Configurar monedas del club y moneda principal.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -624,7 +624,7 @@ Configurar tipos de movimiento habilitados en el club.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -656,7 +656,7 @@ Configurar visibilidad y obligatoriedad de campos dinámicos por categoría.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -701,7 +701,7 @@ Configurar formatos válidos del campo recibo.
 Sí
 
 **Allowed roles**
-`admin`
+`tesoreria`
 
 **Input**
 
@@ -745,7 +745,7 @@ Obtener card resumida de saldos y estado operativo del día.
 Sí
 
 **Allowed roles**
-`secretaria`, `admin`
+`secretaria`
 
 **Input**
 

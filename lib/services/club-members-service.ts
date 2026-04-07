@@ -1,10 +1,7 @@
 import type { ClubMember, MembershipRole, PendingClubInvitation } from "@/lib/domain/access";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import {
-  hasMembershipRole,
-  isMembershipRole,
-  sortMembershipRoles
-} from "@/lib/domain/membership-roles";
+import { canManageClubMembers } from "@/lib/domain/authorization";
+import { isMembershipRole, sortMembershipRoles } from "@/lib/domain/membership-roles";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
 export type ClubMemberActionCode =
@@ -52,7 +49,7 @@ async function getAdminSession() {
     return null;
   }
 
-  if (!hasMembershipRole(context.activeMembership, "admin") || context.activeMembership.status !== "activo") {
+  if (!canManageClubMembers(context.activeMembership)) {
     return null;
   }
 
@@ -212,9 +209,7 @@ export async function removeClubMembership(
   }
 
   const isSelfRemoval = member.userId === session.user.id;
-  const isAdmin =
-    hasMembershipRole(session.activeMembership, "admin") &&
-    session.activeMembership.status === "activo";
+  const isAdmin = canManageClubMembers(session.activeMembership);
 
   if (!isAdmin && !isSelfRemoval) {
     return { ok: false, code: "forbidden" };

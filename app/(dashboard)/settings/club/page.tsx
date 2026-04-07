@@ -2,7 +2,11 @@ import { AppHeader } from "@/components/navigation/app-header";
 import { ClubSettingsCard } from "@/components/settings/club-settings-card";
 import { ClubSettingsForbiddenCard } from "@/components/settings/club-settings-forbidden-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { hasMembershipRole } from "@/lib/domain/membership-roles";
+import {
+  canAccessClubSettingsPage,
+  canAccessTreasurySettings,
+  canManageClubMembers
+} from "@/lib/domain/authorization";
 import { getClubMembersForActiveClub } from "@/lib/services/club-members-service";
 import { getTreasurySettingsForActiveClub } from "@/lib/services/treasury-settings-service";
 import {
@@ -41,7 +45,10 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
     redirect("/pending-approval");
   }
 
-  if (!hasMembershipRole(context.activeMembership, "admin")) {
+  const canViewMembers = canManageClubMembers(context.activeMembership);
+  const canViewTreasury = canAccessTreasurySettings(context.activeMembership);
+
+  if (!canAccessClubSettingsPage(context.activeMembership)) {
     return (
       <div className="min-h-screen">
         <AppHeader context={context} />
@@ -51,11 +58,11 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
   }
 
   const [clubMembersData, treasurySettings] = await Promise.all([
-    getClubMembersForActiveClub(),
-    getTreasurySettingsForActiveClub()
+    canViewMembers ? getClubMembersForActiveClub() : Promise.resolve(null),
+    canViewTreasury ? getTreasurySettingsForActiveClub() : Promise.resolve(null)
   ]);
 
-  if (!clubMembersData || !treasurySettings) {
+  if ((canViewMembers && !clubMembersData) || (canViewTreasury && !treasurySettings)) {
     return (
       <div className="min-h-screen">
         <AppHeader context={context} />
@@ -70,8 +77,10 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
       <ClubSettingsCard
         context={context}
         initialTab={searchParams?.tab}
-        members={clubMembersData.members}
-        pendingInvitations={clubMembersData.pendingInvitations}
+        canManageMembers={canViewMembers}
+        canManageTreasury={canViewTreasury}
+        members={clubMembersData?.members ?? []}
+        pendingInvitations={clubMembersData?.pendingInvitations ?? []}
         treasurySettings={treasurySettings}
         inviteUserAction={inviteClubUserAction}
         approveMembershipAction={approveClubMembershipAction}

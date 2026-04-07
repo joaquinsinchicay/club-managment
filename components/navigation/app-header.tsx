@@ -1,6 +1,7 @@
 import { AvatarSessionMenu } from "@/components/navigation/avatar-session-menu";
 import type { SessionContext } from "@/lib/auth/service";
-import { formatMembershipRoles, hasMembershipRole } from "@/lib/domain/membership-roles";
+import { formatMembershipRoles } from "@/lib/domain/membership-roles";
+import { canAccessClubSettingsNavigation } from "@/lib/domain/authorization";
 import { texts } from "@/lib/texts";
 
 type AppHeaderProps = {
@@ -47,7 +48,7 @@ export function AppHeader({ context }: AppHeaderProps) {
           fullName={context.user.fullName}
           email={context.user.email}
           avatarUrl={context.user.avatarUrl}
-          canAccessClubSettings={hasMembershipRole(context.activeMembership, "admin")}
+          canAccessClubSettings={canAccessClubSettingsNavigation(context.activeMembership)}
         />
       </div>
     </header>

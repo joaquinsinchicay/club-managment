@@ -145,7 +145,7 @@
       "title": "Configuracion del club",
       "description": "Gestiona la configuracion operativa del club activo.",
       "forbidden_title": "No tienes permisos para abrir esta configuracion",
-      "forbidden_description": "Solo un usuario admin del club activo puede acceder a esta pagina.",
+      "forbidden_description": "Solo un usuario con permisos de administracion o tesoreria del club activo puede acceder a esta pagina.",
       "back_to_dashboard_cta": "Volver al dashboard",
       "tabs": {
         "members": "Miembros",

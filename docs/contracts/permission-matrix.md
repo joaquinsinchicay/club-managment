@@ -60,17 +60,17 @@ Roles disponibles:
 
 | Acción                         | Admin | Secretaria | Tesoreria |
 | ------------------------------ | ----- | ---------- | --------- |
-| Ver configuración              | ✅     | ❌          | ❌         |
-| Crear cuenta                   | ✅     | ❌          | ❌         |
-| Editar cuenta                  | ✅     | ❌          | ❌         |
-| Crear categoría                | ✅     | ❌          | ❌         |
-| Editar categoría               | ✅     | ❌          | ❌         |
-| Crear actividad                | ✅     | ❌          | ❌         |
-| Editar actividad               | ✅     | ❌          | ❌         |
-| Configurar monedas             | ✅     | ❌          | ❌         |
-| Configurar tipos de movimiento | ✅     | ❌          | ❌         |
-| Configurar reglas de campos    | ✅     | ❌          | ❌         |
-| Configurar formatos de recibo  | ✅     | ❌          | ❌         |
+| Ver configuración              | ❌     | ❌          | ✅         |
+| Crear cuenta                   | ❌     | ❌          | ✅         |
+| Editar cuenta                  | ❌     | ❌          | ✅         |
+| Crear categoría                | ❌     | ❌          | ✅         |
+| Editar categoría               | ❌     | ❌          | ✅         |
+| Crear actividad                | ❌     | ❌          | ✅         |
+| Editar actividad               | ❌     | ❌          | ✅         |
+| Configurar monedas             | ❌     | ❌          | ✅         |
+| Configurar tipos de movimiento | ❌     | ❌          | ✅         |
+| Configurar reglas de campos    | ❌     | ❌          | ✅         |
+| Configurar formatos de recibo  | ❌     | ❌          | ✅         |
 
 ---
 
@@ -78,7 +78,7 @@ Roles disponibles:
 
 | Acción                | Admin | Secretaria | Tesoreria |
 | --------------------- | ----- | ---------- | --------- |
-| Ver estado de jornada | ✅     | ✅          | ❌         |
+| Ver estado de jornada | ❌     | ✅          | ❌         |
 | Abrir jornada         | ❌     | ✅          | ❌         |
 | Cerrar jornada        | ❌     | ✅          | ❌         |
 
@@ -169,7 +169,7 @@ Roles disponibles:
 
 ### Reglas
 
-* Solo Tesorería (y Admin) operan consolidación
+* Solo Tesorería opera consolidación
 * Todas las acciones deben ser auditadas
 * No se permite doble impacto contable
 
@@ -192,10 +192,9 @@ Roles disponibles:
 
 ### Admin
 
-* Gestión completa del club
-* Configuración
-* Supervisión
-* Puede intervenir en consolidación
+* Gestión administrativa del club
+* Miembros e invitaciones
+* Sin acceso implícito a Tesorería
 
 ---
 
@@ -221,14 +220,15 @@ Roles disponibles:
 
 1. Nunca permitir acciones fuera del club activo.
 2. Nunca confiar en frontend para validar permisos.
-3. Validar siempre:
+3. No asumir herencia implícita entre `admin` y `tesoreria`.
+4. Validar siempre:
    * membership
    * roles
    * status
-4. No permitir acciones no listadas.
-5. Toda acción de Tesorería sobre movimientos debe auditarse.
-6. Toda operación compuesta debe ser transaccional.
-7. La consolidación no debe ejecutarse dos veces para la misma fecha.
+5. No permitir acciones no listadas.
+6. Toda acción de Tesorería sobre movimientos debe auditarse.
+7. Toda operación compuesta debe ser transaccional.
+8. La consolidación no debe ejecutarse dos veces para la misma fecha.
 
 ---
 

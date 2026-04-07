@@ -16,9 +16,11 @@ type ClubSettingsTab = "members" | "treasury";
 type ClubSettingsCardProps = {
   context: SessionContext;
   initialTab?: string;
+  canManageMembers: boolean;
+  canManageTreasury: boolean;
   members: ClubMember[];
   pendingInvitations: PendingClubInvitation[];
-  treasurySettings: TreasurySettings;
+  treasurySettings: TreasurySettings | null;
   inviteUserAction: (formData: FormData) => Promise<void>;
   approveMembershipAction: (formData: FormData) => Promise<void>;
   updateMembershipRolesAction: (formData: FormData) => Promise<void>;
@@ -38,6 +40,8 @@ type ClubSettingsCardProps = {
 export function ClubSettingsCard({
   context,
   initialTab,
+  canManageMembers,
+  canManageTreasury,
   members,
   pendingInvitations,
   treasurySettings,
@@ -57,8 +61,15 @@ export function ClubSettingsCard({
   updateReceiptFormatAction
 }: ClubSettingsCardProps) {
   const [activeTab, setActiveTab] = useState<ClubSettingsTab>(
-    initialTab === "treasury" ? "treasury" : "members"
+    initialTab === "treasury" && canManageTreasury ? "treasury" : "members"
   );
+  const resolvedTab =
+    activeTab === "treasury" && canManageTreasury
+      ? "treasury"
+      : canManageMembers
+        ? "members"
+        : "treasury";
+  const showTabSwitcher = canManageMembers && canManageTreasury;
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-10">
@@ -85,32 +96,34 @@ export function ClubSettingsCard({
             </p>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab("members")}
-              className={`min-h-11 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                activeTab === "members"
-                  ? "bg-foreground text-primary-foreground"
-                  : "border border-border bg-card text-foreground hover:bg-secondary"
-              }`}
-            >
-              {texts.settings.club.tabs.members}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("treasury")}
-              className={`min-h-11 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                activeTab === "treasury"
-                  ? "bg-foreground text-primary-foreground"
-                  : "border border-border bg-card text-foreground hover:bg-secondary"
-              }`}
-            >
-              {texts.settings.club.tabs.treasury}
-            </button>
-          </div>
+          {showTabSwitcher ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab("members")}
+                className={`min-h-11 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                  resolvedTab === "members"
+                    ? "bg-foreground text-primary-foreground"
+                    : "border border-border bg-card text-foreground hover:bg-secondary"
+                }`}
+              >
+                {texts.settings.club.tabs.members}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("treasury")}
+                className={`min-h-11 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                  resolvedTab === "treasury"
+                    ? "bg-foreground text-primary-foreground"
+                    : "border border-border bg-card text-foreground hover:bg-secondary"
+                }`}
+              >
+                {texts.settings.club.tabs.treasury}
+              </button>
+            </div>
+          ) : null}
 
-          {activeTab === "members" ? (
+          {resolvedTab === "members" && canManageMembers ? (
             <>
               <div className="space-y-2">
                 <h2 className="text-lg font-semibold text-foreground">
@@ -132,7 +145,7 @@ export function ClubSettingsCard({
                 removeMembershipAction={removeMembershipAction}
               />
             </>
-          ) : (
+          ) : canManageTreasury && treasurySettings ? (
             <ClubTreasurySettingsManager
               treasurySettings={treasurySettings}
               setTreasuryCurrenciesAction={setTreasuryCurrenciesAction}
@@ -146,7 +159,7 @@ export function ClubSettingsCard({
               createReceiptFormatAction={createReceiptFormatAction}
               updateReceiptFormatAction={updateReceiptFormatAction}
             />
-          )}
+          ) : null}
         </div>
       </CardShell>
     </main>

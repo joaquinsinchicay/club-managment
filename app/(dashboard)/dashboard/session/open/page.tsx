@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { DailySessionBalanceCard } from "@/components/dashboard/daily-session-balance-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { hasMembershipRole } from "@/lib/domain/membership-roles";
+import { canOperateSecretaria } from "@/lib/domain/authorization";
 import { getDailyCashSessionValidationForActiveClub } from "@/lib/services/treasury-service";
 import { openDailyCashSessionWithBalancesAction } from "@/app/(dashboard)/dashboard/session/actions";
 
@@ -17,7 +17,7 @@ export default async function OpenDailyCashSessionPage() {
     redirect("/pending-approval");
   }
 
-  if (!hasMembershipRole(context.activeMembership, "secretaria")) {
+  if (!canOperateSecretaria(context.activeMembership)) {
     redirect("/dashboard");
   }
 

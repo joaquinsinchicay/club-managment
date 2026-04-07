@@ -8,7 +8,7 @@ import { ActiveClubSelector } from "@/components/dashboard/active-club-selector"
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { AppHeader } from "@/components/navigation/app-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { hasMembershipRole } from "@/lib/domain/membership-roles";
+import { canOperateSecretaria } from "@/lib/domain/authorization";
 import {
   getActiveActivitiesForSecretaria,
   getActiveTreasuryCurrenciesForSecretaria,
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   }
 
   const treasuryCard = await getDashboardTreasuryCardForActiveClub();
-  const canOperateTreasury = hasMembershipRole(activeMembership, "secretaria");
+  const canOperateTreasury = canOperateSecretaria(activeMembership);
   const treasuryAccounts = canOperateTreasury
     ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
         (account) => account.accountScope === "secretaria"

@@ -8,7 +8,7 @@ import type {
   TreasuryCategory,
   TreasurySettings
 } from "@/lib/domain/access";
-import { hasMembershipRole } from "@/lib/domain/membership-roles";
+import { canAccessTreasurySettings } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
 type TreasurySettingsActionCode =
@@ -68,14 +68,14 @@ const TREASURY_STATUSES: Array<TreasuryAccount["status"]> = ["active", "inactive
 const TREASURY_CURRENCY_CODES: TreasuryCurrencyCode[] = ["ARS", "USD", "EUR"];
 const TREASURY_MOVEMENT_TYPES: TreasuryMovementType[] = ["ingreso", "egreso"];
 
-async function getAdminTreasurySettingsContext() {
+async function getTreasurySettingsContext() {
   const context = await getAuthenticatedSessionContext();
 
   if (!context?.activeClub || !context.activeMembership) {
     return null;
   }
 
-  if (!hasMembershipRole(context.activeMembership, "admin")) {
+  if (!canAccessTreasurySettings(context.activeMembership)) {
     return null;
   }
 
@@ -152,7 +152,7 @@ function hasDuplicateActiveReceiptFormatName(
 }
 
 export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettings | null> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return null;
@@ -190,7 +190,7 @@ export async function setTreasuryCurrenciesForActiveClub(input: {
   currencies: string[];
   primaryCurrencyCode: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -234,7 +234,7 @@ export async function setTreasuryCurrenciesForActiveClub(input: {
 export async function setMovementTypesForActiveClub(input: {
   movementTypes: string[];
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -278,7 +278,7 @@ export async function createTreasuryAccountForActiveClub(input: {
   status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -364,7 +364,7 @@ export async function updateTreasuryAccountForActiveClub(input: {
   status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -452,7 +452,7 @@ export async function createTreasuryCategoryForActiveClub(input: {
   status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -497,7 +497,7 @@ export async function updateTreasuryCategoryForActiveClub(input: {
   status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -546,7 +546,7 @@ export async function createClubActivityForActiveClub(input: {
   status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -588,7 +588,7 @@ export async function updateClubActivityForActiveClub(input: {
   status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -638,7 +638,7 @@ export async function createReceiptFormatForActiveClub(input: {
   example: string;
   status: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -709,7 +709,7 @@ export async function updateReceiptFormatForActiveClub(input: {
   example: string;
   status: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getAdminTreasurySettingsContext();
+  const context = await getTreasurySettingsContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
