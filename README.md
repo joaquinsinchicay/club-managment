@@ -79,6 +79,11 @@ DEFINITION_OF_DONE.md
 * Auth: Google OAuth (Supabase)
 * Seguridad: Row Level Security (RLS)
 
+Para mutaciones privilegiadas de configuracion del club en entornos server:
+
+* `SUPABASE_SERVICE_ROLE_KEY` o `SUPABASE_SECRET_KEY` debe estar configurada
+* previews y produccion deben incluir esa variable si van a permitir guardar configuraciones de Tesoreria
+
 ---
 
 ## 🔐 Conceptos clave

@@ -157,6 +157,7 @@ name text,
 validation_type receipt_validation_type,
 pattern text,
 min_numeric_value numeric,
+example text,
 status text
 );
 

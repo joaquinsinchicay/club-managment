@@ -350,6 +350,7 @@
           "category_not_found": "No encontramos la categoria seleccionada en el club activo.",
           "activity_not_found": "No encontramos la actividad seleccionada en el club activo.",
           "receipt_format_not_found": "No encontramos el formato de recibo seleccionado en el club activo.",
+          "treasury_admin_config_missing": "Falta configurar las credenciales de administrador de Supabase para guardar la configuracion de tesoreria.",
           "forbidden": "No tienes permisos para administrar la configuracion de tesoreria.",
           "unknown_error": "No pudimos guardar la configuracion de tesoreria. Vuelve a intentarlo."
         }

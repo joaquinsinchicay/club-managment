@@ -1,5 +1,5 @@
 import { appConfig } from "@/lib/config";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { MissingSupabaseAdminConfigError, createAdminSupabaseClient, createRequiredAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 import type {
@@ -29,6 +29,31 @@ import type {
 import { MEMBERSHIP_ROLES, sortMembershipRoles } from "@/lib/domain/membership-roles";
 
 type AccessRepositoryClient = ReturnType<typeof createServerSupabaseClient>;
+
+export class AccessRepositoryInfraError extends Error {
+  code: "treasury_admin_config_missing" | "treasury_settings_write_failed";
+  operation: string;
+
+  constructor(
+    code: "treasury_admin_config_missing" | "treasury_settings_write_failed",
+    operation: string,
+    options?: { cause?: unknown }
+  ) {
+    super(
+      code === "treasury_admin_config_missing"
+        ? "Missing Supabase admin configuration for treasury settings."
+        : "Treasury settings write failed."
+    );
+    this.name = "AccessRepositoryInfraError";
+    this.code = code;
+    this.operation = operation;
+    this.cause = options?.cause;
+  }
+}
+
+export function isAccessRepositoryInfraError(error: unknown): error is AccessRepositoryInfraError {
+  return error instanceof AccessRepositoryInfraError;
+}
 
 type AccessRepository = {
   getGoogleProfile(profileKey: GoogleProfileKey): GoogleProfile;
@@ -917,12 +942,54 @@ function shouldUseSupabaseDatabase() {
   return appConfig.authProviderMode !== "mock" && hasSupabaseBrowserConfig();
 }
 
+function logTreasurySettingsWriteFailure(
+  operation: string,
+  details: Record<string, unknown>,
+  error?: unknown
+) {
+  console.error("[treasury-settings-write-failure]", {
+    operation,
+    ...details,
+    error
+  });
+}
+
 function createAccessSupabaseClient(client?: AccessRepositoryClient) {
   if (!shouldUseSupabaseDatabase()) {
     return null;
   }
 
   return client ?? createServerSupabaseClient();
+}
+
+function createRequiredTreasurySettingsAdminClient(
+  operation: string,
+  details: Record<string, unknown>
+) {
+  try {
+    return createRequiredAdminSupabaseClient();
+  } catch (error) {
+    logTreasurySettingsWriteFailure(operation, { codePath: "admin", ...details }, error);
+
+    if (error instanceof MissingSupabaseAdminConfigError) {
+      throw new AccessRepositoryInfraError("treasury_admin_config_missing", operation, {
+        cause: error
+      });
+    }
+
+    throw error;
+  }
+}
+
+function throwTreasurySettingsWriteFailure(
+  operation: string,
+  details: Record<string, unknown>,
+  error?: unknown
+): never {
+  logTreasurySettingsWriteFailure(operation, { codePath: "admin", ...details }, error);
+  throw new AccessRepositoryInfraError("treasury_settings_write_failed", operation, {
+    cause: error
+  });
 }
 
 async function findRealUserByEmail(email: string, client?: AccessRepositoryClient) {
@@ -1339,11 +1406,9 @@ async function syncRealTreasuryCurrenciesToAccounts(
   }>,
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return;
-  }
+  const supabase = createRequiredTreasurySettingsAdminClient("sync_treasury_currencies_to_accounts", {
+    clubId
+  });
 
   const { data: accounts, error: accountsError } = await supabase
     .from("treasury_accounts")
@@ -1351,7 +1416,11 @@ async function syncRealTreasuryCurrenciesToAccounts(
     .eq("club_id", clubId);
 
   if (accountsError || !accounts) {
-    return;
+    throwTreasurySettingsWriteFailure(
+      "sync_treasury_currencies_to_accounts",
+      { clubId },
+      accountsError
+    );
   }
 
   if (accounts.length === 0) {
@@ -1365,7 +1434,18 @@ async function syncRealTreasuryCurrenciesToAccounts(
     id: string;
     treasury_account_currencies?: Array<{ currency_code: TreasuryCurrencyCode }>;
   }>) {
-    await supabase.from("treasury_account_currencies").delete().eq("account_id", account.id);
+    const { error: deleteError } = await supabase
+      .from("treasury_account_currencies")
+      .delete()
+      .eq("account_id", account.id);
+
+    if (deleteError) {
+      throwTreasurySettingsWriteFailure(
+        "sync_treasury_currencies_to_accounts",
+        { clubId, accountId: account.id },
+        deleteError
+      );
+    }
 
     if (!fallbackCurrencyCode) {
       continue;
@@ -1377,12 +1457,20 @@ async function syncRealTreasuryCurrenciesToAccounts(
       fallbackCurrencyCode
     );
 
-    await supabase.from("treasury_account_currencies").insert(
+    const { error: insertError } = await supabase.from("treasury_account_currencies").insert(
       nextCurrencies.map((currencyCode) => ({
         account_id: account.id,
         currency_code: currencyCode
       }))
     );
+
+    if (insertError) {
+      throwTreasurySettingsWriteFailure(
+        "sync_treasury_currencies_to_accounts",
+        { clubId, accountId: account.id },
+        insertError
+      );
+    }
   }
 }
 
@@ -1396,13 +1484,22 @@ async function setRealTreasuryCurrenciesForClub(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+  const supabase = createRequiredTreasurySettingsAdminClient("set_treasury_currencies_for_club", {
+    clubId: input.clubId
+  });
 
-  if (!supabase) {
-    return [];
+  const { error: deleteError } = await supabase
+    .from("club_treasury_currencies")
+    .delete()
+    .eq("club_id", input.clubId);
+
+  if (deleteError) {
+    throwTreasurySettingsWriteFailure(
+      "set_treasury_currencies_for_club",
+      { clubId: input.clubId },
+      deleteError
+    );
   }
-
-  await supabase.from("club_treasury_currencies").delete().eq("club_id", input.clubId);
 
   const { error } = await supabase.from("club_treasury_currencies").insert(
     input.currencies.map((currency) => ({
@@ -1413,7 +1510,11 @@ async function setRealTreasuryCurrenciesForClub(
   );
 
   if (error) {
-    return [];
+    throwTreasurySettingsWriteFailure(
+      "set_treasury_currencies_for_club",
+      { clubId: input.clubId },
+      error
+    );
   }
 
   await syncRealTreasuryCurrenciesToAccounts(
@@ -1435,13 +1536,22 @@ async function setRealMovementTypeConfigForClub(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
+  const supabase = createRequiredTreasurySettingsAdminClient("set_movement_type_config_for_club", {
+    clubId: input.clubId
+  });
 
-  if (!supabase) {
-    return [];
+  const { error: deleteError } = await supabase
+    .from("club_movement_type_config")
+    .delete()
+    .eq("club_id", input.clubId);
+
+  if (deleteError) {
+    throwTreasurySettingsWriteFailure(
+      "set_movement_type_config_for_club",
+      { clubId: input.clubId },
+      deleteError
+    );
   }
-
-  await supabase.from("club_movement_type_config").delete().eq("club_id", input.clubId);
 
   const { error } = await supabase.from("club_movement_type_config").insert(
     input.movementTypes.map((movementType) => ({
@@ -1452,7 +1562,11 @@ async function setRealMovementTypeConfigForClub(
   );
 
   if (error) {
-    return [];
+    throwTreasurySettingsWriteFailure(
+      "set_movement_type_config_for_club",
+      { clubId: input.clubId },
+      error
+    );
   }
 
   return listRealMovementTypeConfigForClub(input.clubId, client);
@@ -1471,11 +1585,9 @@ async function createRealTreasuryAccount(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
+  const supabase = createRequiredTreasurySettingsAdminClient("create_treasury_account", {
+    clubId: input.clubId
+  });
 
   const { data, error } = await supabase
     .from("treasury_accounts")
@@ -1493,7 +1605,7 @@ async function createRealTreasuryAccount(
     .single();
 
   if (error || !data) {
-    return null;
+    throwTreasurySettingsWriteFailure("create_treasury_account", { clubId: input.clubId }, error);
   }
 
   if (input.currencies.length > 0) {
@@ -1505,7 +1617,11 @@ async function createRealTreasuryAccount(
     );
 
     if (currenciesError) {
-      return null;
+      throwTreasurySettingsWriteFailure(
+        "create_treasury_account",
+        { clubId: input.clubId, accountId: data.id },
+        currenciesError
+      );
     }
   }
 
@@ -1526,11 +1642,10 @@ async function updateRealTreasuryAccount(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
+  const supabase = createRequiredTreasurySettingsAdminClient("update_treasury_account", {
+    clubId: input.clubId,
+    accountId: input.accountId
+  });
 
   const { data, error } = await supabase
     .from("treasury_accounts")
@@ -1549,10 +1664,25 @@ async function updateRealTreasuryAccount(
     .maybeSingle();
 
   if (error || !data) {
-    return null;
+    throwTreasurySettingsWriteFailure(
+      "update_treasury_account",
+      { clubId: input.clubId, accountId: input.accountId },
+      error
+    );
   }
 
-  await supabase.from("treasury_account_currencies").delete().eq("account_id", input.accountId);
+  const { error: deleteCurrenciesError } = await supabase
+    .from("treasury_account_currencies")
+    .delete()
+    .eq("account_id", input.accountId);
+
+  if (deleteCurrenciesError) {
+    throwTreasurySettingsWriteFailure(
+      "update_treasury_account",
+      { clubId: input.clubId, accountId: input.accountId },
+      deleteCurrenciesError
+    );
+  }
 
   if (input.currencies.length > 0) {
     const { error: currenciesError } = await supabase.from("treasury_account_currencies").insert(
@@ -1563,7 +1693,11 @@ async function updateRealTreasuryAccount(
     );
 
     if (currenciesError) {
-      return null;
+      throwTreasurySettingsWriteFailure(
+        "update_treasury_account",
+        { clubId: input.clubId, accountId: input.accountId },
+        currenciesError
+      );
     }
   }
 
@@ -1581,11 +1715,9 @@ async function createRealTreasuryCategory(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
+  const supabase = createRequiredTreasurySettingsAdminClient("create_treasury_category", {
+    clubId: input.clubId
+  });
 
   const { data, error } = await supabase
     .from("treasury_categories")
@@ -1601,7 +1733,7 @@ async function createRealTreasuryCategory(
     .single();
 
   if (error || !data) {
-    return null;
+    throwTreasurySettingsWriteFailure("create_treasury_category", { clubId: input.clubId }, error);
   }
 
   return mapTreasuryCategoryRow(data);
@@ -1619,11 +1751,10 @@ async function updateRealTreasuryCategory(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
+  const supabase = createRequiredTreasurySettingsAdminClient("update_treasury_category", {
+    clubId: input.clubId,
+    categoryId: input.categoryId
+  });
 
   const { data, error } = await supabase
     .from("treasury_categories")
@@ -1640,7 +1771,11 @@ async function updateRealTreasuryCategory(
     .maybeSingle();
 
   if (error || !data) {
-    return null;
+    throwTreasurySettingsWriteFailure(
+      "update_treasury_category",
+      { clubId: input.clubId, categoryId: input.categoryId },
+      error
+    );
   }
 
   return mapTreasuryCategoryRow(data);
@@ -1655,11 +1790,9 @@ async function createRealClubActivity(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
+  const supabase = createRequiredTreasurySettingsAdminClient("create_club_activity", {
+    clubId: input.clubId
+  });
 
   const { data, error } = await supabase
     .from("club_activities")
@@ -1673,7 +1806,7 @@ async function createRealClubActivity(
     .single();
 
   if (error || !data) {
-    return null;
+    throwTreasurySettingsWriteFailure("create_club_activity", { clubId: input.clubId }, error);
   }
 
   return mapClubActivityRow(data);
@@ -1689,11 +1822,10 @@ async function updateRealClubActivity(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
+  const supabase = createRequiredTreasurySettingsAdminClient("update_club_activity", {
+    clubId: input.clubId,
+    activityId: input.activityId
+  });
 
   const { data, error } = await supabase
     .from("club_activities")
@@ -1708,7 +1840,11 @@ async function updateRealClubActivity(
     .maybeSingle();
 
   if (error || !data) {
-    return null;
+    throwTreasurySettingsWriteFailure(
+      "update_club_activity",
+      { clubId: input.clubId, activityId: input.activityId },
+      error
+    );
   }
 
   return mapClubActivityRow(data);
@@ -1726,11 +1862,9 @@ async function createRealReceiptFormat(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAdminSupabaseClient() ?? createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
+  const supabase = createRequiredTreasurySettingsAdminClient("create_receipt_format", {
+    clubId: input.clubId
+  });
 
   const { data, error } = await supabase
     .from("receipt_formats")
@@ -1747,7 +1881,7 @@ async function createRealReceiptFormat(
     .single();
 
   if (error || !data) {
-    return null;
+    throwTreasurySettingsWriteFailure("create_receipt_format", { clubId: input.clubId }, error);
   }
 
   return mapReceiptFormatRow(data);
@@ -1766,11 +1900,10 @@ async function updateRealReceiptFormat(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
+  const supabase = createRequiredTreasurySettingsAdminClient("update_receipt_format", {
+    clubId: input.clubId,
+    receiptFormatId: input.receiptFormatId
+  });
 
   const { data, error } = await supabase
     .from("receipt_formats")
@@ -1788,7 +1921,11 @@ async function updateRealReceiptFormat(
     .maybeSingle();
 
   if (error || !data) {
-    return null;
+    throwTreasurySettingsWriteFailure(
+      "update_receipt_format",
+      { clubId: input.clubId, receiptFormatId: input.receiptFormatId },
+      error
+    );
   }
 
   return mapReceiptFormatRow(data);

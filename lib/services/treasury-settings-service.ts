@@ -9,7 +9,7 @@ import type {
   TreasurySettings
 } from "@/lib/domain/access";
 import { canAccessTreasurySettings } from "@/lib/domain/authorization";
-import { accessRepository } from "@/lib/repositories/access-repository";
+import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { texts } from "@/lib/texts";
 
 type TreasurySettingsActionCode =
@@ -44,6 +44,7 @@ type TreasurySettingsActionCode =
   | "category_not_found"
   | "activity_not_found"
   | "receipt_format_not_found"
+  | "treasury_admin_config_missing"
   | "unknown_error";
 
 export type TreasurySettingsActionResult = {
@@ -129,6 +130,36 @@ function normalizeAccountVisibility(input: string[]) {
         )
     )
   );
+}
+
+function resolveTreasurySettingsMutationError(
+  error: unknown,
+  operation: string,
+  clubId: string
+): TreasurySettingsActionResult {
+  if (isAccessRepositoryInfraError(error)) {
+    console.error("[treasury-settings-service-error]", {
+      operation,
+      clubId,
+      repositoryOperation: error.operation,
+      code: error.code,
+      cause: error.cause
+    });
+
+    if (error.code === "treasury_admin_config_missing") {
+      return { ok: false, code: "treasury_admin_config_missing" };
+    }
+
+    return { ok: false, code: "unknown_error" };
+  }
+
+  console.error("[treasury-settings-service-error]", {
+    operation,
+    clubId,
+    error
+  });
+
+  return { ok: false, code: "unknown_error" };
 }
 
 function hasDuplicateActiveAccountName(
@@ -292,16 +323,22 @@ export async function createTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "invalid_emoji_option" };
   }
 
-  const created = await accessRepository.createTreasuryAccount({
-    clubId: context.activeClub.id,
-    name,
-    accountType: input.accountType as TreasuryAccount["accountType"],
-    status: input.status as TreasuryAccount["status"],
-    visibleForSecretaria: selectedVisibility.includes("secretaria"),
-    visibleForTesoreria: selectedVisibility.includes("tesoreria"),
-    emoji: resolvedEmoji.emoji,
-    currencies: selectedCurrencies
-  });
+  let created: TreasuryAccount | null = null;
+
+  try {
+    created = await accessRepository.createTreasuryAccount({
+      clubId: context.activeClub.id,
+      name,
+      accountType: input.accountType as TreasuryAccount["accountType"],
+      status: input.status as TreasuryAccount["status"],
+      visibleForSecretaria: selectedVisibility.includes("secretaria"),
+      visibleForTesoreria: selectedVisibility.includes("tesoreria"),
+      emoji: resolvedEmoji.emoji,
+      currencies: selectedCurrencies
+    });
+  } catch (error) {
+    return resolveTreasurySettingsMutationError(error, "create_treasury_account_for_active_club", context.activeClub.id);
+  }
 
   if (!created) {
     return { ok: false, code: "unknown_error" };
@@ -387,17 +424,23 @@ export async function updateTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "invalid_emoji_option" };
   }
 
-  const updated = await accessRepository.updateTreasuryAccount({
-    accountId: input.accountId,
-    clubId: context.activeClub.id,
-    name,
-    accountType: input.accountType as TreasuryAccount["accountType"],
-    status: input.status as TreasuryAccount["status"],
-    visibleForSecretaria: selectedVisibility.includes("secretaria"),
-    visibleForTesoreria: selectedVisibility.includes("tesoreria"),
-    emoji: resolvedEmoji.emoji,
-    currencies: selectedCurrencies
-  });
+  let updated: TreasuryAccount | null = null;
+
+  try {
+    updated = await accessRepository.updateTreasuryAccount({
+      accountId: input.accountId,
+      clubId: context.activeClub.id,
+      name,
+      accountType: input.accountType as TreasuryAccount["accountType"],
+      status: input.status as TreasuryAccount["status"],
+      visibleForSecretaria: selectedVisibility.includes("secretaria"),
+      visibleForTesoreria: selectedVisibility.includes("tesoreria"),
+      emoji: resolvedEmoji.emoji,
+      currencies: selectedCurrencies
+    });
+  } catch (error) {
+    return resolveTreasurySettingsMutationError(error, "update_treasury_account_for_active_club", context.activeClub.id);
+  }
 
   if (!updated) {
     return { ok: false, code: "unknown_error" };
@@ -440,14 +483,20 @@ export async function createTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "invalid_emoji_option" };
   }
 
-  const created = await accessRepository.createTreasuryCategory({
-    clubId: context.activeClub.id,
-    name,
-    status: input.status as TreasuryCategory["status"],
-    visibleForSecretaria: input.visibleForSecretaria,
-    visibleForTesoreria: false,
-    emoji: resolvedEmoji.emoji
-  });
+  let created: TreasuryCategory | null = null;
+
+  try {
+    created = await accessRepository.createTreasuryCategory({
+      clubId: context.activeClub.id,
+      name,
+      status: input.status as TreasuryCategory["status"],
+      visibleForSecretaria: input.visibleForSecretaria,
+      visibleForTesoreria: false,
+      emoji: resolvedEmoji.emoji
+    });
+  } catch (error) {
+    return resolveTreasurySettingsMutationError(error, "create_treasury_category_for_active_club", context.activeClub.id);
+  }
 
   if (!created) {
     return { ok: false, code: "unknown_error" };
@@ -500,15 +549,21 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "invalid_emoji_option" };
   }
 
-  const updated = await accessRepository.updateTreasuryCategory({
-    categoryId: input.categoryId,
-    clubId: context.activeClub.id,
-    name,
-    status: input.status as TreasuryCategory["status"],
-    visibleForSecretaria: input.visibleForSecretaria,
-    visibleForTesoreria: false,
-    emoji: resolvedEmoji.emoji
-  });
+  let updated: TreasuryCategory | null = null;
+
+  try {
+    updated = await accessRepository.updateTreasuryCategory({
+      categoryId: input.categoryId,
+      clubId: context.activeClub.id,
+      name,
+      status: input.status as TreasuryCategory["status"],
+      visibleForSecretaria: input.visibleForSecretaria,
+      visibleForTesoreria: false,
+      emoji: resolvedEmoji.emoji
+    });
+  } catch (error) {
+    return resolveTreasurySettingsMutationError(error, "update_treasury_category_for_active_club", context.activeClub.id);
+  }
 
   if (!updated) {
     return { ok: false, code: "unknown_error" };
@@ -550,12 +605,18 @@ export async function createClubActivityForActiveClub(input: {
     return { ok: false, code: "invalid_emoji_option" };
   }
 
-  const created = await accessRepository.createClubActivity({
-    clubId: context.activeClub.id,
-    name,
-    status: input.status as ClubActivity["status"],
-    emoji: resolvedEmoji.emoji
-  });
+  let created: ClubActivity | null = null;
+
+  try {
+    created = await accessRepository.createClubActivity({
+      clubId: context.activeClub.id,
+      name,
+      status: input.status as ClubActivity["status"],
+      emoji: resolvedEmoji.emoji
+    });
+  } catch (error) {
+    return resolveTreasurySettingsMutationError(error, "create_club_activity_for_active_club", context.activeClub.id);
+  }
 
   if (!created) {
     return { ok: false, code: "unknown_error" };
@@ -607,13 +668,19 @@ export async function updateClubActivityForActiveClub(input: {
     return { ok: false, code: "invalid_emoji_option" };
   }
 
-  const updated = await accessRepository.updateClubActivity({
-    activityId: input.activityId,
-    clubId: context.activeClub.id,
-    name,
-    status: input.status as ClubActivity["status"],
-    emoji: resolvedEmoji.emoji
-  });
+  let updated: ClubActivity | null = null;
+
+  try {
+    updated = await accessRepository.updateClubActivity({
+      activityId: input.activityId,
+      clubId: context.activeClub.id,
+      name,
+      status: input.status as ClubActivity["status"],
+      emoji: resolvedEmoji.emoji
+    });
+  } catch (error) {
+    return resolveTreasurySettingsMutationError(error, "update_club_activity_for_active_club", context.activeClub.id);
+  }
 
   if (!updated) {
     return { ok: false, code: "unknown_error" };
@@ -675,15 +742,21 @@ export async function createReceiptFormatForActiveClub(input: {
     return { ok: false, code: "receipt_format_min_required" };
   }
 
-  const created = await accessRepository.createReceiptFormat({
-    clubId: context.activeClub.id,
-    name,
-    validationType: input.validationType as ReceiptFormat["validationType"],
-    pattern: input.validationType === "pattern" ? pattern : null,
-    minNumericValue: input.validationType === "numeric" ? parsedMin : null,
-    example: example || null,
-    status: input.status as ReceiptFormat["status"]
-  });
+  let created: ReceiptFormat | null = null;
+
+  try {
+    created = await accessRepository.createReceiptFormat({
+      clubId: context.activeClub.id,
+      name,
+      validationType: input.validationType as ReceiptFormat["validationType"],
+      pattern: input.validationType === "pattern" ? pattern : null,
+      minNumericValue: input.validationType === "numeric" ? parsedMin : null,
+      example: example || null,
+      status: input.status as ReceiptFormat["status"]
+    });
+  } catch (error) {
+    return resolveTreasurySettingsMutationError(error, "create_receipt_format_for_active_club", context.activeClub.id);
+  }
 
   if (!created) {
     return { ok: false, code: "unknown_error" };
@@ -751,16 +824,22 @@ export async function updateReceiptFormatForActiveClub(input: {
     return { ok: false, code: "receipt_format_min_required" };
   }
 
-  const updated = await accessRepository.updateReceiptFormat({
-    receiptFormatId: input.receiptFormatId,
-    clubId: context.activeClub.id,
-    name,
-    validationType: input.validationType as ReceiptFormat["validationType"],
-    pattern: input.validationType === "pattern" ? pattern : null,
-    minNumericValue: input.validationType === "numeric" ? parsedMin : null,
-    example: example || null,
-    status: input.status as ReceiptFormat["status"]
-  });
+  let updated: ReceiptFormat | null = null;
+
+  try {
+    updated = await accessRepository.updateReceiptFormat({
+      receiptFormatId: input.receiptFormatId,
+      clubId: context.activeClub.id,
+      name,
+      validationType: input.validationType as ReceiptFormat["validationType"],
+      pattern: input.validationType === "pattern" ? pattern : null,
+      minNumericValue: input.validationType === "numeric" ? parsedMin : null,
+      example: example || null,
+      status: input.status as ReceiptFormat["status"]
+    });
+  } catch (error) {
+    return resolveTreasurySettingsMutationError(error, "update_receipt_format_for_active_club", context.activeClub.id);
+  }
 
   if (!updated) {
     return { ok: false, code: "unknown_error" };
