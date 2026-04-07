@@ -22,8 +22,7 @@ const settingsSuccessFeedbackCodes = new Set([
   "activity_created",
   "activity_updated",
   "receipt_format_created",
-  "receipt_format_updated",
-  "movement_types_updated"
+  "receipt_format_updated"
 ]);
 
 const dashboardSuccessFeedbackCodes = new Set([

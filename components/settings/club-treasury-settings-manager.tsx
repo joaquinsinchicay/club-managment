@@ -16,7 +16,6 @@ import { texts } from "@/lib/texts";
 
 type ClubTreasurySettingsManagerProps = {
   treasurySettings: TreasurySettings;
-  setMovementTypesAction: (formData: FormData) => Promise<void>;
   createTreasuryAccountAction: (formData: FormData) => Promise<void>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<void>;
   createTreasuryCategoryAction: (formData: FormData) => Promise<void>;
@@ -37,8 +36,18 @@ function getAccountTypeLabel(accountType: TreasuryAccount["accountType"]) {
   return texts.settings.club.treasury.account_types[accountType];
 }
 
-function getAccountScopeLabel(accountScope: TreasuryAccount["accountScope"]) {
-  return texts.settings.club.treasury.account_scopes[accountScope];
+function getAccountVisibilityLabel(account: TreasuryAccount) {
+  const labels = [];
+
+  if (account.visibleForSecretaria) {
+    labels.push(texts.settings.club.treasury.account_visibility_options.secretaria);
+  }
+
+  if (account.visibleForTesoreria) {
+    labels.push(texts.settings.club.treasury.account_visibility_options.tesoreria);
+  }
+
+  return labels.join(" + ");
 }
 
 function getStatusLabel(status: TreasuryAccount["status"]) {
@@ -57,8 +66,20 @@ function getMovementTypeLabel(movementType: TreasuryMovementType) {
   return texts.dashboard.treasury.movement_types[movementType];
 }
 
+function getEmojiOptions(options: string[], currentEmoji?: string | null) {
+  if (currentEmoji && !options.includes(currentEmoji)) {
+    return [currentEmoji, ...options];
+  }
+
+  return options;
+}
+
 const TREASURY_CURRENCY_OPTIONS: TreasuryCurrencyCode[] = ["ARS", "USD"];
 const TREASURY_MOVEMENT_TYPE_OPTIONS: TreasuryMovementType[] = ["ingreso", "egreso"];
+const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
+const TREASURY_ACCOUNT_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.accounts;
+const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
+const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
 
 type ClubActivityFormProps = {
   action: (formData: FormData) => Promise<void>;
@@ -102,12 +123,18 @@ function ClubActivityForm({
 
         <label className="grid gap-2 text-sm text-foreground">
           <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-          <input
-            type="text"
+          <select
             name="emoji"
             defaultValue={defaultActivity?.emoji ?? ""}
             className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
+          >
+            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+            {getEmojiOptions(TREASURY_ACTIVITY_EMOJI_OPTIONS, defaultActivity?.emoji).map((emoji) => (
+              <option key={`activity-emoji-${emoji}`} value={emoji}>
+                {emoji}
+              </option>
+            ))}
+          </select>
         </label>
 
         <PendingSubmitButton
@@ -168,29 +195,34 @@ function TreasuryAccountForm({
           </select>
         </label>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.account_scope_label}</span>
-          <select
-            name="account_scope"
-            defaultValue={defaultAccount?.accountScope ?? "secretaria"}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="secretaria">{texts.settings.club.treasury.account_scopes.secretaria}</option>
-            <option value="tesoreria">{texts.settings.club.treasury.account_scopes.tesoreria}</option>
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.visibility_label}</span>
-          <select
-            name="visible_for_secretaria"
-            defaultValue={String(defaultAccount?.visibleForSecretaria ?? true)}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="true">{texts.settings.club.treasury.visibility_visible}</option>
-            <option value="false">{texts.settings.club.treasury.visibility_hidden}</option>
-          </select>
-        </label>
+        <fieldset className="grid gap-3">
+          <legend className="text-sm font-medium text-foreground">
+            {texts.settings.club.treasury.account_visibility_label}
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
+              <label
+                key={`account-visibility-${visibility}`}
+                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              >
+                <input
+                  type="checkbox"
+                  name="visibility"
+                  value={visibility}
+                  defaultChecked={
+                    visibility === "secretaria"
+                      ? (defaultAccount?.visibleForSecretaria ?? true)
+                      : (defaultAccount?.visibleForTesoreria ?? false)
+                  }
+                  className="size-4 rounded border-border"
+                />
+                <span className="font-medium">
+                  {texts.settings.club.treasury.account_visibility_options[visibility]}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <label className="grid gap-2 text-sm text-foreground">
           <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
@@ -206,12 +238,18 @@ function TreasuryAccountForm({
 
         <label className="grid gap-2 text-sm text-foreground">
           <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-          <input
-            type="text"
+          <select
             name="emoji"
             defaultValue={defaultAccount?.emoji ?? ""}
             className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
+          >
+            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+            {getEmojiOptions(TREASURY_ACCOUNT_EMOJI_OPTIONS, defaultAccount?.emoji).map((emoji) => (
+              <option key={`account-emoji-${emoji}`} value={emoji}>
+                {emoji}
+              </option>
+            ))}
+          </select>
         </label>
 
         <fieldset className="grid gap-3">
@@ -301,12 +339,18 @@ function TreasuryCategoryForm({
 
         <label className="grid gap-2 text-sm text-foreground">
           <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-          <input
-            type="text"
+          <select
             name="emoji"
             defaultValue={defaultCategory?.emoji ?? ""}
             className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
+          >
+            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+            {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
+              <option key={`category-emoji-${emoji}`} value={emoji}>
+                {emoji}
+              </option>
+            ))}
+          </select>
         </label>
 
         <PendingSubmitButton
@@ -421,7 +465,6 @@ function ReceiptFormatForm({
 
 export function ClubTreasurySettingsManager({
   treasurySettings,
-  setMovementTypesAction,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
   createTreasuryCategoryAction,
@@ -439,9 +482,6 @@ export function ClubTreasurySettingsManager({
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
   const [isCreatingReceiptFormat, setIsCreatingReceiptFormat] = useState(false);
   const [editingReceiptFormatId, setEditingReceiptFormatId] = useState<string | null>(null);
-  const enabledMovementTypes = treasurySettings.movementTypes
-    .filter((movementType) => movementType.isEnabled)
-    .map((movementType) => movementType.movementType);
   const availableAccountCurrencies: TreasuryCurrencyCode[] = TREASURY_CURRENCY_OPTIONS;
 
   return (
@@ -465,38 +505,23 @@ export function ClubTreasurySettingsManager({
           </p>
         </div>
 
-        <form action={setMovementTypesAction} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
-          <PendingFieldset className="grid gap-4">
-            <fieldset className="grid gap-3">
-              <legend className="text-sm font-medium text-foreground">
-                {texts.settings.club.treasury.movement_type_selection_label}
-              </legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {TREASURY_MOVEMENT_TYPE_OPTIONS.map((movementType) => (
-                  <label
-                    key={movementType}
-                    className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <input
-                      type="checkbox"
-                      name="movement_types"
-                      value={movementType}
-                      defaultChecked={enabledMovementTypes.includes(movementType)}
-                      className="size-4 rounded border-border"
-                    />
-                    <span className="font-medium">{getMovementTypeLabel(movementType)}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <PendingSubmitButton
-              idleLabel={texts.settings.club.treasury.save_movement_types_cta}
-              pendingLabel={texts.settings.club.treasury.save_movement_types_loading}
-              className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-            />
-          </PendingFieldset>
-        </form>
+        <div className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
+          <div className="grid gap-3">
+            <p className="text-sm font-medium text-foreground">
+              {texts.settings.club.treasury.movement_type_selection_label}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {TREASURY_MOVEMENT_TYPE_OPTIONS.map((movementType) => (
+                <div
+                  key={movementType}
+                  className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                >
+                  <span className="font-medium">{getMovementTypeLabel(movementType)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="space-y-4">
@@ -555,9 +580,9 @@ export function ClubTreasurySettingsManager({
                       </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_scope_label}
+                          {texts.settings.club.treasury.account_visibility_label}
                         </span>
-                        <span className="font-medium">{getAccountScopeLabel(account.accountScope)}</span>
+                        <span className="font-medium">{getAccountVisibilityLabel(account)}</span>
                       </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -565,14 +590,6 @@ export function ClubTreasurySettingsManager({
                         </span>
                         <span className="font-medium">{getStatusLabel(account.status)}</span>
                       </span>
-                      {account.accountScope === "secretaria" ? (
-                        <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                          <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                            {texts.settings.club.treasury.visibility_label}
-                          </span>
-                          <span className="font-medium">{getVisibilityLabel(account.visibleForSecretaria)}</span>
-                        </span>
-                      ) : null}
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           {texts.settings.club.treasury.account_currencies_label}

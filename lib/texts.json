@@ -235,11 +235,9 @@
         "activities_title": "Actividades",
         "activities_description": "Administra las actividades deportivas que Secretaria podra asociar a los movimientos.",
         "movement_types_title": "Tipos de movimiento",
-        "movement_types_description": "Habilita los tipos fijos del sistema que Secretaria podra usar en los movimientos manuales.",
+        "movement_types_description": "Muestra los tipos fijos del sistema que Secretaria usara en los movimientos manuales.",
         "receipt_formats_title": "Formatos de recibo",
         "receipt_formats_description": "Configura los formatos validos del campo recibo para la operatoria diaria.",
-        "save_movement_types_cta": "Guardar tipos",
-        "save_movement_types_loading": "Guardando tipos...",
         "create_account_cta": "Crear cuenta",
         "edit_account_cta": "Editar cuenta",
         "save_account_cta": "Guardar cuenta",
@@ -269,6 +267,7 @@
         "activity_name_label": "Nombre",
         "receipt_name_label": "Nombre",
         "account_type_label": "Tipo",
+        "account_visibility_label": "Visibilidad",
         "account_scope_label": "Ambito",
         "account_currencies_label": "Monedas habilitadas",
         "account_type_placeholder": "Selecciona un tipo",
@@ -276,12 +275,13 @@
         "receipt_min_label": "Valor minimo",
         "receipt_pattern_label": "Patron",
         "receipt_example_label": "Ejemplo",
-        "movement_type_selection_label": "Tipos habilitados",
+        "movement_type_selection_label": "Tipos del sistema",
         "visibility_label": "Visible para Secretaria",
         "visibility_visible": "Visible",
         "visibility_hidden": "Oculta",
         "status_label": "Estado",
         "emoji_label": "Emoji",
+        "emoji_placeholder": "Selecciona un emoji",
         "default_account_emoji": "💼",
         "default_category_emoji": "📁",
         "default_activity_emoji": "🏅",
@@ -298,6 +298,15 @@
           "secretaria": "Secretaria",
           "tesoreria": "Tesoreria"
         },
+        "account_visibility_options": {
+          "secretaria": "Secretaria",
+          "tesoreria": "Tesoreria"
+        },
+        "emoji_options": {
+          "accounts": ["💵", "🏦", "💼", "📈", "🏛️"],
+          "categories": ["📄", "🧾", "⚖️", "📁", "💳"],
+          "activities": ["🏅", "⚽", "🥊", "🏑", "🏀"]
+        },
         "statuses": {
           "active": "Activa",
           "inactive": "Inactiva"
@@ -311,7 +320,6 @@
           "USD": "USD"
         },
         "feedback": {
-          "movement_types_updated": "Los tipos de movimiento fueron actualizados correctamente para el club activo.",
           "account_created": "La cuenta fue registrada correctamente en el club activo.",
           "account_updated": "La cuenta fue actualizada correctamente.",
           "category_created": "La categoria fue registrada correctamente en el club activo.",
@@ -327,14 +335,14 @@
           "receipt_format_name_required": "Debes completar el nombre del formato de recibo.",
           "receipt_format_min_required": "Debes completar un valor minimo valido para el formato numerico.",
           "receipt_format_pattern_required": "Debes completar un patron para el formato con nomenclatura.",
-          "movement_types_required": "Debes seleccionar al menos un tipo de movimiento para el club activo.",
           "account_currencies_required": "Debes seleccionar al menos una moneda para la cuenta.",
+          "account_visibility_required": "Debes seleccionar al menos una visibilidad para la cuenta.",
           "duplicate_account_name": "Ya existe una cuenta activa con ese nombre en el club activo.",
           "duplicate_category_name": "Ya existe una categoria activa con ese nombre en el club activo.",
           "duplicate_activity_name": "Ya existe una actividad activa con ese nombre en el club activo.",
           "duplicate_receipt_format_name": "Ya existe un formato de recibo activo con ese nombre en el club activo.",
           "invalid_account_type": "El tipo de cuenta seleccionado no es valido.",
-          "invalid_account_scope": "El ambito seleccionado para la cuenta no es valido.",
+          "invalid_emoji_option": "Debes seleccionar un emoji valido del listado del sistema.",
           "invalid_account_currency": "Las monedas seleccionadas para la cuenta deben ser ARS y/o USD.",
           "invalid_config_status": "El estado seleccionado no es valido.",
           "invalid_receipt_validation_type": "El tipo de validacion seleccionado no es valido.",

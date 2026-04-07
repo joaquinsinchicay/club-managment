@@ -86,7 +86,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 1. Un admin entra a `Configuración del club`.
 2. Abre la solapa `Tesorería`.
 3. Visualiza la sección `Actividades`.
-4. Crea o edita una actividad con nombre, estado y emoji.
+4. Crea o edita una actividad con nombre, estado y emoji seleccionado desde un listado simple del sistema.
 5. El sistema valida y guarda la configuración.
 6. Las actividades activas quedan disponibles para el formulario de movimientos.
 
@@ -120,6 +120,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - La sección debe convivir con cuentas y categorías dentro de `Tesorería`.
 - El listado debe ser simple de escanear en mobile.
 - El estado vacío debe quedar claro y accionable.
+- El campo `Emoji` debe resolverse con un selector simple de opciones predefinidas del sistema.
 - Al crear o editar, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - No debe haber textos hardcodeados.
 
@@ -147,10 +148,12 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 | label | `settings.club.treasury.activity_name_label` | Nombre de la actividad. |
 | label | `settings.club.treasury.status_label` | Estado de la actividad. |
 | label | `settings.club.treasury.emoji_label` | Emoji. |
+| label | `settings.club.treasury.emoji_placeholder` | Placeholder del selector de emoji. |
 | empty | `settings.club.treasury.empty_activities` | Estado vacío. |
 | feedback | `settings.club.treasury.feedback.activity_created` | Alta exitosa. |
 | feedback | `settings.club.treasury.feedback.activity_updated` | Edición exitosa. |
 | feedback | `settings.club.treasury.feedback.activity_name_required` | Nombre obligatorio. |
+| feedback | `settings.club.treasury.feedback.invalid_emoji_option` | Emoji fuera del catálogo predefinido del sistema. |
 | feedback | `settings.club.treasury.feedback.duplicate_activity_name` | Duplicado activo. |
 
 ---

@@ -12,6 +12,8 @@ create type membership_role as enum ('admin', 'secretaria', 'tesoreria');
 create type membership_status as enum ('pendiente_aprobacion', 'activo', 'inactivo');
 
 create type account_type as enum ('efectivo', 'bancaria', 'billetera_virtual', 'otra');
+-- Legacy enum kept for backward compatibility while visibility is driven by
+-- `visible_for_secretaria` and `visible_for_tesoreria`.
 create type account_scope as enum ('secretaria', 'tesoreria');
 
 create type movement_type as enum ('ingreso', 'egreso');
@@ -103,6 +105,8 @@ id uuid primary key default uuid_generate_v4(),
 club_id uuid not null references clubs(id),
 name text not null,
 account_type account_type not null,
+-- Legacy field kept for compatibility. Business logic must resolve account
+-- visibility from `visible_for_secretaria` and `visible_for_tesoreria`.
 account_scope account_scope not null,
 status text not null,
 visible_for_secretaria boolean default true,

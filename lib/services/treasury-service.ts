@@ -71,7 +71,7 @@ function buildMovementSignedAmount(movementType: "ingreso" | "egreso", amount: n
 
 async function getSecretariaAccounts(clubId: string) {
   const accounts = await accessRepository.listTreasuryAccountsForClub(clubId);
-  return accounts.filter((account) => account.accountScope === "secretaria");
+  return accounts.filter((account) => account.visibleForSecretaria);
 }
 
 async function getConfiguredTreasuryCurrencies(clubId: string): Promise<TreasuryCurrencyConfig[]> {
@@ -90,12 +90,6 @@ async function getConfiguredTreasuryCurrencies(clubId: string): Promise<Treasury
 }
 
 async function getConfiguredMovementTypes(clubId: string): Promise<MovementTypeConfig[]> {
-  const movementTypes = await accessRepository.listMovementTypeConfigForClub(clubId);
-
-  if (movementTypes.length > 0) {
-    return movementTypes;
-  }
-
   return [
     {
       clubId,
@@ -460,7 +454,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id)
   ]);
 
-  const secretaryAccounts = accounts.filter((account) => account.accountScope === "secretaria");
+  const secretaryAccounts = accounts.filter((account) => account.visibleForSecretaria);
   const movements = session ? await accessRepository.listTreasuryMovementsBySession(session.id) : [];
 
   return {
@@ -598,7 +592,7 @@ export async function createTreasuryMovement(input: {
   }
 
   const account = accounts.find(
-    (entry) => entry.id === input.accountId && entry.accountScope === "secretaria"
+    (entry) => entry.id === input.accountId && entry.visibleForSecretaria
   );
 
   if (!account) {
@@ -754,7 +748,7 @@ export async function getTreasuryAccountDetailForActiveClub(
     accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
   ]);
 
-  const secretariaAccounts = accounts.filter((account) => account.accountScope === "secretaria");
+  const secretariaAccounts = accounts.filter((account) => account.visibleForSecretaria);
   const selectedAccount = secretariaAccounts.find((account) => account.id === accountId) ?? secretariaAccounts[0] ?? null;
 
   if (!selectedAccount) {

@@ -14,7 +14,6 @@ import {
   createReceiptFormatForActiveClub,
   createTreasuryAccountForActiveClub,
   createTreasuryCategoryForActiveClub,
-  setMovementTypesForActiveClub,
   updateClubActivityForActiveClub,
   updateReceiptFormatForActiveClub,
   updateTreasuryAccountForActiveClub,
@@ -76,19 +75,10 @@ export async function createTreasuryAccountAction(formData: FormData) {
   const result = await createTreasuryAccountForActiveClub({
     name: String(formData.get("name") ?? ""),
     accountType: String(formData.get("account_type") ?? ""),
-    accountScope: String(formData.get("account_scope") ?? ""),
-    visibleForSecretaria: String(formData.get("visible_for_secretaria") ?? "") === "true",
+    visibility: formData.getAll("visibility").map((value) => String(value)),
     currencies: formData.getAll("currencies").map((value) => String(value)),
     status: String(formData.get("status") ?? ""),
     emoji: String(formData.get("emoji") ?? "")
-  });
-
-  redirectToSettings(result.code, "treasury");
-}
-
-export async function setMovementTypesAction(formData: FormData) {
-  const result = await setMovementTypesForActiveClub({
-    movementTypes: formData.getAll("movement_types").map((value) => String(value))
   });
 
   redirectToSettings(result.code, "treasury");
@@ -99,8 +89,7 @@ export async function updateTreasuryAccountAction(formData: FormData) {
     accountId: String(formData.get("account_id") ?? ""),
     name: String(formData.get("name") ?? ""),
     accountType: String(formData.get("account_type") ?? ""),
-    accountScope: String(formData.get("account_scope") ?? ""),
-    visibleForSecretaria: String(formData.get("visible_for_secretaria") ?? "") === "true",
+    visibility: formData.getAll("visibility").map((value) => String(value)),
     currencies: formData.getAll("currencies").map((value) => String(value)),
     status: String(formData.get("status") ?? ""),
     emoji: String(formData.get("emoji") ?? "")

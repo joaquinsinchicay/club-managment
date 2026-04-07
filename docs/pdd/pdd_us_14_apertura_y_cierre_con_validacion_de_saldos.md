@@ -28,8 +28,8 @@ El sistema debe ofrecer una pantalla dedicada de apertura y otra de cierre diari
 ## 4. Alcance
 
 ### Incluye
-- Pantalla de apertura diaria con todas las cuentas de Secretaría.
-- Pantalla de cierre diario con todas las cuentas de Secretaría.
+- Pantalla de apertura diaria con todas las cuentas con visibilidad `secretaria`.
+- Pantalla de cierre diario con todas las cuentas con visibilidad `secretaria`.
 - Precarga del saldo esperado por cuenta y moneda.
 - Edición del saldo declarado por cuenta y moneda.
 - Detección y visualización de diferencias.
@@ -77,7 +77,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Solo `secretaria` puede acceder a apertura y cierre diario en este bloque.
 - La apertura solo está disponible si no existe jornada creada para el día actual.
 - El cierre solo está disponible si existe una jornada `open` para el día actual.
-- La UI muestra exclusivamente cuentas `secretaria` del club activo.
+- La UI muestra exclusivamente cuentas con visibilidad `secretaria` del club activo.
 - Cada cuenta visible debe mostrar el saldo esperado actual por moneda habilitada.
 - Todos los saldos declarados son obligatorios al confirmar.
 - Si el saldo declarado difiere del esperado, se genera un movimiento con categoría `Ajuste`.
@@ -187,7 +187,7 @@ Do not reference current code files.
 
 - La validación de acceso debe resolverse server-side sobre club activo y membership activo.
 - No debe ser posible generar ajustes sobre cuentas de otro club.
-- Las cuentas visibles deben limitarse a `account_scope = secretaria`.
+- Las cuentas visibles deben limitarse a cuentas con `visible_for_secretaria = true`.
 - La categoría `Ajuste` debe resolverse del club activo antes de persistir ajustes.
 
 ---

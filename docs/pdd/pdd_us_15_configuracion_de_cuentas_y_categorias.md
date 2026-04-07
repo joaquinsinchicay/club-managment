@@ -43,6 +43,7 @@ Desde `Configuración del club`, un usuario `tesoreria` debe visualizar una sola
 - Configuración de monedas por cuenta como input editable en esta historia.
 - Configuración de cuentas exclusivas de Tesorería.
 - Configuración de actividades, monedas globales, tipos de movimiento o formatos de recibo.
+- La edición de tipos de movimiento, que se muestran solo en modo lectura según US-24.
 
 ---
 
@@ -78,6 +79,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - Toda configuración aplica exclusivamente al club activo.
 - Las cuentas creadas en esta historia quedan orientadas a la operatoria de `secretaria`.
 - La definición explícita de monedas por cuenta queda superseded por US-28.
+- La visibilidad operativa de cuentas se define por rol y no por la combinación de `ámbito` más un campo visible redundante.
 - El nombre de cuenta es obligatorio.
 - El tipo de cuenta es obligatorio.
 - El nombre de categoría es obligatorio.
@@ -126,7 +128,9 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - La configuración debe mantenerse dentro de `settings/club`.
 - La solapa `Tesorería` debe ser visible al entrar a la pantalla solo para usuarios con rol `tesoreria`.
 - Un usuario con ambos roles puede alternar entre `Miembros` y `Tesorería` sin salir de la página.
+- La pantalla puede incluir bloques informativos read-only de catálogos fijos del sistema, sin convertirlos en configuraciones editables.
 - Al crear o editar cuentas/categorías, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
+- El campo `Emoji` en cuentas y categorías debe resolverse con un selector simple de opciones predefinidas del sistema.
 - Los formularios deben ser mobile-first y no incluir textos hardcodeados.
 
 ---
@@ -157,12 +161,14 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 | status | `settings.club.treasury.update_category_loading` | Estado visible mientras se actualiza una categoría. |
 | label | `settings.club.treasury.account_name_label` | Nombre de cuenta. |
 | label | `settings.club.treasury.account_type_label` | Tipo de cuenta. |
-| label | `settings.club.treasury.visibility_label` | Visibilidad para Secretaría. |
+| label | `settings.club.treasury.visibility_label` | Visibilidad para Secretaría en categorías. |
 | label | `settings.club.treasury.status_label` | Estado. |
 | label | `settings.club.treasury.emoji_label` | Emoji. |
+| label | `settings.club.treasury.emoji_placeholder` | Placeholder del selector de emoji. |
 | feedback | `settings.club.treasury.feedback.account_name_required` | Validación de nombre de cuenta. |
 | feedback | `settings.club.treasury.feedback.account_type_required` | Validación de tipo de cuenta. |
 | feedback | `settings.club.treasury.feedback.category_name_required` | Validación de nombre de categoría. |
+| feedback | `settings.club.treasury.feedback.invalid_emoji_option` | Emoji fuera del catálogo predefinido del sistema. |
 | feedback | `settings.club.treasury.feedback.duplicate_account_name` | Duplicado de cuenta. |
 | feedback | `settings.club.treasury.feedback.duplicate_category_name` | Duplicado de categoría. |
 
@@ -202,4 +208,4 @@ Do not reference current code files.
 |---|---|---|---|
 | Mezclar configuración de otro club | Media | Alta | Resolver siempre sobre club activo y validar ids server-side. |
 | Crear cuentas duplicadas activas | Media | Media | Validar nombres activos antes de persistir. |
-| Configuración incoherente con historias posteriores | Baja | Media | Tomar US-28 como fuente de verdad para monedas por cuenta y ámbitos extendidos. |
+| Configuración incoherente con historias posteriores | Baja | Media | Tomar US-28 como fuente de verdad para monedas por cuenta y visibilidad por rol. |

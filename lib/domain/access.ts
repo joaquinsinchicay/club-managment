@@ -82,7 +82,6 @@ export type TreasuryAccount = {
   clubId: string;
   name: string;
   accountType: TreasuryAccountType;
-  accountScope: "secretaria" | "tesoreria";
   status: TreasuryConfigStatus;
   visibleForSecretaria: boolean;
   visibleForTesoreria: boolean;

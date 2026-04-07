@@ -380,10 +380,8 @@ Sí
 {
   "name": "Caja principal",
   "account_type": "efectivo",
-  "account_scope": "secretaria",
   "status": "active",
-  "visible_for_secretaria": true,
-  "visible_for_tesoreria": false,
+  "visibility": ["secretaria"],
   "emoji": "💵",
   "currencies": ["ARS"]
 }
@@ -393,7 +391,9 @@ Sí
 
 * name obligatorio
 * account_type obligatorio
-* account_scope obligatorio
+* `visibility` debe incluir `secretaria`, `tesoreria` o ambos
+* `visibility` debe incluir al menos un rol
+* `emoji` debe pertenecer al catálogo predefinido del sistema para cuentas
 * `currencies` debe incluir al menos una moneda
 * `currencies` solo admite `ARS` y/o `USD`
 * no duplicar nombre activo en el club según regla de negocio
@@ -426,10 +426,8 @@ Sí
   "account_id": "uuid",
   "name": "Caja sede",
   "account_type": "efectivo",
-  "account_scope": "secretaria",
   "status": "active",
-  "visible_for_secretaria": true,
-  "visible_for_tesoreria": false,
+  "visibility": ["secretaria", "tesoreria"],
   "emoji": "💵",
   "currencies": ["ARS"]
 }
@@ -468,6 +466,10 @@ Sí
   "emoji": "📄"
 }
 ```
+
+**Validations**
+
+* `emoji` debe pertenecer al catálogo predefinido del sistema para categorías
 
 **Output**
 
@@ -535,6 +537,10 @@ Sí
 }
 ```
 
+**Validations**
+
+* `emoji` debe pertenecer al catálogo predefinido del sistema para actividades
+
 **Output**
 
 ```json
@@ -575,40 +581,6 @@ Sí
   "updated": true
 }
 ```
-
----
-
-### 5.9 Set movement types
-
-**Purpose**
-Configurar tipos de movimiento habilitados en el club.
-
-**Auth required**
-Sí
-
-**Allowed roles**
-`tesoreria`
-
-**Input**
-
-```json
-{
-  "movement_types": [
-    { "movement_type": "ingreso", "is_enabled": true },
-    { "movement_type": "egreso", "is_enabled": true }
-  ]
-}
-```
-
-**Output**
-
-```json
-{
-  "saved": true
-}
-```
-
----
 
 ### 5.10 Set field rules by category
 

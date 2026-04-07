@@ -66,7 +66,6 @@ type AccessRepository = {
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    accountScope: TreasuryAccount["accountScope"];
     status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
@@ -78,7 +77,6 @@ type AccessRepository = {
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    accountScope: TreasuryAccount["accountScope"];
     status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
@@ -388,7 +386,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Caja principal",
       accountType: "efectivo",
-      accountScope: "secretaria",
       status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: false,
@@ -400,7 +397,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Banco operativo",
       accountType: "bancaria",
-      accountScope: "secretaria",
       status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: false,
@@ -412,7 +408,6 @@ function createStore(): MockStore {
       clubId: CLUB_SUR_ID,
       name: "Caja Sur",
       accountType: "efectivo",
-      accountScope: "secretaria",
       status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: false,
@@ -424,7 +419,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Caja de inversion",
       accountType: "bancaria",
-      accountScope: "tesoreria",
       status: "active",
       visibleForSecretaria: false,
       visibleForTesoreria: true,
@@ -436,7 +430,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Reserva institucional",
       accountType: "bancaria",
-      accountScope: "tesoreria",
       status: "inactive",
       visibleForSecretaria: false,
       visibleForTesoreria: true,
@@ -794,7 +787,7 @@ function mapTreasuryAccountRow(
     club_id: string;
     name: string;
     account_type: TreasuryAccount["accountType"];
-    account_scope: TreasuryAccount["accountScope"];
+    account_scope: string;
     status: TreasuryAccount["status"];
     visible_for_secretaria: boolean | null;
     visible_for_tesoreria: boolean | null;
@@ -807,13 +800,19 @@ function mapTreasuryAccountRow(
     clubId: row.club_id,
     name: row.name,
     accountType: row.account_type,
-    accountScope: row.account_scope,
     status: row.status,
     visibleForSecretaria: row.visible_for_secretaria ?? true,
     visibleForTesoreria: row.visible_for_tesoreria ?? true,
     emoji: row.emoji,
     currencies
   };
+}
+
+function resolveLegacyAccountScope(input: {
+  visibleForSecretaria: boolean;
+  visibleForTesoreria: boolean;
+}) {
+  return input.visibleForSecretaria ? "secretaria" : "tesoreria";
 }
 
 function mapTreasuryCategoryRow(row: {
@@ -1218,7 +1217,7 @@ async function listRealTreasuryAccountsForClub(clubId: string, client?: AccessRe
     club_id: string;
     name: string;
     account_type: TreasuryAccount["accountType"];
-    account_scope: TreasuryAccount["accountScope"];
+    account_scope: string;
     status: TreasuryAccount["status"];
     visible_for_secretaria: boolean | null;
     visible_for_tesoreria: boolean | null;
@@ -1464,7 +1463,6 @@ async function createRealTreasuryAccount(
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    accountScope: TreasuryAccount["accountScope"];
     status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
@@ -1485,7 +1483,7 @@ async function createRealTreasuryAccount(
       club_id: input.clubId,
       name: input.name,
       account_type: input.accountType,
-      account_scope: input.accountScope,
+      account_scope: resolveLegacyAccountScope(input),
       status: input.status,
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
@@ -1520,7 +1518,6 @@ async function updateRealTreasuryAccount(
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    accountScope: TreasuryAccount["accountScope"];
     status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
@@ -1540,7 +1537,7 @@ async function updateRealTreasuryAccount(
     .update({
       name: input.name,
       account_type: input.accountType,
-      account_scope: input.accountScope,
+      account_scope: resolveLegacyAccountScope(input),
       status: input.status,
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
@@ -2369,7 +2366,6 @@ export const accessRepository: AccessRepository = {
       clubId: input.clubId,
       name: input.name,
       accountType: input.accountType,
-      accountScope: input.accountScope,
       status: input.status,
       visibleForSecretaria: input.visibleForSecretaria,
       visibleForTesoreria: input.visibleForTesoreria,
@@ -2396,7 +2392,6 @@ export const accessRepository: AccessRepository = {
 
     account.name = input.name;
     account.accountType = input.accountType;
-    account.accountScope = input.accountScope;
     account.status = input.status;
     account.visibleForSecretaria = input.visibleForSecretaria;
     account.visibleForTesoreria = input.visibleForTesoreria;

@@ -39,7 +39,7 @@ export default async function DashboardPage() {
   const canOperateTreasury = canOperateSecretaria(activeMembership);
   const treasuryAccounts = canOperateTreasury
     ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
-        (account) => account.accountScope === "secretaria"
+        (account) => account.visibleForSecretaria
       )
     : [];
   const [treasuryCategories, treasuryActivities, treasuryCurrencies, movementTypes, receiptFormats] = canOperateTreasury

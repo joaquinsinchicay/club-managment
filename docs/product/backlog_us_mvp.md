@@ -1309,7 +1309,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And estoy en la solapa "Tesorería"
     When la pantalla carga
     Then veo el listado de cuentas del club activo
-    And cada cuenta muestra nombre, tipo, estado, visibilidad para Secretaria y emoji
+    And cada cuenta muestra nombre, tipo, estado, visibilidad y emoji
 
   Scenario 04: Visualización de configuración de categorías
     Given estoy autenticado
@@ -1324,8 +1324,10 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And soy admin del club activo
     And estoy en la solapa "Tesorería"
     When selecciono crear una cuenta
-    Then veo un formulario con los campos "Nombre", "Tipo", "Visible para Secretaria", "Estado" y "Emoji"
+    Then veo un formulario con los campos "Nombre", "Tipo", "Visibilidad", "Estado" y "Emoji"
     And el campo "Tipo" ofrece las opciones "Efectivo", "Bancaria" y "Billetera virtual"
+    And el campo "Visibilidad" ofrece las opciones "Secretaria" y "Tesoreria"
+    And el campo "Emoji" ofrece un listado simple de emojis predefinidos
 
   Scenario 06: Creación exitosa de cuenta
     Given estoy autenticado
@@ -1333,7 +1335,8 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And estoy viendo el formulario de cuenta
     When completo un nombre válido
     And selecciono un tipo válido
-    And defino su visibilidad para Secretaria
+    And defino su visibilidad por rol
+    And selecciono un emoji del listado
     And defino su estado
     And confirmo la creación
     Then el sistema registra la cuenta en el club activo
@@ -1355,7 +1358,15 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     Then veo un mensaje indicando que el tipo es obligatorio
     And la cuenta no se registra
 
-  Scenario 09: No se permite duplicar cuentas activas con el mismo nombre en el club activo
+  Scenario 09: La cuenta debe tener al menos una visibilidad
+    Given estoy autenticado
+    And soy admin del club activo
+    And estoy viendo el formulario de cuenta
+    When intento guardar sin seleccionar ninguna visibilidad
+    Then veo un mensaje indicando que debo seleccionar al menos una visibilidad
+    And la cuenta no se registra
+
+  Scenario 10: No se permite duplicar cuentas activas con el mismo nombre en el club activo
     Given estoy autenticado
     And soy admin del club activo
     And ya existe una cuenta activa con un nombre determinado en el club activo
@@ -1363,26 +1374,28 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     Then el sistema bloquea la acción
     And veo un mensaje indicando que la cuenta ya existe
 
-  Scenario 10: Alta de categoría
+  Scenario 11: Alta de categoría
     Given estoy autenticado
     And soy admin del club activo
     And estoy en la solapa "Tesorería"
     When selecciono crear una categoría
     Then veo un formulario con los campos "Nombre", "Visible para Secretaria", "Estado" y "Emoji"
     And el campo "Nombre" permite seleccionar o cargar una categoría para el club
+    And el campo "Emoji" ofrece un listado simple de emojis predefinidos
 
-  Scenario 11: Creación exitosa de categoría
+  Scenario 12: Creación exitosa de categoría
     Given estoy autenticado
     And soy admin del club activo
     And estoy viendo el formulario de categoría
     When completo un nombre válido
     And defino su visibilidad para Secretaria
+    And selecciono un emoji del listado
     And defino su estado
     And confirmo la creación
     Then el sistema registra la categoría en el club activo
     And la categoría queda disponible según su configuración
 
-  Scenario 12: Nombre de categoría obligatorio
+  Scenario 13: Nombre de categoría obligatorio
     Given estoy autenticado
     And soy admin del club activo
     And estoy viendo el formulario de categoría
@@ -1390,7 +1403,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     Then veo un mensaje indicando que el nombre es obligatorio
     And la categoría no se registra
 
-  Scenario 13: No se permite duplicar categorías activas con el mismo nombre en el club activo
+  Scenario 14: No se permite duplicar categorías activas con el mismo nombre en el club activo
     Given estoy autenticado
     And soy admin del club activo
     And ya existe una categoría activa con un nombre determinado en el club activo
@@ -1398,15 +1411,15 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     Then el sistema bloquea la acción
     And veo un mensaje indicando que la categoría ya existe
 
-  Scenario 14: Edición de cuenta
+  Scenario 15: Edición de cuenta
     Given estoy autenticado
     And soy admin del club activo
     And existe una cuenta en el club activo
-    When edito su nombre, tipo, visibilidad para Secretaria, estado o emoji
+    When edito su nombre, tipo, visibilidad, estado o emoji
     Then el sistema actualiza la cuenta
     And los cambios aplican solo al club activo
 
-  Scenario 15: Edición de categoría
+  Scenario 16: Edición de categoría
     Given estoy autenticado
     And soy admin del club activo
     And existe una categoría en el club activo
@@ -1414,36 +1427,36 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     Then el sistema actualiza la categoría
     And los cambios aplican solo al club activo
 
-  Scenario 16: Cuenta inactiva no aparece para Secretaria
+  Scenario 17: Cuenta inactiva no aparece para Secretaria
     Given existe una cuenta inactiva en el club activo
     When Secretaria accede a apertura, cierre o registro de movimientos
     Then esa cuenta no aparece entre las opciones disponibles
 
-  Scenario 17: Cuenta no visible para Secretaria no aparece en su operatoria
+  Scenario 18: Cuenta sin visibilidad para Secretaria no aparece en su operatoria
     Given existe una cuenta activa en el club activo
     And la cuenta no está marcada como visible para Secretaria
     When Secretaria accede a apertura, cierre o registro de movimientos
     Then esa cuenta no aparece entre las opciones disponibles
 
-  Scenario 18: Categoría inactiva no aparece para Secretaria
+  Scenario 19: Categoría inactiva no aparece para Secretaria
     Given existe una categoría inactiva en el club activo
     When Secretaria accede al registro de movimientos
     Then esa categoría no aparece entre las opciones disponibles
 
-  Scenario 19: Categoría no visible para Secretaria no aparece en su operatoria
+  Scenario 20: Categoría no visible para Secretaria no aparece en su operatoria
     Given existe una categoría activa en el club activo
     And la categoría no está marcada como visible para Secretaria
     When Secretaria accede al registro de movimientos
     Then esa categoría no aparece entre las opciones disponibles
 
-  Scenario 20: Inicialización desde template
+  Scenario 21: Inicialización desde template
     Given estoy autenticado
     And soy admin del club activo
     And el club aún no tiene configuración de tesorería
     When ingreso a la solapa "Tesorería"
     Then puedo iniciar la configuración a partir de un template base del sistema
 
-  Scenario 21: Template crea configuración editable
+  Scenario 22: Template crea configuración editable
     Given estoy autenticado
     And soy admin del club activo
     And seleccioné un template base
@@ -1452,7 +1465,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
     And el sistema crea categorías iniciales del template base
     And esas configuraciones pueden editarse, activarse o desactivarse posteriormente
 
-  Scenario 22: Template base de categorías del sistema
+  Scenario 23: Template base de categorías del sistema
     Given estoy autenticado
     And soy admin del club activo
     When consulto el template base de categorías
@@ -1883,12 +1896,14 @@ Feature: US-20 — Configuración de actividades del club
     And soy admin del club activo
     When selecciono crear una actividad
     Then veo un formulario con los campos "Nombre", "Estado" y "Emoji"
+    And el campo "Emoji" ofrece un listado simple de emojis predefinidos
 
   Scenario 05: Creación exitosa de actividad
     Given estoy autenticado
     And soy admin del club activo
     And estoy viendo el formulario de actividad
     When completo un nombre válido
+    And selecciono un emoji del listado
     And defino su estado
     And confirmo la creación
     Then el sistema registra la actividad en el club activo
@@ -2139,62 +2154,45 @@ Feature: US-23 — Configuración de monedas disponibles para tesorería
 
 ### E03 💰 Tesorería / US-24 — Configuración de tipos de movimiento fijos del sistema
 
-> *Como Admin del club, quiero configurar qué tipos de movimiento fijos del sistema estarán disponibles en tesorería, para que Secretaria pueda registrar ingresos y egresos de forma consistente.*
+> *Como usuario con acceso a la configuración de tesorería, quiero visualizar los tipos de movimiento fijos del sistema, para entender qué opciones usa Secretaria en los movimientos manuales.*
 
 **Acceptance Criteria — Gherkin**
 
 ```gherkin
-Feature: US-24 — Configuración de tipos de movimiento fijos del sistema
+Feature: US-24 — Visualización de tipos de movimiento fijos del sistema
 
   Scenario 01: Acceso a la configuración de tipos de movimiento
     Given estoy autenticado
-    And soy admin del club activo
+    And tengo acceso a la configuración de tesorería del club activo
     And estoy en "Configuración del club"
     When ingreso a la solapa "Tesorería"
     Then veo una sección de configuración de tipos de movimiento
 
-  Scenario 02: Usuario no admin no accede a la configuración
+  Scenario 02: Usuario sin acceso a tesorería no accede a la configuración
     Given estoy autenticado
-    And no soy admin del club activo
+    And no tengo acceso a la configuración de tesorería del club activo
     When intento acceder a la configuración de tipos de movimiento
     Then no tengo acceso a la funcionalidad
 
   Scenario 03: Visualización del listado fijo del sistema
     Given estoy autenticado
-    And soy admin del club activo
+    And tengo acceso a la configuración de tesorería del club activo
     When ingreso a la configuración de tipos de movimiento
     Then veo el listado fijo del sistema con las opciones "Ingreso" y "Egreso"
+    And no veo controles de edición para esos tipos
 
-  Scenario 04: Selección de tipos disponibles para el club
+  Scenario 04: La sección es de solo lectura
     Given estoy autenticado
-    And soy admin del club activo
+    And tengo acceso a la configuración de tesorería del club activo
     And estoy en la configuración de tipos de movimiento
-    When selecciono uno o más tipos del listado fijo
-    And confirmo la configuración
-    Then el sistema guarda esos tipos como disponibles para el club activo
+    Then no veo checkboxes, switches ni botón de guardado
 
-  Scenario 05: Al menos un tipo debe estar habilitado
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy en la configuración de tipos de movimiento
-    When intento guardar sin seleccionar ningún tipo
-    Then veo un mensaje indicando que debo seleccionar al menos un tipo de movimiento
-    And la configuración no se guarda
-
-  Scenario 06: Secretaria ve solo los tipos habilitados
-    Given existe una configuración de tipos de movimiento para el club activo
-    And tengo rol "Secretaria" en el club activo
+  Scenario 05: Secretaria ve siempre los tipos fijos del sistema
+    Given tengo rol "Secretaria" en el club activo
     When accedo al formulario de registro de movimientos
-    Then en el campo "Tipo" veo únicamente los tipos habilitados para el club activo
+    Then en el campo "Tipo" veo las opciones "Ingreso" y "Egreso"
 
-  Scenario 07: Tipo no habilitado no aparece para Secretaria
-    Given existe una configuración de tipos de movimiento para el club activo
-    And el tipo "Egreso" no está habilitado
-    And tengo rol "Secretaria" en el club activo
-    When accedo al formulario de registro de movimientos
-    Then no veo el tipo "Egreso" entre las opciones disponibles
-
-  Scenario 08: Impacto del tipo en el saldo
+  Scenario 06: Impacto del tipo en el saldo
     Given tengo rol "Secretaria" en el club activo
     And existe una jornada abierta
     When registro un movimiento de tipo "Ingreso"
@@ -2202,25 +2200,18 @@ Feature: US-24 — Configuración de tipos de movimiento fijos del sistema
     When registro un movimiento de tipo "Egreso"
     Then el sistema resta el importe al saldo de la cuenta correspondiente
 
-  Scenario 09: El importe siempre se carga como valor positivo
+  Scenario 07: El importe siempre se carga como valor positivo
     Given tengo rol "Secretaria" en el club activo
     When registro un movimiento
     Then el campo "Importe" espera un valor mayor a cero
     And el impacto en el saldo se determina por el tipo de movimiento seleccionado
 
-  Scenario 10: Cambio de configuración impacta en el formulario de Secretaria
-    Given estoy autenticado
-    And soy admin del club activo
-    And existe una configuración previa de tipos de movimiento
-    When modifico los tipos habilitados
-    Then el cambio se refleja en el formulario de movimientos de Secretaria del club activo
-
-  Scenario 11: Configuración por club activo
-    Given estoy autenticado
-    And soy admin en más de un club
-    When habilito o deshabilito tipos de movimiento
-    Then la configuración aplica únicamente al club activo
-    And no afecta la configuración de otros clubes
+  Scenario 08: Backend rechaza tipos invalidos
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta
+    When envio manualmente un tipo distinto de "Ingreso" o "Egreso"
+    Then el sistema rechaza la operación
+    And no se crea el movimiento
 ```
 
 ---
@@ -2531,10 +2522,10 @@ Feature: US-27 — Registro de movimientos de Tesorería en cuentas propias
   Scenario 03: Tesorería solo ve cuentas habilitadas para su rol
     Given estoy autenticado
     And tengo rol "Tesorería" en el club activo
-    And existen cuentas configuradas para Tesorería
+    And existen cuentas con visibilidad para Tesorería
     When abro el formulario de registro de movimientos
     Then veo únicamente las cuentas habilitadas para Tesorería
-    And no veo las cuentas exclusivas de Secretaria
+    And no veo las cuentas sin visibilidad para Tesorería
 
   Scenario 04: Campos visibles al iniciar la carga
     Given estoy autenticado
@@ -2668,10 +2659,10 @@ Feature: US-27 — Registro de movimientos de Tesorería en cuentas propias
   Scenario 03: Tesorería solo ve cuentas habilitadas para su rol
     Given estoy autenticado
     And tengo rol "Tesorería" en el club activo
-    And existen cuentas configuradas para Tesorería
+    And existen cuentas con visibilidad para Tesorería
     When abro el formulario de registro de movimientos
     Then veo únicamente las cuentas habilitadas para Tesorería
-    And no veo las cuentas exclusivas de Secretaria
+    And no veo las cuentas sin visibilidad para Tesorería
 
   Scenario 04: Campos visibles al iniciar la carga
     Given estoy autenticado
@@ -2816,6 +2807,7 @@ Feature: US-28 — Configuración de cuentas de Tesorería y monedas habilitadas
     And soy admin del club activo
     When selecciono crear una cuenta de Tesorería
     Then veo un formulario con los campos "Nombre", "Estado", "Emoji" y "Monedas habilitadas"
+    And el campo "Emoji" ofrece un listado simple de emojis predefinidos
 
   Scenario 05: Nombre de cuenta obligatorio
     Given estoy autenticado
@@ -2838,6 +2830,7 @@ Feature: US-28 — Configuración de cuentas de Tesorería y monedas habilitadas
     And soy admin del club activo
     And estoy viendo el formulario de cuenta de Tesorería
     When completo un nombre válido
+    And selecciono un emoji del listado
     And selecciono una sola moneda habilitada
     And defino su estado
     And confirmo la creación
@@ -2849,6 +2842,7 @@ Feature: US-28 — Configuración de cuentas de Tesorería y monedas habilitadas
     And soy admin del club activo
     And estoy viendo el formulario de cuenta de Tesorería
     When completo un nombre válido
+    And selecciono un emoji del listado
     And selecciono más de una moneda habilitada
     And defino su estado
     And confirmo la creación

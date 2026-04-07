@@ -68,7 +68,6 @@ Roles disponibles:
 | Crear actividad                | ❌     | ❌          | ✅         |
 | Editar actividad               | ❌     | ❌          | ✅         |
 | Configurar monedas             | ❌     | ❌          | ✅         |
-| Configurar tipos de movimiento | ❌     | ❌          | ✅         |
 | Configurar reglas de campos    | ❌     | ❌          | ✅         |
 | Configurar formatos de recibo  | ❌     | ❌          | ✅         |
 

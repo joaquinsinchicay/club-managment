@@ -72,7 +72,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Solo `secretaria` ve la card en este bloque.
 - La card usa únicamente datos del club activo.
 - Las acciones visibles dependen del estado de la jornada.
-- Los saldos se calculan a partir de movimientos del día de las cuentas visibles para Secretaría.
+- Los saldos se calculan a partir de movimientos del día de las cuentas con visibilidad `secretaria`.
+- Cada cuenta visible muestra sus saldos por todas las monedas habilitadas.
 - Si no hay cuentas, la card sigue siendo visible pero en estado vacío.
 
 ---
@@ -171,4 +172,3 @@ Do not reference current code files.
 | Mostrar saldos de otro club por no filtrar por club activo | Media | Alta | Resolver todo desde el club activo server-side. |
 | Mostrar CTA inconsistentes con el estado de jornada | Media | Media | Derivar acciones visibles únicamente del estado actual de la jornada. |
 | Estado vacío poco claro | Baja | Media | Definir copy específico para ausencia de cuentas. |
-

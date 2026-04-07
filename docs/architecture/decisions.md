@@ -118,9 +118,10 @@ No deben existir tablas separadas para cuentas de Secretaría y Tesorería.
 
 La disponibilidad operativa por rol se resuelve mediante configuración:
 
-* `account_scope`
 * `visible_for_secretaria`
 * `visible_for_tesoreria`
+
+`account_scope` puede conservarse solo como dato legacy de compatibilidad, pero no debe definir el comportamiento funcional.
 
 ## 5.2 Una sola tabla de movimientos
 

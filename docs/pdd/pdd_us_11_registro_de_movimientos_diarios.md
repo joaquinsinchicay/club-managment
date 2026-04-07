@@ -9,7 +9,7 @@
 | Epic | E03 · Tesorería |
 | User Story | Como Secretaria del club, quiero registrar movimientos diarios, para imputar correctamente ingresos y egresos en las cuentas del club durante una jornada abierta. |
 | Prioridad | Alta |
-| Objetivo de negocio | Permitir la carga básica de ingresos y egresos del día dentro de una jornada abierta, respetando validaciones mínimas de cuenta, categoría, moneda e importe. |
+| Objetivo de negocio | Permitir la carga básica de ingresos y egresos del día dentro de una jornada abierta, usando el catálogo fijo del sistema para tipos de movimiento y respetando validaciones mínimas de cuenta, categoría, moneda e importe. |
 
 ---
 
@@ -51,6 +51,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 - Existe una jornada abierta para el día actual y club activo.
 - Existen cuentas y categorías válidas para el club activo.
+- El catálogo fijo del sistema expone los tipos `Ingreso` y `Egreso`.
 
 ---
 
@@ -71,8 +72,10 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - El movimiento debe pertenecer al club activo.
 - Debe existir jornada `open` del día.
 - `movement_date` se fija al día actual y no es editable.
+- El campo `Tipo` usa siempre el catálogo fijo del sistema `Ingreso` y `Egreso`.
 - `amount` debe ser mayor a cero.
-- La cuenta y categoría deben pertenecer al club activo.
+- La cuenta debe pertenecer al club activo y tener visibilidad `secretaria`.
+- La categoría debe pertenecer al club activo.
 - La moneda debe ser válida para la cuenta elegida.
 - El movimiento resultante queda en `pending_consolidation`.
 
@@ -113,6 +116,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ### Reglas
 - El formulario debe estar disponible solo cuando tenga sentido operativo.
 - La fecha debe verse completa y bloqueada.
+- El campo `Tipo` debe mostrar siempre `Ingreso` y `Egreso`.
 - Los campos deben ser simples y legibles en mobile.
 - Debe existir acción de reset del formulario.
 - No debe haber textos hardcodeados.
@@ -177,7 +181,7 @@ Do not reference current code files.
 
 - contracts: `Get movement form config`, `Create treasury movement`.
 - domain entities: `treasury_movements`, `daily_cash_sessions`, `treasury_accounts`, `treasury_categories`.
-- other US if relevant: US-10 para estado de jornada; US-12 para exposición del resultado en dashboard.
+- other US if relevant: US-10 para estado de jornada; US-12 para exposición del resultado en dashboard; US-24 para visualización del catálogo fijo en settings.
 
 ---
 

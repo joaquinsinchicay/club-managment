@@ -138,11 +138,17 @@ Atributos:
 * club_id
 * name
 * account_type
-* account_scope
 * status
 * visible_for_secretaria
 * visible_for_tesoreria
 * emoji
+
+Reglas:
+
+* La visibilidad por rol es la fuente de verdad funcional de la cuenta.
+* Una cuenta debe ser visible para `secretaria`, `tesoreria` o ambos.
+* Si una cuenta es visible para un rol, ese rol puede consumirla en formularios y saldos donde corresponda.
+* `account_scope` puede conservarse como dato legacy en persistencia, pero no define el comportamiento de negocio.
 
 ---
 

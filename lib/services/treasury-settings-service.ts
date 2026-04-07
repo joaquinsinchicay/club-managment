@@ -10,6 +10,7 @@ import type {
 } from "@/lib/domain/access";
 import { canAccessTreasurySettings } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
+import { texts } from "@/lib/texts";
 
 type TreasurySettingsActionCode =
   | "forbidden"
@@ -25,18 +26,17 @@ type TreasurySettingsActionCode =
   | "activity_name_required"
   | "receipt_format_created"
   | "receipt_format_updated"
-  | "movement_types_updated"
   | "receipt_format_name_required"
   | "receipt_format_min_required"
   | "receipt_format_pattern_required"
-  | "movement_types_required"
   | "account_currencies_required"
   | "duplicate_account_name"
   | "duplicate_category_name"
   | "duplicate_activity_name"
   | "duplicate_receipt_format_name"
   | "invalid_account_type"
-  | "invalid_account_scope"
+  | "account_visibility_required"
+  | "invalid_emoji_option"
   | "invalid_account_currency"
   | "invalid_config_status"
   | "invalid_receipt_validation_type"
@@ -56,10 +56,10 @@ const TREASURY_ACCOUNT_TYPES: Array<TreasuryAccount["accountType"]> = [
   "bancaria",
   "billetera_virtual"
 ];
-const TREASURY_ACCOUNT_SCOPES: Array<TreasuryAccount["accountScope"]> = [
-  "secretaria",
-  "tesoreria"
-];
+const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
+const TREASURY_ACCOUNT_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.accounts;
+const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
+const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
 
 const TREASURY_STATUSES: Array<TreasuryAccount["status"]> = ["active", "inactive"];
 const TREASURY_CURRENCY_CODES: TreasuryCurrencyCode[] = ["ARS", "USD"];
@@ -88,8 +88,47 @@ function normalizeEmoji(rawEmoji: string) {
   return normalized.length > 0 ? normalized : null;
 }
 
+function resolveConfiguredEmoji(
+  rawEmoji: string,
+  allowedOptions: string[],
+  currentEmoji?: string | null
+): { valid: true; emoji: string | null } | { valid: false } {
+  const normalized = normalizeEmoji(rawEmoji);
+
+  if (!normalized) {
+    return { valid: true, emoji: null };
+  }
+
+  const acceptedOptions = currentEmoji && !allowedOptions.includes(currentEmoji)
+    ? [...allowedOptions, currentEmoji]
+    : allowedOptions;
+
+  if (!acceptedOptions.includes(normalized)) {
+    return { valid: false };
+  }
+
+  return { valid: true, emoji: normalized };
+}
+
 function normalizeConfigName(rawName: string) {
   return rawName.trim();
+}
+
+function normalizeAccountVisibility(input: string[]) {
+  return Array.from(
+    new Set(
+      input
+        .map((visibility) => visibility.trim().toLowerCase())
+        .filter(
+          (
+            visibility
+          ): visibility is (typeof TREASURY_ACCOUNT_VISIBILITY_OPTIONS)[number] =>
+            TREASURY_ACCOUNT_VISIBILITY_OPTIONS.includes(
+              visibility as (typeof TREASURY_ACCOUNT_VISIBILITY_OPTIONS)[number]
+            )
+        )
+    )
+  );
 }
 
 function hasDuplicateActiveAccountName(
@@ -161,12 +200,11 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
 
   const activeClubId = context.activeClub.id;
 
-  const [accounts, categories, activities, receiptFormats, movementTypes] = await Promise.all([
+  const [accounts, categories, activities, receiptFormats] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(activeClubId),
     accessRepository.listTreasuryCategoriesForClub(activeClubId),
     accessRepository.listClubActivitiesForClub(activeClubId),
-    accessRepository.listReceiptFormatsForClub(activeClubId),
-    accessRepository.listMovementTypeConfigForClub(activeClubId)
+    accessRepository.listReceiptFormatsForClub(activeClubId)
   ]);
 
   return {
@@ -179,60 +217,18 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
       currencyCode: currency.currencyCode,
       isPrimary: currency.isPrimary
     })),
-    movementTypes:
-      movementTypes.length > 0
-        ? movementTypes
-        : TREASURY_MOVEMENT_TYPES.map((movementType) => ({
-            clubId: activeClubId,
-            movementType,
-            isEnabled: true
-          }))
-  };
-}
-
-export async function setMovementTypesForActiveClub(input: {
-  movementTypes: string[];
-}): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
-
-  if (!context?.activeClub) {
-    return { ok: false, code: "forbidden" };
-  }
-
-  const selectedMovementTypes = Array.from(
-    new Set(
-      input.movementTypes
-        .map((movementType) => movementType.trim().toLowerCase())
-        .filter((movementType): movementType is TreasuryMovementType =>
-          TREASURY_MOVEMENT_TYPES.includes(movementType as TreasuryMovementType)
-        )
-    )
-  );
-
-  if (selectedMovementTypes.length === 0) {
-    return { ok: false, code: "movement_types_required" };
-  }
-
-  const savedMovementTypes = await accessRepository.setMovementTypeConfigForClub({
-    clubId: context.activeClub.id,
     movementTypes: TREASURY_MOVEMENT_TYPES.map((movementType) => ({
+      clubId: activeClubId,
       movementType,
-      isEnabled: selectedMovementTypes.includes(movementType)
+      isEnabled: true
     }))
-  });
-
-  if (savedMovementTypes.length === 0) {
-    return { ok: false, code: "unknown_error" };
-  }
-
-  return { ok: true, code: "movement_types_updated" };
+  };
 }
 
 export async function createTreasuryAccountForActiveClub(input: {
   name: string;
   accountType: string;
-  accountScope: string;
-  visibleForSecretaria: boolean;
+  visibility: string[];
   currencies: string[];
   status: string;
   emoji: string;
@@ -257,13 +253,11 @@ export async function createTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "invalid_account_type" };
   }
 
-  if (!TREASURY_ACCOUNT_SCOPES.includes(input.accountScope as TreasuryAccount["accountScope"])) {
-    return { ok: false, code: "invalid_account_scope" };
-  }
-
   if (!TREASURY_STATUSES.includes(input.status as TreasuryAccount["status"])) {
     return { ok: false, code: "invalid_config_status" };
   }
+
+  const selectedVisibility = normalizeAccountVisibility(input.visibility);
 
   const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
   const selectedCurrencies = Array.from(
@@ -284,20 +278,28 @@ export async function createTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "account_currencies_required" };
   }
 
+  if (selectedVisibility.length === 0) {
+    return { ok: false, code: "account_visibility_required" };
+  }
+
   if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
     return { ok: false, code: "invalid_account_currency" };
+  }
+
+  const resolvedEmoji = resolveConfiguredEmoji(input.emoji, TREASURY_ACCOUNT_EMOJI_OPTIONS);
+
+  if (!resolvedEmoji.valid) {
+    return { ok: false, code: "invalid_emoji_option" };
   }
 
   const created = await accessRepository.createTreasuryAccount({
     clubId: context.activeClub.id,
     name,
     accountType: input.accountType as TreasuryAccount["accountType"],
-    accountScope: input.accountScope as TreasuryAccount["accountScope"],
     status: input.status as TreasuryAccount["status"],
-    visibleForSecretaria:
-      input.accountScope === "secretaria" ? input.visibleForSecretaria : false,
-    visibleForTesoreria: input.accountScope === "tesoreria",
-    emoji: normalizeEmoji(input.emoji),
+    visibleForSecretaria: selectedVisibility.includes("secretaria"),
+    visibleForTesoreria: selectedVisibility.includes("tesoreria"),
+    emoji: resolvedEmoji.emoji,
     currencies: selectedCurrencies
   });
 
@@ -312,8 +314,7 @@ export async function updateTreasuryAccountForActiveClub(input: {
   accountId: string;
   name: string;
   accountType: string;
-  accountScope: string;
-  visibleForSecretaria: boolean;
+  visibility: string[];
   currencies: string[];
   status: string;
   emoji: string;
@@ -338,13 +339,11 @@ export async function updateTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "invalid_account_type" };
   }
 
-  if (!TREASURY_ACCOUNT_SCOPES.includes(input.accountScope as TreasuryAccount["accountScope"])) {
-    return { ok: false, code: "invalid_account_scope" };
-  }
-
   if (!TREASURY_STATUSES.includes(input.status as TreasuryAccount["status"])) {
     return { ok: false, code: "invalid_config_status" };
   }
+
+  const selectedVisibility = normalizeAccountVisibility(input.visibility);
 
   const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
   const selectedCurrencies = Array.from(
@@ -370,8 +369,22 @@ export async function updateTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "account_currencies_required" };
   }
 
+  if (selectedVisibility.length === 0) {
+    return { ok: false, code: "account_visibility_required" };
+  }
+
   if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
     return { ok: false, code: "invalid_account_currency" };
+  }
+
+  const resolvedEmoji = resolveConfiguredEmoji(
+    input.emoji,
+    TREASURY_ACCOUNT_EMOJI_OPTIONS,
+    existingAccount.emoji
+  );
+
+  if (!resolvedEmoji.valid) {
+    return { ok: false, code: "invalid_emoji_option" };
   }
 
   const updated = await accessRepository.updateTreasuryAccount({
@@ -379,12 +392,10 @@ export async function updateTreasuryAccountForActiveClub(input: {
     clubId: context.activeClub.id,
     name,
     accountType: input.accountType as TreasuryAccount["accountType"],
-    accountScope: input.accountScope as TreasuryAccount["accountScope"],
     status: input.status as TreasuryAccount["status"],
-    visibleForSecretaria:
-      input.accountScope === "secretaria" ? input.visibleForSecretaria : false,
-    visibleForTesoreria: input.accountScope === "tesoreria",
-    emoji: normalizeEmoji(input.emoji),
+    visibleForSecretaria: selectedVisibility.includes("secretaria"),
+    visibleForTesoreria: selectedVisibility.includes("tesoreria"),
+    emoji: resolvedEmoji.emoji,
     currencies: selectedCurrencies
   });
 
@@ -423,13 +434,19 @@ export async function createTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "duplicate_category_name" };
   }
 
+  const resolvedEmoji = resolveConfiguredEmoji(input.emoji, TREASURY_CATEGORY_EMOJI_OPTIONS);
+
+  if (!resolvedEmoji.valid) {
+    return { ok: false, code: "invalid_emoji_option" };
+  }
+
   const created = await accessRepository.createTreasuryCategory({
     clubId: context.activeClub.id,
     name,
     status: input.status as TreasuryCategory["status"],
     visibleForSecretaria: input.visibleForSecretaria,
     visibleForTesoreria: false,
-    emoji: normalizeEmoji(input.emoji)
+    emoji: resolvedEmoji.emoji
   });
 
   if (!created) {
@@ -473,6 +490,16 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "duplicate_category_name" };
   }
 
+  const resolvedEmoji = resolveConfiguredEmoji(
+    input.emoji,
+    TREASURY_CATEGORY_EMOJI_OPTIONS,
+    existingCategory.emoji
+  );
+
+  if (!resolvedEmoji.valid) {
+    return { ok: false, code: "invalid_emoji_option" };
+  }
+
   const updated = await accessRepository.updateTreasuryCategory({
     categoryId: input.categoryId,
     clubId: context.activeClub.id,
@@ -480,7 +507,7 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     status: input.status as TreasuryCategory["status"],
     visibleForSecretaria: input.visibleForSecretaria,
     visibleForTesoreria: false,
-    emoji: normalizeEmoji(input.emoji)
+    emoji: resolvedEmoji.emoji
   });
 
   if (!updated) {
@@ -517,11 +544,17 @@ export async function createClubActivityForActiveClub(input: {
     return { ok: false, code: "duplicate_activity_name" };
   }
 
+  const resolvedEmoji = resolveConfiguredEmoji(input.emoji, TREASURY_ACTIVITY_EMOJI_OPTIONS);
+
+  if (!resolvedEmoji.valid) {
+    return { ok: false, code: "invalid_emoji_option" };
+  }
+
   const created = await accessRepository.createClubActivity({
     clubId: context.activeClub.id,
     name,
     status: input.status as ClubActivity["status"],
-    emoji: normalizeEmoji(input.emoji)
+    emoji: resolvedEmoji.emoji
   });
 
   if (!created) {
@@ -564,12 +597,22 @@ export async function updateClubActivityForActiveClub(input: {
     return { ok: false, code: "duplicate_activity_name" };
   }
 
+  const resolvedEmoji = resolveConfiguredEmoji(
+    input.emoji,
+    TREASURY_ACTIVITY_EMOJI_OPTIONS,
+    existingActivity.emoji
+  );
+
+  if (!resolvedEmoji.valid) {
+    return { ok: false, code: "invalid_emoji_option" };
+  }
+
   const updated = await accessRepository.updateClubActivity({
     activityId: input.activityId,
     clubId: context.activeClub.id,
     name,
     status: input.status as ClubActivity["status"],
-    emoji: normalizeEmoji(input.emoji)
+    emoji: resolvedEmoji.emoji
   });
 
   if (!updated) {
