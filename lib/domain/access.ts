@@ -70,6 +70,7 @@ export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
 export type TreasuryConfigStatus = "active" | "inactive";
 export type TreasuryCurrencyCode = "ARS" | "USD";
 export type TreasuryMovementType = "ingreso" | "egreso";
+export type TreasuryAdditionalFieldName = "activity" | "receipt" | "calendar";
 
 export type TreasuryCurrencyConfig = {
   clubId: string;
@@ -126,6 +127,24 @@ export type MovementTypeConfig = {
   isEnabled: boolean;
 };
 
+export type TreasuryFieldRule = {
+  id: string;
+  clubId: string;
+  categoryId: string;
+  fieldName: TreasuryAdditionalFieldName;
+  isVisible: boolean;
+  isRequired: boolean;
+};
+
+export type ClubCalendarEvent = {
+  id: string;
+  clubId: string;
+  title: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  isEnabledForTreasury: boolean;
+};
+
 export type TreasurySettings = {
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
@@ -133,6 +152,7 @@ export type TreasurySettings = {
   receiptFormats: ReceiptFormat[];
   currencies: TreasuryCurrencyConfig[];
   movementTypes: MovementTypeConfig[];
+  fieldRules: TreasuryFieldRule[];
 };
 
 export type TreasurySessionStatus = "open" | "closed";
@@ -160,6 +180,7 @@ export type TreasuryMovement = {
   amount: number;
   activityId?: string | null;
   receiptNumber?: string | null;
+  calendarEventId?: string | null;
   movementDate: string;
   createdByUserId: string;
   status: "pending_consolidation";
@@ -229,7 +250,9 @@ export type TreasuryAccountDetail = {
     movementDate: string;
     movementType: TreasuryMovementType;
     categoryName: string;
+    activityName: string | null;
     concept: string;
+    receiptNumber: string | null;
     currencyCode: string;
     amount: number;
     createdByUserName: string;

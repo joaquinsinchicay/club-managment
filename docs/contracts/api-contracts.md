@@ -339,7 +339,7 @@ Obtener configuración de tesorería del club activo.
 Sí
 
 **Allowed roles**
-`tesoreria`
+`admin`
 
 **Input**
 

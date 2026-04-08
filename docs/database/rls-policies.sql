@@ -597,6 +597,7 @@ with check (
 -- =========================================
 
 drop policy if exists "Members can view treasury field rules" on treasury_field_rules;
+drop policy if exists "Admins manage treasury field rules in current club" on treasury_field_rules;
 drop policy if exists "Treasury manage treasury field rules in current club" on treasury_field_rules;
 
 create policy "Members can view treasury field rules"
@@ -608,17 +609,17 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Treasury manage treasury field rules in current club"
+create policy "Admins manage treasury field rules in current club"
 on treasury_field_rules
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (select current_user_has_role('admin'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (select current_user_has_role('admin'))
 );
 
 -- =========================================

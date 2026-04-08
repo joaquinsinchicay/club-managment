@@ -7,6 +7,7 @@ import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-fo
 import type {
   ClubActivity,
   TreasuryAccount,
+  TreasuryAdditionalFieldName,
   TreasuryCurrencyCode,
   TreasuryMovementType,
   TreasuryCategory,
@@ -17,6 +18,7 @@ import { texts } from "@/lib/texts";
 import { isSystemTreasuryCategoryName } from "@/lib/treasury-system-categories";
 
 type ClubTreasurySettingsManagerProps = {
+  canManageFieldRules: boolean;
   treasurySettings: TreasurySettings;
   createTreasuryAccountAction: (formData: FormData) => Promise<void>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<void>;
@@ -24,6 +26,7 @@ type ClubTreasurySettingsManagerProps = {
   updateTreasuryCategoryAction: (formData: FormData) => Promise<void>;
   createClubActivityAction: (formData: FormData) => Promise<void>;
   updateClubActivityAction: (formData: FormData) => Promise<void>;
+  setTreasuryFieldRulesAction: (formData: FormData) => Promise<void>;
 };
 
 function getRoleVisibilityLabel(visibleForSecretaria: boolean, visibleForTesoreria: boolean) {
@@ -74,6 +77,11 @@ const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const
 const TREASURY_ACCOUNT_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.accounts;
 const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
 const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
+const TREASURY_ADDITIONAL_FIELDS: TreasuryAdditionalFieldName[] = [
+  "activity",
+  "receipt",
+  "calendar"
+];
 
 type ClubActivityFormProps = {
   action: (formData: FormData) => Promise<void>;
@@ -423,14 +431,131 @@ function TreasuryCategoryForm({
   );
 }
 
+type TreasuryFieldRulesFormProps = {
+  category: TreasuryCategory;
+  treasurySettings: TreasurySettings;
+  action: (formData: FormData) => Promise<void>;
+};
+
+function TreasuryFieldRulesForm({
+  category,
+  treasurySettings,
+  action
+}: TreasuryFieldRulesFormProps) {
+  const [rules, setRules] = useState(() =>
+    TREASURY_ADDITIONAL_FIELDS.reduce(
+      (accumulator, fieldName) => {
+        const existingRule = treasurySettings.fieldRules.find(
+          (rule) => rule.categoryId === category.id && rule.fieldName === fieldName
+        );
+
+        accumulator[fieldName] = {
+          isVisible: existingRule?.isVisible ?? false,
+          isRequired: existingRule?.isRequired ?? false
+        };
+
+        return accumulator;
+      },
+      {} as Record<TreasuryAdditionalFieldName, { isVisible: boolean; isRequired: boolean }>
+    )
+  );
+
+  function updateRule(
+    fieldName: TreasuryAdditionalFieldName,
+    nextPartialRule: Partial<{ isVisible: boolean; isRequired: boolean }>
+  ) {
+    setRules((currentRules) => {
+      const currentRule = currentRules[fieldName];
+      const nextRule = {
+        ...currentRule,
+        ...nextPartialRule
+      };
+
+      if (!nextRule.isVisible) {
+        nextRule.isRequired = false;
+      }
+
+      return {
+        ...currentRules,
+        [fieldName]: nextRule
+      };
+    });
+  }
+
+  return (
+    <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-card/70 p-4">
+      <PendingFieldset className="grid gap-4">
+        <input type="hidden" name="category_id" value={category.id} />
+
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-foreground">{category.name}</p>
+          <p className="text-xs leading-5 text-muted-foreground">
+            {texts.settings.club.treasury.additional_fields_category_help}
+          </p>
+        </div>
+
+        <div className="grid gap-3">
+          {TREASURY_ADDITIONAL_FIELDS.map((fieldName) => (
+            <div
+              key={`${category.id}-${fieldName}`}
+              className="grid gap-3 rounded-2xl border border-border bg-secondary/40 p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+            >
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {texts.settings.club.treasury.additional_field_names[fieldName]}
+                </p>
+              </div>
+
+              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  name={`field_${fieldName}_visible`}
+                  checked={rules[fieldName].isVisible}
+                  onChange={(event) => updateRule(fieldName, { isVisible: event.target.checked })}
+                  className="size-4 rounded border-border"
+                />
+                <span className="font-medium">
+                  {texts.settings.club.treasury.additional_field_visible_label}
+                </span>
+              </label>
+
+              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  name={`field_${fieldName}_required`}
+                  checked={rules[fieldName].isRequired}
+                  disabled={!rules[fieldName].isVisible}
+                  onChange={(event) => updateRule(fieldName, { isRequired: event.target.checked })}
+                  className="size-4 rounded border-border"
+                />
+                <span className="font-medium">
+                  {texts.settings.club.treasury.additional_field_required_label}
+                </span>
+              </label>
+            </div>
+          ))}
+        </div>
+
+        <PendingSubmitButton
+          idleLabel={texts.settings.club.treasury.save_field_rules_cta}
+          pendingLabel={texts.settings.club.treasury.save_field_rules_loading}
+          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+        />
+      </PendingFieldset>
+    </form>
+  );
+}
+
 export function ClubTreasurySettingsManager({
+  canManageFieldRules,
   treasurySettings,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
   createTreasuryCategoryAction,
   updateTreasuryCategoryAction,
   createClubActivityAction,
-  updateClubActivityAction
+  updateClubActivityAction,
+  setTreasuryFieldRulesAction
 }: ClubTreasurySettingsManagerProps) {
   const searchParams = useSearchParams();
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -611,6 +736,36 @@ export function ClubTreasurySettingsManager({
           </div>
         )}
       </section>
+
+      {canManageFieldRules ? (
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-foreground">
+              {texts.settings.club.treasury.additional_fields_title}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {texts.settings.club.treasury.additional_fields_description}
+            </p>
+          </div>
+
+          {treasurySettings.categories.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-border bg-secondary/40 p-5 text-sm text-muted-foreground">
+              {texts.settings.club.treasury.additional_fields_empty_categories}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {treasurySettings.categories.map((category) => (
+                <TreasuryFieldRulesForm
+                  key={`field-rules-${category.id}`}
+                  category={category}
+                  treasurySettings={treasurySettings}
+                  action={setTreasuryFieldRulesAction}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
 
       <section className="space-y-4">
         <div className="space-y-1">
