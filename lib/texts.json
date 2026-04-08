@@ -400,6 +400,10 @@
         "receipt_example_label": "Ejemplo",
         "receipt_formats_read_only": "La integracion de recibos del sistema de socios se muestra como referencia operativa y no se puede editar desde esta pantalla.",
         "movement_type_selection_label": "Tipos del sistema",
+        "movement_type_impacts": {
+          "ingreso": "Incrementa saldo",
+          "egreso": "Reduce saldo"
+        },
         "additional_field_visible_label": "Visible",
         "additional_field_required_label": "Obligatorio",
         "visibility_label": "Visible para Secretaria",

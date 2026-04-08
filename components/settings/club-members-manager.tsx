@@ -44,6 +44,15 @@ function getStatusLabel(status: MembershipStatus) {
   return texts.settings.club.members.statuses[status];
 }
 
+function MemberMetaPill({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
+    </span>
+  );
+}
+
 export function ClubMembersManager({
   members,
   pendingInvitations,
@@ -60,7 +69,7 @@ export function ClubMembersManager({
 
   if (members.length === 0 && pendingInvitations.length === 0) {
     return (
-      <div className="rounded-[24px] border border-dashed border-border bg-secondary/40 p-5 text-sm text-muted-foreground">
+      <div className="rounded-[28px] border border-dashed border-border bg-secondary/30 p-6 text-sm text-muted-foreground">
         <p className="font-semibold text-foreground">{texts.settings.club.members.empty_title}</p>
         <p className="mt-2">{texts.settings.club.members.empty_description}</p>
       </div>
@@ -73,35 +82,30 @@ export function ClubMembersManager({
         {pendingInvitations.map((invitation) => (
           <article
             key={invitation.invitationId}
-            className="rounded-[24px] border border-warning/40 bg-warning/10 p-4 shadow-sm"
+            className="rounded-[28px] border border-warning/35 bg-[linear-gradient(180deg,rgba(251,191,36,0.10)_0%,rgba(255,255,255,0.98)_100%)] p-5 shadow-soft"
           >
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
                 <span aria-hidden="true">{getInitials(invitation.email, invitation.email)}</span>
               </div>
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="truncate text-sm font-semibold text-foreground">{invitation.email}</p>
-                  <span className="rounded-full bg-warning px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-foreground">
+                  <p className="truncate text-base font-semibold text-foreground">{invitation.email}</p>
+                  <span className="rounded-full bg-warning px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-foreground">
                     {texts.settings.club.members.pending_badge}
                   </span>
                 </div>
-                <p className="mt-1 truncate text-sm text-muted-foreground">{invitation.email}</p>
 
-                <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                    <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      {texts.settings.club.members.status_label}
-                    </span>
-                    <span className="font-medium">{getStatusLabel(invitation.status)}</span>
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                    <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      {texts.settings.club.members.role_label}
-                    </span>
-                    <span className="font-medium">{getRoleLabel(invitation.role)}</span>
-                  </span>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                  <MemberMetaPill
+                    label={texts.settings.club.members.status_label}
+                    value={getStatusLabel(invitation.status)}
+                  />
+                  <MemberMetaPill
+                    label={texts.settings.club.members.role_label}
+                    value={getRoleLabel(invitation.role)}
+                  />
                 </div>
               </div>
             </div>
@@ -113,24 +117,24 @@ export function ClubMembersManager({
           const initials = getInitials(member.fullName, member.email);
           const memberToneClass =
             member.status === "pendiente_aprobacion"
-              ? "border-warning/40 bg-warning/10"
-              : "border-border bg-secondary/50";
+              ? "border-warning/35 bg-[linear-gradient(180deg,rgba(251,191,36,0.10)_0%,rgba(255,255,255,0.98)_100%)]"
+              : "border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.88)_0%,rgba(255,255,255,0.98)_100%)]";
 
           return (
             <article
               key={member.membershipId}
-              className={`rounded-[24px] border p-4 shadow-sm ${memberToneClass}`}
+              className={`rounded-[28px] border p-5 shadow-soft ${memberToneClass}`}
             >
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
                   {member.avatarUrl ? (
                     <Image
                       src={member.avatarUrl}
                       alt=""
-                      width={44}
-                      height={44}
+                      width={48}
+                      height={48}
                       unoptimized
-                      className="h-11 w-11 object-cover"
+                      className="h-12 w-12 object-cover"
                     />
                   ) : (
                     <span aria-hidden="true">{initials}</span>
@@ -139,52 +143,49 @@ export function ClubMembersManager({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-semibold text-foreground">{member.fullName}</p>
+                    <p className="truncate text-base font-semibold text-foreground">{member.fullName}</p>
                     {isCurrentUser ? (
-                      <span className="rounded-full bg-foreground px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
+                      <span className="rounded-full bg-foreground px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
                         {texts.settings.club.members.current_user_badge}
                       </span>
                     ) : null}
                     {member.status === "pendiente_aprobacion" ? (
-                      <span className="rounded-full bg-warning px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-foreground">
+                      <span className="rounded-full bg-warning px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-foreground">
                         {texts.settings.club.members.pending_badge}
                       </span>
                     ) : null}
                   </div>
                   <p className="mt-1 truncate text-sm text-muted-foreground">{member.email}</p>
 
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        {texts.settings.club.members.status_label}
-                      </span>
-                      <span className="font-medium">{getStatusLabel(member.status)}</span>
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        {texts.settings.club.members.roles_label}
-                      </span>
-                      <span className="font-medium">{formatMembershipRoles(member.roles)}</span>
-                    </span>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                    <MemberMetaPill
+                      label={texts.settings.club.members.status_label}
+                      value={getStatusLabel(member.status)}
+                    />
+                    <MemberMetaPill
+                      label={texts.settings.club.members.roles_label}
+                      value={formatMembershipRoles(member.roles)}
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3">
+              <div className="mt-5 grid gap-3">
                 <form
                   action={
                     member.status === "pendiente_aprobacion"
                       ? approveMembershipAction
                       : updateMembershipRoleAction
                   }
-                  className="grid gap-2"
+                  className="grid gap-3 rounded-[24px] border border-border/70 bg-card/90 p-4"
                 >
-                  <PendingFieldset className="grid gap-2">
+                  <PendingFieldset className="grid gap-3">
                     <input type="hidden" name="membership_id" value={member.membershipId} />
-                    <fieldset className="grid gap-3 rounded-2xl border border-border/70 bg-card px-3 py-3">
-                      <legend className="px-1 text-sm font-medium text-foreground">
+
+                    <div className="space-y-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                         {texts.settings.club.members.roles_label}
-                      </legend>
+                      </p>
 
                       <div className="grid gap-2 sm:grid-cols-3">
                         {MEMBERSHIP_ROLES.map((role) => {
@@ -194,7 +195,7 @@ export function ClubMembersManager({
                             <label
                               key={role}
                               htmlFor={inputId}
-                              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground transition hover:bg-secondary"
+                              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-3 py-3 text-sm text-foreground transition hover:bg-secondary"
                             >
                               <input
                                 id={inputId}
@@ -211,7 +212,7 @@ export function ClubMembersManager({
                           );
                         })}
                       </div>
-                    </fieldset>
+                    </div>
 
                     <PendingSubmitButton
                       idleLabel={member.status === "pendiente_aprobacion"
@@ -228,7 +229,7 @@ export function ClubMembersManager({
                 <button
                   type="button"
                   onClick={() => setSelectedMembershipId(member.membershipId)}
-                  className="min-h-11 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-destructive/15"
+                  className="min-h-11 rounded-2xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-destructive/15"
                 >
                   {isCurrentUser
                     ? texts.settings.club.members.leave_club_cta
@@ -241,25 +242,30 @@ export function ClubMembersManager({
       </div>
 
       {selectedMember ? (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-foreground/40 px-4">
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-foreground/45 px-4">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="remove-member-dialog-title"
             aria-describedby="remove-member-dialog-description"
-            className="w-full max-w-md rounded-[28px] border border-border bg-card p-6 shadow-soft"
+            className="w-full max-w-md rounded-[32px] border border-border bg-card p-6 shadow-soft"
           >
-            <h2 id="remove-member-dialog-title" className="text-xl font-semibold text-card-foreground">
-              {texts.settings.club.members.remove_dialog_title}
-            </h2>
-            <p
-              id="remove-member-dialog-description"
-              className="mt-2 text-sm leading-6 text-muted-foreground"
-            >
-              {texts.settings.club.members.remove_dialog_description}
-            </p>
+            <div className="space-y-3">
+              <div className="inline-flex w-fit rounded-full border border-destructive/25 bg-destructive/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground">
+                {texts.settings.club.members.remove_cta}
+              </div>
+              <h2 id="remove-member-dialog-title" className="text-xl font-semibold tracking-tight text-card-foreground">
+                {texts.settings.club.members.remove_dialog_title}
+              </h2>
+              <p
+                id="remove-member-dialog-description"
+                className="text-sm leading-6 text-muted-foreground"
+              >
+                {texts.settings.club.members.remove_dialog_description}
+              </p>
+            </div>
 
-            <div className="mt-4 rounded-2xl border border-border bg-secondary/60 px-4 py-3">
+            <div className="mt-4 rounded-[24px] border border-border bg-secondary/50 px-4 py-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 {texts.settings.club.members.remove_dialog_member_label}
               </p>
