@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import { ClubInvitationManager } from "@/components/settings/club-invitation-manager";
 import { ClubMembersManager } from "@/components/settings/club-members-manager";
@@ -10,11 +9,8 @@ import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { ClubMember, PendingClubInvitation, TreasurySettings } from "@/lib/domain/access";
 
-type ClubSettingsTab = "members" | "treasury";
-
 type ClubSettingsCardProps = {
   context: SessionContext;
-  initialTab?: string;
   canManageMembers: boolean;
   canManageTreasury: boolean;
   members: ClubMember[];
@@ -30,13 +26,19 @@ type ClubSettingsCardProps = {
   updateTreasuryCategoryAction: (formData: FormData) => Promise<void>;
   createClubActivityAction: (formData: FormData) => Promise<void>;
   updateClubActivityAction: (formData: FormData) => Promise<void>;
-  setTreasuryFieldRulesAction: (formData: FormData) => Promise<void>;
-  updateCalendarEventTreasuryAvailabilityAction: (formData: FormData) => Promise<void>;
 };
+
+function SectionIntro({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="space-y-2">
+      <h2 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
+      <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
+    </div>
+  );
+}
 
 export function ClubSettingsCard({
   context,
-  initialTab,
   canManageMembers,
   canManageTreasury,
   members,
@@ -51,25 +53,8 @@ export function ClubSettingsCard({
   createTreasuryCategoryAction,
   updateTreasuryCategoryAction,
   createClubActivityAction,
-  updateClubActivityAction,
-  setTreasuryFieldRulesAction,
-  updateCalendarEventTreasuryAvailabilityAction
+  updateClubActivityAction
 }: ClubSettingsCardProps) {
-  const resolvedInitialTab: ClubSettingsTab =
-    initialTab === "treasury" && canManageTreasury ? "treasury" : "members";
-  const [activeTab, setActiveTab] = useState<ClubSettingsTab>(resolvedInitialTab);
-
-  useEffect(() => {
-    setActiveTab(resolvedInitialTab);
-  }, [resolvedInitialTab]);
-
-  const resolvedTab =
-    activeTab === "treasury" && canManageTreasury
-      ? "treasury"
-      : canManageMembers
-        ? "members"
-        : "treasury";
-  const showTabSwitcher = canManageMembers && canManageTreasury;
   const activeClubName = context.activeClub?.name ?? "";
   const activeRoles =
     context.activeMembership?.roles
@@ -94,33 +79,6 @@ export function ClubSettingsCard({
                   {texts.settings.club.description}
                 </p>
               </div>
-
-              {showTabSwitcher ? (
-                <div className="inline-flex w-full max-w-md rounded-[20px] border border-border/70 bg-card/70 p-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("members")}
-                    className={`flex-1 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                      resolvedTab === "members"
-                        ? "bg-foreground text-primary-foreground shadow-sm"
-                        : "text-foreground hover:bg-secondary/70"
-                    }`}
-                  >
-                    {texts.settings.club.tabs.members}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("treasury")}
-                    className={`flex-1 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                      resolvedTab === "treasury"
-                        ? "bg-foreground text-primary-foreground shadow-sm"
-                        : "text-foreground hover:bg-secondary/70"
-                    }`}
-                  >
-                    {texts.settings.club.tabs.treasury}
-                  </button>
-                </div>
-              ) : null}
             </div>
 
             <div className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-soft">
@@ -144,7 +102,7 @@ export function ClubSettingsCard({
                 </div>
 
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] bg-primary/10 text-2xl text-primary">
-                  {resolvedTab === "treasury" ? "🏛️" : "👥"}
+                  ⚙️
                 </div>
               </div>
 
@@ -167,37 +125,12 @@ export function ClubSettingsCard({
         </div>
 
         <div className="space-y-8 bg-[linear-gradient(180deg,rgba(248,250,252,0.62)_0%,rgba(255,255,255,0)_24%)] px-5 py-6 sm:px-8 sm:py-8">
-          {!showTabSwitcher ? (
-            <div className="flex items-center gap-3 rounded-[24px] border border-border/70 bg-secondary/40 px-4 py-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-card text-xl">
-                {resolvedTab === "treasury" ? "💰" : "👤"}
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {texts.settings.club.eyebrow}
-                </p>
-                <p className="text-base font-semibold text-foreground">
-                  {resolvedTab === "treasury"
-                    ? texts.settings.club.tabs.treasury
-                    : texts.settings.club.tabs.members}
-                </p>
-              </div>
-            </div>
-          ) : null}
-
-          {resolvedTab === "members" && canManageMembers ? (
-            <>
-              <div className="space-y-3">
-                <div className="inline-flex w-fit rounded-full border border-border/70 bg-secondary/50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {texts.settings.club.tabs.members}
-                </div>
-                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                  {texts.settings.club.members.section_title}
-                </h2>
-                <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                  {texts.settings.club.members.section_description}
-                </p>
-              </div>
+          {canManageMembers ? (
+            <section className="space-y-6">
+              <SectionIntro
+                title={texts.settings.club.members.section_title}
+                description={texts.settings.club.members.section_description}
+              />
 
               <ClubInvitationManager inviteUserAction={inviteUserAction} />
 
@@ -209,11 +142,11 @@ export function ClubSettingsCard({
                 updateMembershipRoleAction={updateMembershipRolesAction}
                 removeMembershipAction={removeMembershipAction}
               />
-            </>
-          ) : canManageTreasury && treasurySettings ? (
+            </section>
+          ) : null}
+
+          {canManageTreasury && treasurySettings ? (
             <ClubTreasurySettingsManager
-              clubName={activeClubName}
-              canManageFieldRules={canManageMembers}
               treasurySettings={treasurySettings}
               createTreasuryAccountAction={createTreasuryAccountAction}
               updateTreasuryAccountAction={updateTreasuryAccountAction}
@@ -221,8 +154,6 @@ export function ClubSettingsCard({
               updateTreasuryCategoryAction={updateTreasuryCategoryAction}
               createClubActivityAction={createClubActivityAction}
               updateClubActivityAction={updateClubActivityAction}
-              setTreasuryFieldRulesAction={setTreasuryFieldRulesAction}
-              updateCalendarEventTreasuryAvailabilityAction={updateCalendarEventTreasuryAvailabilityAction}
             />
           ) : null}
         </div>

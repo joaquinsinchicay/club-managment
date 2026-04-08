@@ -10,10 +10,8 @@ import type {
   DashboardTreasuryCard as DashboardTreasuryCardData,
   ReceiptFormat,
   TreasuryAccount,
-  TreasuryAdditionalFieldName,
   TreasuryCategory,
   TreasuryCurrencyConfig,
-  TreasuryFieldRule,
   TreasuryMovementType
 } from "@/lib/domain/access";
 import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
@@ -25,7 +23,6 @@ type TreasuryCardProps = {
   categories: TreasuryCategory[];
   activities: ClubActivity[];
   calendarEvents: ClubCalendarEvent[];
-  fieldRules: TreasuryFieldRule[];
   currencies: TreasuryCurrencyConfig[];
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
@@ -33,27 +30,6 @@ type TreasuryCardProps = {
   createAccountTransferAction: (formData: FormData) => Promise<void>;
   createFxOperationAction: (formData: FormData) => Promise<void>;
 };
-
-function buildCategoryFieldRules(
-  fieldRules: TreasuryFieldRule[],
-  categoryId: string
-) {
-  return fieldRules
-    .filter((rule) => rule.categoryId === categoryId)
-    .reduce(
-      (accumulator, rule) => {
-        accumulator[rule.fieldName] = {
-          isVisible: rule.isVisible,
-          isRequired: rule.isRequired
-        };
-
-        return accumulator;
-      },
-      {} as Partial<
-        Record<TreasuryAdditionalFieldName, { isVisible: boolean; isRequired: boolean }>
-      >
-    );
-}
 
 function getSessionLabel(status: DashboardTreasuryCardData["sessionStatus"]) {
   if (status === "open") {
@@ -73,7 +49,6 @@ export function TreasuryCard({
   categories,
   activities,
   calendarEvents,
-  fieldRules,
   currencies,
   movementTypes,
   receiptFormats,
@@ -96,22 +71,6 @@ export function TreasuryCard({
 
     return currencies.filter((currency) => selectedAccount.currencies.includes(currency.currencyCode));
   }, [accounts, currencies, selectedAccountId]);
-  const categoryFieldRules = useMemo(
-    () => (selectedCategoryId ? buildCategoryFieldRules(fieldRules, selectedCategoryId) : {}),
-    [fieldRules, selectedCategoryId]
-  );
-  const isActivityVisible = Boolean(categoryFieldRules.activity?.isVisible);
-  const isReceiptVisible = Boolean(categoryFieldRules.receipt?.isVisible);
-  const isCalendarVisible = Boolean(categoryFieldRules.calendar?.isVisible);
-  const isActivityRequired = Boolean(categoryFieldRules.activity?.isRequired);
-  const isReceiptRequired = Boolean(categoryFieldRules.receipt?.isRequired);
-  const isCalendarRequired = Boolean(categoryFieldRules.calendar?.isRequired);
-
-  useEffect(() => {
-    if (!isActivityVisible) {
-      setSelectedActivityId("");
-    }
-  }, [isActivityVisible, selectedCategoryId]);
 
   return (
     <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
@@ -265,17 +224,13 @@ export function TreasuryCard({
                   </select>
                 </label>
 
-                {isActivityVisible && activities.length > 0 ? (
+                {activities.length > 0 ? (
                   <label className="grid gap-2 text-sm text-foreground">
-                    <span className="font-medium">
-                      {texts.dashboard.treasury.activity_label}
-                      {isActivityRequired ? texts.dashboard.treasury.required_suffix : ""}
-                    </span>
+                    <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
                     <select
                       name="activity_id"
                       value={selectedActivityId}
                       onChange={(event) => setSelectedActivityId(event.target.value)}
-                      required={isActivityRequired}
                       key={selectedCategoryId || "activity-select"}
                       className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                     >
@@ -289,60 +244,48 @@ export function TreasuryCard({
                   </label>
                 ) : null}
 
-                {isReceiptVisible ? (
-                  <label className="grid gap-2 text-sm text-foreground">
-                    <span className="font-medium">
-                      {texts.dashboard.treasury.receipt_label}
-                      {isReceiptRequired ? texts.dashboard.treasury.required_suffix : ""}
-                    </span>
-                    <input
-                      type="text"
-                      name="receipt_number"
-                      required={isReceiptRequired}
-                      className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                    />
-                    {receiptFormats.length > 0 ? (
-                      <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
-                        <span>
-                          {texts.dashboard.treasury.receipt_helper_format} {receiptFormats[0]?.pattern ?? DEFAULT_RECEIPT_PATTERN}
-                        </span>
-                        <span>
-                          {texts.dashboard.treasury.receipt_helper_example} {receiptFormats[0]?.example ?? "-"}
-                        </span>
-                        <span>
-                          {texts.dashboard.treasury.receipt_helper_available_from} {DEFAULT_RECEIPT_MIN_LABEL}
-                        </span>
-                      </div>
-                    ) : null}
-                  </label>
-                ) : null}
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
+                  <input
+                    type="text"
+                    name="receipt_number"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                  {receiptFormats.length > 0 ? (
+                    <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
+                      <span>
+                        {texts.dashboard.treasury.receipt_helper_format} {receiptFormats[0]?.pattern ?? DEFAULT_RECEIPT_PATTERN}
+                      </span>
+                      <span>
+                        {texts.dashboard.treasury.receipt_helper_example} {receiptFormats[0]?.example ?? "-"}
+                      </span>
+                      <span>
+                        {texts.dashboard.treasury.receipt_helper_available_from} {DEFAULT_RECEIPT_MIN_LABEL}
+                      </span>
+                    </div>
+                  ) : null}
+                </label>
 
-                {isCalendarVisible ? (
-                  <label className="grid gap-2 text-sm text-foreground">
-                    <span className="font-medium">
-                      {texts.dashboard.treasury.calendar_label}
-                      {isCalendarRequired ? texts.dashboard.treasury.required_suffix : ""}
-                    </span>
-                    <select
-                      name="calendar_event_id"
-                      defaultValue=""
-                      required={isCalendarRequired}
-                      disabled={calendarEvents.length === 0}
-                      className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
-                    >
-                      <option value="">
-                        {calendarEvents.length > 0
-                          ? texts.dashboard.treasury.calendar_placeholder
-                          : texts.dashboard.treasury.empty_calendar_events}
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.calendar_label}</span>
+                  <select
+                    name="calendar_event_id"
+                    defaultValue=""
+                    disabled={calendarEvents.length === 0}
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+                  >
+                    <option value="">
+                      {calendarEvents.length > 0
+                        ? texts.dashboard.treasury.calendar_placeholder
+                        : texts.dashboard.treasury.empty_calendar_events}
+                    </option>
+                    {calendarEvents.map((event) => (
+                      <option key={event.id} value={event.id}>
+                        {event.title}
                       </option>
-                      {calendarEvents.map((event) => (
-                        <option key={event.id} value={event.id}>
-                          {event.title}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
+                    ))}
+                  </select>
+                </label>
 
                 <label className="grid gap-2 text-sm text-foreground">
                   <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>

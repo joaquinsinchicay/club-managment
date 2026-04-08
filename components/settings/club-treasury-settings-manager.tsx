@@ -6,9 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
-  ClubCalendarEvent,
   TreasuryAccount,
-  TreasuryAdditionalFieldName,
   TreasuryCurrencyCode,
   TreasuryMovementType,
   TreasuryCategory,
@@ -19,8 +17,6 @@ import { texts } from "@/lib/texts";
 import { isSystemTreasuryCategoryName } from "@/lib/treasury-system-categories";
 
 type ClubTreasurySettingsManagerProps = {
-  clubName: string;
-  canManageFieldRules: boolean;
   treasurySettings: TreasurySettings;
   createTreasuryAccountAction: (formData: FormData) => Promise<void>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<void>;
@@ -28,8 +24,6 @@ type ClubTreasurySettingsManagerProps = {
   updateTreasuryCategoryAction: (formData: FormData) => Promise<void>;
   createClubActivityAction: (formData: FormData) => Promise<void>;
   updateClubActivityAction: (formData: FormData) => Promise<void>;
-  setTreasuryFieldRulesAction: (formData: FormData) => Promise<void>;
-  updateCalendarEventTreasuryAvailabilityAction: (formData: FormData) => Promise<void>;
 };
 
 function getRoleVisibilityLabel(visibleForSecretaria: boolean, visibleForTesoreria: boolean) {
@@ -80,11 +74,6 @@ const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const
 const TREASURY_ACCOUNT_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.accounts;
 const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
 const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
-const TREASURY_ADDITIONAL_FIELDS: TreasuryAdditionalFieldName[] = [
-  "activity",
-  "receipt",
-  "calendar"
-];
 
 type ClubActivityFormProps = {
   action: (formData: FormData) => Promise<void>;
@@ -434,135 +423,6 @@ function TreasuryCategoryForm({
   );
 }
 
-type TreasuryFieldRulesFormProps = {
-  category: TreasuryCategory;
-  treasurySettings: TreasurySettings;
-  action: (formData: FormData) => Promise<void>;
-};
-
-function TreasuryFieldRulesForm({
-  category,
-  treasurySettings,
-  action
-}: TreasuryFieldRulesFormProps) {
-  const [rules, setRules] = useState(() =>
-    TREASURY_ADDITIONAL_FIELDS.reduce(
-      (accumulator, fieldName) => {
-        const existingRule = treasurySettings.fieldRules.find(
-          (rule) => rule.categoryId === category.id && rule.fieldName === fieldName
-        );
-
-        accumulator[fieldName] = {
-          isVisible: existingRule?.isVisible ?? false,
-          isRequired: existingRule?.isRequired ?? false
-        };
-
-        return accumulator;
-      },
-      {} as Record<TreasuryAdditionalFieldName, { isVisible: boolean; isRequired: boolean }>
-    )
-  );
-
-  function updateRule(
-    fieldName: TreasuryAdditionalFieldName,
-    nextPartialRule: Partial<{ isVisible: boolean; isRequired: boolean }>
-  ) {
-    setRules((currentRules) => {
-      const currentRule = currentRules[fieldName];
-      const nextRule = {
-        ...currentRule,
-        ...nextPartialRule
-      };
-
-      if (!nextRule.isVisible) {
-        nextRule.isRequired = false;
-      }
-
-      return {
-        ...currentRules,
-        [fieldName]: nextRule
-      };
-    });
-  }
-
-  return (
-    <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-card/70 p-4">
-      <PendingFieldset className="grid gap-4">
-        <input type="hidden" name="category_id" value={category.id} />
-
-        <div className="space-y-1">
-          <p className="text-sm font-semibold text-foreground">{category.name}</p>
-          <p className="text-xs leading-5 text-muted-foreground">
-            {texts.settings.club.treasury.additional_fields_category_help}
-          </p>
-        </div>
-
-        <div className="grid gap-3">
-          {TREASURY_ADDITIONAL_FIELDS.map((fieldName) => (
-            <div
-              key={`${category.id}-${fieldName}`}
-              className="grid gap-3 rounded-2xl border border-border bg-secondary/40 p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
-            >
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  {texts.settings.club.treasury.additional_field_names[fieldName]}
-                </p>
-              </div>
-
-              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
-                <input
-                  type="checkbox"
-                  name={`field_${fieldName}_visible`}
-                  checked={rules[fieldName].isVisible}
-                  onChange={(event) => updateRule(fieldName, { isVisible: event.target.checked })}
-                  className="size-4 rounded border-border"
-                />
-                <span className="font-medium">
-                  {texts.settings.club.treasury.additional_field_visible_label}
-                </span>
-              </label>
-
-              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
-                <input
-                  type="checkbox"
-                  name={`field_${fieldName}_required`}
-                  checked={rules[fieldName].isRequired}
-                  disabled={!rules[fieldName].isVisible}
-                  onChange={(event) => updateRule(fieldName, { isRequired: event.target.checked })}
-                  className="size-4 rounded border-border"
-                />
-                <span className="font-medium">
-                  {texts.settings.club.treasury.additional_field_required_label}
-                </span>
-              </label>
-            </div>
-          ))}
-        </div>
-
-        <PendingSubmitButton
-          idleLabel={texts.settings.club.treasury.save_field_rules_cta}
-          pendingLabel={texts.settings.club.treasury.save_field_rules_loading}
-          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-        />
-      </PendingFieldset>
-    </form>
-  );
-}
-
-function formatCalendarEventDateRange(event: ClubCalendarEvent) {
-  if (!event.startsAt) {
-    return texts.settings.club.treasury.calendar_events_without_date;
-  }
-
-  const startDate = new Date(event.startsAt).toLocaleDateString("es-AR");
-  const endDate =
-    event.endsAt && event.endsAt !== event.startsAt
-      ? new Date(event.endsAt).toLocaleDateString("es-AR")
-      : null;
-
-  return endDate ? `${startDate} - ${endDate}` : startDate;
-}
-
 type SettingsSectionShellProps = {
   eyebrow?: string;
   title: string;
@@ -599,29 +459,14 @@ function SettingsSectionShell({
   );
 }
 
-function StatPill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
-    </div>
-  );
-}
-
 export function ClubTreasurySettingsManager({
-  clubName,
-  canManageFieldRules,
   treasurySettings,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
   createTreasuryCategoryAction,
   updateTreasuryCategoryAction,
   createClubActivityAction,
-  updateClubActivityAction,
-  setTreasuryFieldRulesAction,
-  updateCalendarEventTreasuryAvailabilityAction
+  updateClubActivityAction
 }: ClubTreasurySettingsManagerProps) {
   const searchParams = useSearchParams();
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -661,93 +506,7 @@ export function ClubTreasurySettingsManager({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3">
-        <div className="inline-flex w-fit rounded-full border border-border/70 bg-secondary/50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {texts.settings.club.tabs.treasury}
-        </div>
-        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-          {texts.settings.club.treasury.section_title}
-        </h2>
-        <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-          {texts.settings.club.treasury.section_description}
-        </p>
-      </div>
-
-      <section className="overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-soft">
-        <div className="border-b border-border/60 bg-[radial-gradient(circle_at_top_right,rgba(86,94,116,0.12),transparent_38%),linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(248,250,252,0.78)_100%)] p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                {texts.dashboard.club_label}
-              </p>
-              <h3 className="text-3xl font-semibold tracking-tight text-foreground">{clubName}</h3>
-              <div className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-card/80 px-4 py-3 text-sm text-foreground">
-                <span className="text-success" aria-hidden="true">
-                  ●
-                </span>
-                <span className="font-medium">{texts.settings.club.description}</span>
-              </div>
-            </div>
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] bg-primary/10 text-3xl text-primary">
-              🏦
-            </div>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <StatPill
-              label={texts.settings.club.treasury.accounts_title}
-              value={String(treasurySettings.accounts.length)}
-            />
-            <StatPill
-              label={texts.settings.club.treasury.categories_title}
-              value={String(treasurySettings.categories.length)}
-            />
-            <StatPill
-              label={texts.settings.club.treasury.activities_title}
-              value={String(treasurySettings.activities.length)}
-            />
-          </div>
-        </div>
-      </section>
-
       <SettingsSectionShell
-        eyebrow={texts.settings.club.treasury.movement_type_selection_label}
-        title={texts.settings.club.treasury.movement_types_title}
-        description={texts.settings.club.treasury.movement_types_description}
-      >
-        <div className="grid gap-3 lg:grid-cols-2">
-          {TREASURY_MOVEMENT_TYPE_OPTIONS.map((movementType) => {
-            const isIncome = movementType === "ingreso";
-
-            return (
-              <article
-                key={movementType}
-                className={`rounded-[24px] border p-5 ${
-                  isIncome ? "border-success/25 bg-success/5" : "border-destructive/20 bg-destructive/5"
-                }`}
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-card text-2xl">
-                  {isIncome ? "↗" : "↘"}
-                </div>
-                <div className="mt-5 space-y-1">
-                  <p
-                    className={`text-3xl font-semibold tracking-tight ${
-                      isIncome ? "text-success" : "text-destructive"
-                    }`}
-                  >
-                    {getMovementTypeLabel(movementType)}
-                  </p>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    {texts.settings.club.treasury.movement_type_impacts[movementType]}
-                  </p>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </SettingsSectionShell>
-
-      <SettingsSectionShell
-        eyebrow={texts.settings.club.treasury.section_title}
         title={texts.settings.club.treasury.accounts_title}
         description={texts.settings.club.treasury.accounts_description}
         action={
@@ -847,6 +606,43 @@ export function ClubTreasurySettingsManager({
             ))}
           </div>
         )}
+      </SettingsSectionShell>
+
+      <SettingsSectionShell
+        eyebrow={texts.settings.club.treasury.movement_type_selection_label}
+        title={texts.settings.club.treasury.movement_types_title}
+        description={texts.settings.club.treasury.movement_types_description}
+      >
+        <div className="grid gap-3 lg:grid-cols-2">
+          {TREASURY_MOVEMENT_TYPE_OPTIONS.map((movementType) => {
+            const isIncome = movementType === "ingreso";
+
+            return (
+              <article
+                key={movementType}
+                className={`rounded-[24px] border p-5 ${
+                  isIncome ? "border-success/25 bg-success/5" : "border-destructive/20 bg-destructive/5"
+                }`}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-card text-2xl">
+                  {isIncome ? "↗" : "↘"}
+                </div>
+                <div className="mt-5 space-y-1">
+                  <p
+                    className={`text-3xl font-semibold tracking-tight ${
+                      isIncome ? "text-success" : "text-destructive"
+                    }`}
+                  >
+                    {getMovementTypeLabel(movementType)}
+                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    {texts.settings.club.treasury.movement_type_impacts[movementType]}
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </SettingsSectionShell>
 
       <SettingsSectionShell
@@ -1036,83 +832,6 @@ export function ClubTreasurySettingsManager({
           </div>
         )}
       </SettingsSectionShell>
-
-      {canManageFieldRules ? (
-        <SettingsSectionShell
-          title={texts.settings.club.treasury.additional_fields_title}
-          description={texts.settings.club.treasury.additional_fields_description}
-        >
-          {treasurySettings.categories.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-              {texts.settings.club.treasury.additional_fields_empty_categories}
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {treasurySettings.categories.map((category) => (
-                <TreasuryFieldRulesForm
-                  key={`field-rules-${category.id}`}
-                  category={category}
-                  treasurySettings={treasurySettings}
-                  action={setTreasuryFieldRulesAction}
-                />
-              ))}
-            </div>
-          )}
-        </SettingsSectionShell>
-      ) : null}
-
-      {canManageFieldRules ? (
-        <SettingsSectionShell
-          title={texts.settings.club.treasury.calendar_events_title}
-          description={texts.settings.club.treasury.calendar_events_description}
-        >
-          {treasurySettings.calendarEvents.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-              {texts.settings.club.treasury.empty_calendar_events}
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {treasurySettings.calendarEvents.map((event) => (
-                <form
-                  key={event.id}
-                  action={updateCalendarEventTreasuryAvailabilityAction}
-                  className="grid gap-4 rounded-[24px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5"
-                >
-                  <PendingFieldset className="grid gap-4">
-                    <input type="hidden" name="event_id" value={event.id} />
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-base font-semibold text-foreground">{event.title}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {formatCalendarEventDateRange(event)}
-                        </p>
-                      </div>
-
-                      <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
-                        <input
-                          type="checkbox"
-                          name="is_enabled_for_treasury"
-                          defaultChecked={event.isEnabledForTreasury}
-                          className="size-4 rounded border-border"
-                        />
-                        <span className="font-medium">
-                          {texts.settings.club.treasury.calendar_events_enabled_label}
-                        </span>
-                      </label>
-                    </div>
-
-                    <PendingSubmitButton
-                      idleLabel={texts.settings.club.treasury.save_calendar_event_cta}
-                      pendingLabel={texts.settings.club.treasury.save_calendar_event_loading}
-                      className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
-                    />
-                  </PendingFieldset>
-                </form>
-              ))}
-            </div>
-          )}
-        </SettingsSectionShell>
-      ) : null}
 
       <SettingsSectionShell
         title={texts.settings.club.treasury.receipt_formats_title}

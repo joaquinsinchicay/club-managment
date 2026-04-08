@@ -226,22 +226,7 @@ Atributos:
 
 ---
 
-### 4.7 TreasuryFieldRule
-
-Configuración de campos dinámicos.
-
-Atributos:
-
-* id
-* club_id
-* category_id
-* field_name
-* is_visible
-* is_required
-
----
-
-### 4.8 ClubTreasuryCurrency
+### 4.7 ClubTreasuryCurrency
 
 Monedas del club.
 
@@ -254,7 +239,7 @@ Atributos:
 
 ---
 
-### 4.9 ClubMovementTypeConfig
+### 4.8 ClubMovementTypeConfig
 
 Tipos de movimiento habilitados.
 

@@ -11,10 +11,8 @@ import type {
   ReceiptFormat,
   SessionBalanceDraft,
   TreasuryAccount,
-  TreasuryAdditionalFieldName,
   TreasuryRoleDashboard,
   TreasuryCurrencyConfig,
-  TreasuryFieldRule,
   TreasuryMovementType,
   TreasuryAccountDetail,
   TreasuryConsolidationDashboard,
@@ -50,7 +48,6 @@ type TreasuryActionCode =
   | "invalid_account"
   | "invalid_category"
   | "invalid_activity"
-  | "activity_required"
   | "invalid_currency"
   | "source_account_required"
   | "target_account_required"
@@ -68,8 +65,6 @@ type TreasuryActionCode =
   | "consolidation_already_completed"
   | "consolidation_has_invalid_movements"
   | "invalid_receipt_format"
-  | "receipt_required"
-  | "calendar_required"
   | "invalid_calendar_event"
   | "no_accounts_available"
   | "declared_balance_required"
@@ -212,27 +207,6 @@ async function getConfiguredMovementTypes(clubId: string): Promise<MovementTypeC
       isEnabled: true
     }
   ];
-}
-
-function buildFieldRulesMapForCategory(
-  fieldRules: TreasuryFieldRule[],
-  categoryId: string
-) {
-  return fieldRules
-    .filter((rule) => rule.categoryId === categoryId)
-    .reduce(
-      (accumulator, rule) => {
-        accumulator[rule.fieldName] = {
-          isVisible: rule.isVisible,
-          isRequired: rule.isRequired
-        };
-
-        return accumulator;
-      },
-      {} as Partial<
-        Record<TreasuryAdditionalFieldName, { isVisible: boolean; isRequired: boolean }>
-      >
-    );
 }
 
 async function buildAccountBalanceDrafts(
@@ -732,7 +706,6 @@ export async function createTreasuryMovement(input: {
     categories,
     activities,
     calendarEvents,
-    fieldRules,
     configuredCurrencies,
     configuredMovementTypes
   ] = await Promise.all([
@@ -740,7 +713,6 @@ export async function createTreasuryMovement(input: {
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
     accessRepository.listClubActivitiesForClub(context.activeClub.id),
     accessRepository.listClubCalendarEventsForClub(context.activeClub.id),
-    accessRepository.listTreasuryFieldRulesForClub(context.activeClub.id),
     getConfiguredTreasuryCurrencies(context.activeClub.id),
     getConfiguredMovementTypes(context.activeClub.id)
   ]);
@@ -768,8 +740,6 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "invalid_category" };
   }
 
-  const categoryFieldRules = buildFieldRulesMapForCategory(fieldRules, category.id);
-
   if (!configuredCurrencies.some((currency) => currency.currencyCode === input.currencyCode)) {
     return { ok: false, code: "invalid_currency" };
   }
@@ -783,20 +753,12 @@ export async function createTreasuryMovement(input: {
       ? activities.find((entry) => entry.id === input.activityId && entry.status === "active") ?? null
       : null;
 
-  if (categoryFieldRules.activity?.isRequired && !input.activityId.trim()) {
-    return { ok: false, code: "activity_required" };
-  }
-
   if (input.activityId.trim().length > 0 && !activity) {
     return { ok: false, code: "invalid_activity" };
   }
 
   const receiptNumber = input.receiptNumber.trim();
   const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
-
-  if (categoryFieldRules.receipt?.isRequired && receiptNumber.length === 0) {
-    return { ok: false, code: "receipt_required" };
-  }
 
   if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
     const isValidReceipt = activeReceiptFormats.some((format) =>
@@ -816,10 +778,6 @@ export async function createTreasuryMovement(input: {
             entry.isEnabledForTreasury
         ) ?? null
       : null;
-
-  if (categoryFieldRules.calendar?.isRequired && !input.calendarEventId.trim()) {
-    return { ok: false, code: "calendar_required" };
-  }
 
   if (input.calendarEventId.trim().length > 0 && !calendarEvent) {
     return { ok: false, code: "invalid_calendar_event" };
@@ -1728,16 +1686,6 @@ export async function getActiveActivitiesForSecretaria(): Promise<ClubActivity[]
 
   const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
   return activities.filter((activity) => activity.status === "active");
-}
-
-export async function getTreasuryFieldRulesForSecretaria(): Promise<TreasuryFieldRule[]> {
-  const context = await getSecretariaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  return accessRepository.listTreasuryFieldRulesForClub(context.activeClub.id);
 }
 
 export async function getEnabledCalendarEventsForSecretaria(): Promise<ClubCalendarEvent[]> {

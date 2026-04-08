@@ -69,7 +69,6 @@
       "invalid_account": "La cuenta seleccionada no es valida para el club activo.",
       "invalid_category": "La categoria seleccionada no es valida para el club activo.",
       "invalid_activity": "La actividad seleccionada no es valida para el club activo.",
-      "activity_required": "Debes completar la actividad para la categoria seleccionada.",
       "invalid_currency": "La moneda seleccionada no es valida para la cuenta.",
       "source_account_required": "Debes seleccionar una cuenta origen.",
       "target_account_required": "Debes seleccionar una cuenta destino.",
@@ -87,8 +86,6 @@
       "consolidation_already_completed": "La fecha seleccionada ya fue consolidada previamente.",
       "consolidation_has_invalid_movements": "No puedes consolidar mientras existan movimientos invalidos pendientes.",
       "invalid_receipt_format": "El recibo ingresado no cumple con un formato valido del club activo.",
-      "receipt_required": "Debes completar el recibo para la categoria seleccionada.",
-      "calendar_required": "Debes seleccionar un evento de calendario para la categoria elegida.",
       "invalid_calendar_event": "El evento de calendario seleccionado no es valido para el club activo.",
       "no_accounts_available": "No hay cuentas disponibles para validar la jornada en el club activo.",
       "declared_balance_required": "Debes completar el saldo declarado de todas las cuentas.",
@@ -258,10 +255,6 @@
       "forbidden_title": "No tienes permisos para abrir esta configuracion",
       "forbidden_description": "Solo un usuario con permisos de administracion o tesoreria del club activo puede acceder a esta pagina.",
       "back_to_dashboard_cta": "Volver al dashboard",
-      "tabs": {
-        "members": "Miembros",
-        "treasury": "Tesoreria"
-      },
       "invitations": {
         "section_title": "Invitar usuario",
         "section_description": "Genera una invitacion para sumar un usuario al club activo con el rol correcto.",
@@ -349,10 +342,6 @@
         "calendar_events_description": "Define que eventos sincronizados del club pueden ser seleccionados por Secretaria al imputar movimientos.",
         "calendar_events_enabled_label": "Disponible para imputacion",
         "calendar_events_without_date": "Sin fecha informada",
-        "additional_fields_title": "Campos adicionales por categoria",
-        "additional_fields_description": "Define si Actividad, Recibo y Calendario se muestran o son obligatorios segun la categoria elegida por Secretaria.",
-        "additional_fields_empty_categories": "Debes tener al menos una categoria para configurar campos adicionales.",
-        "additional_fields_category_help": "Estas reglas aplican solo a la categoria seleccionada dentro del club activo.",
         "movement_types_title": "Tipos de movimiento",
         "movement_types_description": "Muestra los tipos fijos del sistema que Secretaria usara en los movimientos manuales.",
         "receipt_formats_title": "Formatos de recibo",
@@ -377,8 +366,6 @@
         "update_activity_loading": "Actualizando actividad...",
         "save_calendar_event_cta": "Guardar evento",
         "save_calendar_event_loading": "Guardando evento...",
-        "save_field_rules_cta": "Guardar reglas",
-        "save_field_rules_loading": "Guardando reglas...",
         "create_receipt_format_cta": "Crear formato",
         "edit_receipt_format_cta": "Editar formato",
         "save_receipt_format_cta": "Guardar formato",
@@ -404,8 +391,6 @@
           "ingreso": "Incrementa saldo",
           "egreso": "Reduce saldo"
         },
-        "additional_field_visible_label": "Visible",
-        "additional_field_required_label": "Obligatorio",
         "visibility_label": "Visible para Secretaria",
         "visibility_visible": "Visible",
         "visibility_hidden": "Oculta",
@@ -450,11 +435,6 @@
           "ARS": "ARS",
           "USD": "USD"
         },
-        "additional_field_names": {
-          "activity": "Actividad",
-          "receipt": "Recibo",
-          "calendar": "Calendario"
-        },
         "feedback": {
           "account_created": "La cuenta fue registrada correctamente en el club activo.",
           "account_updated": "La cuenta fue actualizada correctamente.",
@@ -486,9 +466,6 @@
           "category_not_found": "No encontramos la categoria seleccionada en el club activo.",
           "activity_not_found": "No encontramos la actividad seleccionada en el club activo.",
           "receipt_format_not_found": "No encontramos el formato de recibo seleccionado en el club activo.",
-          "field_rules_updated": "Las reglas de campos adicionales se actualizaron correctamente.",
-          "field_rule_category_not_found": "No encontramos la categoria seleccionada para guardar las reglas.",
-          "field_rule_invalid": "La combinacion de visibilidad y obligatoriedad no es valida para ese campo.",
           "calendar_event_updated": "La disponibilidad del evento para imputacion se actualizo correctamente.",
           "calendar_event_not_found": "No encontramos el evento seleccionado en el club activo.",
           "treasury_admin_config_missing": "Falta configurar las credenciales de administrador de Supabase para guardar la configuracion de tesoreria.",

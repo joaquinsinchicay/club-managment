@@ -356,8 +356,7 @@ Sí
   "activities": [],
   "currencies": [],
   "movement_types": [],
-  "receipt_formats": [],
-  "field_rules": []
+  "receipt_formats": []
 }
 ```
 
@@ -849,8 +848,7 @@ Sí
   "accounts": [],
   "categories": [],
   "currencies": [],
-  "movement_types": [],
-  "field_rules": []
+  "movement_types": []
 }
 ```
 
@@ -892,7 +890,7 @@ Sí
 * currency_code válida para la cuenta
 * receipt_number debe cumplir `^PAY-SOC-[0-9]{5}$` y ser `>= PAY-SOC-10556` cuando se informa
 * amount > 0
-* campos dinámicos obligatorios según categoría
+* `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
 * si el rol es `secretaria`, debe existir jornada abierta
 * si el rol es `secretaria`, `movement_date` debe ser la fecha del día y no editable por contrato
 * si el rol es `tesoreria`, la fecha puede ser editable según negocio

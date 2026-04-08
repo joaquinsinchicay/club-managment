@@ -16,8 +16,6 @@ import {
   createTreasuryCategoryAction,
   inviteClubUserAction,
   removeClubMembershipAction,
-  setTreasuryFieldRulesAction,
-  updateCalendarEventTreasuryAvailabilityAction,
   updateClubActivityAction,
   updateClubMembershipRoleAction,
   updateTreasuryAccountAction,
@@ -28,7 +26,6 @@ import { redirect } from "next/navigation";
 type ClubSettingsPageProps = {
   searchParams?: {
     feedback?: string;
-    tab?: string;
   };
 };
 
@@ -74,7 +71,6 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
       <AppHeader context={context} />
       <ClubSettingsCard
         context={context}
-        initialTab={searchParams?.tab}
         canManageMembers={canViewMembers}
         canManageTreasury={canViewTreasury}
         members={clubMembersData?.members ?? []}
@@ -90,8 +86,6 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
         updateTreasuryCategoryAction={updateTreasuryCategoryAction}
         createClubActivityAction={createClubActivityAction}
         updateClubActivityAction={updateClubActivityAction}
-        setTreasuryFieldRulesAction={setTreasuryFieldRulesAction}
-        updateCalendarEventTreasuryAvailabilityAction={updateCalendarEventTreasuryAvailabilityAction}
       />
     </div>
   );

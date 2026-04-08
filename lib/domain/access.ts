@@ -76,7 +76,6 @@ export type TreasuryMovementStatus =
   | "consolidated"
   | "posted"
   | "cancelled";
-export type TreasuryAdditionalFieldName = "activity" | "receipt" | "calendar";
 
 export type TreasuryCurrencyConfig = {
   clubId: string;
@@ -133,15 +132,6 @@ export type MovementTypeConfig = {
   isEnabled: boolean;
 };
 
-export type TreasuryFieldRule = {
-  id: string;
-  clubId: string;
-  categoryId: string;
-  fieldName: TreasuryAdditionalFieldName;
-  isVisible: boolean;
-  isRequired: boolean;
-};
-
 export type ClubCalendarEvent = {
   id: string;
   clubId: string;
@@ -183,7 +173,6 @@ export type TreasurySettings = {
   receiptFormats: ReceiptFormat[];
   currencies: TreasuryCurrencyConfig[];
   movementTypes: MovementTypeConfig[];
-  fieldRules: TreasuryFieldRule[];
 };
 
 export type TreasurySessionStatus = "open" | "closed";

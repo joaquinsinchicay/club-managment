@@ -25,10 +25,8 @@ import type {
   PendingClubInvitation,
   ReceiptFormat,
   TreasuryAccount,
-  TreasuryAdditionalFieldName,
   TreasuryCurrencyCode,
   TreasuryCurrencyConfig,
-  TreasuryFieldRule,
   TreasuryMovementStatus,
   TreasuryMovementType,
   TreasuryCategory,
@@ -91,18 +89,8 @@ type AccessRepository = {
     isEnabledForTreasury: boolean;
   }): Promise<ClubCalendarEvent | null>;
   listReceiptFormatsForClub(clubId: string): Promise<ReceiptFormat[]>;
-  listTreasuryFieldRulesForClub(clubId: string): Promise<TreasuryFieldRule[]>;
   listTreasuryCurrenciesForClub(clubId: string): Promise<TreasuryCurrencyConfig[]>;
   listMovementTypeConfigForClub(clubId: string): Promise<MovementTypeConfig[]>;
-  setTreasuryFieldRulesForCategory(input: {
-    clubId: string;
-    categoryId: string;
-    rules: Array<{
-      fieldName: TreasuryAdditionalFieldName;
-      isVisible: boolean;
-      isRequired: boolean;
-    }>;
-  }): Promise<TreasuryFieldRule[]>;
   setTreasuryCurrenciesForClub(input: {
     clubId: string;
     currencies: Array<{
@@ -343,7 +331,6 @@ type MockStore = {
   clubActivities: ClubActivity[];
   clubCalendarEvents: ClubCalendarEvent[];
   receiptFormats: ReceiptFormat[];
-  treasuryFieldRules: TreasuryFieldRule[];
   clubTreasuryCurrencies: TreasuryCurrencyConfig[];
   movementTypeConfig: MovementTypeConfig[];
   dailyCashSessions: DailyCashSession[];
@@ -676,41 +663,6 @@ function createStore(): MockStore {
     }
   ];
 
-  const treasuryFieldRules: TreasuryFieldRule[] = [
-    {
-      id: "field-rule-club-001",
-      clubId: CLUB_ID,
-      categoryId: "category-manual-gastos-001",
-      fieldName: "receipt",
-      isVisible: true,
-      isRequired: true
-    },
-    {
-      id: "field-rule-club-002",
-      clubId: CLUB_ID,
-      categoryId: "category-manual-gastos-001",
-      fieldName: "activity",
-      isVisible: true,
-      isRequired: false
-    },
-    {
-      id: "field-rule-club-003",
-      clubId: CLUB_ID,
-      categoryId: "category-system-1",
-      fieldName: "calendar",
-      isVisible: true,
-      isRequired: false
-    },
-    {
-      id: "field-rule-sur-001",
-      clubId: CLUB_SUR_ID,
-      categoryId: "category-sur-manual-001",
-      fieldName: "receipt",
-      isVisible: true,
-      isRequired: false
-    }
-  ];
-
   const clubTreasuryCurrencies: TreasuryCurrencyConfig[] = [
     {
       clubId: CLUB_ID,
@@ -831,7 +783,6 @@ function createStore(): MockStore {
     clubActivities,
     clubCalendarEvents,
     receiptFormats,
-    treasuryFieldRules,
     clubTreasuryCurrencies,
     movementTypeConfig,
     dailyCashSessions,
@@ -1242,24 +1193,6 @@ function mapMovementTypeConfigRow(row: {
     clubId: row.club_id,
     movementType: row.movement_type,
     isEnabled: row.is_enabled ?? false
-  };
-}
-
-function mapTreasuryFieldRuleRow(row: {
-  id: string;
-  club_id: string;
-  category_id: string;
-  field_name: string;
-  is_visible: boolean | null;
-  is_required: boolean | null;
-}): TreasuryFieldRule {
-  return {
-    id: row.id,
-    clubId: row.club_id,
-    categoryId: row.category_id,
-    fieldName: row.field_name as TreasuryAdditionalFieldName,
-    isVisible: row.is_visible ?? false,
-    isRequired: row.is_required ?? false
   };
 }
 
@@ -1731,21 +1664,6 @@ async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepo
   return rows.map(mapReceiptFormatRow);
 }
 
-async function listRealTreasuryFieldRulesForClub(clubId: string, client?: AccessRepositoryClient) {
-  const rows = await runClubScopedReadRpc<
-    Array<{
-      id: string;
-      club_id: string;
-      category_id: string;
-      field_name: string;
-      is_visible: boolean | null;
-      is_required: boolean | null;
-    }>
-  >("get_treasury_field_rules_for_current_club", clubId, client);
-
-  return rows.map(mapTreasuryFieldRuleRow);
-}
-
 async function listRealTreasuryCurrenciesForClub(clubId: string, client?: AccessRepositoryClient) {
   const rows = await runClubScopedReadRpc<
     Array<{
@@ -1965,67 +1883,6 @@ async function setRealMovementTypeConfigForClub(
   }
 
   return listRealMovementTypeConfigForClub(input.clubId, client);
-}
-
-async function setRealTreasuryFieldRulesForCategory(
-  input: {
-    clubId: string;
-    categoryId: string;
-    rules: Array<{
-      fieldName: TreasuryAdditionalFieldName;
-      isVisible: boolean;
-      isRequired: boolean;
-    }>;
-  },
-  client?: AccessRepositoryClient
-) {
-  const supabase = createRequiredTreasurySettingsAdminClient("set_treasury_field_rules_for_category", {
-    clubId: input.clubId,
-    categoryId: input.categoryId
-  });
-
-  const { error: deleteError } = await supabase
-    .from("treasury_field_rules")
-    .delete()
-    .eq("club_id", input.clubId)
-    .eq("category_id", input.categoryId);
-
-  if (deleteError) {
-    throwTreasurySettingsWriteFailure(
-      "set_treasury_field_rules_for_category",
-      { clubId: input.clubId, categoryId: input.categoryId },
-      deleteError
-    );
-  }
-
-  const nextRules = input.rules.filter((rule) => rule.isVisible || rule.isRequired);
-
-  if (nextRules.length === 0) {
-    return [] as TreasuryFieldRule[];
-  }
-
-  const { data, error } = await supabase
-    .from("treasury_field_rules")
-    .insert(
-      nextRules.map((rule) => ({
-        club_id: input.clubId,
-        category_id: input.categoryId,
-        field_name: rule.fieldName,
-        is_visible: rule.isVisible,
-        is_required: rule.isRequired
-      }))
-    )
-    .select("id,club_id,category_id,field_name,is_visible,is_required");
-
-  if (error || !data) {
-    throwTreasurySettingsWriteFailure(
-      "set_treasury_field_rules_for_category",
-      { clubId: input.clubId, categoryId: input.categoryId },
-      error
-    );
-  }
-
-  return data.map(mapTreasuryFieldRuleRow);
 }
 
 async function createRealTreasuryAccount(
@@ -2904,13 +2761,6 @@ export const accessRepository: AccessRepository = {
 
     return getStore().receiptFormats.filter((format) => format.clubId === clubId);
   },
-  async listTreasuryFieldRulesForClub(clubId) {
-    if (shouldUseSupabaseDatabase()) {
-      return listRealTreasuryFieldRulesForClub(clubId);
-    }
-
-    return getStore().treasuryFieldRules.filter((rule) => rule.clubId === clubId);
-  },
   async listTreasuryCurrenciesForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
       return listRealTreasuryCurrenciesForClub(clubId);
@@ -2978,31 +2828,6 @@ export const accessRepository: AccessRepository = {
     store.movementTypeConfig.push(...nextMovementTypes);
 
     return nextMovementTypes;
-  },
-  async setTreasuryFieldRulesForCategory(input) {
-    if (shouldUseSupabaseDatabase()) {
-      return setRealTreasuryFieldRulesForCategory(input);
-    }
-
-    const store = getStore();
-    store.treasuryFieldRules = store.treasuryFieldRules.filter(
-      (rule) => !(rule.clubId === input.clubId && rule.categoryId === input.categoryId)
-    );
-
-    const nextRules = input.rules
-      .filter((rule) => rule.isVisible || rule.isRequired)
-      .map((rule) => ({
-        id: `field-rule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        clubId: input.clubId,
-        categoryId: input.categoryId,
-        fieldName: rule.fieldName,
-        isVisible: rule.isVisible,
-        isRequired: rule.isRequired
-      }));
-
-    store.treasuryFieldRules.push(...nextRules);
-
-    return nextRules;
   },
   async createTreasuryAccount(input) {
     if (shouldUseSupabaseDatabase()) {

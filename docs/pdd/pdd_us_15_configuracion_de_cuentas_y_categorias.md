@@ -21,14 +21,14 @@ La operatoria diaria de Secretaría ya puede registrar movimientos, pero todaví
 
 ## 3. Objetivo funcional
 
-Desde `Configuración del club`, un usuario `tesoreria` debe visualizar una solapa `Tesorería` y administrar cuentas y categorías del club activo, pudiendo listarlas, crearlas y editarlas con sus atributos operativos mínimos.
+Desde `Configuración del club`, un usuario `tesoreria` debe visualizar las cards de configuración operativa del club y administrar cuentas y categorías del club activo, pudiendo listarlas, crearlas y editarlas con sus atributos operativos mínimos.
 
 ---
 
 ## 4. Alcance
 
 ### Incluye
-- Solapa `Tesorería` dentro de `Configuración del club`.
+- Cards de `Cuentas` y `Categorías` dentro de `Configuración del club`.
 - Listado de cuentas del club activo.
 - Listado de categorías del club activo.
 - Alta de cuenta.
@@ -65,7 +65,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 | Escenario | Resultado esperado |
 |---|---|
-| Tesorería entra a configuración | Ve la solapa `Tesorería`. |
+| Tesorería entra a configuración | Ve las cards de configuración operativa del club. |
 | Tesorería crea una cuenta válida | La cuenta queda registrada en el club activo. |
 | Tesorería edita una cuenta existente | La cuenta queda actualizada solo en el club activo. |
 | Tesorería crea una categoría válida | La categoría queda registrada en el club activo. |
@@ -95,11 +95,10 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 ## 9. Flujo principal
 
 1. Un usuario de Tesorería entra a `Configuración del club`.
-2. La UI muestra tabs y una de ellas es `Tesorería`.
-3. Tesorería abre la solapa `Tesorería`.
-4. El sistema muestra cuentas y categorías del club activo.
-5. Tesorería crea o edita cuentas y categorías; para categorías del sistema solo ajusta visibilidad por rol.
-6. El sistema valida, persiste y vuelve a mostrar la configuración actualizada con feedback.
+2. La UI muestra la vista unificada de `Configuración del club`.
+3. El sistema muestra las cards de cuentas y categorías del club activo.
+4. Tesorería crea o edita cuentas y categorías; para categorías del sistema solo ajusta visibilidad por rol.
+5. El sistema valida, persiste y vuelve a mostrar la configuración actualizada con feedback.
 
 ---
 
@@ -129,8 +128,8 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 ### Reglas
 - La configuración debe mantenerse dentro de `settings/club`.
-- La solapa `Tesorería` debe ser visible al entrar a la pantalla solo para usuarios con rol `tesoreria`.
-- Un usuario con ambos roles puede alternar entre `Miembros` y `Tesorería` sin salir de la página.
+- Las cards de tesorería deben ser visibles dentro de la pantalla solo para usuarios con rol `tesoreria`.
+- Un usuario con ambos roles puede ver en una sola pantalla tanto la administración de miembros como las cards de tesorería.
 - La pantalla puede incluir bloques informativos read-only de catálogos fijos del sistema, sin convertirlos en configuraciones editables.
 - Al crear o editar cuentas/categorías, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - El campo `Visibilidad` de categorías debe usar el mismo patrón UI que el de cuentas, con selección por rol para `Secretaria` y `Tesoreria`.
@@ -152,7 +151,6 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 | Tipo | Key | Contexto |
 |---|---|---|
-| tab | `settings.club.tabs.treasury` | Nombre visible de la solapa. |
 | title | `settings.club.treasury.section_title` | Encabezado de Tesorería. |
 | body | `settings.club.treasury.section_description` | Descripción general. |
 | action | `settings.club.treasury.create_account_cta` | Alta de cuenta. |

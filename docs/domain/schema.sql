@@ -161,15 +161,6 @@ example text,
 status text
 );
 
-create table treasury_field_rules (
-id uuid primary key default uuid_generate_v4(),
-club_id uuid references clubs(id),
-category_id uuid references treasury_categories(id),
-field_name text not null,
-is_visible boolean,
-is_required boolean
-);
-
 create table club_treasury_currencies (
 id uuid primary key default uuid_generate_v4(),
 club_id uuid references clubs(id),
