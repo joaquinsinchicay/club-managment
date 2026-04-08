@@ -12,6 +12,12 @@ import {
   openDailyCashSession
 } from "@/lib/services/treasury-service";
 
+export type TreasuryActionResponse = {
+  ok: boolean;
+  code: string;
+  movementDisplayId?: string;
+};
+
 function redirectToDashboard(code: string, movementDisplayId?: string) {
   revalidatePath("/dashboard");
   const params = new URLSearchParams({ feedback: code });
@@ -46,7 +52,13 @@ export async function createTreasuryMovementAction(formData: FormData) {
     amount: String(formData.get("amount") ?? "")
   });
 
-  redirectToDashboard(result.code);
+  revalidatePath("/dashboard");
+
+  return {
+    ok: result.ok,
+    code: result.code,
+    movementDisplayId: result.movementDisplayId
+  } satisfies TreasuryActionResponse;
 }
 
 export async function createTreasuryRoleMovementAction(formData: FormData) {

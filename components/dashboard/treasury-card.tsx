@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { AccountTransferForm, SecretariaMovementForm } from "@/components/dashboard/treasury-operation-forms";
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
 import { formatLocalizedAmount } from "@/lib/amounts";
+import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
   ClubActivity,
   ClubCalendarEvent,
@@ -27,7 +29,7 @@ type TreasuryCardProps = {
   currencies: TreasuryCurrencyConfig[];
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
-  createTreasuryMovementAction: (formData: FormData) => Promise<void>;
+  createTreasuryMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createAccountTransferAction: (formData: FormData) => Promise<void>;
 };
 
@@ -68,11 +70,34 @@ export function TreasuryCard({
   createTreasuryMovementAction,
   createAccountTransferAction
 }: TreasuryCardProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const canCreateMovement = treasuryCard.availableActions.includes("create_movement");
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
   const hasMovements = treasuryCard.movements.length > 0;
   const [activeModal, setActiveModal] = useState<"movement" | "transfer" | null>(null);
+
+  async function handleCreateTreasuryMovement(formData: FormData) {
+    const result = await createTreasuryMovementAction(formData);
+    const nextParams = new URLSearchParams(searchParams.toString());
+
+    nextParams.set("feedback", result.code);
+
+    if (result.movementDisplayId) {
+      nextParams.set("movement_id", result.movementDisplayId);
+    } else {
+      nextParams.delete("movement_id");
+    }
+
+    if (result.ok) {
+      setActiveModal(null);
+    }
+
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    router.refresh();
+  }
 
   return (
     <>
@@ -243,7 +268,7 @@ export function TreasuryCard({
           currencies={currencies}
           movementTypes={movementTypes}
           receiptFormats={receiptFormats}
-          submitAction={createTreasuryMovementAction}
+          submitAction={handleCreateTreasuryMovement}
           submitLabel={texts.dashboard.treasury.create_cta}
           pendingLabel={texts.dashboard.treasury.create_loading}
           sessionDate={treasuryCard.sessionDate}
