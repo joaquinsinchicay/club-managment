@@ -12,6 +12,7 @@ type ModalProps = {
   onClose: () => void;
   children: ReactNode;
   panelClassName?: string;
+  closeDisabled?: boolean;
 };
 
 export function Modal({
@@ -20,7 +21,8 @@ export function Modal({
   description,
   onClose,
   children,
-  panelClassName
+  panelClassName,
+  closeDisabled = false
 }: ModalProps) {
   useEffect(() => {
     if (!open) {
@@ -31,7 +33,7 @@ export function Modal({
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !closeDisabled) {
         onClose();
       }
     }
@@ -42,7 +44,7 @@ export function Modal({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onClose]);
+  }, [closeDisabled, open, onClose]);
 
   if (!open) {
     return null;
@@ -55,7 +57,7 @@ export function Modal({
       aria-modal="true"
       aria-labelledby="app-modal-title"
       aria-describedby={description ? "app-modal-description" : undefined}
-      onClick={onClose}
+      onClick={closeDisabled ? undefined : onClose}
     >
       <div
         className={cn(
@@ -78,6 +80,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
+            disabled={closeDisabled}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
             aria-label={texts.app.modal_close_cta}
           >

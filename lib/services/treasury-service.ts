@@ -79,10 +79,21 @@ export type TreasuryActionResult = {
   movementDisplayId?: string;
 };
 
-const TODAY = "2026-04-06";
+const OPERATIONAL_TIME_ZONE = "America/Argentina/Buenos_Aires";
 
 function getTodayDate() {
-  return TODAY;
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: OPERATIONAL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  const parts = formatter.formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
 }
 
 function getRelativeDate(date: string, deltaDays: number) {
@@ -633,7 +644,9 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     availableActions:
       session?.status === "open"
         ? ["close_session", "create_movement"]
-        : ["open_session"]
+        : session?.status === "closed"
+          ? []
+          : ["open_session"]
   };
 }
 

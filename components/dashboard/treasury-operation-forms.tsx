@@ -73,7 +73,14 @@ function ReceiptHelper({ receiptFormats }: { receiptFormats: ReceiptFormat[] }) 
 }
 
 function sanitizeAmountInput(value: string) {
-  return value.replace(/-/g, "");
+  const normalizedValue = value.replace(/[^\d,]/g, "");
+  const [integerPart, ...decimalParts] = normalizedValue.split(",");
+
+  if (decimalParts.length === 0) {
+    return integerPart;
+  }
+
+  return `${integerPart},${decimalParts.join("")}`;
 }
 
 function getDefaultCurrencyCode(account: TreasuryAccount | undefined, currencies: TreasuryCurrencyConfig[]) {

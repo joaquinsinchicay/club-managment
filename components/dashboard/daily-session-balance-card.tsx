@@ -82,7 +82,10 @@ export function DailySessionBalanceCard({
       accountName: account.accountName,
       currencyCode: account.currencyCode,
       expectedBalance: account.expectedBalance,
-      declaredBalance: formatLocalizedAmount(account.declaredBalance)
+      declaredBalance:
+        validation.mode === "close"
+          ? formatLocalizedAmount(0)
+          : formatLocalizedAmount(account.declaredBalance)
     }))
   );
 

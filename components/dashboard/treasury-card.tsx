@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AccountTransferForm, SecretariaMovementForm } from "@/components/dashboard/treasury-operation-forms";
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
@@ -78,29 +78,69 @@ export function TreasuryCard({
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
   const hasMovements = treasuryCard.movements.length > 0;
   const [activeModal, setActiveModal] = useState<"movement" | "transfer" | null>(null);
+  const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
+  const [pendingMovementDisplayId, setPendingMovementDisplayId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isMovementSubmissionPending) {
+      return;
+    }
+
+    if (
+      pendingMovementDisplayId &&
+      treasuryCard.movements.some((movement) => movement.movementDisplayId === pendingMovementDisplayId)
+    ) {
+      setIsMovementSubmissionPending(false);
+      setPendingMovementDisplayId(null);
+    }
+  }, [isMovementSubmissionPending, pendingMovementDisplayId, treasuryCard.movements]);
 
   async function handleCreateTreasuryMovement(formData: FormData) {
-    const result = await createTreasuryMovementAction(formData);
-    const nextParams = new URLSearchParams(searchParams.toString());
+    setIsMovementSubmissionPending(true);
 
-    nextParams.set("feedback", result.code);
+    try {
+      const result = await createTreasuryMovementAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
 
-    if (result.movementDisplayId) {
-      nextParams.set("movement_id", result.movementDisplayId);
-    } else {
-      nextParams.delete("movement_id");
+      nextParams.set("feedback", result.code);
+
+      if (result.movementDisplayId) {
+        nextParams.set("movement_id", result.movementDisplayId);
+      } else {
+        nextParams.delete("movement_id");
+      }
+
+      if (result.ok) {
+        setPendingMovementDisplayId(result.movementDisplayId ?? null);
+        setActiveModal(null);
+      } else {
+        setPendingMovementDisplayId(null);
+        setIsMovementSubmissionPending(false);
+      }
+
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      router.refresh();
+    } catch (error) {
+      setPendingMovementDisplayId(null);
+      setIsMovementSubmissionPending(false);
+      throw error;
     }
-
-    if (result.ok) {
-      setActiveModal(null);
-    }
-
-    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-    router.refresh();
   }
 
   return (
     <>
+      {isMovementSubmissionPending ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 px-4">
+          <div className="flex w-full max-w-sm items-center justify-center gap-3 rounded-[28px] border border-border bg-card px-6 py-5 text-sm font-semibold text-foreground shadow-soft">
+            <span
+              aria-hidden="true"
+              className="inline-block size-5 animate-spin rounded-full border-2 border-current border-r-transparent"
+            />
+            <span>{texts.dashboard.treasury.create_loading}</span>
+          </div>
+        </div>
+      ) : null}
+
       <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
         <div className="space-y-1.5">
           <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
@@ -259,6 +299,7 @@ export function TreasuryCard({
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury.movement_form_title}
         description={texts.dashboard.treasury.movement_form_description}
+        closeDisabled={isMovementSubmissionPending}
       >
         <SecretariaMovementForm
           accounts={accounts}
