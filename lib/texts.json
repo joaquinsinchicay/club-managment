@@ -2,7 +2,8 @@
   "app": {
     "title": "Club Management System",
     "description": "Base ejecutable inicial para gestion operativa multi-club.",
-    "badge": "Acceso"
+    "badge": "Acceso",
+    "modal_close_cta": "Cerrar"
   },
   "auth": {
     "login": {
@@ -101,6 +102,15 @@
     "treasury": {
       "title": "Saldos de cuentas",
       "description": "Opera la jornada diaria y registra movimientos del club activo.",
+      "balances_card_title": "Saldos de cuentas",
+      "balances_card_description": "Consulta el estado operativo del dia y el saldo disponible por cuenta visible.",
+      "actions_card_title": "Acciones de jornada",
+      "actions_card_description": "Habilita la operatoria diaria y accede a los formularios desde ventanas modales.",
+      "movements_card_title": "Movimientos de la jornada",
+      "movements_card_description": "Revisa los movimientos cargados durante la jornada actual sin salir del dashboard.",
+      "movements_empty": "Todavia no hay movimientos registrados en la jornada actual.",
+      "movements_account_label": "Cuenta",
+      "movements_created_by_label": "Registrado por",
       "detail_cta": "Ver detalle",
       "detail_eyebrow": "Detalle",
       "detail_title": "Detalle de cuenta",
@@ -122,8 +132,10 @@
       "empty_accounts": "No hay cuentas disponibles para Secretaria en el club activo.",
       "open_session_cta": "Abrir jornada",
       "close_session_cta": "Cerrar jornada",
-      "open_session_flow_cta": "Validar apertura",
-      "close_session_flow_cta": "Validar cierre",
+      "open_session_flow_cta": "Apertura de jornada",
+      "close_session_flow_cta": "Cierre de jornada",
+      "movement_modal_cta": "Registrar movimiento",
+      "transfer_modal_cta": "Registrar transferencia",
       "movement_form_title": "Registrar movimiento",
       "movement_form_description": "Carga ingresos y egresos del dia sobre la jornada abierta.",
       "transfer_form_title": "Registrar transferencia",
@@ -192,11 +204,19 @@
     "treasury_role": {
       "title": "Saldos de cuentas",
       "description": "Consulta saldos y registra movimientos de Tesoreria en el club activo.",
+      "actions_card_title": "Acciones de Tesoreria",
+      "actions_card_description": "Registra movimientos propios y operaciones de compra o venta de moneda.",
       "empty_accounts": "No hay cuentas visibles para Tesoreria en el club activo.",
       "detail_cta": "Ver detalle",
       "consolidation_cta": "Ir a consolidacion",
+      "movement_modal_cta": "Registrar movimiento",
       "movement_form_title": "Registrar movimiento de Tesoreria",
       "movement_form_description": "Carga ingresos y egresos en las cuentas visibles para Tesoreria del club activo.",
+      "fx_modal_cta": "Registrar compra o venta",
+      "fx_form_title": "Registrar compra o venta de moneda",
+      "fx_form_description": "Refleja una conversion interna entre monedas de cuentas visibles para Tesoreria.",
+      "fx_create_cta": "Crear operacion",
+      "fx_create_loading": "Registrando operacion...",
       "create_cta": "Crear",
       "create_loading": "Registrando movimiento...",
       "back_to_dashboard_cta": "Volver al dashboard"

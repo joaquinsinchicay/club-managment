@@ -7,7 +7,7 @@
 | Campo | Valor |
 |---|---|
 | Epic | E03 · Tesorería |
-| User Story | Como Secretaria del club, quiero registrar operaciones de compra y venta de moneda entre cuentas de distinta moneda, para reflejar correctamente conversiones de fondos y su impacto en los saldos del club. |
+| User Story | Como usuario con rol Tesoreria del club, quiero registrar operaciones de compra y venta de moneda entre cuentas visibles de distinta moneda, para reflejar correctamente conversiones de fondos y su impacto en los saldos del club. |
 | Prioridad | Alta |
 | Objetivo de negocio | Registrar conversiones internas entre monedas con trazabilidad común y sin tratarlas como ingresos o egresos externos. |
 
@@ -22,8 +22,8 @@ Secretaría debe poder registrar una operación de cambio entre dos cuentas del 
 ## 3. Alcance
 
 ### Incluye
-- Formulario específico de compra/venta de moneda en el dashboard de Secretaría.
-- Validaciones de jornada abierta, cuentas distintas, monedas distintas y montos positivos.
+- Modal específico de compra/venta de moneda en el dashboard de Tesorería.
+- Validaciones de cuentas distintas, monedas distintas y montos positivos.
 - Creación de la operación de cambio.
 - Generación automática de dos movimientos asociados.
 - Visualización de la referencia FX en el detalle del movimiento.
@@ -37,8 +37,8 @@ Secretaría debe poder registrar una operación de cambio entre dos cuentas del 
 
 ## 4. Reglas de negocio
 
-- Solo `secretaria` puede registrar la operación.
-- Requiere jornada abierta.
+- Solo `tesoreria` puede registrar la operación.
+- No requiere jornada abierta.
 - La cuenta origen y la cuenta destino deben pertenecer al club activo.
 - Las cuentas deben ser distintas.
 - La moneda origen y la moneda destino deben ser distintas.

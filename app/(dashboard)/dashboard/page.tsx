@@ -111,7 +111,6 @@ export default async function DashboardPage() {
             receiptFormats={receiptFormats}
             createTreasuryMovementAction={createTreasuryMovementAction}
             createAccountTransferAction={createAccountTransferAction}
-            createFxOperationAction={createFxOperationAction}
           />
         ) : null}
 
@@ -125,6 +124,7 @@ export default async function DashboardPage() {
             movementTypes={treasuryRoleMovementTypes}
             receiptFormats={treasuryRoleReceiptFormats}
             createTreasuryRoleMovementAction={createTreasuryRoleMovementAction}
+            createFxOperationAction={createFxOperationAction}
           />
         ) : null}
       </main>

@@ -671,7 +671,7 @@ Obtener card resumida de saldos y estado operativo del día.
 Sí
 
 **Allowed roles**
-`secretaria`
+`tesoreria`
 
 **Input**
 
@@ -692,6 +692,20 @@ Sí
       "balances": [
         { "currency_code": "ARS", "amount": 150000.00 }
       ]
+    }
+  ],
+  "movements": [
+    {
+      "movement_id": "uuid",
+      "account_id": "uuid",
+      "account_name": "Caja principal",
+      "movement_type": "ingreso",
+      "category_name": "Cobranza",
+      "concept": "Cuota abril",
+      "currency_code": "ARS",
+      "amount": 150000.00,
+      "created_by_user_name": "Ana Perez",
+      "created_at": "2026-04-02T13:45:00.000Z"
     }
   ],
   "available_actions": [
@@ -733,6 +747,10 @@ Sí
         { "currency_code": "USD", "amount": 950.00 }
       ]
     }
+  ],
+  "available_actions": [
+    "create_movement",
+    "create_fx_operation"
   ]
 }
 ```
@@ -908,6 +926,7 @@ Sí
 
 * si el movimiento lo crea `secretaria`, el status inicial es `pending_consolidation`
 * si el movimiento lo crea `tesoreria`, el status inicial es `posted`
+* los movimientos creados por compra/venta de Tesorería se registran como `posted`
 
 ---
 
@@ -985,7 +1004,7 @@ Sí
 
 **Validations**
 
-* jornada abierta
+* no requiere jornada abierta
 * cuentas distintas
 * ambas cuentas del club activo
 * moneda válida para ambas cuentas

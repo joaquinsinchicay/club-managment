@@ -22,7 +22,7 @@ Secretaría debe disponer de un formulario específico para registrar una transf
 ## 3. Alcance
 
 ### Incluye
-- Formulario específico de transferencia en el dashboard de Secretaría.
+- Modal específico de transferencia abierto desde el dashboard de Secretaría.
 - Validaciones de jornada abierta, cuentas distintas, moneda compatible e importe positivo.
 - Creación de un registro de transferencia interna.
 - Generación automática de dos movimientos asociados a la misma referencia.

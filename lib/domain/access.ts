@@ -268,6 +268,18 @@ export type DashboardTreasuryCard = {
       amount: number;
     }>;
   }>;
+  movements: Array<{
+    movementId: string;
+    accountId: string;
+    accountName: string;
+    movementType: TreasuryMovementType;
+    categoryName: string;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+    createdByUserName: string;
+    createdAt: string;
+  }>;
   availableActions: Array<"open_session" | "close_session" | "create_movement">;
 };
 
@@ -281,7 +293,7 @@ export type TreasuryRoleDashboard = {
       amount: number;
     }>;
   }>;
-  availableActions: Array<"create_movement">;
+  availableActions: Array<"create_movement" | "create_fx_operation">;
 };
 
 export type TreasuryAccountDetail = {

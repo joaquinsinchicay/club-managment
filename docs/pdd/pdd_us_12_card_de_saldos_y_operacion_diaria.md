@@ -32,7 +32,7 @@ El dashboard debe mostrar una card de saldos únicamente para usuarios con rol `
 - Listado de cuentas visibles para el rol.
 - Saldos acumulados por cuenta y moneda.
 - Estado de jornada del día.
-- Acciones para abrir/cerrar jornada y registrar movimientos según corresponda.
+- Acciones para abrir/cerrar jornada y abrir modales de registro según corresponda.
 - Estado vacío si no hay cuentas configuradas.
 
 ### No incluye
@@ -85,7 +85,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 1. Secretaría ingresa al dashboard del club activo.
 2. El sistema obtiene cuentas visibles, jornada del día y movimientos del día.
 3. La UI renderiza la card con saldos y estado operativo.
-4. La card habilita las acciones permitidas según exista o no jornada abierta.
+4. La experiencia se organiza en una card de saldos, una card de acciones y una card de movimientos del dia.
+5. La card habilita las acciones permitidas según exista o no jornada abierta.
 
 ---
 
@@ -137,6 +138,11 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | action | `dashboard.treasury.open_session_cta` | Abrir jornada. |
 | action | `dashboard.treasury.close_session_cta` | Cerrar jornada. |
 | action | `dashboard.treasury.detail_cta` | Ver detalle de cuenta desde la card. |
+| action | `dashboard.treasury.movement_modal_cta` | Abrir modal para registrar movimiento. |
+| action | `dashboard.treasury.transfer_modal_cta` | Abrir modal para registrar transferencia. |
+| title | `dashboard.treasury.movements_card_title` | Titulo de la card de movimientos del dia. |
+| body | `dashboard.treasury.movements_card_description` | Descripcion del listado de movimientos del dia. |
+| label | `dashboard.treasury.movements_empty` | Estado vacio del listado del dia. |
 
 ---
 

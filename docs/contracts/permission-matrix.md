@@ -154,11 +154,11 @@ Roles disponibles:
 
 | Acción             | Admin | Secretaria | Tesoreria |
 | ------------------ | ----- | ---------- | --------- |
-| Crear operación FX | ❌     | ✅          | ❌         |
+| Crear operación FX | ❌     | ❌          | ✅         |
 
 ### Reglas
 
-* Requiere jornada abierta
+* No requiere jornada abierta
 * Genera dos movimientos
 * Debe ser transaccional
 
@@ -209,7 +209,7 @@ Roles disponibles:
 * Operación diaria
 * Jornadas
 * Movimientos del día
-* Transferencias y FX
+* Transferencias
 
 ---
 
@@ -218,6 +218,7 @@ Roles disponibles:
 * Control financiero
 * Revisión
 * Consolidación
+* Operaciones FX
 * Auditoría
 
 ---
