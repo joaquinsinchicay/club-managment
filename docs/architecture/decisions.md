@@ -427,6 +427,27 @@ Si cambia comportamiento:
 * actualizar `api-contracts.md`
 * actualizar este documento
 
+## 13.6 Toda tabla en public nace cerrada
+
+Toda tabla operativa en `public` debe crearse con:
+
+* RLS habilitado
+* policies explícitas
+* validación contra `permission-matrix.md`
+* validación de aislamiento por club activo
+
+La ausencia de cualquiera de estos puntos bloquea la tarea.
+
+## 13.7 No usar migraciones sin reflejarlas en la documentación base
+
+Si una migración cambia estructura o seguridad:
+
+* actualizar `schema.sql` si cambia el modelo esperado
+* actualizar `rls-policies.sql` si cambia la seguridad esperada
+* actualizar `docs/database/README.md` si cambia el procedimiento operativo
+
+No se admite drift sostenido entre repositorio y proyecto desplegado.
+
 ---
 
 ## 14. Orden recomendado de implementación
@@ -456,6 +477,7 @@ Si cambia comportamiento:
 /database
   rls-policies.sql
   README.md
+  security-audit.sql
 
 /contracts
   api-contracts.md

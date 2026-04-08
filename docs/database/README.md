@@ -24,6 +24,7 @@ Es obligatorio seguir este orden para garantizar:
 ```text
 /domain/schema.sql
 /database/rls-policies.sql
+/database/security-audit.sql
 ```
 
 ---
@@ -60,6 +61,26 @@ Esto:
 * activa Row Level Security
 * crea funciones helper
 * define políticas de acceso
+
+### Paso 3: Auditoría de seguridad del entorno real
+
+```sql
+-- ejecutar según necesidad
+/database/security-audit.sql
+```
+
+Usar este inventario cuando:
+
+* Supabase Advisor reporte `rls_disabled_in_public`
+* Supabase Advisor reporte `sensitive_columns_exposed`
+* exista duda entre el estado real del proyecto y lo versionado en el repo
+
+La validación mínima debe confirmar:
+
+* no hay tablas operativas en `public` sin RLS
+* no hay tablas en `public` sin policies
+* no hay drift entre `schema.sql`, migraciones y `rls-policies.sql`
+* las tablas con columnas sensibles tienen acceso mínimo y justificado
 
 ### Ejecución remota desde este repo
 
@@ -196,9 +217,45 @@ Verificar:
 * qué queries funcionan
 * cuáles fallan
 
+### 7.3 Test de tablas derivadas y sensibles
+
+Validar especialmente:
+
+* `daily_cash_session_balances`
+* `balance_adjustments`
+* `daily_consolidation_batches`
+* `movement_integrations`
+* `movement_audit_logs`
+
+Resultado esperado:
+
+* ❌ no quedan accesibles para miembros sin el rol requerido
+* ❌ no aceptan escrituras fuera del flujo permitido
+* ✅ preservan aislamiento por `app.current_club_id`
+
 ---
 
-## 8. Troubleshooting
+## 8. Estándar obligatorio para futuros desarrollos
+
+Toda tabla nueva o alterada en `public` debe incluir en la misma tarea:
+
+* actualización de `/domain/schema.sql`
+* migración incremental en `supabase/migrations`
+* actualización de `/database/rls-policies.sql`
+* validación de permisos contra `permission-matrix.md`
+* validación cross-club
+* actualización documental si cambia el comportamiento esperado
+
+No se permite:
+
+* crear tablas operativas en `public` sin `enable row level security`
+* dejar policies para una iteración futura
+* introducir drift entre esquema, migraciones y políticas
+* exponer tablas sensibles a clientes autenticados por conveniencia
+
+---
+
+## 9. Troubleshooting
 
 ### Problema: no devuelve datos
 

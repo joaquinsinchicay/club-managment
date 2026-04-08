@@ -10,10 +10,22 @@ alter table club_invitations enable row level security;
 alter table user_club_preferences enable row level security;
 alter table treasury_accounts enable row level security;
 alter table treasury_account_currencies enable row level security;
+alter table treasury_categories enable row level security;
+alter table club_activities enable row level security;
+alter table club_calendar_events enable row level security;
+alter table receipt_formats enable row level security;
+alter table treasury_field_rules enable row level security;
 alter table club_treasury_currencies enable row level security;
 alter table club_movement_type_config enable row level security;
 alter table treasury_movements enable row level security;
 alter table daily_cash_sessions enable row level security;
+alter table daily_cash_session_balances enable row level security;
+alter table balance_adjustments enable row level security;
+alter table account_transfers enable row level security;
+alter table fx_operations enable row level security;
+alter table daily_consolidation_batches enable row level security;
+alter table movement_integrations enable row level security;
+alter table movement_audit_logs enable row level security;
 
 -- =========================================
 -- HELPER FUNCTIONS
@@ -407,6 +419,7 @@ with check (
 
 drop policy if exists "Members can view treasury currencies" on club_treasury_currencies;
 drop policy if exists "Admins manage treasury currencies in current club" on club_treasury_currencies;
+drop policy if exists "Treasury manage treasury currencies in current club" on club_treasury_currencies;
 
 create policy "Members can view treasury currencies"
 on club_treasury_currencies
@@ -417,17 +430,17 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Admins manage treasury currencies in current club"
+create policy "Treasury manage treasury currencies in current club"
 on club_treasury_currencies
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 );
 
 -- =========================================
@@ -436,6 +449,7 @@ with check (
 
 drop policy if exists "Members can view movement type config" on club_movement_type_config;
 drop policy if exists "Admins manage movement type config in current club" on club_movement_type_config;
+drop policy if exists "Treasury manage movement type config in current club" on club_movement_type_config;
 
 create policy "Members can view movement type config"
 on club_movement_type_config
@@ -446,17 +460,17 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Admins manage movement type config in current club"
+create policy "Treasury manage movement type config in current club"
 on club_movement_type_config
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 );
 
 -- =========================================
@@ -465,6 +479,7 @@ with check (
 
 drop policy if exists "Members can view categories" on treasury_categories;
 drop policy if exists "Admins manage categories in current club" on treasury_categories;
+drop policy if exists "Treasury manage categories in current club" on treasury_categories;
 
 create policy "Members can view categories"
 on treasury_categories
@@ -475,17 +490,17 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Admins manage categories in current club"
+create policy "Treasury manage categories in current club"
 on treasury_categories
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 );
 
 -- =========================================
@@ -494,6 +509,7 @@ with check (
 
 drop policy if exists "Members can view activities" on club_activities;
 drop policy if exists "Admins manage activities in current club" on club_activities;
+drop policy if exists "Treasury manage activities in current club" on club_activities;
 
 create policy "Members can view activities"
 on club_activities
@@ -504,17 +520,46 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Admins manage activities in current club"
+create policy "Treasury manage activities in current club"
 on club_activities
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
+);
+
+-- =========================================
+-- CLUB CALENDAR EVENTS
+-- =========================================
+
+drop policy if exists "Members can view calendar events" on club_calendar_events;
+drop policy if exists "Treasury manage calendar events in current club" on club_calendar_events;
+
+create policy "Members can view calendar events"
+on club_calendar_events
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Treasury manage calendar events in current club"
+on club_calendar_events
+for all
+to authenticated
+using (
+  club_id = current_club_id()
+  and (select current_user_has_role('tesoreria'))
+)
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('tesoreria'))
 );
 
 -- =========================================
@@ -523,6 +568,7 @@ with check (
 
 drop policy if exists "Members can view receipt formats" on receipt_formats;
 drop policy if exists "Admins manage receipt formats in current club" on receipt_formats;
+drop policy if exists "Treasury manage receipt formats in current club" on receipt_formats;
 
 create policy "Members can view receipt formats"
 on receipt_formats
@@ -533,17 +579,46 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Admins manage receipt formats in current club"
+create policy "Treasury manage receipt formats in current club"
 on receipt_formats
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('admin'))
+  and (select current_user_has_role('tesoreria'))
+);
+
+-- =========================================
+-- TREASURY FIELD RULES
+-- =========================================
+
+drop policy if exists "Members can view treasury field rules" on treasury_field_rules;
+drop policy if exists "Treasury manage treasury field rules in current club" on treasury_field_rules;
+
+create policy "Members can view treasury field rules"
+on treasury_field_rules
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Treasury manage treasury field rules in current club"
+on treasury_field_rules
+for all
+to authenticated
+using (
+  club_id = current_club_id()
+  and (select current_user_has_role('tesoreria'))
+)
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('tesoreria'))
 );
 
 -- =========================================
@@ -576,6 +651,94 @@ using (
 with check (
   club_id = current_club_id()
   and (select current_user_has_role('secretaria'))
+);
+
+-- =========================================
+-- DAILY CASH SESSION BALANCES
+-- =========================================
+
+drop policy if exists "Secretaria and tesoreria can view session balances" on daily_cash_session_balances;
+drop policy if exists "Secretaria can insert session balances in current club" on daily_cash_session_balances;
+
+create policy "Secretaria and tesoreria can view session balances"
+on daily_cash_session_balances
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from daily_cash_sessions
+    where daily_cash_sessions.id = daily_cash_session_balances.session_id
+      and daily_cash_sessions.club_id = current_club_id()
+      and (
+        (select current_user_has_role('secretaria'))
+        or (select current_user_has_role('tesoreria'))
+      )
+  )
+);
+
+create policy "Secretaria can insert session balances in current club"
+on daily_cash_session_balances
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from daily_cash_sessions
+    where daily_cash_sessions.id = daily_cash_session_balances.session_id
+      and daily_cash_sessions.club_id = current_club_id()
+      and (select current_user_has_role('secretaria'))
+  )
+  and exists (
+    select 1
+    from treasury_accounts
+    where treasury_accounts.id = daily_cash_session_balances.account_id
+      and treasury_accounts.club_id = current_club_id()
+  )
+);
+
+-- =========================================
+-- BALANCE ADJUSTMENTS
+-- =========================================
+
+drop policy if exists "Secretaria and tesoreria can view balance adjustments" on balance_adjustments;
+drop policy if exists "Secretaria can insert balance adjustments in current club" on balance_adjustments;
+
+create policy "Secretaria and tesoreria can view balance adjustments"
+on balance_adjustments
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from daily_cash_sessions
+    where daily_cash_sessions.id = balance_adjustments.session_id
+      and daily_cash_sessions.club_id = current_club_id()
+      and (
+        (select current_user_has_role('secretaria'))
+        or (select current_user_has_role('tesoreria'))
+      )
+  )
+);
+
+create policy "Secretaria can insert balance adjustments in current club"
+on balance_adjustments
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from daily_cash_sessions
+    where daily_cash_sessions.id = balance_adjustments.session_id
+      and daily_cash_sessions.club_id = current_club_id()
+      and (select current_user_has_role('secretaria'))
+  )
+  and exists (
+    select 1
+    from treasury_accounts
+    where treasury_accounts.id = balance_adjustments.account_id
+      and treasury_accounts.club_id = current_club_id()
+  )
 );
 
 -- =========================================
@@ -629,6 +792,203 @@ using (
 with check (
   club_id = current_club_id()
   and (select current_user_has_role('admin'))
+);
+
+-- =========================================
+-- ACCOUNT TRANSFERS
+-- =========================================
+
+drop policy if exists "Members can view account transfers" on account_transfers;
+drop policy if exists "Secretaria can insert account transfers in current club" on account_transfers;
+
+create policy "Members can view account transfers"
+on account_transfers
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Secretaria can insert account transfers in current club"
+on account_transfers
+for insert
+to authenticated
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('secretaria'))
+  and exists (
+    select 1
+    from treasury_accounts source_account
+    where source_account.id = account_transfers.source_account_id
+      and source_account.club_id = current_club_id()
+  )
+  and exists (
+    select 1
+    from treasury_accounts target_account
+    where target_account.id = account_transfers.target_account_id
+      and target_account.club_id = current_club_id()
+  )
+);
+
+-- =========================================
+-- FX OPERATIONS
+-- =========================================
+
+drop policy if exists "Members can view fx operations" on fx_operations;
+drop policy if exists "Secretaria can insert fx operations in current club" on fx_operations;
+
+create policy "Members can view fx operations"
+on fx_operations
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Secretaria can insert fx operations in current club"
+on fx_operations
+for insert
+to authenticated
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('secretaria'))
+  and exists (
+    select 1
+    from treasury_accounts source_account
+    where source_account.id = fx_operations.source_account_id
+      and source_account.club_id = current_club_id()
+  )
+  and exists (
+    select 1
+    from treasury_accounts target_account
+    where target_account.id = fx_operations.target_account_id
+      and target_account.club_id = current_club_id()
+  )
+);
+
+-- =========================================
+-- DAILY CONSOLIDATION BATCHES
+-- =========================================
+
+drop policy if exists "Admin and tesoreria can view consolidation batches" on daily_consolidation_batches;
+drop policy if exists "Tesoreria can manage consolidation batches in current club" on daily_consolidation_batches;
+
+create policy "Admin and tesoreria can view consolidation batches"
+on daily_consolidation_batches
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and (
+    (select current_user_has_role('admin'))
+    or (select current_user_has_role('tesoreria'))
+  )
+);
+
+create policy "Tesoreria can manage consolidation batches in current club"
+on daily_consolidation_batches
+for all
+to authenticated
+using (
+  club_id = current_club_id()
+  and (select current_user_has_role('tesoreria'))
+)
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('tesoreria'))
+);
+
+-- =========================================
+-- MOVEMENT INTEGRATIONS
+-- =========================================
+
+drop policy if exists "Admin and tesoreria can view movement integrations" on movement_integrations;
+drop policy if exists "Tesoreria can insert movement integrations in current club" on movement_integrations;
+
+create policy "Admin and tesoreria can view movement integrations"
+on movement_integrations
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from treasury_movements secretaria_movement
+    where secretaria_movement.id = movement_integrations.secretaria_movement_id
+      and secretaria_movement.club_id = current_club_id()
+      and (
+        (select current_user_has_role('admin'))
+        or (select current_user_has_role('tesoreria'))
+      )
+  )
+  and exists (
+    select 1
+    from treasury_movements tesoreria_movement
+    where tesoreria_movement.id = movement_integrations.tesoreria_movement_id
+      and tesoreria_movement.club_id = current_club_id()
+  )
+);
+
+create policy "Tesoreria can insert movement integrations in current club"
+on movement_integrations
+for insert
+to authenticated
+with check (
+  (select current_user_has_role('tesoreria'))
+  and exists (
+    select 1
+    from treasury_movements secretaria_movement
+    where secretaria_movement.id = movement_integrations.secretaria_movement_id
+      and secretaria_movement.club_id = current_club_id()
+  )
+  and exists (
+    select 1
+    from treasury_movements tesoreria_movement
+    where tesoreria_movement.id = movement_integrations.tesoreria_movement_id
+      and tesoreria_movement.club_id = current_club_id()
+  )
+);
+
+-- =========================================
+-- MOVEMENT AUDIT LOGS
+-- =========================================
+
+drop policy if exists "Admin and tesoreria can view movement audit logs" on movement_audit_logs;
+drop policy if exists "Admin and tesoreria can insert movement audit logs" on movement_audit_logs;
+
+create policy "Admin and tesoreria can view movement audit logs"
+on movement_audit_logs
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from treasury_movements
+    where treasury_movements.id = movement_audit_logs.movement_id
+      and treasury_movements.club_id = current_club_id()
+      and (
+        (select current_user_has_role('admin'))
+        or (select current_user_has_role('tesoreria'))
+      )
+  )
+);
+
+create policy "Admin and tesoreria can insert movement audit logs"
+on movement_audit_logs
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from treasury_movements
+    where treasury_movements.id = movement_audit_logs.movement_id
+      and treasury_movements.club_id = current_club_id()
+      and (
+        (select current_user_has_role('admin'))
+        or (select current_user_has_role('tesoreria'))
+      )
+  )
 );
 
 -- =========================================
