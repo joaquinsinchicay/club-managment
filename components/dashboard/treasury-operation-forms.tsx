@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
@@ -14,6 +14,7 @@ import type {
 } from "@/lib/domain/access";
 import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
+import { cn } from "@/lib/utils";
 
 type BaseMovementFormProps = {
   accounts: TreasuryAccount[];
@@ -26,6 +27,22 @@ type BaseMovementFormProps = {
   pendingLabel: string;
   submitAction: (formData: FormData) => Promise<void>;
 };
+
+const FORM_GRID_CLASSNAME = "grid gap-4 sm:grid-cols-2";
+const FIELD_CLASSNAME = "grid gap-2 text-sm text-foreground";
+const FULL_WIDTH_FIELD_CLASSNAME = "sm:col-span-2";
+const CONTROL_CLASSNAME = "min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground";
+const DISABLED_CONTROL_CLASSNAME = "min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground";
+
+function FormField({
+  children,
+  fullWidth = false
+}: {
+  children: ReactNode;
+  fullWidth?: boolean;
+}) {
+  return <label className={cn(FIELD_CLASSNAME, fullWidth && FULL_WIDTH_FIELD_CLASSNAME)}>{children}</label>;
+}
 
 function ReceiptHelper({ receiptFormats }: { receiptFormats: ReceiptFormat[] }) {
   if (receiptFormats.length === 0) {
@@ -78,27 +95,27 @@ export function SecretariaMovementForm({
 
   return (
     <form action={submitAction} className="grid gap-4">
-      <PendingFieldset className="grid gap-4">
-        <label className="grid gap-2 text-sm text-foreground">
+      <PendingFieldset className={FORM_GRID_CLASSNAME}>
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
           <input
             type="text"
             value={sessionDate}
             disabled
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+            className={DISABLED_CONTROL_CLASSNAME}
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
           <select
             name="account_id"
             defaultValue=""
             onChange={(event) => setSelectedAccountId(event.target.value)}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.account_placeholder}
             </option>
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
@@ -106,17 +123,13 @@ export function SecretariaMovementForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.movement_type_label}</span>
-          <select
-            name="movement_type"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="movement_type" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.movement_type_placeholder}
             </option>
             {movementTypes.map((movementType) => (
               <option key={movementType} value={movementType}>
@@ -124,18 +137,18 @@ export function SecretariaMovementForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.category_label}</span>
           <select
             name="category_id"
             defaultValue=""
             onChange={(event) => setSelectedCategoryId(event.target.value)}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.category_placeholder}
             </option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -143,17 +156,17 @@ export function SecretariaMovementForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
         {activities.length > 0 ? (
-          <label className="grid gap-2 text-sm text-foreground">
+          <FormField>
             <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
             <select
               name="activity_id"
               value={selectedActivityId}
               onChange={(event) => setSelectedActivityId(event.target.value)}
               key={selectedCategoryId || "activity-select"}
-              className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              className={CONTROL_CLASSNAME}
             >
               <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
               {activities.map((activity) => (
@@ -162,26 +175,26 @@ export function SecretariaMovementForm({
                 </option>
               ))}
             </select>
-          </label>
+          </FormField>
         ) : null}
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField fullWidth>
           <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
           <input
             type="text"
             name="receipt_number"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+            className={CONTROL_CLASSNAME}
           />
           <ReceiptHelper receiptFormats={receiptFormats} />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField fullWidth>
           <span className="font-medium">{texts.dashboard.treasury.calendar_label}</span>
           <select
             name="calendar_event_id"
             defaultValue=""
             disabled={calendarEvents.length === 0}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground")}
           >
             <option value="">
               {calendarEvents.length > 0
@@ -194,27 +207,23 @@ export function SecretariaMovementForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField fullWidth>
           <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-          <input
-            type="text"
-            name="concept"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+          <input type="text" name="concept" className={CONTROL_CLASSNAME} />
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
           <select
             name="currency_code"
             key={selectedAccountId || "currency-select"}
             defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.currency_placeholder}
             </option>
             {availableCurrencies.map((currency) => (
               <option key={currency.currencyCode} value={currency.currencyCode}>
@@ -222,19 +231,14 @@ export function SecretariaMovementForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-          <input
-            type="text"
-            name="amount"
-            inputMode="decimal"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+          <input type="text" name="amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
+        </FormField>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
           <PendingSubmitButton
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
@@ -265,26 +269,22 @@ export function AccountTransferForm({
 }) {
   return (
     <form action={submitAction} className="grid gap-4">
-      <PendingFieldset className="grid gap-4">
-        <label className="grid gap-2 text-sm text-foreground">
+      <PendingFieldset className={FORM_GRID_CLASSNAME}>
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
           <input
             type="text"
             value={sessionDate}
             disabled
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+            className={DISABLED_CONTROL_CLASSNAME}
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.transfer_source_account_label}</span>
-          <select
-            name="source_account_id"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="source_account_id" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.transfer_source_account_placeholder}
             </option>
             {accounts.map((account) => (
               <option key={`source-${account.id}`} value={account.id}>
@@ -292,17 +292,13 @@ export function AccountTransferForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.transfer_target_account_label}</span>
-          <select
-            name="target_account_id"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="target_account_id" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.transfer_target_account_placeholder}
             </option>
             {accounts.map((account) => (
               <option key={`target-${account.id}`} value={account.id}>
@@ -310,17 +306,13 @@ export function AccountTransferForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-          <select
-            name="currency_code"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="currency_code" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.currency_placeholder}
             </option>
             {currencies.map((currency) => (
               <option key={`transfer-${currency.currencyCode}`} value={currency.currencyCode}>
@@ -328,28 +320,19 @@ export function AccountTransferForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField fullWidth>
           <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-          <input
-            type="text"
-            name="concept"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+          <input type="text" name="concept" className={CONTROL_CLASSNAME} />
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-          <input
-            type="text"
-            name="amount"
-            inputMode="decimal"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+          <input type="text" name="amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
+        </FormField>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
           <PendingSubmitButton
             idleLabel={texts.dashboard.treasury.transfer_create_cta}
             pendingLabel={texts.dashboard.treasury.transfer_create_loading}
@@ -392,27 +375,27 @@ export function TreasuryRoleMovementForm({
 
   return (
     <form action={submitAction} className="grid gap-4">
-      <PendingFieldset className="grid gap-4">
-        <label className="grid gap-2 text-sm text-foreground">
+      <PendingFieldset className={FORM_GRID_CLASSNAME}>
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
           <input
             type="date"
             name="movement_date"
             defaultValue={sessionDate}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+            className={CONTROL_CLASSNAME}
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
           <select
             name="account_id"
             defaultValue=""
             onChange={(event) => setSelectedAccountId(event.target.value)}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.account_placeholder}
             </option>
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
@@ -420,17 +403,13 @@ export function TreasuryRoleMovementForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.movement_type_label}</span>
-          <select
-            name="movement_type"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="movement_type" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.movement_type_placeholder}
             </option>
             {movementTypes.map((movementType) => (
               <option key={movementType} value={movementType}>
@@ -438,17 +417,13 @@ export function TreasuryRoleMovementForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.category_label}</span>
-          <select
-            name="category_id"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="category_id" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.category_placeholder}
             </option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -456,16 +431,12 @@ export function TreasuryRoleMovementForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
         {activities.length > 0 ? (
-          <label className="grid gap-2 text-sm text-foreground">
+          <FormField>
             <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
-            <select
-              name="activity_id"
-              defaultValue=""
-              className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-            >
+            <select name="activity_id" defaultValue="" className={CONTROL_CLASSNAME}>
               <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
               {activities.map((activity) => (
                 <option key={activity.id} value={activity.id}>
@@ -473,37 +444,29 @@ export function TreasuryRoleMovementForm({
                 </option>
               ))}
             </select>
-          </label>
+          </FormField>
         ) : null}
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField fullWidth>
           <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
           <input
             type="text"
             name="receipt_number"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+            className={CONTROL_CLASSNAME}
           />
           <ReceiptHelper receiptFormats={receiptFormats} />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField fullWidth>
           <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-          <input
-            type="text"
-            name="concept"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+          <input type="text" name="concept" className={CONTROL_CLASSNAME} />
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-          <select
-            name="currency_code"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="currency_code" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.currency_placeholder}
             </option>
             {availableCurrencies.map((currency) => (
               <option key={currency.currencyCode} value={currency.currencyCode}>
@@ -511,19 +474,14 @@ export function TreasuryRoleMovementForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-          <input
-            type="text"
-            name="amount"
-            inputMode="decimal"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+          <input type="text" name="amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
+        </FormField>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
           <PendingSubmitButton
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
@@ -554,27 +512,23 @@ export function TreasuryRoleFxForm({
 }) {
   return (
     <form action={submitAction} className="grid gap-4">
-      <PendingFieldset className="grid gap-4">
-        <label className="grid gap-2 text-sm text-foreground">
+      <PendingFieldset className={FORM_GRID_CLASSNAME}>
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
           <input
             type="date"
             name="movement_date_preview"
             defaultValue={sessionDate}
             disabled
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+            className={DISABLED_CONTROL_CLASSNAME}
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.fx_source_account_label}</span>
-          <select
-            name="source_account_id"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="source_account_id" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.fx_source_account_placeholder}
             </option>
             {accounts.map((account) => (
               <option key={`fx-source-${account.id}`} value={account.id}>
@@ -582,17 +536,13 @@ export function TreasuryRoleFxForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.fx_source_currency_label}</span>
-          <select
-            name="source_currency_code"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="source_currency_code" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.fx_source_currency_placeholder}
             </option>
             {currencies.map((currency) => (
               <option key={`fx-source-currency-${currency.currencyCode}`} value={currency.currencyCode}>
@@ -600,27 +550,18 @@ export function TreasuryRoleFxForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.fx_source_amount_label}</span>
-          <input
-            type="text"
-            name="source_amount"
-            inputMode="decimal"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+          <input type="text" name="source_amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.fx_target_account_label}</span>
-          <select
-            name="target_account_id"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="target_account_id" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.fx_target_account_placeholder}
             </option>
             {accounts.map((account) => (
               <option key={`fx-target-${account.id}`} value={account.id}>
@@ -628,17 +569,13 @@ export function TreasuryRoleFxForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.fx_target_currency_label}</span>
-          <select
-            name="target_currency_code"
-            defaultValue=""
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+          <select name="target_currency_code" defaultValue="" className={CONTROL_CLASSNAME}>
             <option value="" disabled>
-              {texts.settings.club.members.role_placeholder}
+              {texts.dashboard.treasury.fx_target_currency_placeholder}
             </option>
             {currencies.map((currency) => (
               <option key={`fx-target-currency-${currency.currencyCode}`} value={currency.currencyCode}>
@@ -646,28 +583,19 @@ export function TreasuryRoleFxForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField>
           <span className="font-medium">{texts.dashboard.treasury.fx_target_amount_label}</span>
-          <input
-            type="text"
-            name="target_amount"
-            inputMode="decimal"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+          <input type="text" name="target_amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
+        <FormField fullWidth>
           <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-          <input
-            type="text"
-            name="concept"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+          <input type="text" name="concept" className={CONTROL_CLASSNAME} />
+        </FormField>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
           <PendingSubmitButton
             idleLabel={texts.dashboard.treasury_role.fx_create_cta}
             pendingLabel={texts.dashboard.treasury_role.fx_create_loading}
