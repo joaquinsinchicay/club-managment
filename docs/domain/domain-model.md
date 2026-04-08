@@ -448,6 +448,7 @@ Atributos:
 * action_type
 * payload_before
 * payload_after
+* performed_by_user_id
 * performed_at
 
 ---

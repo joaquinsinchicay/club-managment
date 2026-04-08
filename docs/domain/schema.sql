@@ -314,6 +314,7 @@ movement_id uuid references treasury_movements(id),
 action_type text,
 payload_before jsonb,
 payload_after jsonb,
+performed_by_user_id uuid references users(id),
 performed_at timestamp default now()
 );
 

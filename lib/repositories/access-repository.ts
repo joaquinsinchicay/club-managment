@@ -12,6 +12,7 @@ import type {
   ClubInvitation,
   ClubMember,
   DailyCashSessionBalance,
+  DailyConsolidationBatch,
   GoogleProfile,
   GoogleProfileKey,
   DailyCashSession,
@@ -19,6 +20,8 @@ import type {
   Membership,
   MembershipRole,
   MovementTypeConfig,
+  MovementAuditLog,
+  MovementIntegration,
   PendingClubInvitation,
   ReceiptFormat,
   TreasuryAccount,
@@ -194,6 +197,45 @@ type AccessRepository = {
   closeDailyCashSession(sessionId: string, closedByUserId: string): Promise<DailyCashSession | null>;
   listTreasuryMovementsBySession(sessionId: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByAccount(clubId: string, accountId: string, movementDate: string): Promise<TreasuryMovement[]>;
+  listTreasuryMovementsByDate(clubId: string, movementDate: string): Promise<TreasuryMovement[]>;
+  findTreasuryMovementById(movementId: string): Promise<TreasuryMovement | null>;
+  updateTreasuryMovement(input: {
+    movementId: string;
+    clubId: string;
+    accountId: string;
+    movementType: TreasuryMovementType;
+    categoryId: string;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+    status?: TreasuryMovementStatus;
+    consolidationBatchId?: string | null;
+  }): Promise<TreasuryMovement | null>;
+  getDailyConsolidationBatchByDate(clubId: string, consolidationDate: string): Promise<DailyConsolidationBatch | null>;
+  createDailyConsolidationBatch(input: {
+    clubId: string;
+    consolidationDate: string;
+    status: DailyConsolidationBatch["status"];
+    executedByUserId: string;
+  }): Promise<DailyConsolidationBatch | null>;
+  updateDailyConsolidationBatch(input: {
+    batchId: string;
+    status: DailyConsolidationBatch["status"];
+    errorMessage?: string | null;
+  }): Promise<DailyConsolidationBatch | null>;
+  listMovementIntegrations(): Promise<MovementIntegration[]>;
+  createMovementIntegration(input: {
+    secretariaMovementId: string;
+    tesoreriaMovementId: string;
+  }): Promise<MovementIntegration | null>;
+  listMovementAuditLogsByMovementId(movementId: string): Promise<MovementAuditLog[]>;
+  createMovementAuditLog(input: {
+    movementId: string;
+    actionType: MovementAuditLog["actionType"];
+    payloadBefore: Record<string, unknown> | null;
+    payloadAfter: Record<string, unknown> | null;
+    performedByUserId: string;
+  }): Promise<MovementAuditLog | null>;
   createAccountTransfer(input: {
     clubId: string;
     sourceAccountId: string;
@@ -226,6 +268,7 @@ type AccessRepository = {
     calendarEventId?: string | null;
     transferGroupId?: string | null;
     fxOperationGroupId?: string | null;
+    consolidationBatchId?: string | null;
     movementDate: string;
     createdByUserId: string;
     status?: TreasuryMovementStatus;
@@ -309,6 +352,9 @@ type MockStore = {
   accountTransfers: AccountTransfer[];
   fxOperations: FxOperation[];
   treasuryMovements: TreasuryMovement[];
+  dailyConsolidationBatches: DailyConsolidationBatch[];
+  movementIntegrations: MovementIntegration[];
+  movementAuditLogs: MovementAuditLog[];
   preferences: Map<string, string>;
 };
 
@@ -706,7 +752,74 @@ function createStore(): MockStore {
   const balanceAdjustments: BalanceAdjustment[] = [];
   const accountTransfers: AccountTransfer[] = [];
   const fxOperations: FxOperation[] = [];
-  const treasuryMovements: TreasuryMovement[] = [];
+  const treasuryMovements: TreasuryMovement[] = [
+    {
+      id: "movement-secretaria-pending-001",
+      clubId: CLUB_ID,
+      dailyCashSessionId: "session-2026-04-05",
+      accountId: "account-tesoreria-inversion-001",
+      movementType: "ingreso",
+      categoryId: "category-system-1",
+      concept: "Cobranza extraordinaria boxeo",
+      currencyCode: "USD",
+      amount: 1200,
+      activityId: "activity-boxeo-001",
+      receiptNumber: null,
+      calendarEventId: "calendar-event-boxeo-001",
+      transferGroupId: null,
+      fxOperationGroupId: null,
+      consolidationBatchId: null,
+      movementDate: "2026-04-05",
+      createdByUserId: SECRETARIA_USER_ID,
+      status: "pending_consolidation",
+      createdAt: "2026-04-05T18:10:00.000Z"
+    },
+    {
+      id: "movement-secretaria-pending-002",
+      clubId: CLUB_ID,
+      dailyCashSessionId: "session-2026-04-05",
+      accountId: "account-secretaria-caja-001",
+      movementType: "egreso",
+      categoryId: "category-manual-gastos-001",
+      concept: "Compra de insumos",
+      currencyCode: "ARS",
+      amount: 35000,
+      activityId: null,
+      receiptNumber: "RC-000123",
+      calendarEventId: null,
+      transferGroupId: null,
+      fxOperationGroupId: null,
+      consolidationBatchId: null,
+      movementDate: "2026-04-05",
+      createdByUserId: SECRETARIA_USER_ID,
+      status: "pending_consolidation",
+      createdAt: "2026-04-05T19:20:00.000Z"
+    },
+    {
+      id: "movement-tesoreria-posted-001",
+      clubId: CLUB_ID,
+      dailyCashSessionId: null,
+      accountId: "account-tesoreria-inversion-001",
+      movementType: "ingreso",
+      categoryId: "category-system-1",
+      concept: "Cobranza extraordinaria boxeo",
+      currencyCode: "USD",
+      amount: 1200,
+      activityId: "activity-boxeo-001",
+      receiptNumber: null,
+      calendarEventId: "calendar-event-boxeo-001",
+      transferGroupId: null,
+      fxOperationGroupId: null,
+      consolidationBatchId: null,
+      movementDate: "2026-04-05",
+      createdByUserId: TESORERIA_USER_ID,
+      status: "posted",
+      createdAt: "2026-04-05T20:15:00.000Z"
+    }
+  ];
+  const dailyConsolidationBatches: DailyConsolidationBatch[] = [];
+  const movementIntegrations: MovementIntegration[] = [];
+  const movementAuditLogs: MovementAuditLog[] = [];
 
   return {
     users,
@@ -727,6 +840,9 @@ function createStore(): MockStore {
     accountTransfers,
     fxOperations,
     treasuryMovements,
+    dailyConsolidationBatches,
+    movementIntegrations,
+    movementAuditLogs,
     preferences
   };
 }
@@ -3101,6 +3217,104 @@ export const accessRepository: AccessRepository = {
         movement.movementDate === movementDate
     );
   },
+  async listTreasuryMovementsByDate(clubId, movementDate) {
+    return getStore().treasuryMovements.filter(
+      (movement) => movement.clubId === clubId && movement.movementDate === movementDate
+    );
+  },
+  async findTreasuryMovementById(movementId) {
+    return getStore().treasuryMovements.find((movement) => movement.id === movementId) ?? null;
+  },
+  async updateTreasuryMovement(input) {
+    const store = getStore();
+    const movement = store.treasuryMovements.find(
+      (entry) => entry.id === input.movementId && entry.clubId === input.clubId
+    );
+
+    if (!movement) {
+      return null;
+    }
+
+    movement.accountId = input.accountId;
+    movement.movementType = input.movementType;
+    movement.categoryId = input.categoryId;
+    movement.concept = input.concept;
+    movement.currencyCode = input.currencyCode;
+    movement.amount = input.amount;
+    movement.status = input.status ?? movement.status;
+    movement.consolidationBatchId =
+      input.consolidationBatchId === undefined ? movement.consolidationBatchId ?? null : input.consolidationBatchId;
+
+    return movement;
+  },
+  async getDailyConsolidationBatchByDate(clubId, consolidationDate) {
+    return (
+      getStore().dailyConsolidationBatches.find(
+        (batch) => batch.clubId === clubId && batch.consolidationDate === consolidationDate
+      ) ?? null
+    );
+  },
+  async createDailyConsolidationBatch(input) {
+    const batch: DailyConsolidationBatch = {
+      id: `consolidation-batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      clubId: input.clubId,
+      consolidationDate: input.consolidationDate,
+      status: input.status,
+      executedAt: now(),
+      executedByUserId: input.executedByUserId,
+      errorMessage: null
+    };
+
+    getStore().dailyConsolidationBatches.push(batch);
+    return batch;
+  },
+  async updateDailyConsolidationBatch(input) {
+    const batch = getStore().dailyConsolidationBatches.find((entry) => entry.id === input.batchId);
+
+    if (!batch) {
+      return null;
+    }
+
+    batch.status = input.status;
+    batch.errorMessage = input.errorMessage ?? null;
+
+    if (input.status === "completed" || input.status === "failed") {
+      batch.executedAt = now();
+    }
+
+    return batch;
+  },
+  async listMovementIntegrations() {
+    return [...getStore().movementIntegrations];
+  },
+  async createMovementIntegration(input) {
+    const integration: MovementIntegration = {
+      id: `movement-integration-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      secretariaMovementId: input.secretariaMovementId,
+      tesoreriaMovementId: input.tesoreriaMovementId,
+      integratedAt: now()
+    };
+
+    getStore().movementIntegrations.push(integration);
+    return integration;
+  },
+  async listMovementAuditLogsByMovementId(movementId) {
+    return getStore().movementAuditLogs.filter((entry) => entry.movementId === movementId);
+  },
+  async createMovementAuditLog(input) {
+    const log: MovementAuditLog = {
+      id: `movement-audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      movementId: input.movementId,
+      actionType: input.actionType,
+      payloadBefore: input.payloadBefore,
+      payloadAfter: input.payloadAfter,
+      performedAt: now(),
+      performedByUserId: input.performedByUserId
+    };
+
+    getStore().movementAuditLogs.push(log);
+    return log;
+  },
   async createAccountTransfer(input) {
     const transfer: AccountTransfer = {
       id: `transfer-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -3149,6 +3363,7 @@ export const accessRepository: AccessRepository = {
       calendarEventId: input.calendarEventId ?? null,
       transferGroupId: input.transferGroupId ?? null,
       fxOperationGroupId: input.fxOperationGroupId ?? null,
+      consolidationBatchId: input.consolidationBatchId ?? null,
       movementDate: input.movementDate,
       createdByUserId: input.createdByUserId,
       status: input.status ?? "pending_consolidation",

@@ -31,7 +31,10 @@ const dashboardSuccessFeedbackCodes = new Set([
   "active_club_updated",
   "session_opened",
   "session_closed",
-  "movement_created"
+  "movement_created",
+  "movement_updated",
+  "movement_integrated",
+  "consolidation_completed"
 ]);
 
 const loginErrorMessages = {
@@ -100,7 +103,7 @@ export function resolveFeedbackToast(
     return toast ? { toast, consumedKeys: ["feedback"] } : null;
   }
 
-  if (pathname === "/dashboard" && feedbackCode) {
+  if ((pathname === "/dashboard" || pathname === "/dashboard/treasury") && feedbackCode) {
     const toast = resolveDashboardFeedback(feedbackCode);
 
     return toast ? { toast, consumedKeys: ["feedback"] } : null;
