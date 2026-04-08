@@ -65,6 +65,9 @@ Una User Story está "Done" solo si:
 * [ ] Club activo validado
 * [ ] No hay acceso cross-club
 * [ ] RLS respetado
+* [ ] Toda tabla nueva o alterada en `public` tiene RLS habilitado
+* [ ] Toda tabla nueva o alterada en `public` tiene policies explícitas
+* [ ] Tablas o columnas sensibles tienen acceso mínimo y justificado
 
 ---
 
@@ -90,6 +93,7 @@ Una User Story está "Done" solo si:
 * [ ] No crea estructuras paralelas
 * [ ] No rompe consistencia de datos
 * [ ] Side effects correctos (ej: movimientos derivados)
+* [ ] No hay drift entre `schema.sql`, migraciones y `rls-policies.sql`
 
 ---
 
@@ -152,6 +156,8 @@ La US NO puede considerarse terminada si:
 * ❌ hay strings hardcodeados
 * ❌ hay issues críticos en auditoría
 * ❌ hay acceso cross-club
+* ❌ hay una tabla nueva o alterada en `public` sin RLS o sin policies
+* ❌ hay drift entre esquema, migraciones y políticas
 * ❌ no respeta roles
 * ❌ no respeta estados del sistema
 * ❌ introduce feedback post-acción inline fuera del patrón definido
@@ -167,6 +173,7 @@ La US NO puede considerarse terminada si:
 
 * Debe existir PDD
 * PDD debe estar aprobado
+* Si hay impacto en DB, debe definirse RLS y políticas en la misma tarea
 
 ---
 
@@ -193,6 +200,14 @@ La IA debe poder validar este DoD con prompts como:
 ```
 Validate if US {US_ID} meets Definition of Done.
 List missing items.
+```
+
+Si la US modifica persistencia, además debe validarse:
+
+```
+Audit public tables affected by US {US_ID}.
+Confirm schema, migrations and rls-policies are aligned.
+List missing RLS or policy coverage.
 ```
 
 ---

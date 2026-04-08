@@ -16,6 +16,8 @@ import {
   createTreasuryCategoryAction,
   inviteClubUserAction,
   removeClubMembershipAction,
+  setTreasuryFieldRulesAction,
+  updateCalendarEventTreasuryAvailabilityAction,
   updateClubActivityAction,
   updateClubMembershipRoleAction,
   updateTreasuryAccountAction,
@@ -88,6 +90,8 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
         updateTreasuryCategoryAction={updateTreasuryCategoryAction}
         createClubActivityAction={createClubActivityAction}
         updateClubActivityAction={updateClubActivityAction}
+        setTreasuryFieldRulesAction={setTreasuryFieldRulesAction}
+        updateCalendarEventTreasuryAvailabilityAction={updateCalendarEventTreasuryAvailabilityAction}
       />
     </div>
   );

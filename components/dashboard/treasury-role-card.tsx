@@ -57,6 +57,12 @@ export function TreasuryRoleCard({
         <p className="text-sm leading-6 text-muted-foreground">
           {texts.dashboard.treasury_role.description}
         </p>
+        <Link
+          href="/dashboard/treasury"
+          className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+        >
+          {texts.dashboard.treasury_role.consolidation_cta}
+        </Link>
       </div>
 
       <div className="mt-6 grid gap-4">

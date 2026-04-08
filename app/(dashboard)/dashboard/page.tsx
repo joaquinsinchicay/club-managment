@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 
 import { setActiveClubAction } from "@/app/(dashboard)/dashboard/actions";
 import {
+  createAccountTransferAction,
+  createFxOperationAction,
   createTreasuryMovementAction,
   createTreasuryRoleMovementAction,
 } from "@/app/(dashboard)/dashboard/treasury-actions";
@@ -14,6 +16,7 @@ import { canOperateSecretaria, canOperateTesoreria } from "@/lib/domain/authoriz
 import {
   getActiveActivitiesForTesoreria,
   getActiveActivitiesForSecretaria,
+  getEnabledCalendarEventsForSecretaria,
   getActiveTreasuryCurrenciesForTesoreria,
   getActiveTreasuryCurrenciesForSecretaria,
   getEnabledMovementTypesForTesoreria,
@@ -21,6 +24,7 @@ import {
   getActiveReceiptFormatsForTesoreria,
   getActiveReceiptFormatsForSecretaria,
   getDashboardTreasuryCardForActiveClub,
+  getTreasuryFieldRulesForSecretaria,
   getTreasuryRoleDashboardForActiveClub
 } from "@/lib/services/treasury-service";
 import { accessRepository } from "@/lib/repositories/access-repository";
@@ -56,15 +60,17 @@ export default async function DashboardPage() {
         (account) => account.visibleForTesoreria
       )
     : [];
-  const [treasuryCategories, treasuryActivities, treasuryCurrencies, movementTypes, receiptFormats] = canOperateSecretariaRole
+  const [treasuryCategories, treasuryActivities, treasuryCalendarEvents, treasuryFieldRules, treasuryCurrencies, movementTypes, receiptFormats] = canOperateSecretariaRole
     ? await Promise.all([
         accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
         getActiveActivitiesForSecretaria(),
+        getEnabledCalendarEventsForSecretaria(),
+        getTreasuryFieldRulesForSecretaria(),
         getActiveTreasuryCurrenciesForSecretaria(),
         getEnabledMovementTypesForSecretaria(),
         getActiveReceiptFormatsForSecretaria()
       ])
-    : [[], [], [], [], []];
+    : [[], [], [], [], [], [], []];
   const [treasuryRoleCategories, treasuryRoleActivities, treasuryRoleCurrencies, treasuryRoleMovementTypes, treasuryRoleReceiptFormats] =
     !canOperateSecretariaRole && canOperateTesoreriaRole
       ? await Promise.all([
@@ -99,10 +105,14 @@ export default async function DashboardPage() {
             accounts={treasuryAccounts}
             categories={treasuryCategories}
             activities={treasuryActivities}
+            calendarEvents={treasuryCalendarEvents}
+            fieldRules={treasuryFieldRules}
             currencies={treasuryCurrencies}
             movementTypes={movementTypes}
             receiptFormats={receiptFormats}
             createTreasuryMovementAction={createTreasuryMovementAction}
+            createAccountTransferAction={createAccountTransferAction}
+            createFxOperationAction={createFxOperationAction}
           />
         ) : null}
 

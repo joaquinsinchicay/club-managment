@@ -339,7 +339,7 @@ Obtener configuración de tesorería del club activo.
 Sí
 
 **Allowed roles**
-`tesoreria`
+`admin`
 
 **Input**
 
@@ -902,13 +902,14 @@ Sí
 ```json
 {
   "movement_id": "uuid",
-  "status": "pending_consolidation"
+  "status": "posted"
 }
 ```
 
 **Notes**
 
-* si el movimiento lo crea `tesoreria`, el status final puede ser `posted` en lugar de `pending_consolidation`, según implementación elegida
+* si el movimiento lo crea `secretaria`, el status inicial es `pending_consolidation`
+* si el movimiento lo crea `tesoreria`, el status inicial es `posted`
 
 ---
 
@@ -1000,6 +1001,10 @@ Sí
   "movement_ids": ["uuid", "uuid"]
 }
 ```
+
+**Notes**
+
+* ambos movimientos deben compartir una referencia común de transferencia
 
 ---
 
@@ -1241,6 +1246,7 @@ Sí
   "audit_logs": [
     {
       "action_type": "edited",
+      "performed_by_user_id": "uuid",
       "performed_at": "2026-04-02T14:03:00Z",
       "payload_before": {},
       "payload_after": {}
@@ -1325,12 +1331,13 @@ Puede:
 2. Revalidar siempre `active_club_id` en backend.
 3. Nunca permitir operaciones sobre recursos de otro club.
 4. Toda corrección de movimientos en consolidación debe generar auditoría.
-5. El saldo se calcula desde `treasury_movements`, no desde snapshots persistidos.
-6. Las operaciones compuestas deben ser transaccionales.
-7. La consolidación diaria debe ser transaccional.
-8. Las operaciones de apertura/cierre deben ser transaccionales.
-9. Los estados de los movimientos deben tratarse como parte central del dominio.
-10. Toda operación que cree múltiples movimientos debe dejar referencias cruzadas trazables.
+5. Toda auditoría de consolidación debe registrar el usuario responsable.
+6. El saldo se calcula desde `treasury_movements`, no desde snapshots persistidos.
+7. Las operaciones compuestas deben ser transaccionales.
+8. La consolidación diaria debe ser transaccional.
+9. Las operaciones de apertura/cierre deben ser transaccionales.
+10. Los estados de los movimientos deben tratarse como parte central del dominio.
+11. Toda operación que cree múltiples movimientos debe dejar referencias cruzadas trazables.
 
 ```
 ```

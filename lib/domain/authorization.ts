@@ -12,7 +12,10 @@ export function canManageClubMembers(membership: MembershipLike) {
 }
 
 export function canAccessTreasurySettings(membership: MembershipLike) {
-  return isActiveMembership(membership) && hasMembershipRole(membership, "tesoreria");
+  return (
+    isActiveMembership(membership) &&
+    hasAnyMembershipRole(membership, ["admin", "tesoreria"])
+  );
 }
 
 export function canOperateTesoreria(membership: MembershipLike) {

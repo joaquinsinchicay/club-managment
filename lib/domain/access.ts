@@ -70,6 +70,13 @@ export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
 export type TreasuryConfigStatus = "active" | "inactive";
 export type TreasuryCurrencyCode = "ARS" | "USD";
 export type TreasuryMovementType = "ingreso" | "egreso";
+export type TreasuryMovementStatus =
+  | "pending_consolidation"
+  | "integrated"
+  | "consolidated"
+  | "posted"
+  | "cancelled";
+export type TreasuryAdditionalFieldName = "activity" | "receipt" | "calendar";
 
 export type TreasuryCurrencyConfig = {
   clubId: string;
@@ -126,13 +133,57 @@ export type MovementTypeConfig = {
   isEnabled: boolean;
 };
 
+export type TreasuryFieldRule = {
+  id: string;
+  clubId: string;
+  categoryId: string;
+  fieldName: TreasuryAdditionalFieldName;
+  isVisible: boolean;
+  isRequired: boolean;
+};
+
+export type ClubCalendarEvent = {
+  id: string;
+  clubId: string;
+  title: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  isEnabledForTreasury: boolean;
+};
+
+export type AccountTransfer = {
+  id: string;
+  clubId: string;
+  sourceAccountId: string;
+  targetAccountId: string;
+  currencyCode: string;
+  amount: number;
+  concept: string;
+  createdAt: string;
+};
+
+export type FxOperation = {
+  id: string;
+  clubId: string;
+  sourceAccountId: string;
+  targetAccountId: string;
+  sourceCurrencyCode: string;
+  targetCurrencyCode: string;
+  sourceAmount: number;
+  targetAmount: number;
+  concept: string;
+  createdAt: string;
+};
+
 export type TreasurySettings = {
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
   activities: ClubActivity[];
+  calendarEvents: ClubCalendarEvent[];
   receiptFormats: ReceiptFormat[];
   currencies: TreasuryCurrencyConfig[];
   movementTypes: MovementTypeConfig[];
+  fieldRules: TreasuryFieldRule[];
 };
 
 export type TreasurySessionStatus = "open" | "closed";
@@ -160,10 +211,41 @@ export type TreasuryMovement = {
   amount: number;
   activityId?: string | null;
   receiptNumber?: string | null;
+  calendarEventId?: string | null;
+  transferGroupId?: string | null;
+  fxOperationGroupId?: string | null;
+  consolidationBatchId?: string | null;
   movementDate: string;
   createdByUserId: string;
-  status: "pending_consolidation";
+  status: TreasuryMovementStatus;
   createdAt: string;
+};
+
+export type DailyConsolidationBatch = {
+  id: string;
+  clubId: string;
+  consolidationDate: string;
+  status: "pending" | "completed" | "failed";
+  executedAt: string | null;
+  executedByUserId: string | null;
+  errorMessage: string | null;
+};
+
+export type MovementIntegration = {
+  id: string;
+  secretariaMovementId: string;
+  tesoreriaMovementId: string;
+  integratedAt: string;
+};
+
+export type MovementAuditLog = {
+  id: string;
+  movementId: string;
+  actionType: "edited" | "integrated" | "consolidated";
+  payloadBefore: Record<string, unknown> | null;
+  payloadAfter: Record<string, unknown> | null;
+  performedAt: string;
+  performedByUserId: string;
 };
 
 export type DailyCashSessionBalance = {
@@ -229,12 +311,67 @@ export type TreasuryAccountDetail = {
     movementDate: string;
     movementType: TreasuryMovementType;
     categoryName: string;
+    activityName: string | null;
+    calendarEventTitle: string | null;
+    transferReference: string | null;
+    fxOperationReference: string | null;
     concept: string;
+    receiptNumber: string | null;
     currencyCode: string;
     amount: number;
     createdByUserName: string;
     createdAt: string;
   }>;
+};
+
+export type ConsolidationMatch = {
+  tesoreriaMovementId: string;
+  movementDate: string;
+  accountName: string;
+  movementType: TreasuryMovementType;
+  categoryName: string;
+  concept: string;
+  currencyCode: string;
+  amount: number;
+  createdByUserName: string;
+  createdAt: string;
+};
+
+export type ConsolidationMovement = {
+  movementId: string;
+  status: "pending_consolidation" | "integrated";
+  movementDate: string;
+  accountId: string;
+  accountName: string;
+  movementType: TreasuryMovementType;
+  categoryId: string;
+  categoryName: string;
+  concept: string;
+  currencyCode: string;
+  amount: number;
+  createdByUserId: string;
+  createdByUserName: string;
+  createdAt: string;
+  isValid: boolean;
+  validationIssues: string[];
+  possibleMatch: ConsolidationMatch | null;
+};
+
+export type ConsolidationAuditEntry = {
+  id: string;
+  actionType: "original" | "edited" | "integrated" | "consolidated";
+  performedAt: string;
+  performedByUserName: string;
+  payloadBefore: Record<string, unknown> | null;
+  payloadAfter: Record<string, unknown> | null;
+};
+
+export type TreasuryConsolidationDashboard = {
+  consolidationDate: string;
+  defaultDate: string;
+  batch: DailyConsolidationBatch | null;
+  pendingMovements: ConsolidationMovement[];
+  integratedMovements: ConsolidationMovement[];
 };
 
 export type SessionBalanceDraft = {

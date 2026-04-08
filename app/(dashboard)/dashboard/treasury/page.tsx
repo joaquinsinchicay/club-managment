@@ -1,5 +1,80 @@
 import { redirect } from "next/navigation";
 
-export default async function TreasuryDashboardPage() {
-  redirect("/dashboard");
+import {
+  executeDailyConsolidationAction,
+  integrateMatchingMovementAction,
+  updateMovementBeforeConsolidationAction
+} from "@/app/(dashboard)/dashboard/treasury/actions";
+import { TreasuryConsolidationCard } from "@/components/dashboard/treasury-consolidation-card";
+import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import { canOperateTesoreria } from "@/lib/domain/authorization";
+import { accessRepository } from "@/lib/repositories/access-repository";
+import {
+  getActiveTreasuryCurrenciesForTesoreria,
+  getMovementAuditEntries,
+  getTreasuryConsolidationDashboard
+} from "@/lib/services/treasury-service";
+
+type TreasuryDashboardPageProps = {
+  searchParams?: {
+    date?: string;
+    movement?: string;
+  };
+};
+
+export default async function TreasuryDashboardPage({
+  searchParams
+}: TreasuryDashboardPageProps) {
+  const context = await getAuthenticatedSessionContext();
+
+  if (!context) {
+    redirect("/login");
+  }
+
+  if (context.activeMemberships.length === 0 || !context.activeClub || !context.activeMembership) {
+    redirect("/pending-approval");
+  }
+
+  if (!canOperateTesoreria(context.activeMembership)) {
+    redirect("/dashboard");
+  }
+
+  const dashboard = await getTreasuryConsolidationDashboard(searchParams?.date);
+
+  if (!dashboard) {
+    redirect("/dashboard");
+  }
+
+  const selectedMovement =
+    dashboard.pendingMovements.find((movement) => movement.movementId === searchParams?.movement) ??
+    dashboard.integratedMovements.find((movement) => movement.movementId === searchParams?.movement) ??
+    dashboard.pendingMovements[0] ??
+    dashboard.integratedMovements[0] ??
+    null;
+
+  const [auditEntries, accounts, categories, currencies] = await Promise.all([
+    selectedMovement ? getMovementAuditEntries(selectedMovement.movementId) : Promise.resolve([]),
+    accessRepository.listTreasuryAccountsForClub(context.activeClub.id).then((entries) =>
+      entries.filter((account) => account.status === "active")
+    ),
+    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((entries) =>
+      entries.filter((category) => category.status === "active")
+    ),
+    getActiveTreasuryCurrenciesForTesoreria()
+  ]);
+
+  return (
+    <TreasuryConsolidationCard
+      context={context}
+      dashboard={dashboard}
+      selectedMovement={selectedMovement}
+      selectedAuditEntries={auditEntries}
+      accounts={accounts}
+      categories={categories}
+      currencies={currencies}
+      updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
+      integrateMatchingMovementAction={integrateMatchingMovementAction}
+      executeDailyConsolidationAction={executeDailyConsolidationAction}
+    />
+  );
 }

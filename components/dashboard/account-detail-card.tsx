@@ -148,6 +148,46 @@ export function AccountDetailCard({
                           <p className="capitalize">{movement.movementType}</p>
                           <p>{movement.movementDate}</p>
                           <p>{movement.createdByUserName}</p>
+                          {movement.activityName ? (
+                            <p className="sm:col-span-2">
+                              <span className="font-medium text-foreground">
+                                {texts.dashboard.treasury.detail_activity_label}
+                              </span>{" "}
+                              {movement.activityName}
+                            </p>
+                          ) : null}
+                          {movement.calendarEventTitle ? (
+                            <p className="sm:col-span-2">
+                              <span className="font-medium text-foreground">
+                                {texts.dashboard.treasury.detail_calendar_label}
+                              </span>{" "}
+                              {movement.calendarEventTitle}
+                            </p>
+                          ) : null}
+                          {movement.transferReference ? (
+                            <p className="sm:col-span-2">
+                              <span className="font-medium text-foreground">
+                                {texts.dashboard.treasury.detail_transfer_label}
+                              </span>{" "}
+                              {movement.transferReference}
+                            </p>
+                          ) : null}
+                          {movement.fxOperationReference ? (
+                            <p className="sm:col-span-2">
+                              <span className="font-medium text-foreground">
+                                {texts.dashboard.treasury.detail_fx_label}
+                              </span>{" "}
+                              {movement.fxOperationReference}
+                            </p>
+                          ) : null}
+                          {movement.receiptNumber ? (
+                            <p className="sm:col-span-2">
+                              <span className="font-medium text-foreground">
+                                {texts.dashboard.treasury.detail_receipt_label}
+                              </span>{" "}
+                              {movement.receiptNumber}
+                            </p>
+                          ) : null}
                         </div>
                       </article>
                     ))}
