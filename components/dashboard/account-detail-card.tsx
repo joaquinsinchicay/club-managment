@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { TreasuryAccount, TreasuryAccountDetail } from "@/lib/domain/access";
+import { formatLocalizedAmount } from "@/lib/amounts";
 import { AppHeader } from "@/components/navigation/app-header";
 import { CardShell } from "@/components/ui/card-shell";
 import { texts } from "@/lib/texts";
@@ -111,7 +112,7 @@ export function AccountDetailCard({
                         {balance.currencyCode}
                       </p>
                       <p className="mt-1 text-base font-semibold text-foreground">
-                        {balance.amount.toFixed(2)}
+                        {formatLocalizedAmount(balance.amount)}
                       </p>
                     </div>
                   ))}
@@ -140,7 +141,7 @@ export function AccountDetailCard({
                         <div className="flex items-center justify-between gap-3">
                           <p className="text-sm font-semibold text-foreground">{movement.concept}</p>
                           <span className="text-sm font-semibold text-foreground">
-                            {movement.currencyCode} {movement.amount.toFixed(2)}
+                            {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
                           </span>
                         </div>
                         <div className="mt-2 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">

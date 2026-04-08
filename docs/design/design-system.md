@@ -93,6 +93,7 @@ Rules:
 
 * Amounts must be the most visually dominant element
 * Labels must never compete with values
+* Monetary amounts must render with localized format `XX.XXX,XX`
 * Avoid long paragraphs — prioritize scanability
 
 ---

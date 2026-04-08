@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { AppHeader } from "@/components/navigation/app-header";
 import { CardShell } from "@/components/ui/card-shell";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { DailyCashSessionValidation } from "@/lib/domain/access";
@@ -47,9 +48,9 @@ function buildDifference(expectedBalance: number, declaredBalance: string) {
     return { differenceAmount: 0, adjustmentType: null as "ingreso" | "egreso" | null };
   }
 
-  const parsedBalance = Number(declaredBalance);
+  const parsedBalance = parseLocalizedAmount(declaredBalance);
 
-  if (!Number.isFinite(parsedBalance)) {
+  if (parsedBalance === null) {
     return { differenceAmount: 0, adjustmentType: null as "ingreso" | "egreso" | null };
   }
 
@@ -81,7 +82,7 @@ export function DailySessionBalanceCard({
       accountName: account.accountName,
       currencyCode: account.currencyCode,
       expectedBalance: account.expectedBalance,
-      declaredBalance: account.declaredBalance.toFixed(2)
+      declaredBalance: formatLocalizedAmount(account.declaredBalance)
     }))
   );
 
@@ -163,16 +164,16 @@ export function DailySessionBalanceCard({
                                 {texts.dashboard.treasury.expected_balance_label}
                               </p>
                               <p className="mt-1 text-base font-semibold text-foreground">
-                                {draft.expectedBalance.toFixed(2)}
+                                {formatLocalizedAmount(draft.expectedBalance)}
                               </p>
                             </div>
 
                             <label className="grid gap-2 text-sm text-foreground">
                               <span className="font-medium">{texts.dashboard.treasury.declared_balance_label}</span>
                               <input
-                                type="number"
+                                type="text"
                                 name="declared_balance"
-                                step="0.01"
+                                inputMode="decimal"
                                 value={draft.declaredBalance}
                                 onChange={(event) => {
                                   const nextValue = event.target.value;
@@ -192,7 +193,7 @@ export function DailySessionBalanceCard({
                                 {texts.dashboard.treasury.difference_label}
                               </p>
                               <p className="mt-1 text-base font-semibold text-foreground">
-                                {difference.differenceAmount.toFixed(2)}
+                                {formatLocalizedAmount(difference.differenceAmount)}
                               </p>
                             </div>
                           </div>
@@ -232,7 +233,7 @@ export function DailySessionBalanceCard({
                                 {adjustment.accountName}
                               </p>
                               <span className="text-sm font-semibold text-foreground">
-                                {adjustment.currencyCode} {Math.abs(adjustment.differenceAmount).toFixed(2)}
+                                {adjustment.currencyCode} {formatLocalizedAmount(Math.abs(adjustment.differenceAmount))}
                               </span>
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">

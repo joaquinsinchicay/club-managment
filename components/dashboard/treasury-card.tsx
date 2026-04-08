@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { formatLocalizedAmount } from "@/lib/amounts";
 import type {
   ClubActivity,
   ClubCalendarEvent,
@@ -116,7 +117,7 @@ export function TreasuryCard({
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                         {balance.currencyCode}
                       </p>
-                      <p className="mt-1 font-medium text-foreground">{balance.amount.toFixed(2)}</p>
+                      <p className="mt-1 font-medium text-foreground">{formatLocalizedAmount(balance.amount)}</p>
                     </div>
                   ))}
                 </div>
@@ -318,10 +319,9 @@ export function TreasuryCard({
                 <label className="grid gap-2 text-sm text-foreground">
                   <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
                   <input
-                    type="number"
+                    type="text"
                     name="amount"
-                    min="0.01"
-                    step="0.01"
+                    inputMode="decimal"
                     className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                   />
                 </label>
@@ -433,10 +433,9 @@ export function TreasuryCard({
                 <label className="grid gap-2 text-sm text-foreground">
                   <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
                   <input
-                    type="number"
+                    type="text"
                     name="amount"
-                    min="0.01"
-                    step="0.01"
+                    inputMode="decimal"
                     className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                   />
                 </label>
@@ -521,10 +520,9 @@ export function TreasuryCard({
                 <label className="grid gap-2 text-sm text-foreground">
                   <span className="font-medium">{texts.dashboard.treasury.fx_source_amount_label}</span>
                   <input
-                    type="number"
+                    type="text"
                     name="source_amount"
-                    min="0.01"
-                    step="0.01"
+                    inputMode="decimal"
                     className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                   />
                 </label>
@@ -568,10 +566,9 @@ export function TreasuryCard({
                 <label className="grid gap-2 text-sm text-foreground">
                   <span className="font-medium">{texts.dashboard.treasury.fx_target_amount_label}</span>
                   <input
-                    type="number"
+                    type="text"
                     name="target_amount"
-                    min="0.01"
-                    step="0.01"
+                    inputMode="decimal"
                     className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
                   />
                 </label>

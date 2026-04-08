@@ -109,7 +109,6 @@ type AccessRepository = {
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -120,7 +119,6 @@ type AccessRepository = {
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -129,7 +127,6 @@ type AccessRepository = {
   createTreasuryCategory(input: {
     clubId: string;
     name: string;
-    status: TreasuryCategory["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -138,7 +135,6 @@ type AccessRepository = {
     categoryId: string;
     clubId: string;
     name: string;
-    status: TreasuryCategory["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -146,14 +142,16 @@ type AccessRepository = {
   createClubActivity(input: {
     clubId: string;
     name: string;
-    status: ClubActivity["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
     emoji: string | null;
   }): Promise<ClubActivity | null>;
   updateClubActivity(input: {
     activityId: string;
     clubId: string;
     name: string;
-    status: ClubActivity["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
     emoji: string | null;
   }): Promise<ClubActivity | null>;
   createReceiptFormat(input: {
@@ -497,7 +495,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Caja principal",
       accountType: "efectivo",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: false,
       emoji: "💵",
@@ -508,7 +505,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Banco operativo",
       accountType: "bancaria",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: false,
       emoji: "🏦",
@@ -519,7 +515,6 @@ function createStore(): MockStore {
       clubId: CLUB_SUR_ID,
       name: "Caja Sur",
       accountType: "efectivo",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: false,
       emoji: "💼",
@@ -530,7 +525,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Caja de inversion",
       accountType: "bancaria",
-      status: "active",
       visibleForSecretaria: false,
       visibleForTesoreria: true,
       emoji: "📈",
@@ -541,7 +535,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Reserva institucional",
       accountType: "bancaria",
-      status: "inactive",
       visibleForSecretaria: false,
       visibleForTesoreria: true,
       emoji: "🏛️",
@@ -554,7 +547,6 @@ function createStore(): MockStore {
       id: `category-system-${index + 1}`,
       clubId: CLUB_ID,
       name: definition.name,
-      status: "active" as const,
       visibleForSecretaria: definition.visibleForSecretaria,
       visibleForTesoreria: definition.visibleForTesoreria,
       emoji: definition.emoji
@@ -563,7 +555,6 @@ function createStore(): MockStore {
       id: "category-manual-gastos-001",
       clubId: CLUB_ID,
       name: "Gastos operativos",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: true,
       emoji: "🧾"
@@ -572,7 +563,6 @@ function createStore(): MockStore {
       id: "category-sur-manual-001",
       clubId: CLUB_SUR_ID,
       name: "Cuotas Sur",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: true,
       emoji: "🧾"
@@ -584,21 +574,24 @@ function createStore(): MockStore {
       id: "activity-boxeo-001",
       clubId: CLUB_ID,
       name: "Boxeo",
-      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: true,
       emoji: "🥊"
     },
     {
       id: "activity-futsal-001",
       clubId: CLUB_ID,
       name: "Futsal",
-      status: "inactive",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false,
       emoji: "⚽"
     },
     {
       id: "activity-sur-001",
       clubId: CLUB_SUR_ID,
       name: "Hockey",
-      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: true,
       emoji: "🏑"
     }
   ];
@@ -983,7 +976,6 @@ function mapTreasuryAccountRow(
     name: string;
     account_type: TreasuryAccount["accountType"];
     account_scope: string;
-    status: TreasuryAccount["status"];
     visible_for_secretaria: boolean | null;
     visible_for_tesoreria: boolean | null;
     emoji: string | null;
@@ -995,7 +987,6 @@ function mapTreasuryAccountRow(
     clubId: row.club_id,
     name: row.name,
     accountType: row.account_type,
-    status: row.status,
     visibleForSecretaria: row.visible_for_secretaria ?? true,
     visibleForTesoreria: row.visible_for_tesoreria ?? true,
     emoji: row.emoji,
@@ -1014,7 +1005,6 @@ function mapTreasuryCategoryRow(row: {
   id: string;
   club_id: string;
   name: string;
-  status: TreasuryCategory["status"];
   visible_for_secretaria: boolean | null;
   visible_for_tesoreria: boolean | null;
   emoji: string | null;
@@ -1023,7 +1013,6 @@ function mapTreasuryCategoryRow(row: {
     id: row.id,
     clubId: row.club_id,
     name: row.name,
-    status: row.status,
     visibleForSecretaria: row.visible_for_secretaria ?? true,
     visibleForTesoreria: row.visible_for_tesoreria ?? true,
     emoji: row.emoji
@@ -1046,7 +1035,6 @@ async function reconcileRealSystemTreasuryCategories(
       const createdCategory = await createRealTreasuryCategory({
         clubId,
         name: definition.name,
-        status: "active",
         visibleForSecretaria: definition.visibleForSecretaria,
         visibleForTesoreria: definition.visibleForTesoreria,
         emoji: definition.emoji
@@ -1057,7 +1045,7 @@ async function reconcileRealSystemTreasuryCategories(
       continue;
     }
 
-    if (existingCategory.status === "active" && existingCategory.emoji === definition.emoji) {
+    if (existingCategory.emoji === definition.emoji) {
       continue;
     }
 
@@ -1065,7 +1053,6 @@ async function reconcileRealSystemTreasuryCategories(
       categoryId: existingCategory.id,
       clubId,
       name: definition.name,
-      status: "active",
       visibleForSecretaria: existingCategory.visibleForSecretaria,
       visibleForTesoreria: existingCategory.visibleForTesoreria,
       emoji: definition.emoji
@@ -1087,14 +1074,16 @@ function mapClubActivityRow(row: {
   id: string;
   club_id: string;
   name: string;
-  status: ClubActivity["status"];
+  visible_for_secretaria: boolean | null;
+  visible_for_tesoreria: boolean | null;
   emoji: string | null;
 }): ClubActivity {
   return {
     id: row.id,
     clubId: row.club_id,
     name: row.name,
-    status: row.status,
+    visibleForSecretaria: row.visible_for_secretaria ?? true,
+    visibleForTesoreria: row.visible_for_tesoreria ?? true,
     emoji: row.emoji
   };
 }
@@ -1154,7 +1143,6 @@ function reconcileMockSystemTreasuryCategories(clubId: string) {
         id: `category-system-${clubId}-${definition.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
         clubId,
         name: definition.name,
-        status: "active",
         visibleForSecretaria: definition.visibleForSecretaria,
         visibleForTesoreria: definition.visibleForTesoreria,
         emoji: definition.emoji
@@ -1163,7 +1151,6 @@ function reconcileMockSystemTreasuryCategories(clubId: string) {
     }
 
     existingCategory.name = definition.name;
-    existingCategory.status = "active";
     existingCategory.emoji = definition.emoji;
   }
 
@@ -1554,7 +1541,6 @@ async function listRealTreasuryAccountsForClub(clubId: string, client?: AccessRe
       name: string;
       account_type: TreasuryAccount["accountType"];
       account_scope: string;
-      status: TreasuryAccount["status"];
       visible_for_secretaria: boolean | null;
       visible_for_tesoreria: boolean | null;
       emoji: string | null;
@@ -1571,7 +1557,6 @@ async function listRealTreasuryCategoriesForClub(clubId: string, client?: Access
       id: string;
       club_id: string;
       name: string;
-      status: TreasuryCategory["status"];
       visible_for_secretaria: boolean | null;
       visible_for_tesoreria: boolean | null;
       emoji: string | null;
@@ -1590,7 +1575,8 @@ async function listRealClubActivitiesForClub(clubId: string, client?: AccessRepo
       id: string;
       club_id: string;
       name: string;
-      status: ClubActivity["status"];
+      visible_for_secretaria: boolean | null;
+      visible_for_tesoreria: boolean | null;
       emoji: string | null;
     }>
   >("get_club_activities_for_current_club", clubId, client);
@@ -1890,7 +1876,6 @@ async function createRealTreasuryAccount(
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -1909,7 +1894,7 @@ async function createRealTreasuryAccount(
       name: input.name,
       account_type: input.accountType,
       account_scope: resolveLegacyAccountScope(input),
-      status: input.status,
+      status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -1947,7 +1932,6 @@ async function updateRealTreasuryAccount(
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -1966,7 +1950,7 @@ async function updateRealTreasuryAccount(
       name: input.name,
       account_type: input.accountType,
       account_scope: resolveLegacyAccountScope(input),
-      status: input.status,
+      status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -2021,7 +2005,6 @@ async function createRealTreasuryCategory(
   input: {
     clubId: string;
     name: string;
-    status: TreasuryCategory["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -2037,7 +2020,7 @@ async function createRealTreasuryCategory(
     .insert({
       club_id: input.clubId,
       name: input.name,
-      status: input.status,
+      status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -2057,7 +2040,6 @@ async function updateRealTreasuryCategory(
     categoryId: string;
     clubId: string;
     name: string;
-    status: TreasuryCategory["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -2073,7 +2055,7 @@ async function updateRealTreasuryCategory(
     .from("treasury_categories")
     .update({
       name: input.name,
-      status: input.status,
+      status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -2098,7 +2080,8 @@ async function createRealClubActivity(
   input: {
     clubId: string;
     name: string;
-    status: ClubActivity["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
     emoji: string | null;
   },
   client?: AccessRepositoryClient
@@ -2112,10 +2095,12 @@ async function createRealClubActivity(
     .insert({
       club_id: input.clubId,
       name: input.name,
-      status: input.status,
+      status: "active",
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
     })
-    .select("id,club_id,name,status,emoji")
+    .select("id,club_id,name,visible_for_secretaria,visible_for_tesoreria,emoji")
     .single();
 
   if (error || !data) {
@@ -2130,7 +2115,8 @@ async function updateRealClubActivity(
     activityId: string;
     clubId: string;
     name: string;
-    status: ClubActivity["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
     emoji: string | null;
   },
   client?: AccessRepositoryClient
@@ -2144,12 +2130,14 @@ async function updateRealClubActivity(
     .from("club_activities")
     .update({
       name: input.name,
-      status: input.status,
+      status: "active",
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
     })
     .eq("id", input.activityId)
     .eq("club_id", input.clubId)
-    .select("id,club_id,name,status,emoji")
+    .select("id,club_id,name,visible_for_secretaria,visible_for_tesoreria,emoji")
     .maybeSingle();
 
   if (error || !data) {
@@ -2839,7 +2827,6 @@ export const accessRepository: AccessRepository = {
       clubId: input.clubId,
       name: input.name,
       accountType: input.accountType,
-      status: input.status,
       visibleForSecretaria: input.visibleForSecretaria,
       visibleForTesoreria: input.visibleForTesoreria,
       emoji: input.emoji,
@@ -2865,7 +2852,6 @@ export const accessRepository: AccessRepository = {
 
     account.name = input.name;
     account.accountType = input.accountType;
-    account.status = input.status;
     account.visibleForSecretaria = input.visibleForSecretaria;
     account.visibleForTesoreria = input.visibleForTesoreria;
     account.emoji = input.emoji;
@@ -2882,7 +2868,6 @@ export const accessRepository: AccessRepository = {
       id: `category-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
       name: input.name,
-      status: input.status,
       visibleForSecretaria: input.visibleForSecretaria,
       visibleForTesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -2906,7 +2891,6 @@ export const accessRepository: AccessRepository = {
     }
 
     category.name = input.name;
-    category.status = input.status;
     category.visibleForSecretaria = input.visibleForSecretaria;
     category.visibleForTesoreria = input.visibleForTesoreria;
     category.emoji = input.emoji;
@@ -2922,7 +2906,8 @@ export const accessRepository: AccessRepository = {
       id: `activity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
       name: input.name,
-      status: input.status,
+      visibleForSecretaria: input.visibleForSecretaria,
+      visibleForTesoreria: input.visibleForTesoreria,
       emoji: input.emoji
     };
 
@@ -2943,7 +2928,8 @@ export const accessRepository: AccessRepository = {
     }
 
     activity.name = input.name;
-    activity.status = input.status;
+    activity.visibleForSecretaria = input.visibleForSecretaria;
+    activity.visibleForTesoreria = input.visibleForTesoreria;
     activity.emoji = input.emoji;
     return activity;
   },

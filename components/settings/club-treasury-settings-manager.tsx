@@ -48,10 +48,6 @@ function getAccountVisibilityLabel(account: TreasuryAccount) {
   return getRoleVisibilityLabel(account.visibleForSecretaria, account.visibleForTesoreria);
 }
 
-function getStatusLabel(status: TreasuryAccount["status"]) {
-  return texts.settings.club.treasury.statuses[status];
-}
-
 function getCurrencyLabel(currencyCode: TreasuryCurrencyCode) {
   return texts.settings.club.treasury.currency_options[currencyCode];
 }
@@ -103,17 +99,34 @@ function ClubActivityForm({
           />
         </label>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-          <select
-            name="status"
-            defaultValue={defaultActivity?.status ?? "active"}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-            <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-          </select>
-        </label>
+        <fieldset className="grid gap-3">
+          <legend className="text-sm font-medium text-foreground">
+            {texts.settings.club.treasury.account_visibility_label}
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
+              <label
+                key={`activity-visibility-${visibility}`}
+                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+              >
+                <input
+                  type="checkbox"
+                  name="visibility"
+                  value={visibility}
+                  defaultChecked={
+                    visibility === "secretaria"
+                      ? (defaultActivity?.visibleForSecretaria ?? true)
+                      : (defaultActivity?.visibleForTesoreria ?? false)
+                  }
+                  className="size-4 rounded border-border"
+                />
+                <span className="font-medium">
+                  {texts.settings.club.treasury.account_visibility_options[visibility]}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <label className="grid gap-2 text-sm text-foreground">
           <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
@@ -250,18 +263,6 @@ function TreasuryAccountForm({
         </fieldset>
 
         <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-          <select
-            name="status"
-            defaultValue={defaultAccount?.status ?? "active"}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-            <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
           <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
           <select
             name="emoji"
@@ -339,7 +340,6 @@ function TreasuryCategoryForm({
         {isSystemCategory ? (
           <>
             <input type="hidden" name="name" value={defaultCategory?.name ?? ""} />
-            <input type="hidden" name="status" value="active" />
             <input type="hidden" name="emoji" value={defaultCategory?.emoji ?? ""} />
           </>
         ) : (
@@ -352,18 +352,6 @@ function TreasuryCategoryForm({
                 defaultValue={defaultCategory?.name ?? ""}
                 className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
               />
-            </label>
-
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.status_label}</span>
-              <select
-                name="status"
-                defaultValue={defaultCategory?.status ?? "active"}
-                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-              >
-                <option value="active">{texts.settings.club.treasury.statuses.active}</option>
-                <option value="inactive">{texts.settings.club.treasury.statuses.inactive}</option>
-              </select>
             </label>
 
             <label className="grid gap-2 text-sm text-foreground">
@@ -567,12 +555,6 @@ export function ClubTreasurySettingsManager({
                       </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.status_label}
-                        </span>
-                        <span className="font-medium">{getStatusLabel(account.status)}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           {texts.settings.club.treasury.account_currencies_label}
                         </span>
                         <span className="font-medium">{account.currencies.join(" · ")}</span>
@@ -702,12 +684,6 @@ export function ClubTreasurySettingsManager({
                     <div className="mt-4 flex flex-wrap gap-2 text-xs">
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.status_label}
-                        </span>
-                        <span className="font-medium">{getStatusLabel(category.status)}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           {texts.settings.club.treasury.account_visibility_label}
                         </span>
                         <span className="font-medium">
@@ -793,15 +769,25 @@ export function ClubTreasurySettingsManager({
                       </div>
                       <div>
                         <p className="truncate text-base font-semibold text-foreground">{activity.name}</p>
-                        <p className="text-sm text-muted-foreground">{getStatusLabel(activity.status)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {getRoleVisibilityLabel(
+                            activity.visibleForSecretaria,
+                            activity.visibleForTesoreria
+                          )}
+                        </p>
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2 text-xs">
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.status_label}
+                          {texts.settings.club.treasury.account_visibility_label}
                         </span>
-                        <span className="font-medium">{getStatusLabel(activity.status)}</span>
+                        <span className="font-medium">
+                          {getRoleVisibilityLabel(
+                            activity.visibleForSecretaria,
+                            activity.visibleForTesoreria
+                          )}
+                        </span>
                       </span>
                     </div>
                   </div>

@@ -88,7 +88,6 @@ export type TreasuryAccount = {
   clubId: string;
   name: string;
   accountType: TreasuryAccountType;
-  status: TreasuryConfigStatus;
   visibleForSecretaria: boolean;
   visibleForTesoreria: boolean;
   emoji: string | null;
@@ -99,7 +98,6 @@ export type TreasuryCategory = {
   id: string;
   clubId: string;
   name: string;
-  status: TreasuryConfigStatus;
   visibleForSecretaria: boolean;
   visibleForTesoreria: boolean;
   emoji: string | null;
@@ -109,7 +107,8 @@ export type ClubActivity = {
   id: string;
   clubId: string;
   name: string;
-  status: TreasuryConfigStatus;
+  visibleForSecretaria: boolean;
+  visibleForTesoreria: boolean;
   emoji: string | null;
 };
 

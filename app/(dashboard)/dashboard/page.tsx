@@ -60,8 +60,10 @@ export default async function DashboardPage() {
       )
     : [];
   const [treasuryCategories, treasuryActivities, treasuryCalendarEvents, treasuryCurrencies, movementTypes, receiptFormats] = canOperateSecretariaRole
-    ? await Promise.all([
-        accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+      ? await Promise.all([
+        accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
+          categories.filter((category) => category.visibleForSecretaria)
+        ),
         getActiveActivitiesForSecretaria(),
         getEnabledCalendarEventsForSecretaria(),
         getActiveTreasuryCurrenciesForSecretaria(),
@@ -73,7 +75,7 @@ export default async function DashboardPage() {
     !canOperateSecretariaRole && canOperateTesoreriaRole
       ? await Promise.all([
           accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
-            categories.filter((category) => category.visibleForTesoreria && category.status === "active")
+            categories.filter((category) => category.visibleForTesoreria)
           ),
           getActiveActivitiesForTesoreria(),
           getActiveTreasuryCurrenciesForTesoreria(),

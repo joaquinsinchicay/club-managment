@@ -15,7 +15,7 @@
 
 ## 2. Problema a resolver
 
-La carga manual ya puede consumir actividades activas del club como dato opcional, pero faltaba consolidar el flujo completo para que la selección se refleje en el detalle del movimiento.
+La carga manual ya puede consumir actividades visibles del club como dato opcional, pero faltaba consolidar el flujo completo para que la selección se refleje en el detalle del movimiento.
 
 ---
 
@@ -29,7 +29,7 @@ Secretaría debe poder vincular un movimiento manual con una actividad del club 
 
 ### Incluye
 - Campo `Actividad` opcional en el formulario manual.
-- Selección desde actividades activas del club activo.
+- Selección desde actividades visibles del club activo para el rol que opera.
 - Persistencia de `activity_id` en el movimiento.
 - Visualización de la actividad en el detalle del movimiento.
 
@@ -65,9 +65,9 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ## 8. Reglas de negocio
 
 - El campo `Actividad` está disponible como dato opcional del formulario manual.
-- Solo se pueden seleccionar actividades `active` del club activo.
-- Actividades inactivas no deben aparecer para Secretaría.
-- Si se informa `activity_id`, debe pertenecer al club activo y estar activa.
+- Solo se pueden seleccionar actividades visibles para el rol activo dentro del club activo.
+- Actividades sin visibilidad para el rol activo no deben aparecer en el selector.
+- Si se informa `activity_id`, debe pertenecer al club activo y estar visible para el rol que opera.
 - La actividad asociada se muestra en el detalle del movimiento cuando existe.
 
 ---
@@ -75,7 +75,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ## 9. Flujo principal
 
 1. Secretaría abre el formulario manual de movimientos.
-2. Selecciona una actividad activa del club.
+2. Selecciona una actividad visible para su rol dentro del club.
 3. Guarda el movimiento.
 4. El sistema persiste `activity_id`.
 5. En el detalle de la cuenta, el movimiento muestra la actividad vinculada.
@@ -86,7 +86,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 ### A. Actividad inválida
 
-1. Secretaría informa una actividad inexistente o inactiva.
+1. Secretaría informa una actividad inexistente o no visible para su rol.
 2. El sistema rechaza el guardado.
 
 ---
@@ -94,7 +94,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ## 11. UI / UX
 
 - El selector de actividad está disponible en el formulario manual como dato opcional.
-- Debe listar únicamente actividades activas del club activo.
+- Debe listar únicamente actividades visibles para el rol activo dentro del club activo.
 - El detalle del movimiento debe exponer la actividad de forma simple, sin añadir una vista nueva.
 
 ---
@@ -110,7 +110,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 |---|---|---|
 | label | `dashboard.treasury.activity_label` | Campo actividad en el formulario. |
 | placeholder | `dashboard.treasury.activity_placeholder` | Opción vacía del selector. |
-| feedback | `dashboard.feedback.invalid_activity` | Actividad inválida o inactiva. |
+| feedback | `dashboard.feedback.invalid_activity` | Actividad inválida o no visible para el rol. |
 | label | `dashboard.treasury.detail_activity_label` | Actividad mostrada en el detalle del movimiento. |
 
 ---
@@ -119,7 +119,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 ### Entidades afectadas
 - `treasury_movements`: uso de `activity_id`.
-- `club_activities`: lectura del catálogo activo del club.
+- `club_activities`: lectura del catálogo visible del club para el rol activo.
 
 Do not reference current code files.
 
@@ -145,5 +145,5 @@ Do not reference current code files.
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
-| Mostrar actividades inactivas | Media | Media | Filtrar por `status = active` antes de renderizar opciones. |
+| Mostrar actividades no visibles para el rol | Media | Media | Filtrar por visibilidad antes de renderizar opciones. |
 | Perder trazabilidad en detalle | Baja | Media | Mostrar la actividad guardada en el detalle del movimiento. |

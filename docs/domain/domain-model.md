@@ -138,7 +138,6 @@ Atributos:
 * club_id
 * name
 * account_type
-* status
 * visible_for_secretaria
 * visible_for_tesoreria
 * emoji
@@ -148,6 +147,7 @@ Reglas:
 * La visibilidad por rol es la fuente de verdad funcional de la cuenta.
 * Una cuenta debe ser visible para `secretaria`, `tesoreria` o ambos.
 * Si una cuenta es visible para un rol, ese rol puede consumirla en formularios y saldos donde corresponda.
+* `status` puede conservarse como dato legacy de persistencia, pero no define el comportamiento de negocio.
 * `account_scope` puede conservarse como dato legacy en persistencia, pero no define el comportamiento de negocio.
 
 ---
@@ -173,10 +173,15 @@ Atributos:
 * id
 * club_id
 * name
-* status
 * visible_for_secretaria
 * visible_for_tesoreria
 * emoji
+
+Reglas:
+
+* La visibilidad por rol es la fuente de verdad funcional de la categoría.
+* Una categoría debe ser visible para `secretaria`, `tesoreria` o ambos.
+* `status` puede conservarse como dato legacy de persistencia, pero no define el comportamiento de negocio.
 
 ---
 
@@ -189,8 +194,15 @@ Atributos:
 * id
 * club_id
 * name
-* status
+* visible_for_secretaria
+* visible_for_tesoreria
 * emoji
+
+Reglas:
+
+* La visibilidad por rol es la fuente de verdad funcional de la actividad.
+* Una actividad debe ser visible para `secretaria`, `tesoreria` o ambos.
+* `status` puede conservarse como dato legacy de persistencia, pero no define el comportamiento de negocio.
 
 ---
 
@@ -458,7 +470,7 @@ Atributos:
 4. Toda corrección debe auditarse.
 5. No debe haber doble impacto contable.
 6. Las configuraciones son por club.
-7. Solo entidades activas participan en la operatoria.
+7. Solo entidades visibles para el rol activo participan en la operatoria configurable.
 8. La consolidación no puede ejecutarse dos veces para la misma fecha.
 
 ```

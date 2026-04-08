@@ -379,7 +379,6 @@ Sí
 {
   "name": "Caja principal",
   "account_type": "efectivo",
-  "status": "active",
   "visibility": ["secretaria"],
   "emoji": "💵",
   "currencies": ["ARS"]
@@ -425,7 +424,6 @@ Sí
   "account_id": "uuid",
   "name": "Caja sede",
   "account_type": "efectivo",
-  "status": "active",
   "visibility": ["secretaria", "tesoreria"],
   "emoji": "💵",
   "currencies": ["ARS"]
@@ -459,7 +457,6 @@ Sí
 ```json
 {
   "name": "Cuotas",
-  "status": "active",
   "visibility": ["secretaria", "tesoreria"],
   "emoji": "📄"
 }
@@ -467,6 +464,8 @@ Sí
 
 **Validations**
 
+* `visibility` debe incluir `secretaria`, `tesoreria` o ambos
+* `visibility` debe incluir al menos un rol
 * `emoji` debe pertenecer al catálogo predefinido del sistema para categorías
 
 **Output**
@@ -496,7 +495,6 @@ Sí
 {
   "category_id": "uuid",
   "name": "Sueldos",
-  "status": "active",
   "visibility": ["secretaria", "tesoreria"],
   "emoji": "💼"
 }
@@ -529,13 +527,15 @@ Sí
 ```json
 {
   "name": "Boxeo",
-  "status": "active",
+  "visibility": ["secretaria"],
   "emoji": "🥊"
 }
 ```
 
 **Validations**
 
+* `visibility` debe incluir `secretaria`, `tesoreria` o ambos
+* `visibility` debe incluir al menos un rol
 * `emoji` debe pertenecer al catálogo predefinido del sistema para actividades
 
 **Output**
@@ -565,7 +565,7 @@ Sí
 {
   "activity_id": "uuid",
   "name": "Futsal",
-  "status": "active",
+  "visibility": ["secretaria", "tesoreria"],
   "emoji": "⚽"
 }
 ```

@@ -108,6 +108,8 @@ account_type account_type not null,
 -- Legacy field kept for compatibility. Business logic must resolve account
 -- visibility from `visible_for_secretaria` and `visible_for_tesoreria`.
 account_scope account_scope not null,
+-- Legacy field kept for compatibility. Business logic must resolve
+-- availability only from role visibility.
 status text not null,
 visible_for_secretaria boolean default true,
 visible_for_tesoreria boolean default true,
@@ -126,6 +128,8 @@ create table treasury_categories (
 id uuid primary key default uuid_generate_v4(),
 club_id uuid references clubs(id),
 name text not null,
+-- Legacy field kept for compatibility. Business logic must resolve
+-- availability only from role visibility.
 status text not null,
 visible_for_secretaria boolean default true,
 visible_for_tesoreria boolean default true,
@@ -137,7 +141,11 @@ create table club_activities (
 id uuid primary key default uuid_generate_v4(),
 club_id uuid references clubs(id),
 name text not null,
+-- Legacy field kept for compatibility. Business logic must resolve
+-- availability only from role visibility.
 status text not null,
+visible_for_secretaria boolean default true,
+visible_for_tesoreria boolean default false,
 emoji text
 );
 

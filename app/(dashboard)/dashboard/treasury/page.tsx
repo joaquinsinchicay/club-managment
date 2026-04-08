@@ -55,10 +55,10 @@ export default async function TreasuryDashboardPage({
   const [auditEntries, accounts, categories, currencies] = await Promise.all([
     selectedMovement ? getMovementAuditEntries(selectedMovement.movementId) : Promise.resolve([]),
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id).then((entries) =>
-      entries.filter((account) => account.status === "active")
+      entries.filter((account) => account.visibleForTesoreria)
     ),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((entries) =>
-      entries.filter((category) => category.status === "active")
+      entries.filter((category) => category.visibleForTesoreria)
     ),
     getActiveTreasuryCurrenciesForTesoreria()
   ]);

@@ -1,4 +1,5 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import { parseLocalizedAmount } from "@/lib/amounts";
 import { canOperateSecretaria, canOperateTesoreria } from "@/lib/domain/authorization";
 import type {
   ClubActivity,
@@ -385,9 +386,9 @@ async function validateDeclaredBalances(
       return { ok: false, code: "declared_balance_required" };
     }
 
-    const parsed = Number(rawDeclared);
+    const parsed = parseLocalizedAmount(rawDeclared);
 
-    if (!Number.isFinite(parsed)) {
+    if (parsed === null) {
       return { ok: false, code: "declared_balance_invalid" };
     }
 
@@ -691,9 +692,9 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "amount_required" };
   }
 
-  const parsedAmount = Number(input.amount);
+  const parsedAmount = parseLocalizedAmount(input.amount);
 
-  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+  if (parsedAmount === null || parsedAmount <= 0) {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
@@ -734,7 +735,9 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "invalid_account" };
   }
 
-  const category = categories.find((entry) => entry.id === input.categoryId);
+  const category = categories.find(
+    (entry) => entry.id === input.categoryId && entry.visibleForSecretaria
+  );
 
   if (!category) {
     return { ok: false, code: "invalid_category" };
@@ -750,7 +753,7 @@ export async function createTreasuryMovement(input: {
 
   const activity =
     input.activityId.trim().length > 0
-      ? activities.find((entry) => entry.id === input.activityId && entry.status === "active") ?? null
+      ? activities.find((entry) => entry.id === input.activityId && entry.visibleForSecretaria) ?? null
       : null;
 
   if (input.activityId.trim().length > 0 && !activity) {
@@ -845,9 +848,9 @@ export async function createAccountTransfer(input: {
     return { ok: false, code: "amount_required" };
   }
 
-  const parsedAmount = Number(input.amount);
+  const parsedAmount = parseLocalizedAmount(input.amount);
 
-  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+  if (parsedAmount === null || parsedAmount <= 0) {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
@@ -972,12 +975,12 @@ export async function createFxOperation(input: {
     return { ok: false, code: "target_amount_required" };
   }
 
-  const parsedSourceAmount = Number(input.sourceAmount);
-  const parsedTargetAmount = Number(input.targetAmount);
+  const parsedSourceAmount = parseLocalizedAmount(input.sourceAmount);
+  const parsedTargetAmount = parseLocalizedAmount(input.targetAmount);
 
   if (
-    !Number.isFinite(parsedSourceAmount) ||
-    !Number.isFinite(parsedTargetAmount) ||
+    parsedSourceAmount === null ||
+    parsedTargetAmount === null ||
     parsedSourceAmount <= 0 ||
     parsedTargetAmount <= 0
   ) {
@@ -1096,9 +1099,9 @@ export async function createTreasuryRoleMovement(input: {
   }
 
   const movementDate = input.movementDate.trim() || getTodayDate();
-  const parsedAmount = Number(input.amount);
+  const parsedAmount = parseLocalizedAmount(input.amount);
 
-  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+  if (parsedAmount === null || parsedAmount <= 0) {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
@@ -1132,7 +1135,7 @@ export async function createTreasuryRoleMovement(input: {
   }
 
   const category = categories.find(
-    (entry) => entry.id === input.categoryId && entry.visibleForTesoreria && entry.status === "active"
+    (entry) => entry.id === input.categoryId && entry.visibleForTesoreria
   );
 
   if (!category) {
@@ -1149,7 +1152,7 @@ export async function createTreasuryRoleMovement(input: {
 
   const activity =
     input.activityId.trim().length > 0
-      ? activities.find((entry) => entry.id === input.activityId && entry.status === "active") ?? null
+      ? activities.find((entry) => entry.id === input.activityId && entry.visibleForTesoreria) ?? null
       : null;
 
   if (input.activityId.trim().length > 0 && !activity) {
@@ -1211,11 +1214,11 @@ async function getConsolidationValidationIssues(
   const account = accounts.find((entry) => entry.id === movement.accountId && entry.clubId === clubId);
   const category = categories.find((entry) => entry.id === movement.categoryId && entry.clubId === clubId);
 
-  if (!account || account.status !== "active") {
+  if (!account || !account.visibleForTesoreria) {
     issues.push("invalid_account");
   }
 
-  if (!category || category.status !== "active") {
+  if (!category || !category.visibleForTesoreria) {
     issues.push("invalid_category");
   }
 
@@ -1425,9 +1428,9 @@ export async function updateMovementBeforeConsolidation(input: {
     return { ok: false, code: "amount_required" };
   }
 
-  const parsedAmount = Number(input.amount);
+  const parsedAmount = parseLocalizedAmount(input.amount);
 
-  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+  if (parsedAmount === null || parsedAmount <= 0) {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
@@ -1441,8 +1444,8 @@ export async function updateMovementBeforeConsolidation(input: {
     getConfiguredTreasuryCurrencies(clubId)
   ]);
 
-  const account = accounts.find((entry) => entry.id === input.accountId && entry.status === "active");
-  const category = categories.find((entry) => entry.id === input.categoryId && entry.status === "active");
+  const account = accounts.find((entry) => entry.id === input.accountId && entry.visibleForTesoreria);
+  const category = categories.find((entry) => entry.id === input.categoryId && entry.visibleForTesoreria);
 
   if (!account) {
     return { ok: false, code: "invalid_account" };
@@ -1685,7 +1688,7 @@ export async function getActiveActivitiesForSecretaria(): Promise<ClubActivity[]
   }
 
   const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
-  return activities.filter((activity) => activity.status === "active");
+  return activities.filter((activity) => activity.visibleForSecretaria);
 }
 
 export async function getEnabledCalendarEventsForSecretaria(): Promise<ClubCalendarEvent[]> {
@@ -1707,7 +1710,7 @@ export async function getActiveActivitiesForTesoreria(): Promise<ClubActivity[]>
   }
 
   const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
-  return activities.filter((activity) => activity.status === "active");
+  return activities.filter((activity) => activity.visibleForTesoreria);
 }
 
 export async function getActiveTreasuryCurrenciesForSecretaria(): Promise<TreasuryCurrencyConfig[]> {

@@ -35,7 +35,7 @@ Desde `Configuración del club`, un usuario `tesoreria` debe visualizar las card
 - Edición de cuenta.
 - Alta de categoría.
 - Edición de categoría.
-- Validaciones de nombre obligatorio, tipo obligatorio y duplicados activos.
+- Validaciones de nombre obligatorio, tipo obligatorio, al menos una visibilidad y duplicados por club.
 - Feedback visible en la misma pantalla.
 
 ### No incluye
@@ -82,12 +82,12 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - La visibilidad operativa de cuentas se define por rol y no por la combinación de `ámbito` más un campo visible redundante.
 - El club debe contar con un catálogo fijo de categorías del sistema, siempre presente y no eliminable.
 - Las categorías del sistema solo permiten editar su visibilidad por rol.
-- Las categorías manuales adicionales mantienen edición completa de nombre, visibilidad, estado y emoji.
+- Las categorías manuales adicionales mantienen edición completa de nombre, visibilidad y emoji.
 - El nombre de cuenta es obligatorio.
 - El tipo de cuenta es obligatorio.
 - El nombre de categoría es obligatorio.
-- No puede existir otra cuenta `active` con el mismo nombre en el mismo club.
-- No puede existir otra categoría `active` con el mismo nombre en el mismo club.
+- No puede existir otra cuenta con el mismo nombre en el mismo club.
+- No puede existir otra categoría con el mismo nombre en el mismo club.
 - La edición debe respetar las mismas validaciones que el alta.
 
 ---
@@ -114,9 +114,9 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 1. Tesorería intenta guardar una cuenta o categoría incompleta.
 2. El sistema rechaza la acción y devuelve feedback específico.
 
-### C. Duplicado activo
+### C. Duplicado
 
-1. Tesorería intenta crear o editar con un nombre ya usado por otra entidad `active` del mismo club.
+1. Tesorería intenta crear o editar con un nombre ya usado por otra entidad del mismo club.
 2. El sistema bloquea la operación y devuelve feedback.
 
 ---
@@ -164,7 +164,6 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 | label | `settings.club.treasury.account_name_label` | Nombre de cuenta. |
 | label | `settings.club.treasury.account_type_label` | Tipo de cuenta. |
 | label | `settings.club.treasury.account_visibility_label` | Visibilidad por rol en cuentas y categorías. |
-| label | `settings.club.treasury.status_label` | Estado. |
 | label | `settings.club.treasury.emoji_label` | Emoji. |
 | label | `settings.club.treasury.emoji_placeholder` | Placeholder del selector de emoji. |
 | feedback | `settings.club.treasury.feedback.account_name_required` | Validación de nombre de cuenta. |
@@ -209,5 +208,5 @@ Do not reference current code files.
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
 | Mezclar configuración de otro club | Media | Alta | Resolver siempre sobre club activo y validar ids server-side. |
-| Crear cuentas duplicadas activas | Media | Media | Validar nombres activos antes de persistir. |
+| Crear cuentas duplicadas | Media | Media | Validar nombres repetidos antes de persistir. |
 | Configuración incoherente con historias posteriores | Baja | Media | Tomar US-28 como fuente de verdad para monedas por cuenta y visibilidad por rol. |
