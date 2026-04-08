@@ -76,6 +76,7 @@ type TreasuryActionCode =
 export type TreasuryActionResult = {
   ok: boolean;
   code: TreasuryActionCode;
+  movementDisplayId?: string;
 };
 
 const TODAY = "2026-04-06";
@@ -88,6 +89,25 @@ function getRelativeDate(date: string, deltaDays: number) {
   const next = new Date(`${date}T00:00:00.000Z`);
   next.setUTCDate(next.getUTCDate() + deltaDays);
   return next.toISOString().slice(0, 10);
+}
+
+function buildClubInitials(clubName: string) {
+  const initials = clubName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+
+  return initials || "CLUB";
+}
+
+async function generateMovementDisplayId(clubId: string, clubName: string, movementDate: string) {
+  const year = movementDate.slice(0, 4);
+  const prefix = buildClubInitials(clubName);
+  const sequence = (await accessRepository.countTreasuryMovementsByClubAndYear(clubId, year)) + 1;
+
+  return `${prefix}-MOV-${year}-${sequence}`;
 }
 
 function getDefaultConsolidationDate() {
@@ -347,6 +367,7 @@ async function validateDeclaredBalances(
   | {
       ok: true;
       clubId: string;
+      clubName: string;
       userId: string;
       sessionDate: string;
       sessionId: string | null;
@@ -403,6 +424,7 @@ async function validateDeclaredBalances(
   return {
     ok: true,
     clubId: context.activeClub.id,
+    clubName: context.activeClub.name,
     userId: context.user.id,
     sessionDate: base.sessionDate,
     sessionId: base.sessionId,
@@ -412,6 +434,7 @@ async function validateDeclaredBalances(
 
 async function applyBalanceAdjustments(input: {
   clubId: string;
+  clubName: string;
   userId: string;
   sessionId: string;
   sessionDate: string;
@@ -426,6 +449,7 @@ async function applyBalanceAdjustments(input: {
 
   for (const draft of input.drafts.filter((entry) => entry.differenceAmount !== 0 && entry.adjustmentType)) {
     const movement = await accessRepository.createTreasuryMovement({
+      displayId: await generateMovementDisplayId(input.clubId, input.clubName, input.sessionDate),
       clubId: input.clubId,
       dailyCashSessionId: input.sessionId,
       accountId: draft.accountId,
@@ -489,6 +513,7 @@ export async function openDailyCashSessionWithDeclaredBalances(input: Array<{
 
   const adjustmentResult = await applyBalanceAdjustments({
     clubId: validation.clubId,
+    clubName: validation.clubName,
     userId: validation.userId,
     sessionId: createdSession.id,
     sessionDate: validation.sessionDate,
@@ -528,6 +553,7 @@ export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
 
   const adjustmentResult = await applyBalanceAdjustments({
     clubId: validation.clubId,
+    clubName: validation.clubName,
     userId: validation.userId,
     sessionId: validation.sessionId,
     sessionDate: validation.sessionDate,
@@ -592,6 +618,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     movements: visibleMovements
       .map((movement) => ({
         movementId: movement.id,
+        movementDisplayId: movement.displayId,
         accountId: movement.accountId,
         accountName: accountsById.get(movement.accountId)?.name ?? "",
         movementType: movement.movementType,
@@ -630,6 +657,21 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
     }))
   );
 
+  const [categories, roleMovements] = await Promise.all([
+    accessRepository.listTreasuryCategoriesForClub(clubId),
+    accessRepository.listTreasuryMovementsByDate(clubId, sessionDate)
+  ]);
+  const visibleAccountIds = new Set(accounts.map((account) => account.id));
+  const users = await Promise.all(
+    [...new Set(roleMovements.map((movement) => movement.createdByUserId))].map(async (userId) => [
+      userId,
+      await accessRepository.findUserById(userId)
+    ] as const)
+  );
+  const usersById = new Map(users);
+  const categoriesById = new Map(categories.map((category) => [category.id, category]));
+  const accountsById = new Map(accounts.map((account) => [account.id, account]));
+
   return {
     sessionDate,
     accounts: movementsByAccount.map(({ account, movements }) => ({
@@ -637,6 +679,24 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       name: account.name,
       balances: buildAccountBalances(account, movements)
     })),
+    movements: roleMovements
+      .filter((movement) => movement.status === "posted" && visibleAccountIds.has(movement.accountId))
+      .map((movement) => ({
+        movementId: movement.id,
+        movementDisplayId: movement.displayId,
+        movementDate: movement.movementDate,
+        accountId: movement.accountId,
+        accountName: accountsById.get(movement.accountId)?.name ?? "",
+        movementType: movement.movementType,
+        categoryName:
+          categoriesById.get(movement.categoryId)?.name ?? texts.dashboard.treasury.detail_uncategorized_category,
+        concept: movement.concept,
+        currencyCode: movement.currencyCode,
+        amount: movement.amount,
+        createdByUserName: usersById.get(movement.createdByUserId)?.fullName ?? "",
+        createdAt: movement.createdAt
+      }))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
     availableActions: ["create_movement", "create_fx_operation"]
   };
 }
@@ -815,6 +875,7 @@ export async function createTreasuryMovement(input: {
   }
 
   const created = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
     dailyCashSessionId: session.id,
     accountId: account.id,
@@ -834,7 +895,7 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "unknown_error" };
   }
 
-  return { ok: true, code: "movement_created" };
+  return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
 }
 
 export async function createAccountTransfer(input: {
@@ -912,6 +973,7 @@ export async function createAccountTransfer(input: {
   }
 
   const sourceMovement = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
     dailyCashSessionId: session.id,
     accountId: sourceAccount.id,
@@ -930,6 +992,7 @@ export async function createAccountTransfer(input: {
   }
 
   const targetMovement = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
     dailyCashSessionId: session.id,
     accountId: targetAccount.id,
@@ -1041,6 +1104,7 @@ export async function createFxOperation(input: {
   }
 
   const sourceMovement = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
     dailyCashSessionId: null,
     accountId: sourceAccount.id,
@@ -1060,6 +1124,7 @@ export async function createFxOperation(input: {
   }
 
   const targetMovement = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
     dailyCashSessionId: null,
     accountId: targetAccount.id,
@@ -1197,6 +1262,7 @@ export async function createTreasuryRoleMovement(input: {
   }
 
   const created = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, movementDate),
     clubId: context.activeClub.id,
     dailyCashSessionId: "",
     accountId: account.id,
@@ -1216,7 +1282,7 @@ export async function createTreasuryRoleMovement(input: {
     return { ok: false, code: "unknown_error" };
   }
 
-  return { ok: true, code: "movement_created" };
+  return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
 }
 
 async function buildMovementUserName(userId: string) {
@@ -1311,6 +1377,7 @@ async function buildConsolidationMovement(
 
   return {
     movementId: movement.id,
+    movementDisplayId: movement.displayId,
     status:
       movement.status === "integrated" ? "integrated" : "pending_consolidation",
     movementDate: movement.movementDate,
@@ -1894,6 +1961,7 @@ export async function getTreasuryAccountDetailForActiveClub(
           : null;
         return {
           movementId: movement.id,
+          movementDisplayId: movement.displayId,
           movementDate: movement.movementDate,
           movementType: movement.movementType,
           categoryName: category?.name ?? "",

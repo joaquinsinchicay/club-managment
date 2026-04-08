@@ -12,19 +12,25 @@ import {
   openDailyCashSession
 } from "@/lib/services/treasury-service";
 
-function redirectToDashboard(code: string) {
+function redirectToDashboard(code: string, movementDisplayId?: string) {
   revalidatePath("/dashboard");
-  redirect(`/dashboard?feedback=${code}`);
+  const params = new URLSearchParams({ feedback: code });
+
+  if (movementDisplayId) {
+    params.set("movement_id", movementDisplayId);
+  }
+
+  redirect(`/dashboard?${params.toString()}`);
 }
 
 export async function openDailyCashSessionAction() {
   const result = await openDailyCashSession();
-  redirectToDashboard(result.code);
+  redirectToDashboard(result.code, result.movementDisplayId);
 }
 
 export async function closeDailyCashSessionAction() {
   const result = await closeDailyCashSession();
-  redirectToDashboard(result.code);
+  redirectToDashboard(result.code, result.movementDisplayId);
 }
 
 export async function createTreasuryMovementAction(formData: FormData) {

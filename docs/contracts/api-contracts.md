@@ -918,6 +918,7 @@ Sí
 ```json
 {
   "movement_id": "uuid",
+  "movement_display_id": "PJ-MOV-2026-9465",
   "status": "posted"
 }
 ```
@@ -927,6 +928,7 @@ Sí
 * si el movimiento lo crea `secretaria`, el status inicial es `pending_consolidation`
 * si el movimiento lo crea `tesoreria`, el status inicial es `posted`
 * los movimientos creados por compra/venta de Tesorería se registran como `posted`
+* `movement_display_id` es el identificador visible de negocio con formato `<iniciales_club>-MOV-<anio>-<secuencia>`
 
 ---
 

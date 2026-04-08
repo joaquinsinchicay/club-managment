@@ -243,6 +243,7 @@ type AccessRepository = {
   createTreasuryMovement(input: {
     clubId: string;
     dailyCashSessionId: string | null;
+    displayId: string;
     accountId: string;
     movementType: TreasuryMovementType;
     categoryId: string;
@@ -259,6 +260,7 @@ type AccessRepository = {
     createdByUserId: string;
     status?: TreasuryMovementStatus;
   }): Promise<TreasuryMovement | null>;
+  countTreasuryMovementsByClubAndYear(clubId: string, year: string): Promise<number>;
   recordDailyCashSessionBalances(
     input: Array<{
       sessionId: string;
@@ -700,6 +702,7 @@ function createStore(): MockStore {
   const treasuryMovements: TreasuryMovement[] = [
     {
       id: "movement-secretaria-pending-001",
+      displayId: "PJ-MOV-2026-9463",
       clubId: CLUB_ID,
       dailyCashSessionId: "session-2026-04-05",
       accountId: "account-tesoreria-inversion-001",
@@ -721,6 +724,7 @@ function createStore(): MockStore {
     },
     {
       id: "movement-secretaria-pending-002",
+      displayId: "PJ-MOV-2026-9464",
       clubId: CLUB_ID,
       dailyCashSessionId: "session-2026-04-05",
       accountId: "account-secretaria-caja-001",
@@ -742,6 +746,7 @@ function createStore(): MockStore {
     },
     {
       id: "movement-tesoreria-posted-001",
+      displayId: "PJ-MOV-2026-9465",
       clubId: CLUB_ID,
       dailyCashSessionId: null,
       accountId: "account-tesoreria-inversion-001",
@@ -3161,6 +3166,7 @@ export const accessRepository: AccessRepository = {
   async createTreasuryMovement(input) {
     const movement: TreasuryMovement = {
       id: `movement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      displayId: input.displayId,
       clubId: input.clubId,
       dailyCashSessionId: input.dailyCashSessionId,
       accountId: input.accountId,
@@ -3183,6 +3189,11 @@ export const accessRepository: AccessRepository = {
 
     getStore().treasuryMovements.push(movement);
     return movement;
+  },
+  async countTreasuryMovementsByClubAndYear(clubId, year) {
+    return getStore().treasuryMovements.filter(
+      (movement) => movement.clubId === clubId && movement.movementDate.startsWith(`${year}-`)
+    ).length;
   },
   async recordDailyCashSessionBalances(input) {
     const store = getStore();

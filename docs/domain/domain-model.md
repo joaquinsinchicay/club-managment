@@ -135,6 +135,7 @@ Cuenta del club.
 Atributos:
 
 * id
+* display_id
 * club_id
 * name
 * account_type

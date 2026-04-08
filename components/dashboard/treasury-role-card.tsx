@@ -42,6 +42,19 @@ export function TreasuryRoleCard({
 }: TreasuryRoleCardProps) {
   const [activeModal, setActiveModal] = useState<"movement" | "fx" | null>(null);
 
+  const formatMovementDateTime = (value: string) => {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return new Intl.DateTimeFormat("es-AR", {
+      dateStyle: "short",
+      timeStyle: "short"
+    }).format(date);
+  };
+
   return (
     <>
       <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
@@ -129,6 +142,55 @@ export function TreasuryRoleCard({
               {texts.dashboard.treasury_role.fx_modal_cta}
             </ModalTriggerButton>
           ) : null}
+        </div>
+      </section>
+
+      <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">
+            {texts.dashboard.treasury_role.recent_movements_title}
+          </h2>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {texts.dashboard.treasury_role.recent_movements_description}
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-3">
+          {dashboard.movements.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
+              {texts.dashboard.treasury_role.recent_movements_empty}
+            </div>
+          ) : (
+            dashboard.movements.map((movement) => (
+              <article key={movement.movementId} className="rounded-[24px] border border-border bg-secondary/30 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      {texts.dashboard.treasury_role.movement_id_label}
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">{movement.movementDisplayId}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {movement.accountName} · {movement.categoryName}
+                    </p>
+                    <p className="text-sm text-foreground">{movement.concept}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-base font-semibold text-foreground">
+                      {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
+                    </p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      {texts.dashboard.treasury.movement_types[movement.movementType]}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                  <span>{formatMovementDateTime(movement.createdAt)}</span>
+                  <span>{movement.createdByUserName}</span>
+                </div>
+              </article>
+            ))
+          )}
         </div>
       </section>
 

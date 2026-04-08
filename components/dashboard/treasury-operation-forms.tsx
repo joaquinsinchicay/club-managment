@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
@@ -34,6 +34,19 @@ const FULL_WIDTH_FIELD_CLASSNAME = "sm:col-span-2";
 const CONTROL_CLASSNAME = "min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground";
 const DISABLED_CONTROL_CLASSNAME = "min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground";
 
+type MovementFormState = {
+  movementDate?: string;
+  accountId: string;
+  movementType: string;
+  categoryId: string;
+  activityId: string;
+  receiptNumber: string;
+  calendarEventId?: string;
+  concept: string;
+  currencyCode: string;
+  amount: string;
+};
+
 function FormField({
   children,
   fullWidth = false
@@ -50,17 +63,262 @@ function ReceiptHelper({ receiptFormats }: { receiptFormats: ReceiptFormat[] }) 
   }
 
   return (
-    <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
+    <div className="text-xs leading-5 text-muted-foreground">
       <span>
-        {texts.dashboard.treasury.receipt_helper_format} {receiptFormats[0]?.pattern ?? DEFAULT_RECEIPT_PATTERN}
-      </span>
-      <span>
-        {texts.dashboard.treasury.receipt_helper_example} {receiptFormats[0]?.example ?? "-"}
-      </span>
-      <span>
+        {texts.dashboard.treasury.receipt_helper_example} {receiptFormats[0]?.example ?? DEFAULT_RECEIPT_PATTERN}.{" "}
         {texts.dashboard.treasury.receipt_helper_available_from} {DEFAULT_RECEIPT_MIN_LABEL}
       </span>
     </div>
+  );
+}
+
+function sanitizeAmountInput(value: string) {
+  return value.replace(/-/g, "");
+}
+
+function getDefaultCurrencyCode(account: TreasuryAccount | undefined, currencies: TreasuryCurrencyConfig[]) {
+  if (!account) {
+    return "";
+  }
+
+  const availableCurrencyCodes = currencies
+    .map((currency) => currency.currencyCode)
+    .filter((currencyCode) => account.currencies.includes(currencyCode));
+
+  if (availableCurrencyCodes.length === 0) {
+    return "";
+  }
+
+  if (availableCurrencyCodes.length > 1 && availableCurrencyCodes.includes("ARS")) {
+    return "ARS";
+  }
+
+  return availableCurrencyCodes[0] ?? "";
+}
+
+function getRequiredLabel(label: string) {
+  return `${label}${texts.dashboard.treasury.required_suffix}`;
+}
+
+function MovementFormFields({
+  accounts,
+  categories,
+  activities,
+  calendarEvents,
+  currencies,
+  movementTypes,
+  receiptFormats,
+  formState,
+  onChange,
+  showMovementDateInput = false
+}: {
+  accounts: TreasuryAccount[];
+  categories: TreasuryCategory[];
+  activities: ClubActivity[];
+  calendarEvents?: ClubCalendarEvent[];
+  currencies: TreasuryCurrencyConfig[];
+  movementTypes: TreasuryMovementType[];
+  receiptFormats: ReceiptFormat[];
+  formState: MovementFormState;
+  onChange: (patch: Partial<MovementFormState>) => void;
+  showMovementDateInput?: boolean;
+}) {
+  const availableCurrencies = useMemo(() => {
+    const selectedAccount = accounts.find((account) => account.id === formState.accountId);
+
+    if (!selectedAccount) {
+      return [];
+    }
+
+    return currencies.filter((currency) => selectedAccount.currencies.includes(currency.currencyCode));
+  }, [accounts, currencies, formState.accountId]);
+
+  return (
+    <>
+      {showMovementDateInput ? (
+        <FormField>
+          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <input
+            type="date"
+            name="movement_date"
+            value={formState.movementDate ?? ""}
+            onChange={(event) => onChange({ movementDate: event.target.value })}
+            className={CONTROL_CLASSNAME}
+          />
+        </FormField>
+      ) : null}
+
+      <FormField>
+        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.account_label)}</span>
+        <select
+          name="account_id"
+          value={formState.accountId}
+          onChange={(event) => onChange({ accountId: event.target.value })}
+          className={CONTROL_CLASSNAME}
+        >
+          <option value="" disabled>
+            {texts.dashboard.treasury.account_placeholder}
+          </option>
+          {accounts.map((account) => (
+            <option key={account.id} value={account.id}>
+              {account.name}
+            </option>
+          ))}
+        </select>
+      </FormField>
+
+      <FormField>
+        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.movement_type_label)}</span>
+        <select
+          name="movement_type"
+          value={formState.movementType}
+          onChange={(event) => onChange({ movementType: event.target.value })}
+          className={CONTROL_CLASSNAME}
+        >
+          <option value="" disabled>
+            {texts.dashboard.treasury.movement_type_placeholder}
+          </option>
+          {movementTypes.map((movementType) => (
+            <option key={movementType} value={movementType}>
+              {texts.dashboard.treasury.movement_types[movementType]}
+            </option>
+          ))}
+        </select>
+      </FormField>
+
+      <FormField>
+        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.category_label)}</span>
+        <select
+          name="category_id"
+          value={formState.categoryId}
+          onChange={(event) => onChange({ categoryId: event.target.value })}
+          className={CONTROL_CLASSNAME}
+        >
+          <option value="" disabled>
+            {texts.dashboard.treasury.category_placeholder}
+          </option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+      </FormField>
+
+      {activities.length > 0 ? (
+        <FormField>
+          <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
+          <select
+            name="activity_id"
+            value={formState.activityId}
+            onChange={(event) => onChange({ activityId: event.target.value })}
+            className={CONTROL_CLASSNAME}
+          >
+            <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
+            {activities.map((activity) => (
+              <option key={activity.id} value={activity.id}>
+                {activity.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
+      ) : null}
+
+      <FormField fullWidth>
+        <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
+        <input
+          type="text"
+          name="receipt_number"
+          value={formState.receiptNumber}
+          onChange={(event) => onChange({ receiptNumber: event.target.value })}
+          className={CONTROL_CLASSNAME}
+        />
+        <ReceiptHelper receiptFormats={receiptFormats} />
+      </FormField>
+
+      {calendarEvents ? (
+        <FormField fullWidth>
+          <span className="font-medium">{texts.dashboard.treasury.calendar_label}</span>
+          <select
+            name="calendar_event_id"
+            value={formState.calendarEventId ?? ""}
+            onChange={(event) => onChange({ calendarEventId: event.target.value })}
+            disabled={calendarEvents.length === 0}
+            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground")}
+          >
+            <option value="">
+              {calendarEvents.length > 0
+                ? texts.dashboard.treasury.calendar_placeholder
+                : texts.dashboard.treasury.empty_calendar_events}
+            </option>
+            {calendarEvents.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.title}
+              </option>
+            ))}
+          </select>
+        </FormField>
+      ) : null}
+
+      <FormField fullWidth>
+        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.concept_label)}</span>
+        <input
+          type="text"
+          name="concept"
+          value={formState.concept}
+          onChange={(event) => onChange({ concept: event.target.value })}
+          className={CONTROL_CLASSNAME}
+        />
+      </FormField>
+
+      <FormField>
+        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.currency_label)}</span>
+        <select
+          name="currency_code"
+          value={formState.currencyCode}
+          onChange={(event) => onChange({ currencyCode: event.target.value })}
+          className={CONTROL_CLASSNAME}
+          disabled={availableCurrencies.length === 0}
+        >
+          <option value="" disabled>
+            {texts.dashboard.treasury.currency_placeholder}
+          </option>
+          {availableCurrencies.map((currency) => (
+            <option key={currency.currencyCode} value={currency.currencyCode}>
+              {currency.currencyCode}
+            </option>
+          ))}
+        </select>
+      </FormField>
+
+      <FormField>
+        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.amount_label)}</span>
+        <input
+          type="text"
+          name="amount"
+          inputMode="decimal"
+          value={formState.amount}
+          onChange={(event) => onChange({ amount: sanitizeAmountInput(event.target.value) })}
+          onKeyDown={(event) => {
+            if (event.key === "-") {
+              event.preventDefault();
+            }
+          }}
+          className={CONTROL_CLASSNAME}
+        />
+      </FormField>
+    </>
+  );
+}
+
+function isMovementFormValid(formState: MovementFormState) {
+  return Boolean(
+    formState.accountId &&
+      formState.movementType &&
+      formState.categoryId &&
+      formState.concept.trim() &&
+      formState.currencyCode &&
+      formState.amount.trim()
   );
 }
 
@@ -80,21 +338,50 @@ export function SecretariaMovementForm({
   calendarEvents: ClubCalendarEvent[];
   sessionDate: string;
 }) {
-  const [selectedAccountId, setSelectedAccountId] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [selectedActivityId, setSelectedActivityId] = useState("");
-  const availableCurrencies = useMemo(() => {
-    const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
+  const [formState, setFormState] = useState<MovementFormState>({
+    accountId: "",
+    movementType: "",
+    categoryId: "",
+    activityId: "",
+    receiptNumber: "",
+    calendarEventId: "",
+    concept: "",
+    currencyCode: "",
+    amount: ""
+  });
 
-    if (!selectedAccount) {
-      return currencies;
+  useEffect(() => {
+    const selectedAccount = accounts.find((account) => account.id === formState.accountId);
+    const nextCurrencyCode = getDefaultCurrencyCode(selectedAccount, currencies);
+
+    if (!selectedAccount && formState.currencyCode) {
+      setFormState((current) => ({ ...current, currencyCode: "" }));
+      return;
     }
 
-    return currencies.filter((currency) => selectedAccount.currencies.includes(currency.currencyCode));
-  }, [accounts, currencies, selectedAccountId]);
+    if (selectedAccount && nextCurrencyCode && !selectedAccount.currencies.includes(formState.currencyCode)) {
+      setFormState((current) => ({ ...current, currencyCode: nextCurrencyCode }));
+    }
+  }, [accounts, currencies, formState.accountId, formState.currencyCode]);
 
   return (
-    <form action={submitAction} className="grid gap-4">
+    <form
+      action={submitAction}
+      className="grid gap-4"
+      onReset={() =>
+        setFormState({
+          accountId: "",
+          movementType: "",
+          categoryId: "",
+          activityId: "",
+          receiptNumber: "",
+          calendarEventId: "",
+          concept: "",
+          currencyCode: "",
+          amount: ""
+        })
+      }
+    >
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
           <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
@@ -105,143 +392,23 @@ export function SecretariaMovementForm({
             className={DISABLED_CONTROL_CLASSNAME}
           />
         </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
-          <select
-            name="account_id"
-            defaultValue=""
-            onChange={(event) => setSelectedAccountId(event.target.value)}
-            className={CONTROL_CLASSNAME}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury.account_placeholder}
-            </option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.movement_type_label}</span>
-          <select name="movement_type" defaultValue="" className={CONTROL_CLASSNAME}>
-            <option value="" disabled>
-              {texts.dashboard.treasury.movement_type_placeholder}
-            </option>
-            {movementTypes.map((movementType) => (
-              <option key={movementType} value={movementType}>
-                {texts.dashboard.treasury.movement_types[movementType]}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.category_label}</span>
-          <select
-            name="category_id"
-            defaultValue=""
-            onChange={(event) => setSelectedCategoryId(event.target.value)}
-            className={CONTROL_CLASSNAME}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury.category_placeholder}
-            </option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        {activities.length > 0 ? (
-          <FormField>
-            <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
-            <select
-              name="activity_id"
-              value={selectedActivityId}
-              onChange={(event) => setSelectedActivityId(event.target.value)}
-              key={selectedCategoryId || "activity-select"}
-              className={CONTROL_CLASSNAME}
-            >
-              <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
-              {activities.map((activity) => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name}
-                </option>
-              ))}
-            </select>
-          </FormField>
-        ) : null}
-
-        <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
-          <input
-            type="text"
-            name="receipt_number"
-            className={CONTROL_CLASSNAME}
-          />
-          <ReceiptHelper receiptFormats={receiptFormats} />
-        </FormField>
-
-        <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury.calendar_label}</span>
-          <select
-            name="calendar_event_id"
-            defaultValue=""
-            disabled={calendarEvents.length === 0}
-            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground")}
-          >
-            <option value="">
-              {calendarEvents.length > 0
-                ? texts.dashboard.treasury.calendar_placeholder
-                : texts.dashboard.treasury.empty_calendar_events}
-            </option>
-            {calendarEvents.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.title}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-          <input type="text" name="concept" className={CONTROL_CLASSNAME} />
-        </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-          <select
-            name="currency_code"
-            key={selectedAccountId || "currency-select"}
-            defaultValue=""
-            className={CONTROL_CLASSNAME}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury.currency_placeholder}
-            </option>
-            {availableCurrencies.map((currency) => (
-              <option key={currency.currencyCode} value={currency.currencyCode}>
-                {currency.currencyCode}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-          <input type="text" name="amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
-        </FormField>
+        <MovementFormFields
+          accounts={accounts}
+          categories={categories}
+          activities={activities}
+          calendarEvents={calendarEvents}
+          currencies={currencies}
+          movementTypes={movementTypes}
+          receiptFormats={receiptFormats}
+          formState={formState}
+          onChange={(patch) => setFormState((current) => ({ ...current, ...patch }))}
+        />
 
         <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
           <PendingSubmitButton
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
+            disabled={!isMovementFormValid(formState)}
             className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
           <button
@@ -362,129 +529,77 @@ export function TreasuryRoleMovementForm({
   submitAction,
   sessionDate
 }: BaseMovementFormProps & { sessionDate: string }) {
-  const [selectedAccountId, setSelectedAccountId] = useState("");
-  const availableCurrencies = useMemo(() => {
-    const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
+  const [formState, setFormState] = useState<MovementFormState>({
+    movementDate: sessionDate,
+    accountId: "",
+    movementType: "",
+    categoryId: "",
+    activityId: "",
+    receiptNumber: "",
+    concept: "",
+    currencyCode: "",
+    amount: ""
+  });
 
-    if (!selectedAccount) {
-      return currencies;
+  useEffect(() => {
+    const selectedAccount = accounts.find((account) => account.id === formState.accountId);
+    const nextCurrencyCode = getDefaultCurrencyCode(selectedAccount, currencies);
+
+    if (!selectedAccount && formState.currencyCode) {
+      setFormState((current) => ({ ...current, currencyCode: "" }));
+      return;
     }
 
-    return currencies.filter((currency) => selectedAccount.currencies.includes(currency.currencyCode));
-  }, [accounts, currencies, selectedAccountId]);
+    if (selectedAccount && nextCurrencyCode && !selectedAccount.currencies.includes(formState.currencyCode)) {
+      setFormState((current) => ({ ...current, currencyCode: nextCurrencyCode }));
+    }
+  }, [accounts, currencies, formState.accountId, formState.currencyCode]);
+
+  const handleReset = () =>
+    setFormState({
+      movementDate: sessionDate,
+      accountId: "",
+      movementType: "",
+      categoryId: "",
+      activityId: "",
+      receiptNumber: "",
+      concept: "",
+      currencyCode: "",
+      amount: ""
+    });
 
   return (
-    <form action={submitAction} className="grid gap-4">
+    <form
+      action={submitAction}
+      className="grid gap-4"
+      onReset={handleReset}
+      onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        if (!isMovementFormValid(formState)) {
+          event.preventDefault();
+          return;
+        }
+
+        window.setTimeout(handleReset, 0);
+      }}
+    >
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
-          <input
-            type="date"
-            name="movement_date"
-            defaultValue={sessionDate}
-            className={CONTROL_CLASSNAME}
-          />
-        </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
-          <select
-            name="account_id"
-            defaultValue=""
-            onChange={(event) => setSelectedAccountId(event.target.value)}
-            className={CONTROL_CLASSNAME}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury.account_placeholder}
-            </option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.movement_type_label}</span>
-          <select name="movement_type" defaultValue="" className={CONTROL_CLASSNAME}>
-            <option value="" disabled>
-              {texts.dashboard.treasury.movement_type_placeholder}
-            </option>
-            {movementTypes.map((movementType) => (
-              <option key={movementType} value={movementType}>
-                {texts.dashboard.treasury.movement_types[movementType]}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.category_label}</span>
-          <select name="category_id" defaultValue="" className={CONTROL_CLASSNAME}>
-            <option value="" disabled>
-              {texts.dashboard.treasury.category_placeholder}
-            </option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        {activities.length > 0 ? (
-          <FormField>
-            <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
-            <select name="activity_id" defaultValue="" className={CONTROL_CLASSNAME}>
-              <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
-              {activities.map((activity) => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name}
-                </option>
-              ))}
-            </select>
-          </FormField>
-        ) : null}
-
-        <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
-          <input
-            type="text"
-            name="receipt_number"
-            className={CONTROL_CLASSNAME}
-          />
-          <ReceiptHelper receiptFormats={receiptFormats} />
-        </FormField>
-
-        <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-          <input type="text" name="concept" className={CONTROL_CLASSNAME} />
-        </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-          <select name="currency_code" defaultValue="" className={CONTROL_CLASSNAME}>
-            <option value="" disabled>
-              {texts.dashboard.treasury.currency_placeholder}
-            </option>
-            {availableCurrencies.map((currency) => (
-              <option key={currency.currencyCode} value={currency.currencyCode}>
-                {currency.currencyCode}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-          <input type="text" name="amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
-        </FormField>
+        <MovementFormFields
+          accounts={accounts}
+          categories={categories}
+          activities={activities}
+          currencies={currencies}
+          movementTypes={movementTypes}
+          receiptFormats={receiptFormats}
+          formState={formState}
+          onChange={(patch) => setFormState((current) => ({ ...current, ...patch }))}
+          showMovementDateInput
+        />
 
         <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
           <PendingSubmitButton
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
+            disabled={!isMovementFormValid(formState)}
             className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
           <button

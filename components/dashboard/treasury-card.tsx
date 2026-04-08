@@ -199,6 +199,9 @@ export function TreasuryCard({
               <article key={movement.movementId} className="rounded-[20px] border border-border bg-secondary/20 px-4 py-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      {movement.movementDisplayId}
+                    </p>
                     <p className="text-sm font-semibold text-foreground">
                       {movement.accountName} · {movement.categoryName}
                     </p>

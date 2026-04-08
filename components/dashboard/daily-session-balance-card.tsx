@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 import { AppHeader } from "@/components/navigation/app-header";
 import { CardShell } from "@/components/ui/card-shell";
-import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { PendingFieldset, PendingStatusText, PendingSubmitButton } from "@/components/ui/pending-form";
 import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
@@ -262,6 +262,15 @@ export function DailySessionBalanceCard({
                       {texts.dashboard.treasury.cancel_session_cta}
                     </Link>
                   </div>
+                  <PendingStatusText
+                    idleLabel=""
+                    pendingLabel={
+                      validation.mode === "open"
+                        ? texts.dashboard.treasury.confirm_open_session_loading
+                        : texts.dashboard.treasury.confirm_close_session_loading
+                    }
+                    className="justify-center sm:justify-start"
+                  />
                 </PendingFieldset>
               </form>
             )}

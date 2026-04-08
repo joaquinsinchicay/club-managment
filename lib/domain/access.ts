@@ -189,6 +189,7 @@ export type DailyCashSession = {
 
 export type TreasuryMovement = {
   id: string;
+  displayId: string;
   clubId: string;
   dailyCashSessionId: string | null;
   accountId: string;
@@ -270,6 +271,7 @@ export type DashboardTreasuryCard = {
   }>;
   movements: Array<{
     movementId: string;
+    movementDisplayId: string;
     accountId: string;
     accountName: string;
     movementType: TreasuryMovementType;
@@ -293,6 +295,20 @@ export type TreasuryRoleDashboard = {
       amount: number;
     }>;
   }>;
+  movements: Array<{
+    movementId: string;
+    movementDisplayId: string;
+    movementDate: string;
+    accountId: string;
+    accountName: string;
+    movementType: TreasuryMovementType;
+    categoryName: string;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+    createdByUserName: string;
+    createdAt: string;
+  }>;
   availableActions: Array<"create_movement" | "create_fx_operation">;
 };
 
@@ -308,6 +324,7 @@ export type TreasuryAccountDetail = {
   }>;
   movements: Array<{
     movementId: string;
+    movementDisplayId: string;
     movementDate: string;
     movementType: TreasuryMovementType;
     categoryName: string;
@@ -339,6 +356,7 @@ export type ConsolidationMatch = {
 
 export type ConsolidationMovement = {
   movementId: string;
+  movementDisplayId: string;
   status: "pending_consolidation" | "integrated";
   movementDate: string;
   accountId: string;

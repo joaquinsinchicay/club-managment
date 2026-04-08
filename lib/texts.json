@@ -51,7 +51,7 @@
       "forbidden": "No pudimos actualizar el club activo.",
       "session_opened": "La jornada del dia fue abierta correctamente.",
       "session_closed": "La jornada del dia fue cerrada correctamente.",
-      "movement_created": "El movimiento fue registrado correctamente.",
+      "movement_created": "El movimiento fue creado con exito bajo el ID {movementId}.",
       "movement_updated": "La imputacion del movimiento fue actualizada correctamente.",
       "movement_integrated": "El movimiento pendiente fue integrado correctamente.",
       "transfer_created": "La transferencia interna fue registrada correctamente.",
@@ -171,7 +171,6 @@
       "empty_calendar_events": "No hay eventos habilitados",
       "receipt_label": "Recibo",
       "required_suffix": " *",
-      "receipt_helper_format": "Formato valido:",
       "receipt_helper_example": "Ejemplo:",
       "receipt_helper_available_from": "Disponibles desde:",
       "concept_label": "Concepto",
@@ -229,6 +228,10 @@
       "fx_create_loading": "Registrando operacion...",
       "create_cta": "Crear",
       "create_loading": "Registrando movimiento...",
+      "recent_movements_title": "Movimientos recientes",
+      "recent_movements_description": "Revisa los ultimos movimientos cargados hoy en las cuentas visibles para Tesoreria.",
+      "recent_movements_empty": "Todavia no hay movimientos recientes para mostrar.",
+      "movement_id_label": "ID movimiento",
       "back_to_dashboard_cta": "Volver al dashboard"
     },
     "consolidation": {

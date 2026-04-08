@@ -216,6 +216,7 @@ difference_amount numeric
 
 create table treasury_movements (
 id uuid primary key default uuid_generate_v4(),
+display_id text not null,
 club_id uuid not null references clubs(id),
 
 origin_role movement_origin_role not null,

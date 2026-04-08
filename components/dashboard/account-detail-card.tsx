@@ -139,7 +139,12 @@ export function AccountDetailCard({
                         className="rounded-2xl border border-border bg-secondary/40 p-4"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold text-foreground">{movement.concept}</p>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                              {movement.movementDisplayId}
+                            </p>
+                            <p className="text-sm font-semibold text-foreground">{movement.concept}</p>
+                          </div>
                           <span className="text-sm font-semibold text-foreground">
                             {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
                           </span>
