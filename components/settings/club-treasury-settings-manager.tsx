@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
+  ClubCalendarEvent,
   TreasuryAccount,
   TreasuryAdditionalFieldName,
   TreasuryCurrencyCode,
@@ -27,6 +28,7 @@ type ClubTreasurySettingsManagerProps = {
   createClubActivityAction: (formData: FormData) => Promise<void>;
   updateClubActivityAction: (formData: FormData) => Promise<void>;
   setTreasuryFieldRulesAction: (formData: FormData) => Promise<void>;
+  updateCalendarEventTreasuryAvailabilityAction: (formData: FormData) => Promise<void>;
 };
 
 function getRoleVisibilityLabel(visibleForSecretaria: boolean, visibleForTesoreria: boolean) {
@@ -546,6 +548,20 @@ function TreasuryFieldRulesForm({
   );
 }
 
+function formatCalendarEventDateRange(event: ClubCalendarEvent) {
+  if (!event.startsAt) {
+    return texts.settings.club.treasury.calendar_events_without_date;
+  }
+
+  const startDate = new Date(event.startsAt).toLocaleDateString("es-AR");
+  const endDate =
+    event.endsAt && event.endsAt !== event.startsAt
+      ? new Date(event.endsAt).toLocaleDateString("es-AR")
+      : null;
+
+  return endDate ? `${startDate} - ${endDate}` : startDate;
+}
+
 export function ClubTreasurySettingsManager({
   canManageFieldRules,
   treasurySettings,
@@ -555,7 +571,8 @@ export function ClubTreasurySettingsManager({
   updateTreasuryCategoryAction,
   createClubActivityAction,
   updateClubActivityAction,
-  setTreasuryFieldRulesAction
+  setTreasuryFieldRulesAction,
+  updateCalendarEventTreasuryAvailabilityAction
 }: ClubTreasurySettingsManagerProps) {
   const searchParams = useSearchParams();
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -761,6 +778,65 @@ export function ClubTreasurySettingsManager({
                   treasurySettings={treasurySettings}
                   action={setTreasuryFieldRulesAction}
                 />
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {canManageFieldRules ? (
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-foreground">
+              {texts.settings.club.treasury.calendar_events_title}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {texts.settings.club.treasury.calendar_events_description}
+            </p>
+          </div>
+
+          {treasurySettings.calendarEvents.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-border bg-secondary/40 p-5 text-sm text-muted-foreground">
+              {texts.settings.club.treasury.empty_calendar_events}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {treasurySettings.calendarEvents.map((event) => (
+                <form
+                  key={event.id}
+                  action={updateCalendarEventTreasuryAvailabilityAction}
+                  className="grid gap-4 rounded-[24px] border border-border bg-secondary/50 p-4"
+                >
+                  <PendingFieldset className="grid gap-4">
+                    <input type="hidden" name="event_id" value={event.id} />
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground">{event.title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {formatCalendarEventDateRange(event)}
+                        </p>
+                      </div>
+
+                      <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          name="is_enabled_for_treasury"
+                          defaultChecked={event.isEnabledForTreasury}
+                          className="size-4 rounded border-border"
+                        />
+                        <span className="font-medium">
+                          {texts.settings.club.treasury.calendar_events_enabled_label}
+                        </span>
+                      </label>
+                    </div>
+
+                    <PendingSubmitButton
+                      idleLabel={texts.settings.club.treasury.save_calendar_event_cta}
+                      pendingLabel={texts.settings.club.treasury.save_calendar_event_loading}
+                      className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+                    />
+                  </PendingFieldset>
+                </form>
               ))}
             </div>
           )}

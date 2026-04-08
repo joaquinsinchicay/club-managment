@@ -30,6 +30,8 @@ type TreasuryCardProps = {
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
   createTreasuryMovementAction: (formData: FormData) => Promise<void>;
+  createAccountTransferAction: (formData: FormData) => Promise<void>;
+  createFxOperationAction: (formData: FormData) => Promise<void>;
 };
 
 function buildCategoryFieldRules(
@@ -75,7 +77,9 @@ export function TreasuryCard({
   currencies,
   movementTypes,
   receiptFormats,
-  createTreasuryMovementAction
+  createTreasuryMovementAction,
+  createAccountTransferAction,
+  createFxOperationAction
 }: TreasuryCardProps) {
   const canCreateMovement = treasuryCard.availableActions.includes("create_movement");
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
@@ -383,6 +387,265 @@ export function TreasuryCard({
                   <PendingSubmitButton
                     idleLabel={texts.dashboard.treasury.create_cta}
                     pendingLabel={texts.dashboard.treasury.create_loading}
+                    className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                  />
+                  <button
+                    type="reset"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                  >
+                    {texts.dashboard.treasury.reset_cta}
+                  </button>
+                </div>
+              </PendingFieldset>
+            </form>
+          </div>
+        ) : null}
+
+        {canCreateMovement ? (
+          <div className="rounded-[24px] border border-border bg-secondary/50 p-4">
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">
+                {texts.dashboard.treasury.transfer_form_title}
+              </h3>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {texts.dashboard.treasury.transfer_form_description}
+              </p>
+            </div>
+
+            <form action={createAccountTransferAction} className="mt-4 grid gap-4">
+              <PendingFieldset className="grid gap-4">
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+                  <input
+                    type="text"
+                    value={treasuryCard.sessionDate}
+                    disabled
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.transfer_source_account_label}</span>
+                  <select
+                    name="source_account_id"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {accounts.map((account) => (
+                      <option key={`source-${account.id}`} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.transfer_target_account_label}</span>
+                  <select
+                    name="target_account_id"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {accounts.map((account) => (
+                      <option key={`target-${account.id}`} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
+                  <select
+                    name="currency_code"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {currencies.map((currency) => (
+                      <option key={`transfer-${currency.currencyCode}`} value={currency.currencyCode}>
+                        {currency.currencyCode}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
+                  <input
+                    type="text"
+                    name="concept"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
+                  <input
+                    type="number"
+                    name="amount"
+                    min="0.01"
+                    step="0.01"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                </label>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <PendingSubmitButton
+                    idleLabel={texts.dashboard.treasury.transfer_create_cta}
+                    pendingLabel={texts.dashboard.treasury.transfer_create_loading}
+                    className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                  />
+                  <button
+                    type="reset"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                  >
+                    {texts.dashboard.treasury.reset_cta}
+                  </button>
+                </div>
+              </PendingFieldset>
+            </form>
+          </div>
+        ) : null}
+
+        {canCreateMovement ? (
+          <div className="rounded-[24px] border border-border bg-secondary/50 p-4">
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">
+                {texts.dashboard.treasury.fx_form_title}
+              </h3>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {texts.dashboard.treasury.fx_form_description}
+              </p>
+            </div>
+
+            <form action={createFxOperationAction} className="mt-4 grid gap-4">
+              <PendingFieldset className="grid gap-4">
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+                  <input
+                    type="text"
+                    value={treasuryCard.sessionDate}
+                    disabled
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.fx_source_account_label}</span>
+                  <select
+                    name="source_account_id"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {accounts.map((account) => (
+                      <option key={`fx-source-${account.id}`} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.fx_source_currency_label}</span>
+                  <select
+                    name="source_currency_code"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {currencies.map((currency) => (
+                      <option key={`fx-source-currency-${currency.currencyCode}`} value={currency.currencyCode}>
+                        {currency.currencyCode}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.fx_source_amount_label}</span>
+                  <input
+                    type="number"
+                    name="source_amount"
+                    min="0.01"
+                    step="0.01"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.fx_target_account_label}</span>
+                  <select
+                    name="target_account_id"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {accounts.map((account) => (
+                      <option key={`fx-target-${account.id}`} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.fx_target_currency_label}</span>
+                  <select
+                    name="target_currency_code"
+                    defaultValue=""
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  >
+                    <option value="" disabled>
+                      {texts.settings.club.members.role_placeholder}
+                    </option>
+                    {currencies.map((currency) => (
+                      <option key={`fx-target-currency-${currency.currencyCode}`} value={currency.currencyCode}>
+                        {currency.currencyCode}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.fx_target_amount_label}</span>
+                  <input
+                    type="number"
+                    name="target_amount"
+                    min="0.01"
+                    step="0.01"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                </label>
+
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
+                  <input
+                    type="text"
+                    name="concept"
+                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                </label>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <PendingSubmitButton
+                    idleLabel={texts.dashboard.treasury.fx_create_cta}
+                    pendingLabel={texts.dashboard.treasury.fx_create_loading}
                     className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
                   />
                   <button

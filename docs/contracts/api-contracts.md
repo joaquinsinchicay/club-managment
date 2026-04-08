@@ -902,13 +902,14 @@ Sí
 ```json
 {
   "movement_id": "uuid",
-  "status": "pending_consolidation"
+  "status": "posted"
 }
 ```
 
 **Notes**
 
-* si el movimiento lo crea `tesoreria`, el status final puede ser `posted` en lugar de `pending_consolidation`, según implementación elegida
+* si el movimiento lo crea `secretaria`, el status inicial es `pending_consolidation`
+* si el movimiento lo crea `tesoreria`, el status inicial es `posted`
 
 ---
 
@@ -1000,6 +1001,10 @@ Sí
   "movement_ids": ["uuid", "uuid"]
 }
 ```
+
+**Notes**
+
+* ambos movimientos deben compartir una referencia común de transferencia
 
 ---
 

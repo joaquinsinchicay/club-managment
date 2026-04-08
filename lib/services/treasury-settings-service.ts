@@ -1,6 +1,7 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import type {
   ClubActivity,
+  ClubCalendarEvent,
   ReceiptFormat,
   TreasuryAccount,
   TreasuryAdditionalFieldName,
@@ -51,6 +52,8 @@ type TreasurySettingsActionCode =
   | "field_rules_updated"
   | "field_rule_category_not_found"
   | "field_rule_invalid"
+  | "calendar_event_updated"
+  | "calendar_event_not_found"
   | "treasury_admin_config_missing"
   | "unknown_error";
 
@@ -287,10 +290,11 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
 
   const activeClubId = context.activeClub.id;
 
-  const [accounts, categories, activities, fieldRules] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents, fieldRules] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(activeClubId),
     accessRepository.listTreasuryCategoriesForClub(activeClubId),
     accessRepository.listClubActivitiesForClub(activeClubId),
+    accessRepository.listClubCalendarEventsForClub(activeClubId),
     accessRepository.listTreasuryFieldRulesForClub(activeClubId)
   ]);
 
@@ -298,6 +302,7 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
     accounts,
     categories,
     activities,
+    calendarEvents,
     receiptFormats: getDefaultReceiptFormats(activeClubId),
     currencies: FIXED_TREASURY_CURRENCIES.map((currency) => ({
       clubId: activeClubId,
@@ -371,6 +376,40 @@ export async function setTreasuryFieldRulesForCategoryForActiveClub(input: {
   }
 
   return { ok: true, code: "field_rules_updated" };
+}
+
+export async function updateCalendarEventTreasuryAvailabilityForActiveClub(input: {
+  eventId: string;
+  isEnabledForTreasury: boolean;
+}): Promise<TreasurySettingsActionResult> {
+  const context = await getTreasuryFieldRulesContext();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  const events = await accessRepository.listClubCalendarEventsForClub(context.activeClub.id);
+  const event = events.find((entry) => entry.id === input.eventId);
+
+  if (!event) {
+    return { ok: false, code: "calendar_event_not_found" };
+  }
+
+  try {
+    await accessRepository.updateClubCalendarEventTreasuryAvailability({
+      clubId: context.activeClub.id,
+      eventId: event.id,
+      isEnabledForTreasury: input.isEnabledForTreasury
+    });
+  } catch (error) {
+    return resolveTreasurySettingsMutationError(
+      error,
+      "updateCalendarEventTreasuryAvailabilityForActiveClub",
+      context.activeClub.id
+    );
+  }
+
+  return { ok: true, code: "calendar_event_updated" };
 }
 
 export async function createTreasuryAccountForActiveClub(input: {

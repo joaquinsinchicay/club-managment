@@ -156,6 +156,30 @@ export function AccountDetailCard({
                               {movement.activityName}
                             </p>
                           ) : null}
+                          {movement.calendarEventTitle ? (
+                            <p className="sm:col-span-2">
+                              <span className="font-medium text-foreground">
+                                {texts.dashboard.treasury.detail_calendar_label}
+                              </span>{" "}
+                              {movement.calendarEventTitle}
+                            </p>
+                          ) : null}
+                          {movement.transferReference ? (
+                            <p className="sm:col-span-2">
+                              <span className="font-medium text-foreground">
+                                {texts.dashboard.treasury.detail_transfer_label}
+                              </span>{" "}
+                              {movement.transferReference}
+                            </p>
+                          ) : null}
+                          {movement.fxOperationReference ? (
+                            <p className="sm:col-span-2">
+                              <span className="font-medium text-foreground">
+                                {texts.dashboard.treasury.detail_fx_label}
+                              </span>{" "}
+                              {movement.fxOperationReference}
+                            </p>
+                          ) : null}
                           {movement.receiptNumber ? (
                             <p className="sm:col-span-2">
                               <span className="font-medium text-foreground">

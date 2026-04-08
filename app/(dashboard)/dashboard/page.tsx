@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 
 import { setActiveClubAction } from "@/app/(dashboard)/dashboard/actions";
 import {
+  createAccountTransferAction,
+  createFxOperationAction,
   createTreasuryMovementAction,
   createTreasuryRoleMovementAction,
 } from "@/app/(dashboard)/dashboard/treasury-actions";
@@ -109,6 +111,8 @@ export default async function DashboardPage() {
             movementTypes={movementTypes}
             receiptFormats={receiptFormats}
             createTreasuryMovementAction={createTreasuryMovementAction}
+            createAccountTransferAction={createAccountTransferAction}
+            createFxOperationAction={createFxOperationAction}
           />
         ) : null}
 

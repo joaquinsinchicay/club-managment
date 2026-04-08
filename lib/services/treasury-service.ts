@@ -18,6 +18,7 @@ import type {
 } from "@/lib/domain/access";
 import { getDefaultReceiptFormats, isDefaultReceiptNumberValid } from "@/lib/receipt-formats";
 import { accessRepository } from "@/lib/repositories/access-repository";
+import { texts } from "@/lib/texts";
 
 type TreasuryVisibilityRole = "secretaria" | "tesoreria";
 
@@ -25,6 +26,8 @@ type TreasuryActionCode =
   | "session_opened"
   | "session_closed"
   | "movement_created"
+  | "transfer_created"
+  | "fx_operation_created"
   | "forbidden"
   | "session_already_exists"
   | "session_not_open"
@@ -41,6 +44,16 @@ type TreasuryActionCode =
   | "invalid_activity"
   | "activity_required"
   | "invalid_currency"
+  | "source_account_required"
+  | "target_account_required"
+  | "accounts_must_be_distinct"
+  | "invalid_transfer"
+  | "source_currency_required"
+  | "target_currency_required"
+  | "currencies_must_be_distinct"
+  | "source_amount_required"
+  | "target_amount_required"
+  | "invalid_fx_operation"
   | "invalid_receipt_format"
   | "receipt_required"
   | "calendar_required"
@@ -791,6 +804,254 @@ export async function createTreasuryMovement(input: {
   return { ok: true, code: "movement_created" };
 }
 
+export async function createAccountTransfer(input: {
+  sourceAccountId: string;
+  targetAccountId: string;
+  currencyCode: string;
+  amount: string;
+  concept: string;
+}): Promise<TreasuryActionResult> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  const session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+
+  if (!session || session.status !== "open") {
+    return { ok: false, code: "session_required" };
+  }
+
+  if (!input.sourceAccountId) {
+    return { ok: false, code: "source_account_required" };
+  }
+
+  if (!input.targetAccountId) {
+    return { ok: false, code: "target_account_required" };
+  }
+
+  if (input.sourceAccountId === input.targetAccountId) {
+    return { ok: false, code: "accounts_must_be_distinct" };
+  }
+
+  if (!input.currencyCode) {
+    return { ok: false, code: "currency_required" };
+  }
+
+  if (!input.amount) {
+    return { ok: false, code: "amount_required" };
+  }
+
+  const parsedAmount = Number(input.amount);
+
+  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    return { ok: false, code: "amount_must_be_positive" };
+  }
+
+  const accounts = await getSecretariaAccounts(context.activeClub.id);
+  const sourceAccount = accounts.find((account) => account.id === input.sourceAccountId);
+  const targetAccount = accounts.find((account) => account.id === input.targetAccountId);
+
+  if (!sourceAccount || !targetAccount) {
+    return { ok: false, code: "invalid_transfer" };
+  }
+
+  if (
+    !sourceAccount.currencies.includes(input.currencyCode) ||
+    !targetAccount.currencies.includes(input.currencyCode)
+  ) {
+    return { ok: false, code: "invalid_transfer" };
+  }
+
+  const concept = input.concept.trim() || texts.dashboard.treasury.transfer_default_concept;
+  const transfer = await accessRepository.createAccountTransfer({
+    clubId: context.activeClub.id,
+    sourceAccountId: sourceAccount.id,
+    targetAccountId: targetAccount.id,
+    currencyCode: input.currencyCode,
+    amount: parsedAmount,
+    concept
+  });
+
+  if (!transfer) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  const sourceMovement = await accessRepository.createTreasuryMovement({
+    clubId: context.activeClub.id,
+    dailyCashSessionId: session.id,
+    accountId: sourceAccount.id,
+    movementType: "egreso",
+    categoryId: "",
+    concept,
+    currencyCode: input.currencyCode,
+    amount: parsedAmount,
+    transferGroupId: transfer.id,
+    movementDate: getTodayDate(),
+    createdByUserId: context.user.id
+  });
+
+  if (!sourceMovement) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  const targetMovement = await accessRepository.createTreasuryMovement({
+    clubId: context.activeClub.id,
+    dailyCashSessionId: session.id,
+    accountId: targetAccount.id,
+    movementType: "ingreso",
+    categoryId: "",
+    concept,
+    currencyCode: input.currencyCode,
+    amount: parsedAmount,
+    transferGroupId: transfer.id,
+    movementDate: getTodayDate(),
+    createdByUserId: context.user.id
+  });
+
+  if (!targetMovement) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  return { ok: true, code: "transfer_created" };
+}
+
+export async function createFxOperation(input: {
+  sourceAccountId: string;
+  sourceCurrencyCode: string;
+  sourceAmount: string;
+  targetAccountId: string;
+  targetCurrencyCode: string;
+  targetAmount: string;
+  concept: string;
+}): Promise<TreasuryActionResult> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  const session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+
+  if (!session || session.status !== "open") {
+    return { ok: false, code: "session_required" };
+  }
+
+  if (!input.sourceAccountId) {
+    return { ok: false, code: "source_account_required" };
+  }
+
+  if (!input.targetAccountId) {
+    return { ok: false, code: "target_account_required" };
+  }
+
+  if (input.sourceAccountId === input.targetAccountId) {
+    return { ok: false, code: "accounts_must_be_distinct" };
+  }
+
+  if (!input.sourceCurrencyCode) {
+    return { ok: false, code: "source_currency_required" };
+  }
+
+  if (!input.targetCurrencyCode) {
+    return { ok: false, code: "target_currency_required" };
+  }
+
+  if (input.sourceCurrencyCode === input.targetCurrencyCode) {
+    return { ok: false, code: "currencies_must_be_distinct" };
+  }
+
+  if (!input.sourceAmount) {
+    return { ok: false, code: "source_amount_required" };
+  }
+
+  if (!input.targetAmount) {
+    return { ok: false, code: "target_amount_required" };
+  }
+
+  const parsedSourceAmount = Number(input.sourceAmount);
+  const parsedTargetAmount = Number(input.targetAmount);
+
+  if (
+    !Number.isFinite(parsedSourceAmount) ||
+    !Number.isFinite(parsedTargetAmount) ||
+    parsedSourceAmount <= 0 ||
+    parsedTargetAmount <= 0
+  ) {
+    return { ok: false, code: "amount_must_be_positive" };
+  }
+
+  const accounts = await getSecretariaAccounts(context.activeClub.id);
+  const sourceAccount = accounts.find((account) => account.id === input.sourceAccountId);
+  const targetAccount = accounts.find((account) => account.id === input.targetAccountId);
+
+  if (!sourceAccount || !targetAccount) {
+    return { ok: false, code: "invalid_fx_operation" };
+  }
+
+  if (
+    !sourceAccount.currencies.includes(input.sourceCurrencyCode) ||
+    !targetAccount.currencies.includes(input.targetCurrencyCode)
+  ) {
+    return { ok: false, code: "invalid_fx_operation" };
+  }
+
+  const concept = input.concept.trim() || texts.dashboard.treasury.fx_default_concept;
+  const operation = await accessRepository.createFxOperation({
+    clubId: context.activeClub.id,
+    sourceAccountId: sourceAccount.id,
+    targetAccountId: targetAccount.id,
+    sourceCurrencyCode: input.sourceCurrencyCode,
+    targetCurrencyCode: input.targetCurrencyCode,
+    sourceAmount: parsedSourceAmount,
+    targetAmount: parsedTargetAmount,
+    concept
+  });
+
+  if (!operation) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  const sourceMovement = await accessRepository.createTreasuryMovement({
+    clubId: context.activeClub.id,
+    dailyCashSessionId: session.id,
+    accountId: sourceAccount.id,
+    movementType: "egreso",
+    categoryId: "",
+    concept,
+    currencyCode: input.sourceCurrencyCode,
+    amount: parsedSourceAmount,
+    fxOperationGroupId: operation.id,
+    movementDate: getTodayDate(),
+    createdByUserId: context.user.id
+  });
+
+  if (!sourceMovement) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  const targetMovement = await accessRepository.createTreasuryMovement({
+    clubId: context.activeClub.id,
+    dailyCashSessionId: session.id,
+    accountId: targetAccount.id,
+    movementType: "ingreso",
+    categoryId: "",
+    concept,
+    currencyCode: input.targetCurrencyCode,
+    amount: parsedTargetAmount,
+    fxOperationGroupId: operation.id,
+    movementDate: getTodayDate(),
+    createdByUserId: context.user.id
+  });
+
+  if (!targetMovement) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  return { ok: true, code: "fx_operation_created" };
+}
+
 export async function createTreasuryRoleMovement(input: {
   movementDate: string;
   accountId: string;
@@ -918,7 +1179,8 @@ export async function createTreasuryRoleMovement(input: {
     activityId: activity?.id ?? null,
     receiptNumber: receiptNumber || null,
     movementDate,
-    createdByUserId: context.user.id
+    createdByUserId: context.user.id,
+    status: "posted"
   });
 
   if (!created) {
@@ -1082,10 +1344,11 @@ export async function getTreasuryAccountDetailForActiveClub(
   }
 
   const sessionDate = getTodayDate();
-  const [accounts, categories, activities, session] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents, session] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
     accessRepository.listClubActivitiesForClub(context.activeClub.id),
+    accessRepository.listClubCalendarEventsForClub(context.activeClub.id),
     accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
   ]);
 
@@ -1121,12 +1384,18 @@ export async function getTreasuryAccountDetailForActiveClub(
         const activity = movement.activityId
           ? activities.find((entry) => entry.id === movement.activityId) ?? null
           : null;
+        const calendarEvent = movement.calendarEventId
+          ? calendarEvents.find((entry) => entry.id === movement.calendarEventId) ?? null
+          : null;
         return {
           movementId: movement.id,
           movementDate: movement.movementDate,
           movementType: movement.movementType,
           categoryName: category?.name ?? "",
           activityName: activity?.name ?? null,
+          calendarEventTitle: calendarEvent?.title ?? null,
+          transferReference: movement.transferGroupId ?? null,
+          fxOperationReference: movement.fxOperationGroupId ?? null,
           concept: movement.concept,
           receiptNumber: movement.receiptNumber ?? null,
           currencyCode: movement.currencyCode,

@@ -15,6 +15,7 @@ import {
   createTreasuryAccountForActiveClub,
   createTreasuryCategoryForActiveClub,
   setTreasuryFieldRulesForCategoryForActiveClub,
+  updateCalendarEventTreasuryAvailabilityForActiveClub,
   updateClubActivityForActiveClub,
   updateReceiptFormatForActiveClub,
   updateTreasuryAccountForActiveClub,
@@ -151,6 +152,15 @@ export async function setTreasuryFieldRulesAction(formData: FormData) {
       isVisible: formData.get(`field_${fieldName}_visible`) === "on",
       isRequired: formData.get(`field_${fieldName}_required`) === "on"
     }))
+  });
+
+  redirectToSettings(result.code, "treasury");
+}
+
+export async function updateCalendarEventTreasuryAvailabilityAction(formData: FormData) {
+  const result = await updateCalendarEventTreasuryAvailabilityForActiveClub({
+    eventId: String(formData.get("event_id") ?? ""),
+    isEnabledForTreasury: formData.get("is_enabled_for_treasury") === "on"
   });
 
   redirectToSettings(result.code, "treasury");

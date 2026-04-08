@@ -3,6 +3,7 @@ import { MissingSupabaseAdminConfigError, createAdminSupabaseClient, createRequi
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 import type {
+  AccountTransfer,
   AuthIdentity,
   BalanceAdjustment,
   ClubActivity,
@@ -14,6 +15,7 @@ import type {
   GoogleProfile,
   GoogleProfileKey,
   DailyCashSession,
+  FxOperation,
   Membership,
   MembershipRole,
   MovementTypeConfig,
@@ -24,6 +26,7 @@ import type {
   TreasuryCurrencyCode,
   TreasuryCurrencyConfig,
   TreasuryFieldRule,
+  TreasuryMovementStatus,
   TreasuryMovementType,
   TreasuryCategory,
   TreasuryMovement,
@@ -79,6 +82,11 @@ type AccessRepository = {
   listTreasuryCategoriesForClub(clubId: string): Promise<TreasuryCategory[]>;
   listClubActivitiesForClub(clubId: string): Promise<ClubActivity[]>;
   listClubCalendarEventsForClub(clubId: string): Promise<ClubCalendarEvent[]>;
+  updateClubCalendarEventTreasuryAvailability(input: {
+    clubId: string;
+    eventId: string;
+    isEnabledForTreasury: boolean;
+  }): Promise<ClubCalendarEvent | null>;
   listReceiptFormatsForClub(clubId: string): Promise<ReceiptFormat[]>;
   listTreasuryFieldRulesForClub(clubId: string): Promise<TreasuryFieldRule[]>;
   listTreasuryCurrenciesForClub(clubId: string): Promise<TreasuryCurrencyConfig[]>;
@@ -186,6 +194,24 @@ type AccessRepository = {
   closeDailyCashSession(sessionId: string, closedByUserId: string): Promise<DailyCashSession | null>;
   listTreasuryMovementsBySession(sessionId: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByAccount(clubId: string, accountId: string, movementDate: string): Promise<TreasuryMovement[]>;
+  createAccountTransfer(input: {
+    clubId: string;
+    sourceAccountId: string;
+    targetAccountId: string;
+    currencyCode: string;
+    amount: number;
+    concept: string;
+  }): Promise<AccountTransfer | null>;
+  createFxOperation(input: {
+    clubId: string;
+    sourceAccountId: string;
+    targetAccountId: string;
+    sourceCurrencyCode: string;
+    targetCurrencyCode: string;
+    sourceAmount: number;
+    targetAmount: number;
+    concept: string;
+  }): Promise<FxOperation | null>;
   createTreasuryMovement(input: {
     clubId: string;
     dailyCashSessionId: string | null;
@@ -198,8 +224,11 @@ type AccessRepository = {
     activityId?: string | null;
     receiptNumber?: string | null;
     calendarEventId?: string | null;
+    transferGroupId?: string | null;
+    fxOperationGroupId?: string | null;
     movementDate: string;
     createdByUserId: string;
+    status?: TreasuryMovementStatus;
   }): Promise<TreasuryMovement | null>;
   recordDailyCashSessionBalances(
     input: Array<{
@@ -277,6 +306,8 @@ type MockStore = {
   dailyCashSessions: DailyCashSession[];
   dailyCashSessionBalances: DailyCashSessionBalance[];
   balanceAdjustments: BalanceAdjustment[];
+  accountTransfers: AccountTransfer[];
+  fxOperations: FxOperation[];
   treasuryMovements: TreasuryMovement[];
   preferences: Map<string, string>;
 };
@@ -673,6 +704,8 @@ function createStore(): MockStore {
   const dailyCashSessions: DailyCashSession[] = [];
   const dailyCashSessionBalances: DailyCashSessionBalance[] = [];
   const balanceAdjustments: BalanceAdjustment[] = [];
+  const accountTransfers: AccountTransfer[] = [];
+  const fxOperations: FxOperation[] = [];
   const treasuryMovements: TreasuryMovement[] = [];
 
   return {
@@ -691,6 +724,8 @@ function createStore(): MockStore {
     dailyCashSessions,
     dailyCashSessionBalances,
     balanceAdjustments,
+    accountTransfers,
+    fxOperations,
     treasuryMovements,
     preferences
   };
@@ -1527,6 +1562,40 @@ async function listRealClubCalendarEventsForClub(clubId: string, client?: Access
   >("get_club_calendar_events_for_current_club", clubId, client);
 
   return rows.map(mapClubCalendarEventRow);
+}
+
+async function updateRealClubCalendarEventTreasuryAvailability(
+  input: {
+    clubId: string;
+    eventId: string;
+    isEnabledForTreasury: boolean;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createRequiredTreasurySettingsAdminClient("update_club_calendar_event_treasury_availability", {
+    clubId: input.clubId,
+    eventId: input.eventId
+  });
+
+  const { data, error } = await supabase
+    .from("club_calendar_events")
+    .update({
+      is_enabled_for_treasury: input.isEnabledForTreasury
+    })
+    .eq("id", input.eventId)
+    .eq("club_id", input.clubId)
+    .select("id,club_id,title,starts_at,ends_at,is_enabled_for_treasury")
+    .maybeSingle();
+
+  if (error || !data) {
+    throwTreasurySettingsWriteFailure(
+      "update_club_calendar_event_treasury_availability",
+      { clubId: input.clubId, eventId: input.eventId },
+      error
+    );
+  }
+
+  return mapClubCalendarEventRow(data);
 }
 
 async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepositoryClient) {
@@ -2696,6 +2765,22 @@ export const accessRepository: AccessRepository = {
 
     return getStore().clubCalendarEvents.filter((event) => event.clubId === clubId);
   },
+  async updateClubCalendarEventTreasuryAvailability(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return updateRealClubCalendarEventTreasuryAvailability(input);
+    }
+
+    const event = getStore().clubCalendarEvents.find(
+      (entry) => entry.id === input.eventId && entry.clubId === input.clubId
+    );
+
+    if (!event) {
+      return null;
+    }
+
+    event.isEnabledForTreasury = input.isEnabledForTreasury;
+    return event;
+  },
   async listReceiptFormatsForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
       return listRealReceiptFormatsForClub(clubId);
@@ -3016,6 +3101,38 @@ export const accessRepository: AccessRepository = {
         movement.movementDate === movementDate
     );
   },
+  async createAccountTransfer(input) {
+    const transfer: AccountTransfer = {
+      id: `transfer-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      clubId: input.clubId,
+      sourceAccountId: input.sourceAccountId,
+      targetAccountId: input.targetAccountId,
+      currencyCode: input.currencyCode,
+      amount: input.amount,
+      concept: input.concept,
+      createdAt: now()
+    };
+
+    getStore().accountTransfers.push(transfer);
+    return transfer;
+  },
+  async createFxOperation(input) {
+    const operation: FxOperation = {
+      id: `fx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      clubId: input.clubId,
+      sourceAccountId: input.sourceAccountId,
+      targetAccountId: input.targetAccountId,
+      sourceCurrencyCode: input.sourceCurrencyCode,
+      targetCurrencyCode: input.targetCurrencyCode,
+      sourceAmount: input.sourceAmount,
+      targetAmount: input.targetAmount,
+      concept: input.concept,
+      createdAt: now()
+    };
+
+    getStore().fxOperations.push(operation);
+    return operation;
+  },
   async createTreasuryMovement(input) {
     const movement: TreasuryMovement = {
       id: `movement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -3030,9 +3147,11 @@ export const accessRepository: AccessRepository = {
       activityId: input.activityId ?? null,
       receiptNumber: input.receiptNumber ?? null,
       calendarEventId: input.calendarEventId ?? null,
+      transferGroupId: input.transferGroupId ?? null,
+      fxOperationGroupId: input.fxOperationGroupId ?? null,
       movementDate: input.movementDate,
       createdByUserId: input.createdByUserId,
-      status: "pending_consolidation",
+      status: input.status ?? "pending_consolidation",
       createdAt: now()
     };
 

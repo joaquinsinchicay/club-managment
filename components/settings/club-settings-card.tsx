@@ -32,6 +32,7 @@ type ClubSettingsCardProps = {
   createClubActivityAction: (formData: FormData) => Promise<void>;
   updateClubActivityAction: (formData: FormData) => Promise<void>;
   setTreasuryFieldRulesAction: (formData: FormData) => Promise<void>;
+  updateCalendarEventTreasuryAvailabilityAction: (formData: FormData) => Promise<void>;
 };
 
 export function ClubSettingsCard({
@@ -52,7 +53,8 @@ export function ClubSettingsCard({
   updateTreasuryCategoryAction,
   createClubActivityAction,
   updateClubActivityAction,
-  setTreasuryFieldRulesAction
+  setTreasuryFieldRulesAction,
+  updateCalendarEventTreasuryAvailabilityAction
 }: ClubSettingsCardProps) {
   const resolvedInitialTab: ClubSettingsTab =
     initialTab === "treasury" && canManageTreasury ? "treasury" : "members";
@@ -157,6 +159,7 @@ export function ClubSettingsCard({
               createClubActivityAction={createClubActivityAction}
               updateClubActivityAction={updateClubActivityAction}
               setTreasuryFieldRulesAction={setTreasuryFieldRulesAction}
+              updateCalendarEventTreasuryAvailabilityAction={updateCalendarEventTreasuryAvailabilityAction}
             />
           ) : null}
         </div>

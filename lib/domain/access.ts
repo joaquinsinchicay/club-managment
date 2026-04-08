@@ -70,6 +70,12 @@ export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
 export type TreasuryConfigStatus = "active" | "inactive";
 export type TreasuryCurrencyCode = "ARS" | "USD";
 export type TreasuryMovementType = "ingreso" | "egreso";
+export type TreasuryMovementStatus =
+  | "pending_consolidation"
+  | "integrated"
+  | "consolidated"
+  | "posted"
+  | "cancelled";
 export type TreasuryAdditionalFieldName = "activity" | "receipt" | "calendar";
 
 export type TreasuryCurrencyConfig = {
@@ -145,10 +151,35 @@ export type ClubCalendarEvent = {
   isEnabledForTreasury: boolean;
 };
 
+export type AccountTransfer = {
+  id: string;
+  clubId: string;
+  sourceAccountId: string;
+  targetAccountId: string;
+  currencyCode: string;
+  amount: number;
+  concept: string;
+  createdAt: string;
+};
+
+export type FxOperation = {
+  id: string;
+  clubId: string;
+  sourceAccountId: string;
+  targetAccountId: string;
+  sourceCurrencyCode: string;
+  targetCurrencyCode: string;
+  sourceAmount: number;
+  targetAmount: number;
+  concept: string;
+  createdAt: string;
+};
+
 export type TreasurySettings = {
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
   activities: ClubActivity[];
+  calendarEvents: ClubCalendarEvent[];
   receiptFormats: ReceiptFormat[];
   currencies: TreasuryCurrencyConfig[];
   movementTypes: MovementTypeConfig[];
@@ -181,9 +212,11 @@ export type TreasuryMovement = {
   activityId?: string | null;
   receiptNumber?: string | null;
   calendarEventId?: string | null;
+  transferGroupId?: string | null;
+  fxOperationGroupId?: string | null;
   movementDate: string;
   createdByUserId: string;
-  status: "pending_consolidation";
+  status: TreasuryMovementStatus;
   createdAt: string;
 };
 
@@ -251,6 +284,9 @@ export type TreasuryAccountDetail = {
     movementType: TreasuryMovementType;
     categoryName: string;
     activityName: string | null;
+    calendarEventTitle: string | null;
+    transferReference: string | null;
+    fxOperationReference: string | null;
     concept: string;
     receiptNumber: string | null;
     currencyCode: string;
