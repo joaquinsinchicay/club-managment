@@ -88,9 +88,9 @@ export default async function DashboardPage() {
     <div className="min-h-screen">
       <AppHeader context={context} />
 
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
+      <main className="mx-auto flex w-full max-w-[920px] flex-col gap-4 px-4 py-6 sm:py-8">
         {context.availableClubs.length > 1 ? (
-          <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
+          <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
             <ActiveClubSelector
               clubs={context.availableClubs}
               activeClubId={context.activeClub?.id ?? context.availableClubs[0]?.id ?? ""}
