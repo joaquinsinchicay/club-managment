@@ -438,20 +438,34 @@ export function ClubTreasurySettingsManager({
   const [accountCreateFormKey, setAccountCreateFormKey] = useState(0);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [categoryCreateFormKey, setCategoryCreateFormKey] = useState(0);
   const [isCreatingActivity, setIsCreatingActivity] = useState(false);
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
+  const [activityCreateFormKey, setActivityCreateFormKey] = useState(0);
   const availableAccountCurrencies: TreasuryCurrencyCode[] = TREASURY_CURRENCY_OPTIONS;
   const feedbackCode = searchParams.get("feedback");
   const receiptFormat = treasurySettings.receiptFormats[0];
 
   useEffect(() => {
-    if (feedbackCode !== "account_created") {
+    if (feedbackCode === "account_created") {
+      setIsCreatingAccount(false);
+      setEditingAccountId(null);
+      setAccountCreateFormKey((currentKey) => currentKey + 1);
       return;
     }
 
-    setIsCreatingAccount(false);
-    setEditingAccountId(null);
-    setAccountCreateFormKey((currentKey) => currentKey + 1);
+    if (feedbackCode === "category_created") {
+      setIsCreatingCategory(false);
+      setEditingCategoryId(null);
+      setCategoryCreateFormKey((currentKey) => currentKey + 1);
+      return;
+    }
+
+    if (feedbackCode === "activity_created") {
+      setIsCreatingActivity(false);
+      setEditingActivityId(null);
+      setActivityCreateFormKey((currentKey) => currentKey + 1);
+    }
   }, [feedbackCode]);
 
   return (
@@ -671,6 +685,7 @@ export function ClubTreasurySettingsManager({
 
         {isCreatingCategory ? (
           <TreasuryCategoryForm
+            key={`create-category-form-${categoryCreateFormKey}`}
             action={createTreasuryCategoryAction}
             submitLabel={texts.settings.club.treasury.save_category_cta}
             pendingLabel={texts.settings.club.treasury.save_category_loading}
@@ -765,6 +780,7 @@ export function ClubTreasurySettingsManager({
 
         {isCreatingActivity ? (
           <ClubActivityForm
+            key={`create-activity-form-${activityCreateFormKey}`}
             action={createClubActivityAction}
             submitLabel={texts.settings.club.treasury.save_activity_cta}
             pendingLabel={texts.settings.club.treasury.save_activity_loading}
