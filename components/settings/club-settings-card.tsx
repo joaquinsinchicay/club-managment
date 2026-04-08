@@ -65,60 +65,84 @@ export function ClubSettingsCard({
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
       <section className="overflow-hidden rounded-[32px] border border-border/70 bg-card shadow-soft">
         <div className="border-b border-border/60 bg-[radial-gradient(circle_at_top_left,rgba(148,163,184,0.18),transparent_42%),linear-gradient(180deg,rgba(248,250,252,0.96)_0%,rgba(248,250,252,0.82)_100%)] px-5 py-7 sm:px-8 sm:py-9">
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] lg:items-start">
-            <div className="space-y-4">
-              <span className="inline-flex rounded-full border border-border/70 bg-card/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
-                {texts.settings.club.eyebrow}
-              </span>
+          <div className="space-y-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-4">
+                <span className="inline-flex rounded-full border border-border/70 bg-card/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
+                  {texts.settings.club.eyebrow}
+                </span>
 
-              <div className="space-y-2">
-                <h1 className="max-w-2xl text-3xl font-semibold tracking-tight text-card-foreground sm:text-4xl">
-                  {texts.settings.club.title}
-                </h1>
-                <p className="max-w-2xl text-base leading-7 text-muted-foreground">
-                  {texts.settings.club.description}
-                </p>
+                <div className="space-y-2">
+                  <h1 className="max-w-2xl text-3xl font-semibold tracking-tight text-card-foreground sm:text-4xl">
+                    {texts.settings.club.title}
+                  </h1>
+                  <p className="max-w-2xl text-base leading-7 text-muted-foreground">
+                    {texts.settings.club.description}
+                  </p>
+                </div>
               </div>
+
+              <Link
+                href="/dashboard"
+                className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary sm:shrink-0"
+              >
+                {texts.settings.club.back_to_dashboard_cta}
+              </Link>
             </div>
 
-            <div className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-soft">
-              <div className="flex items-start justify-between gap-4">
+            <div className="rounded-[28px] border border-border/70 bg-card/85 p-5">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                      {texts.dashboard.club_label}
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
-                      {activeClubName}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-primary/10 text-2xl text-primary">
+                      ⚙️
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                        {texts.settings.club.club_summary_title}
+                      </p>
+                      <p className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                        {activeClubName}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-2 rounded-2xl border border-border bg-secondary/60 px-3 py-2 text-sm text-foreground">
-                    <span className="text-success" aria-hidden="true">
-                      ●
-                    </span>
-                    <span className="font-medium">{texts.settings.club.description}</span>
-                  </div>
-                </div>
-
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] bg-primary/10 text-2xl text-primary">
-                  ⚙️
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    {texts.settings.club.members.roles_label}
+                  <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                    {texts.settings.club.club_summary_description}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">{activeRoles}</p>
                 </div>
-                <Link
-                  href="/dashboard"
-                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-background/80 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                >
-                  {texts.settings.club.back_to_dashboard_cta}
-                </Link>
+
+                <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[32rem]">
+                  <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      {texts.settings.club.club_summary_status_label}
+                    </p>
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-secondary/70 px-3 py-1.5 text-sm font-medium text-foreground">
+                      <span className="text-success" aria-hidden="true">
+                        ●
+                      </span>
+                      <span>{texts.settings.club.club_summary_status_value}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      {texts.settings.club.members.roles_label}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-foreground">
+                      {activeRoles || texts.settings.club.club_summary_roles_empty}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-dashed border-border/70 bg-background/80 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      {texts.settings.club.club_summary_future_fields_label}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {texts.settings.club.club_summary_future_fields_value}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

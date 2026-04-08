@@ -142,6 +142,7 @@ Usuario autenticado con membership activa en el club activo; normalmente `admin`
 - Debe existir un tratamiento visual claro para el usuario actual.
 - Un usuario que ya consumió su invitación no debe desaparecer del listado administrativo del club.
 - Debe existir una acción explícita para volver al dashboard desde la pantalla de configuración.
+- La acción de volver al dashboard debe quedar visible y estable en mobile y desktop, sin depender de una card lateral.
 - La UI de edición de roles debe permitir multi-selección explícita y comprensible.
 - Los mensajes de error o éxito deben ser breves, visibles y no ambiguos.
 - Al aprobar, actualizar roles o remover, la acción debe mostrar loading inmediato en el CTA y bloquear el formulario o diálogo afectado hasta resolver.

@@ -320,7 +320,7 @@ export async function createTreasuryAccountForActiveClub(input: {
   currencies: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -406,7 +406,7 @@ export async function updateTreasuryAccountForActiveClub(input: {
   currencies: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -499,7 +499,7 @@ export async function createTreasuryCategoryForActiveClub(input: {
   visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -513,10 +513,6 @@ export async function createTreasuryCategoryForActiveClub(input: {
 
   const categories = await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id);
   const selectedVisibility = normalizeCategoryVisibility(input.visibility);
-
-  if (selectedVisibility.length === 0) {
-    return { ok: false, code: "account_visibility_required" };
-  }
 
   if (hasDuplicateActiveCategoryName(categories, name)) {
     return { ok: false, code: "duplicate_category_name" };
@@ -555,7 +551,7 @@ export async function updateTreasuryCategoryForActiveClub(input: {
   visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -578,10 +574,6 @@ export async function updateTreasuryCategoryForActiveClub(input: {
   const nextName = systemCategoryDefinition?.name ?? name;
   const nextEmojiInput = systemCategoryDefinition?.emoji ?? input.emoji;
   const selectedVisibility = normalizeCategoryVisibility(input.visibility);
-
-  if (selectedVisibility.length === 0) {
-    return { ok: false, code: "account_visibility_required" };
-  }
 
   if (hasDuplicateActiveCategoryName(categories, nextName, input.categoryId)) {
     return { ok: false, code: "duplicate_category_name" };
@@ -624,7 +616,7 @@ export async function createClubActivityForActiveClub(input: {
   visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -638,10 +630,6 @@ export async function createClubActivityForActiveClub(input: {
 
   const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
   const selectedVisibility = normalizeActivityVisibility(input.visibility);
-
-  if (selectedVisibility.length === 0) {
-    return { ok: false, code: "account_visibility_required" };
-  }
 
   if (hasDuplicateActiveActivityName(activities, name)) {
     return { ok: false, code: "duplicate_activity_name" };
@@ -680,7 +668,7 @@ export async function updateClubActivityForActiveClub(input: {
   visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -700,10 +688,6 @@ export async function updateClubActivityForActiveClub(input: {
   }
 
   const selectedVisibility = normalizeActivityVisibility(input.visibility);
-
-  if (selectedVisibility.length === 0) {
-    return { ok: false, code: "account_visibility_required" };
-  }
 
   if (hasDuplicateActiveActivityName(activities, name, input.activityId)) {
     return { ok: false, code: "duplicate_activity_name" };
@@ -749,7 +733,7 @@ export async function createReceiptFormatForActiveClub(input: {
   example: string;
   status: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -826,7 +810,7 @@ export async function updateReceiptFormatForActiveClub(input: {
   example: string;
   status: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };

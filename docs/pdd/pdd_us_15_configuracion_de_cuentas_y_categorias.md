@@ -35,7 +35,7 @@ Desde `Configuración del club`, un usuario `tesoreria` debe visualizar las card
 - Edición de cuenta.
 - Alta de categoría.
 - Edición de categoría.
-- Validaciones de nombre obligatorio, tipo obligatorio, al menos una visibilidad y duplicados por club.
+- Validaciones de nombre obligatorio, tipo obligatorio, duplicados por club y visibilidad opcional para categorías.
 - Feedback visible en la misma pantalla.
 
 ### No incluye
@@ -83,6 +83,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - El club debe contar con un catálogo fijo de categorías del sistema, siempre presente y no eliminable.
 - Las categorías del sistema solo permiten editar su visibilidad por rol.
 - Las categorías manuales adicionales mantienen edición completa de nombre, visibilidad y emoji.
+- Las categorías pueden guardarse sin roles seleccionados en `Visibilidad`; en ese caso quedan ocultas para la operatoria.
 - El nombre de cuenta es obligatorio.
 - El tipo de cuenta es obligatorio.
 - El nombre de categoría es obligatorio.
@@ -114,7 +115,13 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 1. Tesorería intenta guardar una cuenta o categoría incompleta.
 2. El sistema rechaza la acción y devuelve feedback específico.
 
-### C. Duplicado
+### C. Categoría sin visibilidad
+
+1. Tesorería crea o edita una categoría sin seleccionar ningún rol en `Visibilidad`.
+2. El sistema permite guardar la categoría.
+3. La configuración queda marcada como oculta y no aparece en formularios operativos.
+
+### D. Duplicado
 
 1. Tesorería intenta crear o editar con un nombre ya usado por otra entidad del mismo club.
 2. El sistema bloquea la operación y devuelve feedback.
@@ -133,6 +140,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - La pantalla puede incluir bloques informativos read-only de catálogos fijos del sistema, sin convertirlos en configuraciones editables.
 - Al crear o editar cuentas/categorías, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - El campo `Visibilidad` de categorías debe usar el mismo patrón UI que el de cuentas, con selección por rol para `Secretaria` y `Tesoreria`.
+- Si no se selecciona ningún rol en una categoría, la UI debe representarla como `Oculta`.
 - El campo `Emoji` en cuentas y categorías debe resolverse con un selector simple de opciones predefinidas del sistema.
 - Los formularios deben ser mobile-first y no incluir textos hardcodeados.
 

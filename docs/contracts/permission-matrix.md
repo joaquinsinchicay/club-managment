@@ -67,8 +67,15 @@ Roles disponibles:
 | Editar categoría               | ❌     | ❌          | ✅         |
 | Crear actividad                | ❌     | ❌          | ✅         |
 | Editar actividad               | ❌     | ❌          | ✅         |
+| Eliminar actividad             | ❌     | ❌          | ❌         |
 | Configurar monedas             | ❌     | ❌          | ✅         |
 | Configurar formatos de recibo  | ❌     | ❌          | ✅         |
+
+### Reglas
+
+* Las categorías y actividades pueden quedar ocultas para ambos roles si no tienen visibilidad seleccionada.
+* Un elemento oculto sigue siendo editable desde configuración, pero no debe aparecer en formularios operativos.
+* La baja de actividades no está permitida en esta versión.
 
 ---
 

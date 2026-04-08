@@ -34,6 +34,7 @@ This is not a marketing UI. It is a **financial operations tool**.
 * Main content column
 * Mobile-first layout
 * Desktop = expanded version of mobile
+* In `settings/club`, the back action must stay visible in the content header and must not depend on a secondary side card
 
 ---
 
@@ -150,6 +151,7 @@ Rules:
 * Light background
 * Subtle separation (spacing or divider)
 * No heavy shadows
+* Context cards in settings must stay compact; active club context should summarize state, not dominate the layout
 
 ---
 
