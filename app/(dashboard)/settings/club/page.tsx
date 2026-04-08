@@ -3,9 +3,7 @@ import { ClubSettingsCard } from "@/components/settings/club-settings-card";
 import { ClubSettingsForbiddenCard } from "@/components/settings/club-settings-forbidden-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import {
-  canAccessClubSettingsPage,
-  canAccessTreasurySettings,
-  canManageClubMembers
+  getClubSettingsPermissions
 } from "@/lib/domain/authorization";
 import { getClubMembersForActiveClub } from "@/lib/services/club-members-service";
 import { getTreasurySettingsForActiveClub } from "@/lib/services/treasury-settings-service";
@@ -40,10 +38,11 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
     redirect("/pending-approval");
   }
 
-  const canViewMembers = canManageClubMembers(context.activeMembership);
-  const canViewTreasury = canAccessTreasurySettings(context.activeMembership);
+  const permissions = getClubSettingsPermissions(context.activeMembership);
+  const canViewMembers = permissions.canManageMembers;
+  const canViewTreasury = permissions.canAccessTreasury;
 
-  if (!canAccessClubSettingsPage(context.activeMembership)) {
+  if (!permissions.canAccessPage) {
     return (
       <div className="min-h-screen">
         <AppHeader context={context} />

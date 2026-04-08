@@ -8,7 +8,7 @@ import type {
   TreasuryCategory,
   TreasurySettings
 } from "@/lib/domain/access";
-import { canAccessTreasurySettings, canManageClubMembers } from "@/lib/domain/authorization";
+import { canAccessTreasurySettings, canMutateTreasurySettings } from "@/lib/domain/authorization";
 import { getDefaultReceiptFormats } from "@/lib/receipt-formats";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { texts } from "@/lib/texts";
@@ -95,7 +95,7 @@ async function getTreasurySettingsAdminContext() {
     return null;
   }
 
-  if (!canManageClubMembers(context.activeMembership)) {
+  if (!canMutateTreasurySettings(context.activeMembership)) {
     return null;
   }
 
