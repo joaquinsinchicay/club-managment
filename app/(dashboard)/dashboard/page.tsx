@@ -181,7 +181,7 @@ export default async function DashboardPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  {texts.header.navigation.settings}
+                  {texts.dashboard.overview.settings_title}
                 </p>
                 <h2 className="text-2xl font-semibold tracking-tight text-foreground">
                   {texts.dashboard.overview.settings_title}

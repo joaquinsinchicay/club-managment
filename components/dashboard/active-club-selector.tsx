@@ -25,8 +25,13 @@ export function ActiveClubSelector({
   return (
     <form ref={formRef} action={setActiveClubAction} className={cn("grid gap-2", inline && "gap-1")}>
       <PendingFieldset className={cn("grid gap-2", inline && "gap-1")}>
-        <label className={cn("grid gap-2 text-sm text-foreground", inline && "gap-1")}>
-          <span className={cn("font-medium", inline && "text-xs uppercase tracking-[0.18em] text-muted-foreground")}>
+        <label className={cn("grid gap-2 text-sm text-foreground", inline && "gap-0")}>
+          <span
+            className={cn(
+              "font-medium",
+              inline ? "sr-only" : "text-xs uppercase tracking-[0.18em] text-muted-foreground"
+            )}
+          >
             {texts.dashboard.club_selector.label}
           </span>
           <select
@@ -35,7 +40,8 @@ export function ActiveClubSelector({
             onChange={() => formRef.current?.requestSubmit()}
             className={cn(
               "min-h-11 rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground",
-              inline && "min-h-10 bg-background"
+              inline &&
+                "min-h-0 border-0 bg-transparent px-0 py-0 text-[15px] font-semibold tracking-tight text-foreground focus:outline-none focus:ring-0"
             )}
           >
             {clubs.map((club) => (
@@ -48,7 +54,7 @@ export function ActiveClubSelector({
         <PendingStatusText
           idleLabel={texts.dashboard.club_selector.helper}
           pendingLabel={texts.dashboard.club_selector.loading}
-          className={inline ? "text-[11px]" : undefined}
+          className={inline ? "sr-only" : "text-[11px]"}
         />
       </PendingFieldset>
     </form>

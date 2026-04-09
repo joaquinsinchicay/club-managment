@@ -53,20 +53,24 @@ The upper bar is the primary source of context and navigation. Context must not 
 
 The upper bar must always show:
 
-* active club name
-* inline club selector when the user has multiple active clubs
-* user name
-* active role label(s)
-* avatar menu
-* module navigation buttons
+* left brand block with club mark + active club name
+* inline club selector integrated into the club name area when the user has multiple active clubs
+* right identity block with compact operational context and active role label(s)
+* avatar menu aligned to the far right
+* lower row of compact module tabs
 
 Rules:
 
 * compact and sticky
 * neutral background
-* no decorative effects beyond subtle border and blur
+* two-row composition: context above, tabs below
+* tabs are text-first, not pills
+* active tab uses green underline and green text
+* inactive tabs use muted neutral text
 * minimum touch target 44px
 * club selector lives here, not inside dashboard content
+* avoid long welcome sentences in the header
+* `Configuracion` is not a primary tab; it lives in the avatar menu
 
 ### 3.3 Avatar menu
 
@@ -90,7 +94,6 @@ Current top-level modules:
 * `Dashboard` → `/dashboard`
 * `Secretaria` → `/dashboard/secretaria`
 * `Tesoreria` → `/dashboard/treasury`
-* `Configuracion` → `/settings/club`
 
 ### 4.2 Visibility by role
 
@@ -101,10 +104,10 @@ Rules:
 * `Dashboard` is always visible in authenticated operational context
 * `Secretaria` visible only when `canOperateSecretaria(...)`
 * `Tesoreria` visible only when `canOperateTesoreria(...)`
-* `Configuracion` visible according to the current authorization model
 
 Do not render disabled tabs.
 Do not rely on redirection as the primary navigation pattern.
+Expose `Configuracion` only through the avatar menu when the user has permission.
 
 ### 4.3 Secondary views
 

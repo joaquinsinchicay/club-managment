@@ -34,12 +34,12 @@
     "pending_club_label": "Sin club activo",
     "welcome_message_single": "Bienvenido/a {name}, tu rol es {role}",
     "welcome_message_multiple": "Bienvenido/a {name}, tus roles son {role}",
+    "club_switcher_chevron": "▾",
     "navigation": {
       "aria_label": "Navegacion principal",
       "dashboard": "Dashboard",
       "secretaria": "Secretaria",
-      "tesoreria": "Tesoreria",
-      "settings": "Configuracion"
+      "tesoreria": "Tesoreria"
     },
     "avatar_menu": {
       "club_settings": "Configuracion del club",

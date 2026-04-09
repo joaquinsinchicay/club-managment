@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { ActiveClubSelector } from "@/components/dashboard/active-club-selector";
 import { AvatarSessionMenu } from "@/components/navigation/avatar-session-menu";
+import { ClubMark } from "@/components/ui/club-mark";
 import type { SessionContext } from "@/lib/auth/service";
 import {
   canAccessClubSettingsNavigation,
@@ -20,24 +21,13 @@ type AppHeaderProps = {
   setActiveClubAction?: (formData: FormData) => Promise<void>;
 };
 
-function replaceTemplate(template: string, values: Record<string, string>) {
-  return Object.entries(values).reduce(
-    (message, [key, value]) => message.replace(`{${key}}`, value),
-    template
-  );
-}
-
 type HeaderNavigationItem = {
-  key: "dashboard" | "secretaria" | "tesoreria" | "settings";
+  key: "dashboard" | "secretaria" | "tesoreria";
   href: string;
   label: string;
 };
 
 function getActiveSection(pathname: string) {
-  if (pathname.startsWith("/settings/club")) {
-    return "settings";
-  }
-
   if (pathname.startsWith("/dashboard/treasury")) {
     return "tesoreria";
   }
@@ -63,17 +53,7 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
   const canOperateTesoreriaRole = canOperateTesoreria(context.activeMembership);
   const canAccessSettings = canAccessClubSettingsNavigation(context.activeMembership);
   const activeSection = getActiveSection(pathname);
-  const welcomeMessage = context.activeMembership
-    ? replaceTemplate(
-        context.activeMembership.roles.length > 1
-          ? texts.header.welcome_message_multiple
-          : texts.header.welcome_message_single,
-        {
-        name: context.user.fullName,
-        role: roleLabel
-        }
-      )
-    : null;
+  const showClubSwitcher = Boolean(setActiveClubAction && context.availableClubs.length > 1);
 
   const navigationItems: HeaderNavigationItem[] = [
     {
@@ -81,15 +61,6 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
       href: "/dashboard",
       label: texts.header.navigation.dashboard
     },
-    ...(canOperateSecretariaRole
-      ? [
-          {
-            key: "secretaria" as const,
-            href: "/dashboard/secretaria",
-            label: texts.header.navigation.secretaria
-          }
-        ]
-      : []),
     ...(canOperateTesoreriaRole
       ? [
           {
@@ -99,47 +70,54 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
           }
         ]
       : []),
-    ...(canAccessSettings
+    ...(canOperateSecretariaRole
       ? [
           {
-            key: "settings" as const,
-            href: "/settings/club",
-            label: texts.header.navigation.settings
+            key: "secretaria" as const,
+            href: "/dashboard/secretaria",
+            label: texts.header.navigation.secretaria
           }
         ]
       : [])
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/98 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border/90 bg-card">
       <div className="mx-auto flex w-full max-w-6xl flex-col px-4">
-        <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 space-y-3">
-            <div className="space-y-1">
-              <p className="truncate text-lg font-semibold tracking-tight text-foreground">{clubLabel}</p>
-              {welcomeMessage ? (
-                <p className="truncate text-sm text-muted-foreground">{welcomeMessage}</p>
-              ) : (
-                <p className="truncate text-sm text-muted-foreground">{context.user.fullName}</p>
-              )}
-            </div>
+        <div className="flex items-center justify-between gap-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <ClubMark clubName={clubLabel} />
 
-            {setActiveClubAction && context.availableClubs.length > 1 ? (
-              <div className="max-w-xs">
-                <ActiveClubSelector
-                  clubs={context.availableClubs}
-                  activeClubId={context.activeClub?.id ?? context.availableClubs[0]?.id ?? ""}
-                  setActiveClubAction={setActiveClubAction}
-                  inline
-                />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                {showClubSwitcher ? (
+                  <ActiveClubSelector
+                    clubs={context.availableClubs}
+                    activeClubId={context.activeClub?.id ?? context.availableClubs[0]?.id ?? ""}
+                    setActiveClubAction={setActiveClubAction!}
+                    inline
+                  />
+                ) : (
+                  <p className="truncate text-[15px] font-semibold tracking-tight text-foreground">
+                    {clubLabel}
+                  </p>
+                )}
+
+                {showClubSwitcher ? (
+                  <span className="text-xs text-muted-foreground" aria-hidden="true">
+                    {texts.header.club_switcher_chevron}
+                  </span>
+                ) : null}
               </div>
-            ) : null}
+            </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="min-w-0 text-right">
-              <p className="truncate text-sm font-semibold text-foreground">{context.user.fullName}</p>
-              <p className="truncate text-xs uppercase tracking-[0.18em] text-muted-foreground">{roleLabel}</p>
+              <p className="truncate text-sm font-semibold text-foreground">{clubLabel}</p>
+              <p className="truncate text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                {roleLabel}
+              </p>
             </div>
 
             <AvatarSessionMenu
@@ -154,7 +132,7 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
         {navigationItems.length > 0 ? (
           <nav
             aria-label={texts.header.navigation.aria_label}
-            className="flex gap-1 overflow-x-auto border-t border-border/80 py-2"
+            className="flex gap-6 overflow-x-auto border-t border-border/80 pt-1"
           >
             {navigationItems.map((item) => {
               const isActive = item.key === activeSection;
@@ -164,10 +142,10 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
                   key={item.key}
                   href={item.href}
                   className={cn(
-                    "inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-xl border px-4 py-2.5 text-sm font-semibold transition",
+                    "inline-flex min-h-11 items-center justify-center whitespace-nowrap border-b-2 px-0 py-3 text-xs font-semibold uppercase tracking-[0.14em] transition",
                     isActive
-                      ? "border-foreground bg-foreground text-primary-foreground"
-                      : "border-transparent text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground"
+                      ? "border-success text-success"
+                      : "border-transparent text-slate-400 hover:text-foreground"
                   )}
                 >
                   {item.label}
