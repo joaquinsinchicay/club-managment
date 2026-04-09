@@ -700,7 +700,18 @@ function createStore(): MockStore {
     }
   ];
 
-  const dailyCashSessions: DailyCashSession[] = [];
+  const dailyCashSessions: DailyCashSession[] = [
+    {
+      id: "session-2026-04-09",
+      clubId: CLUB_ID,
+      sessionDate: "2026-04-09",
+      status: "closed",
+      openedAt: "2026-04-09T13:00:00.000Z",
+      closedAt: "2026-04-09T21:30:00.000Z",
+      openedByUserId: SECRETARIA_USER_ID,
+      closedByUserId: SECRETARIA_USER_ID
+    }
+  ];
   const dailyCashSessionBalances: DailyCashSessionBalance[] = [];
   const balanceAdjustments: BalanceAdjustment[] = [];
   const accountTransfers: AccountTransfer[] = [];
@@ -710,7 +721,7 @@ function createStore(): MockStore {
       id: "movement-secretaria-pending-001",
       displayId: "PJ-MOV-2026-9463",
       clubId: CLUB_ID,
-      dailyCashSessionId: "session-2026-04-05",
+      dailyCashSessionId: "session-2026-04-09",
       accountId: "account-tesoreria-inversion-001",
       movementType: "ingreso",
       categoryId: "category-system-1",
@@ -723,16 +734,16 @@ function createStore(): MockStore {
       transferGroupId: null,
       fxOperationGroupId: null,
       consolidationBatchId: null,
-      movementDate: "2026-04-05",
+      movementDate: "2026-04-09",
       createdByUserId: SECRETARIA_USER_ID,
       status: "pending_consolidation",
-      createdAt: "2026-04-05T18:10:00.000Z"
+      createdAt: "2026-04-09T18:10:00.000Z"
     },
     {
       id: "movement-secretaria-pending-002",
       displayId: "PJ-MOV-2026-9464",
       clubId: CLUB_ID,
-      dailyCashSessionId: "session-2026-04-05",
+      dailyCashSessionId: "session-2026-04-09",
       accountId: "account-secretaria-caja-001",
       movementType: "egreso",
       categoryId: "category-manual-gastos-001",
@@ -745,10 +756,10 @@ function createStore(): MockStore {
       transferGroupId: null,
       fxOperationGroupId: null,
       consolidationBatchId: null,
-      movementDate: "2026-04-05",
+      movementDate: "2026-04-09",
       createdByUserId: SECRETARIA_USER_ID,
       status: "pending_consolidation",
-      createdAt: "2026-04-05T19:20:00.000Z"
+      createdAt: "2026-04-09T19:20:00.000Z"
     },
     {
       id: "movement-tesoreria-posted-001",

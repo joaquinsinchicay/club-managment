@@ -106,16 +106,16 @@ function SummaryBalance({
   prominent?: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-border bg-secondary/35 px-4 py-3",
-        prominent && "bg-secondary/55 p-5"
-      )}
-    >
+    <div className={cn("space-y-1", prominent ? "space-y-2" : "space-y-1.5")}>
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {balance.currencyCode}
       </p>
-      <p className={cn("mt-2 font-semibold tracking-tight text-foreground", prominent ? "text-4xl" : "text-2xl")}>
+      <p
+        className={cn(
+          "font-semibold tracking-tight text-foreground",
+          prominent ? "text-[3.25rem] leading-none sm:text-[3.5rem]" : "text-[2rem] leading-none"
+        )}
+      >
         {formatLocalizedAmount(balance.amount)}
       </p>
     </div>
@@ -355,8 +355,8 @@ export function TreasuryCard({
               {texts.dashboard.treasury.empty_accounts}
             </div>
           ) : (
-            <div className="mt-5 space-y-4">
-              <div className="rounded-[20px] border border-border bg-secondary/30 p-4 sm:p-5">
+            <div className="mt-5 space-y-6">
+              <div className="space-y-5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   {texts.dashboard.treasury.balances_total_label}
                 </p>
@@ -364,7 +364,7 @@ export function TreasuryCard({
                 {totalBalances[0] ? <SummaryBalance balance={totalBalances[0]} prominent /> : null}
 
                 {totalBalances.length > 1 ? (
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-4 border-t border-border/70 pt-4 sm:grid-cols-2">
                     {totalBalances.slice(1).map((balance) => (
                       <SummaryBalance key={balance.currencyCode} balance={balance} />
                     ))}
@@ -372,21 +372,20 @@ export function TreasuryCard({
                 ) : null}
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-4 border-t border-border/70 pt-4 sm:grid-cols-2">
                 {treasuryCard.accounts.map((account) => (
-                  <article key={account.accountId} className="rounded-[20px] border border-border bg-card p-4">
-                    <p className="text-sm font-semibold text-foreground">{account.name}</p>
+                  <article key={account.accountId} className="space-y-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      {account.name}
+                    </p>
 
-                    <div className="mt-3 grid gap-2">
+                    <div className="space-y-3">
                       {account.balances.map((balance) => (
-                        <div
-                          key={`${account.accountId}-${balance.currencyCode}`}
-                          className="rounded-xl border border-border bg-secondary/25 px-4 py-3"
-                        >
+                        <div key={`${account.accountId}-${balance.currencyCode}`} className="space-y-1.5">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                             {balance.currencyCode}
                           </p>
-                          <p className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+                          <p className="text-[2rem] font-semibold leading-none tracking-tight text-foreground">
                             {formatLocalizedAmount(balance.amount)}
                           </p>
                         </div>
@@ -402,7 +401,7 @@ export function TreasuryCard({
             <div className="mt-5">
               <NavigationLinkWithLoader
                 href={detailHref}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-[18px] border border-border bg-secondary/35 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-[12px] bg-secondary/35 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
               >
                 {texts.dashboard.treasury.detail_accounts_cta}
               </NavigationLinkWithLoader>

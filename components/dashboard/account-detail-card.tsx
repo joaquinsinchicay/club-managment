@@ -126,15 +126,11 @@ export function AccountDetailCard({
                   <p className="mt-1 text-base font-semibold text-foreground">{detail.account.name}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    {texts.dashboard.treasury.session_label}
-                  </p>
-                  <div className="mt-2">
-                    <StatusBadge
-                      label={getSessionLabel(detail.sessionStatus)}
-                      tone={getSessionTone(detail.sessionStatus)}
-                    />
-                  </div>
+                  <StatusBadge
+                    label={getSessionLabel(detail.sessionStatus)}
+                    tone={getSessionTone(detail.sessionStatus)}
+                    className="mt-6"
+                  />
                 </div>
               </div>
 

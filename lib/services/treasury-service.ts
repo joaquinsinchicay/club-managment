@@ -460,13 +460,19 @@ async function applyBalanceAdjustments(input: {
   mode: "open" | "close";
   drafts: SessionBalanceDraft[];
 }) {
+  const draftsWithAdjustments = input.drafts.filter((entry) => entry.differenceAmount !== 0 && entry.adjustmentType);
+
+  if (draftsWithAdjustments.length === 0) {
+    return { ok: true } as const;
+  }
+
   const adjustmentCategory = await accessRepository.findTreasuryAdjustmentCategory(input.clubId);
 
   if (!adjustmentCategory) {
     return { ok: false, code: "adjustment_category_missing" } as const;
   }
 
-  for (const draft of input.drafts.filter((entry) => entry.differenceAmount !== 0 && entry.adjustmentType)) {
+  for (const draft of draftsWithAdjustments) {
     const movement = await accessRepository.createTreasuryMovement({
       displayId: await generateMovementDisplayId(input.clubId, input.clubName, input.sessionDate),
       clubId: input.clubId,
