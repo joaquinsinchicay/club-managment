@@ -27,11 +27,11 @@ const config: Config = {
         warning: "hsl(var(--warning))"
       },
       boxShadow: {
-        soft: "0 18px 50px -24px rgba(15, 23, 42, 0.28)"
+        soft: "0 10px 24px -18px rgba(15, 23, 42, 0.18)"
       },
       borderRadius: {
-        xl: "1rem",
-        "2xl": "1.5rem"
+        xl: "0.875rem",
+        "2xl": "1rem"
       }
     }
   },

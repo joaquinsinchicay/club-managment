@@ -29,7 +29,6 @@ export default async function OpenDailyCashSessionPage() {
 
   return (
     <DailySessionBalanceCard
-      context={context}
       validation={validation}
       submitAction={openDailyCashSessionWithBalancesAction}
     />

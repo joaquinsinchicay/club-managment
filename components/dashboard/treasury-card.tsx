@@ -284,23 +284,12 @@ export function TreasuryCard({
   return (
     <>
       {pendingOverlayLabel ? (
-        <div
-          aria-busy="true"
-          aria-live="polite"
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 px-4"
-          role="status"
-        >
-          <div className="flex w-full max-w-sm items-center justify-center gap-3 rounded-[28px] border border-border bg-card px-6 py-5 text-sm font-semibold text-foreground shadow-soft">
-            <span
-              aria-hidden="true"
-              className="inline-block size-5 animate-spin rounded-full border-2 border-current border-r-transparent"
-            />
-            <span>{pendingOverlayLabel}</span>
-          </div>
+        <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground">
+          {pendingOverlayLabel}
         </div>
       ) : null}
 
-      <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
+      <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
         <div className="space-y-1.5">
           <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
             {texts.dashboard.treasury.balances_card_title}
@@ -311,7 +300,7 @@ export function TreasuryCard({
         </div>
 
         <div className="mt-4 grid gap-3">
-          <div className="rounded-[20px] border border-border bg-secondary/35 px-4 py-3">
+          <div className="rounded-xl border border-border bg-secondary/35 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {texts.dashboard.treasury.session_label}
             </p>
@@ -325,7 +314,7 @@ export function TreasuryCard({
           ) : (
             <div className="grid gap-2.5">
               {treasuryCard.accounts.map((account) => (
-                <article key={account.accountId} className="rounded-[20px] border border-border bg-secondary/25 px-4 py-3">
+                <article key={account.accountId} className="rounded-xl border border-border bg-secondary/25 px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-[15px] font-semibold text-foreground">{account.name}</p>
                     <NavigationLinkWithLoader
@@ -340,7 +329,7 @@ export function TreasuryCard({
                     {account.balances.map((balance) => (
                       <div
                         key={`${account.accountId}-${balance.currencyCode}`}
-                        className="rounded-[18px] border border-border/70 bg-card px-4 py-2.5"
+                        className="rounded-xl border border-border bg-card px-4 py-2.5"
                       >
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                           {balance.currencyCode}
@@ -358,7 +347,7 @@ export function TreasuryCard({
         </div>
       </section>
 
-      <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
+      <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
         <div className="space-y-1.5">
           <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
             {texts.dashboard.treasury.actions_card_title}
@@ -408,7 +397,7 @@ export function TreasuryCard({
       </section>
 
       {hasMovements ? (
-        <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
+        <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
           <div className="space-y-1.5">
             <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
               {texts.dashboard.treasury.movements_card_title}
@@ -420,19 +409,19 @@ export function TreasuryCard({
 
           <div className="mt-4 grid gap-2.5">
             {treasuryCard.movements.map((movement) => (
-              <article key={movement.movementId} className="rounded-[20px] border border-border bg-secondary/20 px-4 py-3">
+              <article key={movement.movementId} className="rounded-xl border border-border bg-secondary/20 px-4 py-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                       {movement.movementDisplayId}
                     </p>
-                    <p className="text-sm font-semibold text-foreground">
+                    <p className="text-base font-semibold text-foreground">{movement.concept}</p>
+                    <p className="text-sm text-muted-foreground">
                       {movement.accountName} · {movement.categoryName}
                     </p>
-                    <p className="text-sm text-muted-foreground">{movement.concept}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-base font-semibold text-foreground">
+                    <p className="text-2xl font-semibold tracking-tight text-foreground">
                       {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
                     </p>
                     <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">

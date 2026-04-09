@@ -2,13 +2,11 @@ import Link from "next/link";
 
 import type { TreasuryAccount, TreasuryAccountDetail } from "@/lib/domain/access";
 import { formatLocalizedAmount } from "@/lib/amounts";
-import { AppHeader } from "@/components/navigation/app-header";
-import { CardShell } from "@/components/ui/card-shell";
+import { PageContentHeader } from "@/components/ui/page-content-header";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { texts } from "@/lib/texts";
-import type { SessionContext } from "@/lib/auth/service";
 
 type AccountDetailCardProps = {
-  context: SessionContext;
   detail: TreasuryAccountDetail | null;
   accounts: TreasuryAccount[];
   currentAccountId?: string;
@@ -30,6 +28,18 @@ function getSessionLabel(status: TreasuryAccountDetail["sessionStatus"]) {
   return texts.dashboard.treasury.session_not_started;
 }
 
+function getSessionTone(status: TreasuryAccountDetail["sessionStatus"]) {
+  if (status === "open") {
+    return "success";
+  }
+
+  if (status === "closed") {
+    return "danger";
+  }
+
+  return "warning";
+}
+
 function formatMovementGroupDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
 
@@ -43,7 +53,6 @@ function formatMovementGroupDate(value: string) {
 }
 
 export function AccountDetailCard({
-  context,
   detail,
   accounts,
   currentAccountId,
@@ -69,184 +78,173 @@ export function AccountDetailCard({
     : [];
 
   return (
-    <div className="min-h-screen">
-      <AppHeader context={context} />
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
+      <PageContentHeader
+        eyebrow={texts.dashboard.treasury.detail_eyebrow}
+        title={texts.dashboard.treasury.detail_title}
+        description={texts.dashboard.treasury.detail_description}
+        backHref={secondaryActionHref}
+        backLabel={secondaryActionLabel}
+      />
 
-      <main className="mx-auto w-full max-w-5xl px-4 py-10">
-        <CardShell
-          eyebrow={texts.dashboard.treasury.detail_eyebrow}
-          title={texts.dashboard.treasury.detail_title}
-          description={texts.dashboard.treasury.detail_description}
-          className="max-w-4xl"
-        >
-          <div className="space-y-5">
-            {secondaryActionHref && secondaryActionLabel ? (
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <Link
-                  href={secondaryActionHref}
-                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary sm:shrink-0"
-                >
-                  {secondaryActionLabel}
-                </Link>
+      <section className="w-full max-w-5xl rounded-[20px] border border-border bg-card p-6 sm:p-8">
+        <div className="space-y-5">
+          {accounts.length > 0 ? (
+            <div className="grid gap-2">
+              <p className="text-sm font-medium text-foreground">
+                {texts.dashboard.treasury.account_switch_label}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {accounts.map((account) => (
+                  <Link
+                    key={account.id}
+                    href={`${accountHrefBase}/${account.id}`}
+                    className={`rounded-full border px-3 py-2 text-sm font-medium transition ${
+                      account.id === currentAccountId
+                        ? "border-foreground bg-foreground text-primary-foreground"
+                        : "border-border bg-card text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {account.name}
+                  </Link>
+                ))}
               </div>
-            ) : null}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
+              {emptyAccountsLabel}
+            </div>
+          )}
 
-            {accounts.length > 0 ? (
-              <div className="grid gap-2">
-                <p className="text-sm font-medium text-foreground">
-                  {texts.dashboard.treasury.account_switch_label}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {accounts.map((account) => (
-                    <Link
-                      key={account.id}
-                      href={`${accountHrefBase}/${account.id}`}
-                      className={`rounded-full px-3 py-2 text-sm font-medium transition ${
-                        account.id === currentAccountId
-                          ? "bg-foreground text-primary-foreground"
-                          : "border border-border bg-card text-foreground hover:bg-secondary"
-                      }`}
-                    >
-                      {account.name}
-                    </Link>
+          {detail ? (
+            <>
+              <div className="grid gap-3 rounded-xl border border-border bg-secondary/50 p-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    {texts.dashboard.treasury.detail_account_label}
+                  </p>
+                  <p className="mt-1 text-base font-semibold text-foreground">{detail.account.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    {texts.dashboard.treasury.session_label}
+                  </p>
+                  <div className="mt-2">
+                    <StatusBadge
+                      label={getSessionLabel(detail.sessionStatus)}
+                      tone={getSessionTone(detail.sessionStatus)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {detail.balances.map((balance) => (
+                  <div
+                    key={`${detail.account.accountId}-${balance.currencyCode}`}
+                    className="rounded-xl border border-border bg-card px-4 py-3"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      {balance.currencyCode}
+                    </p>
+                    <p className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+                      {formatLocalizedAmount(balance.amount)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {detail.movements.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
+                  {texts.dashboard.treasury.detail_empty_movements}
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {movementGroups.map((group) => (
+                    <section key={group.movementDate} className="space-y-3">
+                      <div className="rounded-xl border border-border bg-card px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                          {texts.dashboard.treasury.date_label}
+                        </p>
+                        <p className="mt-1 text-base font-semibold text-foreground">
+                          {formatMovementGroupDate(group.movementDate)}
+                        </p>
+                      </div>
+
+                      <div className="grid gap-3">
+                        {group.movements.map((movement) => (
+                          <article
+                            key={movement.movementId}
+                            className="rounded-xl border border-border bg-secondary/40 p-4"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                  {movement.movementDisplayId}
+                                </p>
+                                <p className="text-base font-semibold text-foreground">{movement.concept}</p>
+                              </div>
+                              <span className="text-xl font-semibold tracking-tight text-foreground">
+                                {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
+                              </span>
+                            </div>
+                            <div className="mt-2 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                              <p>{movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}</p>
+                              <p className="capitalize">{movement.movementType}</p>
+                              <p>{movement.movementDate}</p>
+                              <p>{movement.createdByUserName}</p>
+                              {movement.activityName ? (
+                                <p className="sm:col-span-2">
+                                  <span className="font-medium text-foreground">
+                                    {texts.dashboard.treasury.detail_activity_label}
+                                  </span>{" "}
+                                  {movement.activityName}
+                                </p>
+                              ) : null}
+                              {movement.calendarEventTitle ? (
+                                <p className="sm:col-span-2">
+                                  <span className="font-medium text-foreground">
+                                    {texts.dashboard.treasury.detail_calendar_label}
+                                  </span>{" "}
+                                  {movement.calendarEventTitle}
+                                </p>
+                              ) : null}
+                              {movement.transferReference ? (
+                                <p className="sm:col-span-2">
+                                  <span className="font-medium text-foreground">
+                                    {texts.dashboard.treasury.detail_transfer_label}
+                                  </span>{" "}
+                                  {movement.transferReference}
+                                </p>
+                              ) : null}
+                              {movement.fxOperationReference ? (
+                                <p className="sm:col-span-2">
+                                  <span className="font-medium text-foreground">
+                                    {texts.dashboard.treasury.detail_fx_label}
+                                  </span>{" "}
+                                  {movement.fxOperationReference}
+                                </p>
+                              ) : null}
+                              {movement.receiptNumber ? (
+                                <p className="sm:col-span-2">
+                                  <span className="font-medium text-foreground">
+                                    {texts.dashboard.treasury.detail_receipt_label}
+                                  </span>{" "}
+                                  {movement.receiptNumber}
+                                </p>
+                              ) : null}
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
                   ))}
                 </div>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
-                {emptyAccountsLabel}
-              </div>
-            )}
-
-            {detail ? (
-              <>
-                <div className="grid gap-3 rounded-2xl border border-border bg-secondary/50 p-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      {texts.dashboard.treasury.detail_account_label}
-                    </p>
-                    <p className="mt-1 text-base font-semibold text-foreground">
-                      {detail.account.name}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      {texts.dashboard.treasury.session_label}
-                    </p>
-                    <p className="mt-1 text-base font-semibold text-foreground">
-                      {getSessionLabel(detail.sessionStatus)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {detail.balances.map((balance) => (
-                    <div
-                      key={`${detail.account.accountId}-${balance.currencyCode}`}
-                      className="rounded-2xl border border-border bg-card px-4 py-3"
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                        {balance.currencyCode}
-                      </p>
-                      <p className="mt-1 text-base font-semibold text-foreground">
-                        {formatLocalizedAmount(balance.amount)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {detail.movements.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
-                    {texts.dashboard.treasury.detail_empty_movements}
-                  </div>
-                ) : (
-                  <div className="grid gap-3">
-                    {movementGroups.map((group) => (
-                      <section key={group.movementDate} className="space-y-3">
-                        <div className="rounded-2xl border border-border bg-card px-4 py-3">
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                            {texts.dashboard.treasury.date_label}
-                          </p>
-                          <p className="mt-1 text-base font-semibold text-foreground">
-                            {formatMovementGroupDate(group.movementDate)}
-                          </p>
-                        </div>
-
-                        <div className="grid gap-3">
-                          {group.movements.map((movement) => (
-                            <article
-                              key={movement.movementId}
-                              className="rounded-2xl border border-border bg-secondary/40 p-4"
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <div>
-                                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                                    {movement.movementDisplayId}
-                                  </p>
-                                  <p className="text-sm font-semibold text-foreground">{movement.concept}</p>
-                                </div>
-                                <span className="text-sm font-semibold text-foreground">
-                                  {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
-                                </span>
-                              </div>
-                              <div className="mt-2 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-                                <p>{movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}</p>
-                                <p className="capitalize">{movement.movementType}</p>
-                                <p>{movement.movementDate}</p>
-                                <p>{movement.createdByUserName}</p>
-                                {movement.activityName ? (
-                                  <p className="sm:col-span-2">
-                                    <span className="font-medium text-foreground">
-                                      {texts.dashboard.treasury.detail_activity_label}
-                                    </span>{" "}
-                                    {movement.activityName}
-                                  </p>
-                                ) : null}
-                                {movement.calendarEventTitle ? (
-                                  <p className="sm:col-span-2">
-                                    <span className="font-medium text-foreground">
-                                      {texts.dashboard.treasury.detail_calendar_label}
-                                    </span>{" "}
-                                    {movement.calendarEventTitle}
-                                  </p>
-                                ) : null}
-                                {movement.transferReference ? (
-                                  <p className="sm:col-span-2">
-                                    <span className="font-medium text-foreground">
-                                      {texts.dashboard.treasury.detail_transfer_label}
-                                    </span>{" "}
-                                    {movement.transferReference}
-                                  </p>
-                                ) : null}
-                                {movement.fxOperationReference ? (
-                                  <p className="sm:col-span-2">
-                                    <span className="font-medium text-foreground">
-                                      {texts.dashboard.treasury.detail_fx_label}
-                                    </span>{" "}
-                                    {movement.fxOperationReference}
-                                  </p>
-                                ) : null}
-                                {movement.receiptNumber ? (
-                                  <p className="sm:col-span-2">
-                                    <span className="font-medium text-foreground">
-                                      {texts.dashboard.treasury.detail_receipt_label}
-                                    </span>{" "}
-                                    {movement.receiptNumber}
-                                  </p>
-                                ) : null}
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      </section>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : null}
-          </div>
-        </CardShell>
-      </main>
-    </div>
+              )}
+            </>
+          ) : null}
+        </div>
+      </section>
+    </main>
   );
 }

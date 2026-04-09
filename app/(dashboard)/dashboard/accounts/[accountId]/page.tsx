@@ -35,13 +35,12 @@ export default async function AccountDetailPage({ params }: AccountDetailPagePro
 
   return (
     <AccountDetailCard
-      context={context}
       detail={accountDetailData.detail}
       accounts={accountDetailData.accounts}
       currentAccountId={params.accountId}
       accountHrefBase="/dashboard/accounts"
-      secondaryActionHref="/dashboard"
-      secondaryActionLabel={texts.dashboard.treasury.back_to_dashboard_cta}
+      secondaryActionHref="/dashboard/secretaria"
+      secondaryActionLabel={texts.dashboard.treasury.back_to_secretaria_cta}
     />
   );
 }

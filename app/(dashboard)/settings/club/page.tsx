@@ -1,4 +1,3 @@
-import { AppHeader } from "@/components/navigation/app-header";
 import { ClubSettingsCard } from "@/components/settings/club-settings-card";
 import { ClubSettingsForbiddenCard } from "@/components/settings/club-settings-forbidden-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
@@ -43,12 +42,7 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
   const canViewTreasury = permissions.canAccessTreasury;
 
   if (!permissions.canAccessPage) {
-    return (
-      <div className="min-h-screen">
-        <AppHeader context={context} />
-        <ClubSettingsForbiddenCard />
-      </div>
-    );
+    return <ClubSettingsForbiddenCard />;
   }
 
   const [clubMembersData, treasurySettings] = await Promise.all([
@@ -57,35 +51,27 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
   ]);
 
   if ((canViewMembers && !clubMembersData) || (canViewTreasury && !treasurySettings)) {
-    return (
-      <div className="min-h-screen">
-        <AppHeader context={context} />
-        <ClubSettingsForbiddenCard />
-      </div>
-    );
+    return <ClubSettingsForbiddenCard />;
   }
 
   return (
-    <div className="min-h-screen">
-      <AppHeader context={context} />
-      <ClubSettingsCard
-        context={context}
-        canManageMembers={canViewMembers}
-        canManageTreasury={canViewTreasury}
-        members={clubMembersData?.members ?? []}
-        pendingInvitations={clubMembersData?.pendingInvitations ?? []}
-        treasurySettings={treasurySettings}
-        inviteUserAction={inviteClubUserAction}
-        approveMembershipAction={approveClubMembershipAction}
-        updateMembershipRolesAction={updateClubMembershipRoleAction}
-        removeMembershipAction={removeClubMembershipAction}
-        createTreasuryAccountAction={createTreasuryAccountAction}
-        updateTreasuryAccountAction={updateTreasuryAccountAction}
-        createTreasuryCategoryAction={createTreasuryCategoryAction}
-        updateTreasuryCategoryAction={updateTreasuryCategoryAction}
-        createClubActivityAction={createClubActivityAction}
-        updateClubActivityAction={updateClubActivityAction}
-      />
-    </div>
+    <ClubSettingsCard
+      context={context}
+      canManageMembers={canViewMembers}
+      canManageTreasury={canViewTreasury}
+      members={clubMembersData?.members ?? []}
+      pendingInvitations={clubMembersData?.pendingInvitations ?? []}
+      treasurySettings={treasurySettings}
+      inviteUserAction={inviteClubUserAction}
+      approveMembershipAction={approveClubMembershipAction}
+      updateMembershipRolesAction={updateClubMembershipRoleAction}
+      removeMembershipAction={removeClubMembershipAction}
+      createTreasuryAccountAction={createTreasuryAccountAction}
+      updateTreasuryAccountAction={updateTreasuryAccountAction}
+      createTreasuryCategoryAction={createTreasuryCategoryAction}
+      updateTreasuryCategoryAction={updateTreasuryCategoryAction}
+      createClubActivityAction={createClubActivityAction}
+      updateClubActivityAction={updateClubActivityAction}
+    />
   );
 }

@@ -9,413 +9,418 @@ The design must:
 * maximize speed of execution
 * minimize cognitive load
 * ensure clarity of financial data
-* support role-based workflows (admin, secretaria, tesoreria)
+* support role-based workflows (`admin`, `secretaria`, `tesoreria`)
 
-This is not a marketing UI. It is a **financial operations tool**.
-
----
-
-## 2. Design Philosophy
-
-### Core principle: Operational clarity over aesthetics
-
-* Every UI element must serve a functional purpose
-* Visual hierarchy must reflect financial importance (amounts > labels)
-* Reduce friction in repetitive tasks (movement entry, session control)
-* Avoid decorative patterns (no glassmorphism, no visual noise)
+This is not a marketing UI. It is a financial operations tool.
 
 ---
 
-## 3. Layout System
+## 2. Core Principle
 
-### Structure
-
-* Persistent header (all screens)
-* Main content column
-* Mobile-first layout
-* Desktop = expanded version of mobile
-* In `settings/club`, the back action must stay visible in the content header and must not depend on a secondary side card
-
----
-
-### Header (global)
-
-Always visible.
-
-Contains:
-
-* Club name
-* Club selector (if multiple)
-* User name + role
-* Avatar menu:
-
-  * Club settings (admin only)
-  * Sign out
+Operational clarity over aesthetics.
 
 Rules:
 
-* Compact height
-* No scrolling behavior
-* Must clearly show current context (club + role)
+* every visual element must justify its presence through function
+* context must be visible before actions
+* amounts must dominate over labels
+* repeated workflows must feel fast and predictable
+* decorative patterns are not allowed
+
+Not allowed:
+
+* hero gradients
+* glassmorphism
+* oversized introductory cards
+* secondary navigation patterns that compete with the upper bar
 
 ---
 
-## 4. Color System
+## 3. Authenticated Shell
 
-### Purpose-driven colors only
+### 3.1 Global structure
 
-* Green → income / open
-* Red → expense / closed
-* Amber → pending / attention
-* Neutral grays → structure
+All authenticated screens share the same shell:
+
+* persistent upper bar
+* main content column
+* mobile-first spacing
+* desktop as a wider version of the same hierarchy
+
+The upper bar is the primary source of context and navigation. Context must not be duplicated in large introductory cards.
+
+### 3.2 Upper bar
+
+The upper bar must always show:
+
+* active club name
+* inline club selector when the user has multiple active clubs
+* user name
+* active role label(s)
+* avatar menu
+* module navigation buttons
 
 Rules:
 
-* Color communicates meaning only
-* Do not use color for decoration
-* Backgrounds remain neutral (white/light gray)
+* compact and sticky
+* neutral background
+* no decorative effects beyond subtle border and blur
+* minimum touch target 44px
+* club selector lives here, not inside dashboard content
+
+### 3.3 Avatar menu
+
+The avatar menu remains the single entrypoint for:
+
+* club settings navigation when allowed
+* sign out
+
+Do not move club switching into the avatar menu.
 
 ---
 
-## 5. Typography
+## 4. Navigation Model
 
-### Font
+### 4.1 Main modules
 
-* Sans-serif system font (e.g. Inter)
+Upper bar navigation is module-based.
 
-### Hierarchy
+Current top-level modules:
 
-* Large amounts → bold, high emphasis
-* Section titles → medium weight
-* Labels → small, uppercase
-* Secondary info → muted color
+* `Dashboard` → `/dashboard`
+* `Secretaria` → `/dashboard/secretaria`
+* `Tesoreria` → `/dashboard/treasury`
+* `Configuracion` → `/settings/club`
 
-### Rules
+### 4.2 Visibility by role
 
-* Amounts must be the most visually dominant element
-* Labels must never compete with values
-* Monetary amounts must render with localized format `XX.XXX,XX`
-* Avoid long paragraphs — prioritize scanability
-
----
-
-## 6. Spacing & Density
-
-* Minimum touch target: 44px
-* Dense but readable
-* Prefer vertical stacking over complex layouts
-* Lists must be scannable in seconds
-
----
-
-## 7. Components
-
----
-
-### 7.1 Buttons
-
-Types:
-
-* Primary → main action
-* Secondary → alternative
-* Destructive → cancel / delete
+Tabs must be hidden when the user cannot operate that module.
 
 Rules:
 
-* One primary action per section
-* Labels must be explicit ("Close session", not "Continue")
+* `Dashboard` is always visible in authenticated operational context
+* `Secretaria` visible only when `canOperateSecretaria(...)`
+* `Tesoreria` visible only when `canOperateTesoreria(...)`
+* `Configuracion` visible according to the current authorization model
+
+Do not render disabled tabs.
+Do not rely on redirection as the primary navigation pattern.
+
+### 4.3 Secondary views
+
+Detail screens are not tabs.
+
+Examples:
+
+* account detail
+* session open / close
+* consolidation
+
+These screens must:
+
+* keep the global upper bar
+* show a local content header
+* expose a stable back action to their parent module
+
+Back actions must not depend on browser history.
 
 ---
 
-### 7.2 Inputs
+## 5. Page Types
 
-* Label always visible (above field)
-* Inline validation
-* Error message below field
-* Required fields clearly marked
+### 5.1 Dashboard
 
-No hidden validation.
+`/dashboard` is a summary screen, not an operational replacement for role modules.
 
----
+It should:
 
-### 7.3 Cards
+* summarize available modules
+* expose key counts and statuses
+* give one explicit CTA into each module
 
-Used to group:
+It should not:
 
-* balances
-* session state
-* actions
-* editable daily movements
+* duplicate all operational forms
+* re-render the full Secretaria workflow
+* re-render the full Tesoreria workflow
+
+### 5.2 Secretaria
+
+`/dashboard/secretaria` is the daily operations module.
+
+Must prioritize:
+
+* session status
+* visible balances
+* open / close session actions
+* create movement
+* create transfer
+* recent movement list
+
+### 5.3 Tesoreria
+
+`/dashboard/treasury` is the finance operations module.
+
+Must prioritize:
+
+* visible balances
+* treasury-owned movements
+* FX operations
+* clear access to consolidation
+
+### 5.4 Consolidation
+
+`/dashboard/treasury/consolidation` is a secondary view under Tesoreria.
+
+Must show:
+
+* date filter
+* pending list
+* integrated list
+* movement detail
+* possible match area
+* auditable history
+* consolidation readiness CTA
+
+### 5.5 Settings
+
+`/settings/club` remains a module-level page.
 
 Rules:
 
-* Light background
-* Subtle separation (spacing or divider)
-* No heavy shadows
-* Context cards in settings must stay compact; active club context should summarize state, not dominate the layout
+* back action must be visible in the content header
+* active club context card must be compact
+* settings content must remain split by permissioned responsibilities
 
 ---
 
-### 7.4 Lists (CRITICAL)
+## 6. Visual Tokens
 
-Used for:
+### 6.1 Colors
+
+Purpose-driven colors only:
+
+* green `#10B981` → income / open / healthy final state
+* red `#EF4444` → expense / closed / destructive state
+* amber `#F59E0B` → pending / warning / attention
+* slate neutrals → structure, borders, labels, surfaces
+
+Rules:
+
+* color communicates meaning, not decoration
+* backgrounds stay white or light neutral
+* do not use colorful ambient gradients
+
+### 6.2 Typography
+
+Font:
+
+* `Inter`
+
+Rules:
+
+* amounts are the most dominant text on a card or row
+* labels are uppercase, smaller, and muted
+* section titles are semibold
+* descriptions are short and scannable
+* render monetary amounts with localized `XX.XXX,XX`
+
+### 6.3 Spacing and density
+
+Rules:
+
+* minimum touch target 44px
+* dense but readable
+* prefer vertical stacking to complex grids
+* lists must be readable in seconds
+
+---
+
+## 7. Shared Components
+
+These patterns must be reused instead of reinvented per screen.
+
+### 7.1 `AppHeader`
+
+Use for the authenticated upper bar only.
+
+Responsibilities:
+
+* context
+* club switching
+* module nav
+* user identity
+* avatar menu
+
+### 7.2 `PageContentHeader`
+
+Use for secondary content headers inside a module.
+
+Responsibilities:
+
+* eyebrow
+* title
+* description
+* stable back CTA when needed
+
+### 7.3 `StatusBadge`
+
+Use for consistent operational states.
+
+Supported semantic tones:
+
+* `success`
+* `danger`
+* `warning`
+* `neutral`
+
+Map common states as:
+
+* `OPEN` → success
+* `CLOSED` → danger
+* `PENDING` → warning
+* `MATCHED` → neutral
+* `CONSOLIDATED` → success or neutral depending on context
+
+### 7.4 Cards
+
+Rules:
+
+* neutral background
+* subtle border
+* compact radius
+* no heavy shadow by default
+* use cards to group balances, actions, state, lists and settings sections
+
+### 7.5 Lists
+
+Critical usage:
 
 * movements
 * accounts
 * members
 
-Each row must show:
+Each row must surface:
 
-* primary info (amount or name)
-* secondary info (category, account, date)
+* primary value first
+* secondary metadata second
+* status badge if operationally relevant
 
-Rules:
+Do not hide essential financial data behind interaction.
 
-* Must be readable without interaction
-* Use spacing or subtle dividers
-* No visual clutter
+### 7.6 Buttons
 
----
+Types:
 
-### 7.5 Status badges
-
-* OPEN → green
-* CLOSED → red
-* PENDING → amber
-* MATCHED → neutral
-* CONSOLIDATED → final state (green or muted)
+* primary
+* secondary
+* destructive
 
 Rules:
 
-* Always visible
-* Always consistent
+* one clear primary CTA per section
+* labels must be explicit
+* use verbs tied to the real operation
 
----
-
-## 8. Core UX Rules
-
----
-
-### 8.1 Role-based UI
-
-* Secretaria:
-
-  * sees only Secretaria accounts
-  * can operate daily session
-  * cannot access consolidation
-
-* Tesoreria:
-
-  * sees only Tesoreria accounts
-  * can access consolidation
-  * cannot operate session
-
-* Admin:
-
-  * manages configuration
-  * no implicit access to operational flows
-
----
-
-### 8.2 Session-driven behavior
-
-* Session OPEN → allow movements
-* Session CLOSED → block movement creation/edit
-* UI must clearly reflect state
-
----
-
-### 8.3 Movement rules
-
-* Amount always positive
-* Type defines impact (income/expense)
-* Editable only during allowed flows (consolidation)
-
----
-
-### 8.4 Movement edit rules
-
-* Secretaria:
-
-  * cannot edit after session close
-
-* Tesoreria:
-
-  * can edit only during consolidation
-
-* All edits must be auditable
-
----
-
-## 9. Forms
-
-### Principles
-
-* Fast input
-* Minimal fields
-* Dynamic fields based on category
-
----
-
-### Behavior
-
-* Inline validation
-* Blocking errors prevent submission
-* Required fields clearly marked
-
----
-
-### After submission
-
-* Reset:
-
-  * amount
-  * concept
-
-* Keep:
-
-  * account
-  * category (optional optimization)
-
----
-
-### Error states
-
-* Clear message
-* No silent failures
-* Prevent invalid operations (e.g. closed session)
-
----
-
-## 10. Key Screens Behavior
-
----
-
-### Dashboard
-
-Must show:
-
-* active club context in upper bar
-* session status
-* balances
-* primary actions
-
-Optional:
-
-* last session timestamp
-
----
-
-### Create movement
-
-* Fast form
-* Minimal friction
-* Dynamic fields
-* No unnecessary steps
-
----
-
-### Account detail
-
-* balance first
-* movement list second
-* action button visible
-
----
-
-### Consolidation
-
-* list of pending movements
-* clear status per row
-* actions:
-
-  * edit
-  * match
+### 7.7 Inputs
 
 Rules:
 
-* cannot consolidate with invalid data
-* CTA must reflect readiness
+* label always visible
+* validation inline
+* errors below field
+* required fields clearly marked
+
+Do not use hidden validation.
 
 ---
 
-### Match view
+## 8. State and Feedback Patterns
 
-* side-by-side comparison
-* all fields visible
-* clear decision actions
+### 8.1 Loading
 
----
+Rules:
 
-## 11. Interaction States
+* prefer local pending states over fullscreen blockers
+* loading must happen in the affected CTA, card or form
+* avoid long spinner-only states without label
+* the affected area becomes non-interactive while pending
 
----
+### 8.2 Success and error feedback
 
-### Loading
+Rules:
 
-* skeletons preferred
-* avoid long spinners
-* every async mutation must show immediate feedback in the affected CTA
-* the affected form or card must become non-interactive while the mutation is pending
-* use local loading states, not fullscreen overlays, unless the flow truly blocks the whole screen
-* exception: creating a Secretaria movement or transfer from the dashboard modal may use a blocking screen overlay after submit, because the modal closes immediately and the dashboard waits for refreshed data
-* exception: Secretaria navigation CTAs that redirect to another operational screen may use a blocking screen overlay until the destination route finishes loading
-* edit modals must keep read-only fields visibly blocked instead of hiding them when business rules forbid editing
-* keep the post-action result in toast; loading only covers the in-flight state
-* a single submit must expose a single visible pending indicator; do not duplicate the same loading state in button and helper text simultaneously
+* post-action feedback must use toast
+* no new inline transient success/error messages inside the page
+* inline validation is valid only for form fields
 
----
+### 8.3 Empty states
 
-### Empty state
+Rules:
 
 * clear message
-* CTA
+* one next step when relevant
+* no decorative illustrations
 
 ---
 
-### Error state
+## 9. Role-based UX Rules
 
-* explicit message
-* actionable next step
+### 9.1 Secretaria
 
----
+* sees only Secretaria accounts and categories
+* operates the daily session
+* cannot access consolidation
 
-## 12. Accessibility (minimum)
+### 9.2 Tesoreria
 
-* readable contrast
-* large touch targets
-* simple language
+* sees only Tesoreria accounts and categories
+* can register treasury-owned movements
+* can access consolidation
+* cannot operate the daily session
 
----
+### 9.3 Admin
 
-## 13. Non-negotiable rules
+* manages configuration
+* has no implicit access to operational modules
 
-1. Do not introduce decorative UI patterns
-2. Do not hide critical financial information
-3. Do not add steps to core flows
-4. Do not mix role behaviors
-5. Do not break consistency between screens
-6. Do not overload UI with unnecessary elements
+Never mix role behavior in UI just because multiple modules are technically reachable.
 
 ---
 
-## 14. Priority for MVP
+## 10. Session and Movement Rules
 
-Design first:
+### 10.1 Session-driven behavior
 
-1. Dashboard
-2. Create movement
-3. Open / Close session
-4. Movement list
-5. Consolidation
+* session open → allow daily movement creation/edit where applicable
+* session closed → block those actions
+* session state must always be visible near the top of Secretaria flows
+
+### 10.2 Movements
+
+* amount is always positive
+* movement type defines impact
+* edits must remain auditable
+
+### 10.3 Consolidation edits
+
+* Tesoreria may correct imputations only inside consolidation flow
+* the UI must expose readiness and invalid blockers clearly
 
 ---
 
-## 15. Guidance for AI implementation
+## 11. Documentation Rules for Future Development
 
-* Follow layout and behavior strictly
-* Do not invent new screens
-* Do not change flows
-* Respect role-based visibility
-* Respect session logic
-* Prioritize speed and clarity over visual complexity
+Any future screen or redesign must follow this document before inventing new patterns.
+
+Mandatory rules:
+
+* reuse the authenticated upper bar instead of creating alternate navigation
+* place club context in the upper bar, not in duplicate hero cards
+* use `PageContentHeader` for detail and secondary screens
+* use `StatusBadge` for operational states
+* keep post-action feedback in toast
+* keep role visibility derived from authorization utilities
+* keep all UI text in `lib/texts.json`
+
+If a new user story requires a different visual pattern, this file must be updated in the same task so it remains the source of truth for future work.

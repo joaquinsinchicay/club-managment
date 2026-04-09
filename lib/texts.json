@@ -34,6 +34,13 @@
     "pending_club_label": "Sin club activo",
     "welcome_message_single": "Bienvenido/a {name}, tu rol es {role}",
     "welcome_message_multiple": "Bienvenido/a {name}, tus roles son {role}",
+    "navigation": {
+      "aria_label": "Navegacion principal",
+      "dashboard": "Dashboard",
+      "secretaria": "Secretaria",
+      "tesoreria": "Tesoreria",
+      "settings": "Configuracion"
+    },
     "avatar_menu": {
       "club_settings": "Configuracion del club",
       "sign_out": "Cerrar sesion",
@@ -45,6 +52,19 @@
   "dashboard": {
     "club_label": "Club activo",
     "role_pending": "pendiente",
+    "overview": {
+      "title": "Panel operativo",
+      "description": "Consulta el contexto actual del club y entra al modulo correcto segun tu rol.",
+      "secretaria_title": "Operacion diaria",
+      "tesoreria_title": "Control financiero",
+      "settings_title": "Configuracion del club",
+      "settings_description": "Administra miembros, cuentas, categorias y actividades del club activo segun tus permisos.",
+      "visible_accounts_label": "Cuentas visibles",
+      "recent_movements_label": "Movimientos recientes",
+      "total_balance_label": "Saldo total visible",
+      "open_module_cta": "Abrir modulo",
+      "open_settings_cta": "Abrir configuracion"
+    },
     "feedback": {
       "active_club_updated": "Actualizamos el club activo correctamente.",
       "club_not_available": "No tienes acceso al club seleccionado.",
@@ -206,6 +226,7 @@
       "navigation_loading": "Cargando pantalla...",
       "cancel_session_cta": "Cancelar",
       "back_to_dashboard_cta": "Volver al dashboard",
+      "back_to_secretaria_cta": "Volver a Secretaria",
       "create_cta": "Crear",
       "reset_cta": "Borrar formulario",
       "transfer_source_account_placeholder": "Selecciona una cuenta origen",
@@ -241,7 +262,8 @@
       "recent_movements_description": "Revisa los ultimos movimientos cargados hoy en las cuentas visibles para Tesoreria.",
       "recent_movements_empty": "Todavia no hay movimientos recientes para mostrar.",
       "movement_id_label": "ID movimiento",
-      "back_to_dashboard_cta": "Volver al dashboard"
+      "back_to_dashboard_cta": "Volver al dashboard",
+      "back_to_treasury_cta": "Volver a Tesoreria"
     },
     "consolidation": {
       "eyebrow": "Consolidacion",
@@ -278,6 +300,7 @@
       "execute_description": "Confirma la consolidacion solo cuando todos los pendientes esten validos o ya integrados.",
       "execute_cta": "Consolidar dia",
       "execute_loading": "Consolidando...",
+      "back_to_treasury_cta": "Volver a Tesoreria",
       "audit_title": "Historial auditable",
       "audit_description": "Consulta la imputacion original y las acciones registradas durante la consolidacion.",
       "select_movement": "Selecciona un movimiento del listado para ver su detalle, coincidencias y auditoria.",

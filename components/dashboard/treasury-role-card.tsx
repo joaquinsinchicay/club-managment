@@ -57,7 +57,7 @@ export function TreasuryRoleCard({
 
   return (
     <>
-      <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
+      <section className="rounded-[20px] border border-border bg-card p-6 sm:p-8">
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">
             {texts.dashboard.treasury_role.title}
@@ -75,7 +75,7 @@ export function TreasuryRoleCard({
           ) : (
             <div className="grid gap-3">
               {dashboard.accounts.map((account) => (
-                <article key={account.accountId} className="rounded-[24px] border border-border bg-secondary/30 p-4">
+                <article key={account.accountId} className="rounded-xl border border-border bg-secondary/30 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-base font-semibold text-foreground">{account.name}</p>
                     <Link
@@ -89,7 +89,7 @@ export function TreasuryRoleCard({
                     {account.balances.map((balance) => (
                       <div
                         key={`${account.accountId}-${balance.currencyCode}`}
-                        className="rounded-2xl border border-border/70 bg-card px-4 py-3"
+                        className="rounded-xl border border-border bg-card px-4 py-3"
                       >
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                           {balance.currencyCode}
@@ -107,7 +107,7 @@ export function TreasuryRoleCard({
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
+      <section className="rounded-[20px] border border-border bg-card p-6 sm:p-8">
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">
             {texts.dashboard.treasury_role.actions_card_title}
@@ -119,7 +119,7 @@ export function TreasuryRoleCard({
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
           <Link
-            href="/dashboard/treasury"
+            href="/dashboard/treasury/consolidation"
             className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {texts.dashboard.treasury_role.consolidation_cta}
@@ -145,7 +145,7 @@ export function TreasuryRoleCard({
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
+      <section className="rounded-[20px] border border-border bg-card p-6 sm:p-8">
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">
             {texts.dashboard.treasury_role.recent_movements_title}
@@ -162,7 +162,7 @@ export function TreasuryRoleCard({
             </div>
           ) : (
             dashboard.movements.map((movement) => (
-              <article key={movement.movementId} className="rounded-[24px] border border-border bg-secondary/30 p-4">
+              <article key={movement.movementId} className="rounded-xl border border-border bg-secondary/30 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -175,7 +175,7 @@ export function TreasuryRoleCard({
                     <p className="text-sm text-foreground">{movement.concept}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-base font-semibold text-foreground">
+                    <p className="text-2xl font-semibold tracking-tight text-foreground">
                       {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
                     </p>
                     <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">

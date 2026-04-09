@@ -37,13 +37,12 @@ export default async function TreasuryAccountDetailPage({
 
   return (
     <AccountDetailCard
-      context={context}
       detail={accountDetailData.detail}
       accounts={accountDetailData.accounts}
       currentAccountId={params.accountId}
       accountHrefBase="/dashboard/treasury/accounts"
-      secondaryActionHref="/dashboard"
-      secondaryActionLabel={texts.dashboard.treasury_role.back_to_dashboard_cta}
+      secondaryActionHref="/dashboard/treasury"
+      secondaryActionLabel={texts.dashboard.treasury_role.back_to_treasury_cta}
       emptyAccountsLabel={texts.dashboard.treasury_role.empty_accounts}
     />
   );
