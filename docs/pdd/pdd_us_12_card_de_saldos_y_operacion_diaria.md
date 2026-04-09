@@ -162,6 +162,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - `daily_cash_sessions`: READ para estado de jornada.
 - `treasury_accounts`: READ para cuentas visibles en la card.
 - `treasury_movements`: READ para cálculo de saldos del día.
+- La resolución del estado diario debe ejecutarse con `app.current_club_id` seteado server-side para respetar RLS del club activo.
 
 Do not reference current code files.
 

@@ -53,6 +53,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - El club activo está resuelto en backend.
 - Existen cuentas visibles para Secretaría en el club activo.
 - El dashboard resuelve el estado de jornada del día leyendo `daily_cash_sessions` del club activo.
+- La lectura y mutación de jornada diaria se ejecutan con `app.current_club_id` seteado server-side antes de aplicar RLS.
 
 ---
 
@@ -157,6 +158,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - `daily_cash_sessions`: READ para obtener la jornada del día; INSERT para apertura; UPDATE para cierre.
 - `treasury_accounts`: READ para alimentar la card operativa del club activo.
 - `treasury_movements`: READ para cálculo simple de saldos visibles en dashboard.
+- Las operaciones sobre `daily_cash_sessions` y sus registros asociados deben correr con contexto `app.current_club_id` del club activo.
 
 Do not reference current code files.
 

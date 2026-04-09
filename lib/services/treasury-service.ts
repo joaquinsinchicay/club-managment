@@ -486,6 +486,7 @@ async function applyBalanceAdjustments(input: {
     }
 
     await accessRepository.recordBalanceAdjustment({
+      clubId: input.clubId,
       sessionId: input.sessionId,
       movementId: movement.id,
       accountId: draft.accountId,
@@ -519,6 +520,7 @@ export async function openDailyCashSessionWithDeclaredBalances(input: Array<{
   }
 
   await accessRepository.recordDailyCashSessionBalances(
+    validation.clubId,
     validation.drafts.map((draft) => ({
       sessionId: createdSession.id,
       accountId: draft.accountId,
@@ -559,6 +561,7 @@ export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
   }
 
   await accessRepository.recordDailyCashSessionBalances(
+    validation.clubId,
     validation.drafts.map((draft) => ({
       sessionId: validation.sessionId!,
       accountId: draft.accountId,
@@ -584,7 +587,11 @@ export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
     return adjustmentResult;
   }
 
-  const updated = await accessRepository.closeDailyCashSession(validation.sessionId, validation.userId);
+  const updated = await accessRepository.closeDailyCashSession(
+    validation.clubId,
+    validation.sessionId,
+    validation.userId
+  );
 
   if (!updated) {
     return { ok: false, code: "unknown_error" };
