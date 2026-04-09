@@ -43,18 +43,20 @@ import {
 type AccessRepositoryClient = ReturnType<typeof createServerSupabaseClient>;
 
 export class AccessRepositoryInfraError extends Error {
-  code: "treasury_admin_config_missing" | "treasury_settings_write_failed";
+  code: "treasury_admin_config_missing" | "treasury_settings_write_failed" | "club_scoped_rpc_failed";
   operation: string;
 
   constructor(
-    code: "treasury_admin_config_missing" | "treasury_settings_write_failed",
+    code: "treasury_admin_config_missing" | "treasury_settings_write_failed" | "club_scoped_rpc_failed",
     operation: string,
     options?: { cause?: unknown }
   ) {
     super(
       code === "treasury_admin_config_missing"
         ? "Missing Supabase admin configuration for treasury settings."
-        : "Treasury settings write failed."
+        : code === "treasury_settings_write_failed"
+          ? "Treasury settings write failed."
+          : "Club-scoped RPC failed."
     );
     this.name = "AccessRepositoryInfraError";
     this.code = code;
@@ -1707,24 +1709,39 @@ async function listRealTreasuryCurrenciesForClub(clubId: string, client?: Access
 }
 
 async function findRealDailyCashSessionByDate(clubId: string, sessionDate: string, client?: AccessRepositoryClient) {
-  const rows = await runClubScopedReadRpc<
-    Array<{
-      id: string;
-      club_id: string;
-      session_date: string;
-      status: DailyCashSession["status"] | null;
-      opened_at: string | null;
-      closed_at: string | null;
-      opened_by_user_id: string;
-      closed_by_user_id: string | null;
-    }>
-  >("get_daily_cash_session_for_current_club", clubId, client, {
-    operation: "get_daily_cash_session_by_date",
-    details: { sessionDate },
-    params: {
-      p_session_date: sessionDate
-    }
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "get_daily_cash_session_by_date");
+  }
+
+  const { data, error } = await supabase.rpc("get_daily_cash_session_for_current_club", {
+    p_club_id: clubId,
+    p_session_date: sessionDate
   });
+
+  if (error) {
+    console.error("[club-scoped-rpc-failure]", {
+      operation: "get_daily_cash_session_by_date",
+      clubId,
+      sessionDate,
+      error
+    });
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "get_daily_cash_session_by_date", {
+      cause: error
+    });
+  }
+
+  const rows = (data ?? []) as Array<{
+    id: string;
+    club_id: string;
+    session_date: string;
+    status: DailyCashSession["status"] | null;
+    opened_at: string | null;
+    closed_at: string | null;
+    opened_by_user_id: string;
+    closed_by_user_id: string | null;
+  }>;
 
   if (rows.length === 0) {
     return null;
@@ -1739,7 +1756,32 @@ async function createRealDailyCashSession(
   openedByUserId: string,
   client?: AccessRepositoryClient
 ) {
-  const row = await runClubScopedMutationRpc<{
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "create_daily_cash_session");
+  }
+
+  const { data, error } = await supabase.rpc("create_daily_cash_session_for_current_club", {
+    p_club_id: clubId,
+    p_session_date: sessionDate,
+    p_opened_by_user_id: openedByUserId
+  });
+
+  if (error) {
+    console.error("[club-scoped-rpc-failure]", {
+      operation: "create_daily_cash_session",
+      clubId,
+      sessionDate,
+      openedByUserId,
+      error
+    });
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "create_daily_cash_session", {
+      cause: error
+    });
+  }
+
+  const row = (((data ?? []) as Array<{
     id: string;
     club_id: string;
     session_date: string;
@@ -1748,14 +1790,7 @@ async function createRealDailyCashSession(
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
-  }>("create_daily_cash_session_for_current_club", clubId, client, {
-    operation: "create_daily_cash_session",
-    details: { sessionDate, openedByUserId },
-    params: {
-      p_session_date: sessionDate,
-      p_opened_by_user_id: openedByUserId
-    }
-  });
+  }>)[0] ?? null);
 
   if (!row) {
     return null;
@@ -1812,24 +1847,36 @@ async function recordRealDailyCashSessionBalances(
     return;
   }
 
-  await runClubScopedMutationRpc("record_daily_cash_session_balances_for_current_club", clubId, client, {
-    operation: "record_daily_cash_session_balances",
-    details: {
-      sessionIds: [...new Set(input.map((entry) => entry.sessionId))]
-    },
-    params: {
-      p_entries: input.map((entry) => ({
-        session_id: entry.sessionId,
-        account_id: entry.accountId,
-        currency_code: entry.currencyCode,
-        balance_moment: entry.balanceMoment,
-        expected_balance: entry.expectedBalance,
-        declared_balance: entry.declaredBalance,
-        difference_amount: entry.differenceAmount
-      }))
-    },
-    expectResult: false
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "record_daily_cash_session_balances");
+  }
+
+  const { error } = await supabase.rpc("record_daily_cash_session_balances_for_current_club", {
+    p_club_id: clubId,
+    p_entries: input.map((entry) => ({
+      session_id: entry.sessionId,
+      account_id: entry.accountId,
+      currency_code: entry.currencyCode,
+      balance_moment: entry.balanceMoment,
+      expected_balance: entry.expectedBalance,
+      declared_balance: entry.declaredBalance,
+      difference_amount: entry.differenceAmount
+    }))
   });
+
+  if (error) {
+    console.error("[club-scoped-rpc-failure]", {
+      operation: "record_daily_cash_session_balances",
+      clubId,
+      sessionIds: [...new Set(input.map((entry) => entry.sessionId))],
+      error
+    });
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "record_daily_cash_session_balances", {
+      cause: error
+    });
+  }
 }
 
 async function recordRealBalanceAdjustment(
@@ -1843,21 +1890,33 @@ async function recordRealBalanceAdjustment(
   },
   client?: AccessRepositoryClient
 ) {
-  await runClubScopedMutationRpc("record_balance_adjustment_for_current_club", input.clubId, client, {
-    operation: "record_balance_adjustment",
-    details: {
-      sessionId: input.sessionId,
-      movementId: input.movementId
-    },
-    params: {
-      p_session_id: input.sessionId,
-      p_movement_id: input.movementId,
-      p_account_id: input.accountId,
-      p_difference_amount: input.differenceAmount,
-      p_adjustment_moment: input.adjustmentMoment
-    },
-    expectResult: false
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "record_balance_adjustment");
+  }
+
+  const { error } = await supabase.rpc("record_balance_adjustment_for_current_club", {
+    p_club_id: input.clubId,
+    p_session_id: input.sessionId,
+    p_movement_id: input.movementId,
+    p_account_id: input.accountId,
+    p_difference_amount: input.differenceAmount,
+    p_adjustment_moment: input.adjustmentMoment
   });
+
+  if (error) {
+    console.error("[club-scoped-rpc-failure]", {
+      operation: "record_balance_adjustment",
+      clubId: input.clubId,
+      sessionId: input.sessionId,
+      movementId: input.movementId,
+      error
+    });
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "record_balance_adjustment", {
+      cause: error
+    });
+  }
 }
 
 async function listRealMovementTypeConfigForClub(clubId: string, client?: AccessRepositoryClient) {

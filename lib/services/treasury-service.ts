@@ -21,7 +21,7 @@ import type {
   TreasuryMovementStatus
 } from "@/lib/domain/access";
 import { getDefaultReceiptFormats, isDefaultReceiptNumberValid } from "@/lib/receipt-formats";
-import { accessRepository } from "@/lib/repositories/access-repository";
+import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { texts } from "@/lib/texts";
 
 type TreasuryVisibilityRole = "secretaria" | "tesoreria";
@@ -112,6 +112,30 @@ function buildClubInitials(clubName: string) {
     .join("");
 
   return initials || "CLUB";
+}
+
+function getRepositoryErrorCode(error: unknown) {
+  if (!isAccessRepositoryInfraError(error) || !error.cause || typeof error.cause !== "object") {
+    return null;
+  }
+
+  const code = (error.cause as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
+}
+
+function isSessionAlreadyExistsRepositoryError(error: unknown) {
+  const code = getRepositoryErrorCode(error);
+
+  if (code === "23505") {
+    return true;
+  }
+
+  if (!isAccessRepositoryInfraError(error) || !error.cause || typeof error.cause !== "object") {
+    return false;
+  }
+
+  const message = (error.cause as { message?: unknown }).message;
+  return typeof message === "string" && message.toLowerCase().includes("daily_cash_sessions");
 }
 
 async function generateMovementDisplayId(clubId: string, clubName: string, movementDate: string) {
@@ -319,10 +343,24 @@ async function getSessionValidationBase(
   }
 
   const sessionDate = getTodayDate();
-  const [accounts, session] = await Promise.all([
-    getSecretariaAccounts(context.activeClub.id),
-    accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
-  ]);
+  let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
+
+  try {
+    [session] = await Promise.all([
+      accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
+    ]);
+  } catch (error) {
+    console.error("[session-state-resolution-failed]", {
+      operation: "get_session_validation_base",
+      mode,
+      clubId: context.activeClub.id,
+      sessionDate,
+      error
+    });
+    return null;
+  }
+
+  const accounts = await getSecretariaAccounts(context.activeClub.id);
 
   if (mode === "open" && session) {
     return {
@@ -515,38 +553,76 @@ export async function openDailyCashSessionWithDeclaredBalances(input: Array<{
     return validation;
   }
 
-  const createdSession = await accessRepository.createDailyCashSession(
-    validation.clubId,
-    validation.sessionDate,
-    validation.userId
-  );
+  let createdSession: Awaited<ReturnType<typeof accessRepository.createDailyCashSession>> = null;
+
+  try {
+    createdSession = await accessRepository.createDailyCashSession(
+      validation.clubId,
+      validation.sessionDate,
+      validation.userId
+    );
+  } catch (error) {
+    if (isSessionAlreadyExistsRepositoryError(error)) {
+      return { ok: false, code: "session_already_exists" };
+    }
+
+    console.error("[open-session-create-failed]", {
+      clubId: validation.clubId,
+      sessionDate: validation.sessionDate,
+      userId: validation.userId,
+      error
+    });
+    return { ok: false, code: "unknown_error" };
+  }
 
   if (!createdSession) {
     return { ok: false, code: "unknown_error" };
   }
 
-  await accessRepository.recordDailyCashSessionBalances(
-    validation.clubId,
-    validation.drafts.map((draft) => ({
+  try {
+    await accessRepository.recordDailyCashSessionBalances(
+      validation.clubId,
+      validation.drafts.map((draft) => ({
+        sessionId: createdSession.id,
+        accountId: draft.accountId,
+        currencyCode: draft.currencyCode,
+        balanceMoment: "opening",
+        expectedBalance: draft.expectedBalance,
+        declaredBalance: draft.declaredBalance,
+        differenceAmount: draft.differenceAmount
+      }))
+    );
+  } catch (error) {
+    console.error("[open-session-balance-recording-failed]", {
+      clubId: validation.clubId,
+      sessionDate: validation.sessionDate,
       sessionId: createdSession.id,
-      accountId: draft.accountId,
-      currencyCode: draft.currencyCode,
-      balanceMoment: "opening",
-      expectedBalance: draft.expectedBalance,
-      declaredBalance: draft.declaredBalance,
-      differenceAmount: draft.differenceAmount
-    }))
-  );
+      error
+    });
+    return { ok: false, code: "unknown_error" };
+  }
 
-  const adjustmentResult = await applyBalanceAdjustments({
-    clubId: validation.clubId,
-    clubName: validation.clubName,
-    userId: validation.userId,
-    sessionId: createdSession.id,
-    sessionDate: validation.sessionDate,
-    mode: "open",
-    drafts: validation.drafts
-  });
+  let adjustmentResult: Awaited<ReturnType<typeof applyBalanceAdjustments>>;
+
+  try {
+    adjustmentResult = await applyBalanceAdjustments({
+      clubId: validation.clubId,
+      clubName: validation.clubName,
+      userId: validation.userId,
+      sessionId: createdSession.id,
+      sessionDate: validation.sessionDate,
+      mode: "open",
+      drafts: validation.drafts
+    });
+  } catch (error) {
+    console.error("[open-session-adjustment-failed]", {
+      clubId: validation.clubId,
+      sessionDate: validation.sessionDate,
+      sessionId: createdSession.id,
+      error
+    });
+    return { ok: false, code: "unknown_error" };
+  }
 
   if (!adjustmentResult.ok) {
     return adjustmentResult;
@@ -618,8 +694,21 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   }
 
   const sessionDate = getTodayDate();
-  const [session, accounts, categories, activities, calendarEvents] = await Promise.all([
-    accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate),
+  let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
+  let sessionStateResolved = true;
+
+  try {
+    session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate);
+  } catch (error) {
+    sessionStateResolved = false;
+    console.error("[dashboard-session-state-resolution-failed]", {
+      clubId: context.activeClub.id,
+      sessionDate,
+      error
+    });
+  }
+
+  const [accounts, categories, activities, calendarEvents] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
     accessRepository.listClubActivitiesForClub(context.activeClub.id),
@@ -679,7 +768,9 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
       }))
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
     availableActions:
-      session?.status === "open"
+      !sessionStateResolved
+        ? []
+        : session?.status === "open"
         ? ["close_session", "create_movement"]
         : session?.status === "closed"
           ? []
