@@ -1748,7 +1748,11 @@ async function listRealClubCalendarEventsForClub(clubId: string, client?: Access
       ends_at: string | null;
       is_enabled_for_treasury: boolean | null;
     }>
-  >("get_club_calendar_events_for_current_club", clubId, client);
+  >("get_club_calendar_events_for_current_club", clubId, client, {
+    operation: "get_club_calendar_events_for_current_club",
+    details: { dependency: "optional_dashboard_calendar_events" },
+    suppressLog: true
+  });
 
   return rows.map(mapClubCalendarEventRow);
 }
@@ -2469,6 +2473,7 @@ async function runClubScopedReadRpc<T>(
     details?: Record<string, unknown>;
     strict?: boolean;
     params?: Record<string, unknown>;
+    suppressLog?: boolean;
   }
 ) {
   const supabase = createAccessSupabaseClient(client);
@@ -2487,7 +2492,9 @@ async function runClubScopedReadRpc<T>(
   });
 
   if (error || !data) {
-    logTreasurySettingsReadFailure(options?.operation ?? rpcName, { clubId, ...(options?.details ?? {}) }, error);
+    if (!options?.suppressLog) {
+      logTreasurySettingsReadFailure(options?.operation ?? rpcName, { clubId, ...(options?.details ?? {}) }, error);
+    }
 
     if (options?.strict) {
       throw new AccessRepositoryInfraError("club_scoped_rpc_failed", options?.operation ?? rpcName, {

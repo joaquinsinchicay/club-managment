@@ -148,8 +148,11 @@ En `daily_cash_sessions`, los timestamps operativos deben persistirse en base co
 Antes de asumir que un dashboard operativo esta realmente vacio en el entorno remoto, validar que existan y respondan correctamente estas RPCs club-scoped:
 
 * `get_daily_cash_session_for_current_club`
+* `open_daily_cash_session_with_balances_for_current_club`
+* `close_daily_cash_session_with_balances_for_current_club`
 * `get_treasury_movements_by_date_for_current_club`
 * `get_treasury_movements_by_account_and_date_for_current_club`
+* `get_club_calendar_events_for_current_club`
 
 Si alguna falta o falla, la aplicacion debe tratarlo como error de infraestructura y no como ausencia real de movimientos o saldos.
 
