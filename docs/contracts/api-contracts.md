@@ -373,7 +373,7 @@ Crear cuenta del club.
 Sí
 
 **Allowed roles**
-`tesoreria`
+`secretaria`
 
 **Input**
 
@@ -716,6 +716,13 @@ Sí
   ]
 }
 ```
+
+`session_status` can be:
+
+* `not_started` when no daily session exists for the active club and current date
+* `open` when the current daily session is open
+* `closed` when the current daily session is closed
+* `unresolved` when the dashboard could not resolve `daily_cash_sessions` reliably; in that case the UI must not infer `Jornada pendiente` or expose operational CTAs
 
 ---
 

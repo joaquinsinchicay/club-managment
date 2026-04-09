@@ -96,10 +96,12 @@ export default async function DashboardPage() {
                     {texts.dashboard.overview.secretaria_title}
                   </h2>
                 </div>
-                <StatusBadge
-                  label={getSessionLabel(treasuryCard.sessionStatus)}
-                  tone={getSessionTone(treasuryCard.sessionStatus)}
-                />
+                {treasuryCard.sessionStatus === "unresolved" ? null : (
+                  <StatusBadge
+                    label={getSessionLabel(treasuryCard.sessionStatus)}
+                    tone={getSessionTone(treasuryCard.sessionStatus)}
+                  />
+                )}
               </div>
 
               <div className="space-y-1">

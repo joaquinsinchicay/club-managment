@@ -732,7 +732,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   const calendarEventsById = new Map(calendarEvents.map((event) => [event.id, event]));
 
   return {
-    sessionStatus: session?.status ?? "not_started",
+    sessionStatus: sessionStateResolved ? (session?.status ?? "not_started") : "unresolved",
     sessionDate,
     sessionId: session?.id ?? null,
     accounts: secretaryAccounts.map((account) => ({

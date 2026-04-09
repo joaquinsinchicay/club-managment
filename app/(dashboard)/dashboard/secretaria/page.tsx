@@ -90,10 +90,12 @@ export default async function SecretariaDashboardPage() {
         title={texts.dashboard.treasury.title}
         description={texts.dashboard.treasury.description}
         actions={
-          <StatusBadge
-            label={getSessionLabel(treasuryCard.sessionStatus)}
-            tone={getSessionTone(treasuryCard.sessionStatus)}
-          />
+          treasuryCard.sessionStatus === "unresolved" ? null : (
+            <StatusBadge
+              label={getSessionLabel(treasuryCard.sessionStatus)}
+              tone={getSessionTone(treasuryCard.sessionStatus)}
+            />
+          )
         }
       />
 

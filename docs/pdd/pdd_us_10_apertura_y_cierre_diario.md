@@ -114,6 +114,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ### Reglas
 - El estado de jornada debe verse de forma clara en dashboard.
 - Las acciones disponibles deben cambiar según la jornada.
+- La tab `Secretaría` debe mantener el badge de estado y las CTAs derivados de una misma resolución confiable de `daily_cash_sessions`.
 - La interacción debe ser mobile-first y de baja fricción.
 - Al navegar desde una CTA de Secretaría hacia apertura o cierre, la pantalla actual debe mostrar un loader bloqueante hasta que cargue la nueva ruta.
 - Al confirmar apertura o cierre, el CTA debe entrar en loading de inmediato y el formulario de validación debe quedar bloqueado hasta resolver.
@@ -139,7 +140,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | label | `dashboard.treasury.session_label` | Estado de jornada. |
 | label | `dashboard.treasury.session_open` | Jornada abierta. |
 | label | `dashboard.treasury.session_closed` | Jornada cerrada. |
-| label | `dashboard.treasury.session_not_started` | Jornada no iniciada. |
+| label | `dashboard.treasury.session_not_started` | Jornada pendiente. |
 | action | `dashboard.treasury.open_session_cta` | Acción de abrir jornada. |
 | action | `dashboard.treasury.close_session_cta` | Acción de cerrar jornada. |
 | status | `dashboard.treasury.navigation_loading` | Estado visible durante la navegación hacia apertura o cierre. |
@@ -188,3 +189,10 @@ Do not reference current code files.
 | Permitir múltiples jornadas el mismo día | Media | Alta | Validar existencia previa antes de abrir. |
 | Cerrar jornada sin haber abierto una | Media | Media | Validar sesión `open` previa antes de cerrar. |
 | Mostrar estado ambiguo en dashboard | Media | Media | Exponer un único estado efectivo del día y accionar acorde. |
+
+## 17. Comportamiento esperado en la tab Secretaría
+
+- Sin jornada abierta ni cerrada en el día actual: mostrar `Jornada pendiente` y la CTA `Apertura de jornada`.
+- Con jornada `open` en el día actual: mostrar `Jornada abierta` y las CTAs `Cierre de jornada`, `Cargar movimiento` y `Cargar transferencia`.
+- Con jornada `closed` en el día actual: mostrar `Jornada cerrada`, ocultar CTAs y reemplazar la descripción operativa por `La jornada ya fue cerrada. No se encuentra disponible para carga de movimientos.`
+- Si la resolución de `daily_cash_sessions` falla, la tab `Secretaría` no debe inferir `Jornada pendiente` ni exponer CTAs operativas.

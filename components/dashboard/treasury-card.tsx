@@ -60,6 +60,10 @@ function formatMovementDateTime(value: string) {
 }
 
 function getActionsCardDescription(sessionStatus: DashboardTreasuryCardData["sessionStatus"]) {
+  if (sessionStatus === "unresolved") {
+    return texts.dashboard.treasury.actions_card_unresolved_description;
+  }
+
   if (sessionStatus === "closed") {
     return texts.dashboard.treasury.actions_card_closed_description;
   }
@@ -143,6 +147,7 @@ export function TreasuryCard({
   const canCreateMovement = treasuryCard.availableActions.includes("create_movement");
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
+  const isSessionStateUnresolved = treasuryCard.sessionStatus === "unresolved";
   const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "transfer" | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
@@ -469,7 +474,11 @@ export function TreasuryCard({
           </p>
         </div>
 
-        {treasuryCard.movements.length === 0 ? (
+        {isSessionStateUnresolved ? (
+          <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+            {texts.dashboard.treasury.movements_unresolved}
+          </div>
+        ) : treasuryCard.movements.length === 0 ? (
           <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
             {texts.dashboard.treasury.movements_empty}
           </div>

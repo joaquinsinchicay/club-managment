@@ -160,6 +160,16 @@ Must prioritize:
 * create transfer
 * recent movement list
 
+The `Gestion de jornada` card must derive its badge and CTAs from the same resolved daily session state.
+
+State matrix:
+
+* no session for today: show `Jornada pendiente` and only the CTA `Apertura de jornada`
+* open session for today: show `Jornada abierta` and the CTAs `Cierre de jornada`, `Cargar movimiento`, and `Cargar transferencia`
+* closed session for today: show `Jornada cerrada`, no CTAs, and the message `La jornada ya fue cerrada. No se encuentra disponible para carga de movimientos.`
+
+If the daily session state cannot be resolved, the module must not infer `Jornada pendiente` or expose CTAs as if the state were valid.
+
 ### 5.3 Tesoreria
 
 `/dashboard/treasury` is the finance operations module.
