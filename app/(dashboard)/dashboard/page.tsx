@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import {
+  canAccessDashboardSummary,
   canAccessClubSettingsNavigation,
   canOperateSecretaria,
   canOperateTesoreria
@@ -49,6 +50,10 @@ export default async function DashboardPage() {
 
   if (context.activeMemberships.length === 0 || !context.activeClub || !context.activeMembership) {
     redirect("/pending-approval");
+  }
+
+  if (!canAccessDashboardSummary(context.activeMembership)) {
+    redirect("/dashboard/secretaria");
   }
 
   const canOperateSecretariaRole = canOperateSecretaria(context.activeMembership);

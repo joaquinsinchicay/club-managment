@@ -6,6 +6,7 @@ import {
   updateSecretariaMovementAction
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateSecretaria } from "@/lib/domain/authorization";
@@ -19,6 +20,30 @@ import {
   getEnabledMovementTypesForSecretaria
 } from "@/lib/services/treasury-service";
 import { texts } from "@/lib/texts";
+
+function getSessionTone(status: "open" | "closed" | "not_started") {
+  if (status === "open") {
+    return "success";
+  }
+
+  if (status === "closed") {
+    return "danger";
+  }
+
+  return "warning";
+}
+
+function getSessionLabel(status: "open" | "closed" | "not_started") {
+  if (status === "open") {
+    return texts.dashboard.treasury.session_open;
+  }
+
+  if (status === "closed") {
+    return texts.dashboard.treasury.session_closed;
+  }
+
+  return texts.dashboard.treasury.session_not_started;
+}
 
 export default async function SecretariaDashboardPage() {
   const context = await getAuthenticatedSessionContext();
@@ -64,6 +89,12 @@ export default async function SecretariaDashboardPage() {
         eyebrow={texts.header.navigation.secretaria}
         title={texts.dashboard.treasury.title}
         description={texts.dashboard.treasury.description}
+        actions={
+          <StatusBadge
+            label={getSessionLabel(treasuryCard.sessionStatus)}
+            tone={getSessionTone(treasuryCard.sessionStatus)}
+          />
+        }
       />
 
       <TreasuryCard

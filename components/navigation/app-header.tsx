@@ -8,6 +8,7 @@ import { AvatarSessionMenu } from "@/components/navigation/avatar-session-menu";
 import { ClubMark } from "@/components/ui/club-mark";
 import type { SessionContext } from "@/lib/auth/service";
 import {
+  canAccessDashboardSummary,
   canAccessClubSettingsNavigation,
   canOperateSecretaria,
   canOperateTesoreria
@@ -49,6 +50,7 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
     ? formatMembershipRoles(context.activeMembership.roles)
     : texts.dashboard.role_pending;
   const clubLabel = context.activeClub?.name ?? texts.header.pending_club_label;
+  const canAccessDashboardRole = canAccessDashboardSummary(context.activeMembership);
   const canOperateSecretariaRole = canOperateSecretaria(context.activeMembership);
   const canOperateTesoreriaRole = canOperateTesoreria(context.activeMembership);
   const canAccessSettings = canAccessClubSettingsNavigation(context.activeMembership);
@@ -56,11 +58,15 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
   const showClubSwitcher = Boolean(setActiveClubAction && context.availableClubs.length > 1);
 
   const navigationItems: HeaderNavigationItem[] = [
-    {
-      key: "dashboard",
-      href: "/dashboard",
-      label: texts.header.navigation.dashboard
-    },
+    ...(canAccessDashboardRole
+      ? [
+          {
+            key: "dashboard" as const,
+            href: "/dashboard",
+            label: texts.header.navigation.dashboard
+          }
+        ]
+      : []),
     ...(canOperateTesoreriaRole
       ? [
           {

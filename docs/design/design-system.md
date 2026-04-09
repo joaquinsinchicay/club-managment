@@ -101,7 +101,7 @@ Tabs must be hidden when the user cannot operate that module.
 
 Rules:
 
-* `Dashboard` is always visible in authenticated operational context
+* `Dashboard` is visible only when the active membership is not `secretaria` only
 * `Secretaria` visible only when `canOperateSecretaria(...)`
 * `Tesoreria` visible only when `canOperateTesoreria(...)`
 
