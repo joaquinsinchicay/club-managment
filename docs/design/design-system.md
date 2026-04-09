@@ -170,6 +170,8 @@ State matrix:
 
 If the daily session state cannot be resolved, the module must not infer `Jornada pendiente` or expose CTAs as if the state were valid.
 
+If treasury movement data cannot be resolved, the module must keep the session badge and CTAs derived from `daily_cash_sessions`, but render degraded states for balances and recent movements instead of showing `0,00` or a factual empty state. In that degraded state, the account detail CTA must be hidden or disabled.
+
 ### 5.3 Tesoreria
 
 `/dashboard/treasury` is the finance operations module.

@@ -117,6 +117,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Las acciones disponibles deben cambiar según la jornada.
 - La tab `Secretaría` debe mantener el badge de estado y las CTAs derivados de una misma resolución confiable de `daily_cash_sessions`.
 - El cierre de jornada bloquea nuevas acciones operativas, pero no elimina la visibilidad de saldos ni movimientos ya registrados en el dia actual.
+- Si falla la lectura de `treasury_movements`, el dashboard y los flujos de apertura/cierre no deben asumir saldos `0,00`; deben tratarse como error de infraestructura.
 - La interacción debe ser mobile-first y de baja fricción.
 - Al navegar desde una CTA de Secretaría hacia apertura o cierre, la pantalla actual debe mostrar un loader bloqueante hasta que cargue la nueva ruta.
 - Al confirmar apertura o cierre, el CTA debe entrar en loading de inmediato y el formulario de validación debe quedar bloqueado hasta resolver.
@@ -163,6 +164,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - `treasury_movements`: READ para cálculo simple de saldos visibles en dashboard.
 - La visibilidad de saldos y movimientos del dashboard debe seguir derivandose de `treasury_movements` del dia operativo aun cuando la jornada ya haya quedado `closed`.
 - La lectura y mutación se apoyan en RPCs club-scoped de jornada diaria desplegadas en la base remota activa.
+- La lectura de `treasury_movements` para dashboard y validación de saldos depende de RPCs club-scoped de movimientos desplegadas en la base remota activa.
 - Las operaciones sobre `daily_cash_sessions` y sus registros asociados deben correr con contexto `app.current_club_id` del club activo.
 
 Do not reference current code files.

@@ -286,7 +286,7 @@ async function buildAccountBalanceDrafts(
   const movementsByAccount = await Promise.all(
     accounts.map(async (account) => ({
       account,
-      movements: await accessRepository.listTreasuryMovementsByAccount(clubId, account.id, sessionDate)
+      movements: await accessRepository.listTreasuryMovementsByAccountStrict(clubId, account.id, sessionDate)
     }))
   );
 
@@ -382,13 +382,24 @@ async function getSessionValidationBase(
     };
   }
 
-  return {
-    clubId: context.activeClub.id,
-    sessionDate,
-    sessionStatus: session?.status ?? "not_started",
-    sessionId: session?.id ?? null,
-    accounts: await buildAccountBalanceDrafts(context.activeClub.id, sessionDate, accounts)
-  };
+  try {
+    return {
+      clubId: context.activeClub.id,
+      sessionDate,
+      sessionStatus: session?.status ?? "not_started",
+      sessionId: session?.id ?? null,
+      accounts: await buildAccountBalanceDrafts(context.activeClub.id, sessionDate, accounts)
+    };
+  } catch (error) {
+    console.error("[session-balance-data-resolution-failed]", {
+      operation: "get_session_validation_base",
+      mode,
+      clubId: context.activeClub.id,
+      sessionDate,
+      error
+    });
+    return null;
+  }
 }
 
 export async function getDailyCashSessionValidationForActiveClub(
@@ -696,6 +707,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   const sessionDate = getTodayDate();
   let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
   let sessionStateResolved = true;
+  let movementDataResolved = true;
 
   try {
     session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate);
@@ -716,7 +728,19 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   ]);
 
   const secretaryAccounts = accounts.filter((account) => account.visibleForSecretaria);
-  const movements = await accessRepository.listTreasuryMovementsByDate(context.activeClub.id, sessionDate);
+  let movements: TreasuryMovement[] = [];
+
+  try {
+    movements = await accessRepository.listTreasuryMovementsByDateStrict(context.activeClub.id, sessionDate);
+  } catch (error) {
+    movementDataResolved = false;
+    console.error("[dashboard-movement-data-resolution-failed]", {
+      clubId: context.activeClub.id,
+      sessionDate,
+      error
+    });
+  }
+
   const visibleAccountIds = new Set(secretaryAccounts.map((account) => account.id));
   const visibleMovements = movements.filter((movement) => visibleAccountIds.has(movement.accountId));
   const users = await Promise.all(
@@ -733,6 +757,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
 
   return {
     sessionStatus: sessionStateResolved ? (session?.status ?? "not_started") : "unresolved",
+    movementDataStatus: movementDataResolved ? "resolved" : "unresolved",
     sessionDate,
     sessionId: session?.id ?? null,
     accounts: secretaryAccounts.map((account) => ({

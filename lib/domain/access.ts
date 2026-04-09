@@ -259,6 +259,7 @@ export type BalanceAdjustment = {
 
 export type DashboardTreasuryCard = {
   sessionStatus: TreasurySessionStatus | "not_started" | "unresolved";
+  movementDataStatus: "resolved" | "unresolved";
   sessionDate: string;
   sessionId: string | null;
   accounts: Array<{

@@ -139,6 +139,14 @@ perform set_config('app.current_club_id', p_club_id::text, true);
 
 Esto aplica especialmente a flujos de `treasury_movements`, `daily_cash_sessions` y otras tablas operativas protegidas por RLS.
 
+Antes de asumir que un dashboard operativo esta realmente vacio en el entorno remoto, validar que existan y respondan correctamente estas RPCs club-scoped:
+
+* `get_daily_cash_session_for_current_club`
+* `get_treasury_movements_by_date_for_current_club`
+* `get_treasury_movements_by_account_and_date_for_current_club`
+
+Si alguna falta o falla, la aplicacion debe tratarlo como error de infraestructura y no como ausencia real de movimientos o saldos.
+
 ## 5.4 Excepción preselección de club
 
 Durante la resolución post-login todavía puede no existir `active_club_id`.

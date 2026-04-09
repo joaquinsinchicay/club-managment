@@ -122,6 +122,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Si el alta de movimiento de Secretaría se inicia desde el modal de esta card, la misma card es responsable de activar el bloqueo de pantalla y evitar interacción hasta que la mutación termine.
 - Si la jornada ya fue cerrada, la card de acciones debe reemplazar su descripción operativa por un mensaje explícito indicando que la carga de movimientos ya no está disponible.
 - Una jornada `closed` no debe vaciar los saldos visibles ni el listado de movimientos del dia; solo bloquea nuevas acciones operativas.
+- Si falla la lectura de `treasury_movements`, la UI debe mostrar un estado degradado seguro para saldos y movimientos; no debe inferir importes `0,00` ni ausencia real de registros.
 - Si una CTA de la card redirige a otra pantalla operativa, debe mostrar un loader bloqueante hasta que la ruta destino termine de cargar.
 - Si la jornada está abierta, cada movimiento visible debe ofrecer acceso directo a edición desde la card.
 - No debe haber textos hardcodeados.
@@ -156,6 +157,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | body | `dashboard.treasury.actions_card_unresolved_description` | Mensaje seguro cuando no se puede resolver el estado diario. |
 | title | `dashboard.treasury.movements_card_title` | Titulo de la card de movimientos del dia. |
 | body | `dashboard.treasury.movements_card_description` | Descripcion del listado de movimientos del dia. |
+| label | `dashboard.treasury.balances_unresolved` | Mensaje seguro cuando no se pueden resolver los saldos del dia. |
 | label | `dashboard.treasury.movements_empty` | Estado vacio del listado del dia. |
 | label | `dashboard.treasury.movements_unresolved` | Mensaje seguro cuando no se puede resolver la jornada del dia. |
 
@@ -169,6 +171,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - `treasury_movements`: READ para cálculo de saldos del día.
 - Los saldos y el listado de `Ultimos movimientos` deben leerse por `session_date` del club activo, no depender exclusivamente de la relacion `dailyCashSessionId`.
 - El estado de jornada depende de RPCs club-scoped de jornada diaria disponibles en la base remota activa.
+- La lectura de `treasury_movements` del dashboard depende de RPCs club-scoped de movimientos desplegadas en la base remota activa; un fallo de infraestructura debe resolverse como estado degradado, no como empty state real.
 - La resolución del estado diario debe ejecutarse con `app.current_club_id` seteado server-side para respetar RLS del club activo.
 
 Do not reference current code files.
@@ -206,3 +209,4 @@ Do not reference current code files.
 - `closed`: badge `Jornada cerrada`, sin CTAs y con mensaje de jornada cerrada
 - `closed` mantiene visibles los saldos y los movimientos del `session_date` mientras existan registros para el club activo
 - `unresolved`: sin badge de jornada ni CTAs operativas, con copy seguro que no infiera ausencia de jornada; este estado aplica cuando la infraestructura de lectura falla, no cuando no existen filas
+- Si la jornada está resuelta pero falla la lectura de `treasury_movements`, la card debe conservar el badge/CTAs derivados de `daily_cash_sessions` y mostrar estados degradados específicos para saldos y movimientos

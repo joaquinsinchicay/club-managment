@@ -686,6 +686,7 @@ Sí
 ```json
 {
   "session_status": "open",
+  "movement_data_status": "resolved",
   "session_date": "2026-04-02",
   "accounts": [
     {
@@ -719,11 +720,18 @@ Sí
 
 This contract depends on the club-scoped daily cash session RPCs being deployed in the active database.
 
+This contract also depends on the club-scoped treasury movement RPCs being deployed in the active database.
+
 `accounts[].balances` must reflect the sum of visible `treasury_movements` for the active club and `session_date`.
 
 `movements[]` must list the visible `treasury_movements` of the active club and `session_date`, ordered from newest to oldest by `created_at`.
 
 The dashboard uses `daily_cash_sessions` only to resolve `session_status` and available actions. A movement that belongs to the active club, matches `session_date`, and is visible for Secretaría must still contribute to balances and appear in `movements[]` even if `dailyCashSessionId` is null or does not drive the read path.
+
+`movement_data_status` can be:
+
+* `resolved` when the dashboard could read `treasury_movements` for the active club and `session_date`
+* `unresolved` when the dashboard could not read `treasury_movements` reliably; in that case the UI must not infer balances `0,00`, empty movements, or account detail availability from that failure
 
 `session_status` can be:
 

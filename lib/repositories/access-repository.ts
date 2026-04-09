@@ -185,8 +185,14 @@ type AccessRepository = {
   closeDailyCashSession(clubId: string, sessionId: string, closedByUserId: string): Promise<DailyCashSession | null>;
   listTreasuryMovementsBySession(sessionId: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByAccount(clubId: string, accountId: string, movementDate: string): Promise<TreasuryMovement[]>;
+  listTreasuryMovementsByAccountStrict(
+    clubId: string,
+    accountId: string,
+    movementDate: string
+  ): Promise<TreasuryMovement[]>;
   listTreasuryMovementsHistoryByAccount(clubId: string, accountId: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByDate(clubId: string, movementDate: string): Promise<TreasuryMovement[]>;
+  listTreasuryMovementsByDateStrict(clubId: string, movementDate: string): Promise<TreasuryMovement[]>;
   findTreasuryMovementById(clubId: string, movementId: string): Promise<TreasuryMovement | null>;
   updateTreasuryMovement(input: {
     movementId: string;
@@ -1985,6 +1991,25 @@ async function listRealTreasuryMovementsByAccount(
   movementDate: string,
   client?: AccessRepositoryClient
 ) {
+  return listRealTreasuryMovementsByAccountInternal(clubId, accountId, movementDate, client, false);
+}
+
+async function listRealTreasuryMovementsByAccountStrict(
+  clubId: string,
+  accountId: string,
+  movementDate: string,
+  client?: AccessRepositoryClient
+) {
+  return listRealTreasuryMovementsByAccountInternal(clubId, accountId, movementDate, client, true);
+}
+
+async function listRealTreasuryMovementsByAccountInternal(
+  clubId: string,
+  accountId: string,
+  movementDate: string,
+  client: AccessRepositoryClient | undefined,
+  strict: boolean
+) {
   const rows = await runClubScopedReadRpc<TreasuryMovementRow[]>(
     "get_treasury_movements_by_account_and_date_for_current_club",
     clubId,
@@ -1992,6 +2017,7 @@ async function listRealTreasuryMovementsByAccount(
     {
       operation: "list_treasury_movements_by_account",
       details: { accountId, movementDate },
+      strict,
       params: {
         p_account_id: accountId,
         p_movement_date: movementDate
@@ -2028,6 +2054,23 @@ async function listRealTreasuryMovementsByDate(
   movementDate: string,
   client?: AccessRepositoryClient
 ) {
+  return listRealTreasuryMovementsByDateInternal(clubId, movementDate, client, false);
+}
+
+async function listRealTreasuryMovementsByDateStrict(
+  clubId: string,
+  movementDate: string,
+  client?: AccessRepositoryClient
+) {
+  return listRealTreasuryMovementsByDateInternal(clubId, movementDate, client, true);
+}
+
+async function listRealTreasuryMovementsByDateInternal(
+  clubId: string,
+  movementDate: string,
+  client: AccessRepositoryClient | undefined,
+  strict: boolean
+) {
   const rows = await runClubScopedReadRpc<TreasuryMovementRow[]>(
     "get_treasury_movements_by_date_for_current_club",
     clubId,
@@ -2035,6 +2078,7 @@ async function listRealTreasuryMovementsByDate(
     {
       operation: "list_treasury_movements_by_date",
       details: { movementDate },
+      strict,
       params: {
         p_movement_date: movementDate
       }
@@ -2193,12 +2237,17 @@ async function runClubScopedReadRpc<T>(
   options?: {
     operation?: string;
     details?: Record<string, unknown>;
+    strict?: boolean;
     params?: Record<string, unknown>;
   }
 ) {
   const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
+    if (options?.strict) {
+      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", options?.operation ?? rpcName);
+    }
+
     return [] as unknown as T;
   }
 
@@ -2209,6 +2258,13 @@ async function runClubScopedReadRpc<T>(
 
   if (error || !data) {
     logTreasurySettingsReadFailure(options?.operation ?? rpcName, { clubId, ...(options?.details ?? {}) }, error);
+
+    if (options?.strict) {
+      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", options?.operation ?? rpcName, {
+        cause: error
+      });
+    }
+
     return [] as unknown as T;
   }
 
@@ -3605,6 +3661,18 @@ export const accessRepository: AccessRepository = {
         movement.movementDate === movementDate
     );
   },
+  async listTreasuryMovementsByAccountStrict(clubId, accountId, movementDate) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealTreasuryMovementsByAccountStrict(clubId, accountId, movementDate);
+    }
+
+    return getStore().treasuryMovements.filter(
+      (movement) =>
+        movement.clubId === clubId &&
+        movement.accountId === accountId &&
+        movement.movementDate === movementDate
+    );
+  },
   async listTreasuryMovementsHistoryByAccount(clubId, accountId) {
     if (shouldUseSupabaseDatabase()) {
       return listRealTreasuryMovementsHistoryByAccount(clubId, accountId);
@@ -3617,6 +3685,15 @@ export const accessRepository: AccessRepository = {
   async listTreasuryMovementsByDate(clubId, movementDate) {
     if (shouldUseSupabaseDatabase()) {
       return listRealTreasuryMovementsByDate(clubId, movementDate);
+    }
+
+    return getStore().treasuryMovements.filter(
+      (movement) => movement.clubId === clubId && movement.movementDate === movementDate
+    );
+  },
+  async listTreasuryMovementsByDateStrict(clubId, movementDate) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealTreasuryMovementsByDateStrict(clubId, movementDate);
     }
 
     return getStore().treasuryMovements.filter(

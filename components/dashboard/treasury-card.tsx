@@ -296,6 +296,7 @@ export function TreasuryCard({
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
   const isSessionStateUnresolved = treasuryCard.sessionStatus === "unresolved";
+  const isMovementDataUnresolved = treasuryCard.movementDataStatus === "unresolved";
   const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "transfer" | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
@@ -317,7 +318,10 @@ export function TreasuryCard({
   } | null>(null);
 
   const totalBalances = useMemo(() => getTotalBalances(treasuryCard.accounts), [treasuryCard.accounts]);
-  const detailHref = treasuryCard.accounts[0] ? `/dashboard/accounts/${treasuryCard.accounts[0].accountId}` : null;
+  const detailHref =
+    !isMovementDataUnresolved && treasuryCard.accounts[0]
+      ? `/dashboard/accounts/${treasuryCard.accounts[0].accountId}`
+      : null;
   const pendingOverlayLabel = isMovementSubmissionPending
     ? texts.dashboard.treasury.create_loading
     : isTransferSubmissionPending
@@ -503,7 +507,11 @@ export function TreasuryCard({
             </p>
           </div>
 
-          {treasuryCard.accounts.length === 0 ? (
+          {isMovementDataUnresolved ? (
+            <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+              {texts.dashboard.treasury.balances_unresolved}
+            </div>
+          ) : treasuryCard.accounts.length === 0 ? (
             <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury.empty_accounts}
             </div>
@@ -650,7 +658,7 @@ export function TreasuryCard({
           </p>
         </div>
 
-        {isSessionStateUnresolved ? (
+        {isSessionStateUnresolved || isMovementDataUnresolved ? (
           <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
             {texts.dashboard.treasury.movements_unresolved}
           </div>
