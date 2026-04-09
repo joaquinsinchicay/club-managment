@@ -3,7 +3,6 @@ import Link from "next/link";
 import type { TreasuryAccount, TreasuryAccountDetail } from "@/lib/domain/access";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import { PageContentHeader } from "@/components/ui/page-content-header";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { texts } from "@/lib/texts";
 
 type AccountDetailCardProps = {
@@ -11,33 +10,17 @@ type AccountDetailCardProps = {
   accounts: TreasuryAccount[];
   currentAccountId?: string;
   accountHrefBase: string;
+  detailPageHref: string;
+  currentPage?: number;
   secondaryActionHref?: string;
   secondaryActionLabel?: string;
   emptyAccountsLabel?: string;
 };
 
-function getSessionLabel(status: TreasuryAccountDetail["sessionStatus"]) {
-  if (status === "open") {
-    return texts.dashboard.treasury.session_open;
-  }
+const MOVEMENTS_PER_PAGE = 10;
 
-  if (status === "closed") {
-    return texts.dashboard.treasury.session_closed;
-  }
-
-  return texts.dashboard.treasury.session_not_started;
-}
-
-function getSessionTone(status: TreasuryAccountDetail["sessionStatus"]) {
-  if (status === "open") {
-    return "success";
-  }
-
-  if (status === "closed") {
-    return "danger";
-  }
-
-  return "warning";
+function formatPaginationText(template: string, values: Record<string, number>) {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ""));
 }
 
 function formatMovementGroupDate(value: string) {
@@ -57,18 +40,27 @@ export function AccountDetailCard({
   accounts,
   currentAccountId,
   accountHrefBase,
+  detailPageHref,
+  currentPage = 1,
   secondaryActionHref,
   secondaryActionLabel,
   emptyAccountsLabel = texts.dashboard.treasury.empty_accounts
 }: AccountDetailCardProps) {
+  const safeCurrentPage = Number.isFinite(currentPage) && currentPage > 0 ? Math.floor(currentPage) : 1;
+  const totalMovements = detail?.movements.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalMovements / MOVEMENTS_PER_PAGE));
+  const activePage = Math.min(safeCurrentPage, totalPages);
+  const paginatedMovements = detail
+    ? detail.movements.slice((activePage - 1) * MOVEMENTS_PER_PAGE, activePage * MOVEMENTS_PER_PAGE)
+    : [];
   const movementGroups = detail
     ? Array.from(
-        detail.movements.reduce((groups, movement) => {
+        paginatedMovements.reduce((groups, movement) => {
           const currentGroup = groups.get(movement.movementDate) ?? [];
           currentGroup.push(movement);
           groups.set(movement.movementDate, currentGroup);
           return groups;
-        }, new Map<string, typeof detail.movements>()).entries()
+        }, new Map<string, typeof paginatedMovements>()).entries()
       )
         .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate))
         .map(([movementDate, movements]) => ({
@@ -76,6 +68,10 @@ export function AccountDetailCard({
           movements: [...movements].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
         }))
     : [];
+  const rangeStart = totalMovements === 0 ? 0 : (activePage - 1) * MOVEMENTS_PER_PAGE + 1;
+  const rangeEnd = totalMovements === 0 ? 0 : Math.min(activePage * MOVEMENTS_PER_PAGE, totalMovements);
+  const previousPageHref = `${detailPageHref}?page=${activePage - 1}`;
+  const nextPageHref = `${detailPageHref}?page=${activePage + 1}`;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
@@ -118,19 +114,12 @@ export function AccountDetailCard({
 
           {detail ? (
             <>
-              <div className="grid gap-3 rounded-xl border border-border bg-secondary/50 p-4 sm:grid-cols-2">
+              <div className="max-w-md rounded-xl border border-border bg-secondary/50 p-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     {texts.dashboard.treasury.detail_account_label}
                   </p>
                   <p className="mt-1 text-base font-semibold text-foreground">{detail.account.name}</p>
-                </div>
-                <div>
-                  <StatusBadge
-                    label={getSessionLabel(detail.sessionStatus)}
-                    tone={getSessionTone(detail.sessionStatus)}
-                    className="mt-6"
-                  />
                 </div>
               </div>
 
@@ -235,6 +224,54 @@ export function AccountDetailCard({
                       </div>
                     </section>
                   ))}
+
+                  {totalPages > 1 ? (
+                    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          {formatPaginationText(texts.dashboard.treasury.detail_pagination_status, {
+                            current: activePage,
+                            total: totalPages
+                          })}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatPaginationText(texts.dashboard.treasury.detail_pagination_range, {
+                            from: rangeStart,
+                            to: rangeEnd,
+                            total: totalMovements
+                          })}
+                        </p>
+                      </div>
+
+                      <div className="flex gap-3">
+                        {activePage > 1 ? (
+                          <Link
+                            href={previousPageHref}
+                            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                          >
+                            {texts.dashboard.treasury.detail_pagination_previous_cta}
+                          </Link>
+                        ) : (
+                          <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-secondary/30 px-4 py-3 text-sm font-semibold text-muted-foreground">
+                            {texts.dashboard.treasury.detail_pagination_previous_cta}
+                          </span>
+                        )}
+
+                        {activePage < totalPages ? (
+                          <Link
+                            href={nextPageHref}
+                            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                          >
+                            {texts.dashboard.treasury.detail_pagination_next_cta}
+                          </Link>
+                        ) : (
+                          <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-secondary/30 px-4 py-3 text-sm font-semibold text-muted-foreground">
+                            {texts.dashboard.treasury.detail_pagination_next_cta}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </>

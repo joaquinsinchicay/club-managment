@@ -117,9 +117,11 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Debe mostrar saldos de forma clara y escaneable.
 - Debe ser mobile-first.
 - El estado de jornada debe entenderse de un vistazo.
+- El estado operativo se resuelve desde `daily_cash_sessions`, pero los saldos y los ultimos movimientos del bloque se derivan de `treasury_movements` del `session_date` del club activo.
 - La card de `Gestión de jornada` no puede mostrar un badge y una matriz de CTAs que se contradigan entre sí.
 - Si el alta de movimiento de Secretaría se inicia desde el modal de esta card, la misma card es responsable de activar el bloqueo de pantalla y evitar interacción hasta que la mutación termine.
 - Si la jornada ya fue cerrada, la card de acciones debe reemplazar su descripción operativa por un mensaje explícito indicando que la carga de movimientos ya no está disponible.
+- Una jornada `closed` no debe vaciar los saldos visibles ni el listado de movimientos del dia; solo bloquea nuevas acciones operativas.
 - Si una CTA de la card redirige a otra pantalla operativa, debe mostrar un loader bloqueante hasta que la ruta destino termine de cargar.
 - Si la jornada está abierta, cada movimiento visible debe ofrecer acceso directo a edición desde la card.
 - No debe haber textos hardcodeados.
@@ -165,6 +167,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - `daily_cash_sessions`: READ para estado de jornada.
 - `treasury_accounts`: READ para cuentas visibles en la card.
 - `treasury_movements`: READ para cálculo de saldos del día.
+- Los saldos y el listado de `Ultimos movimientos` deben leerse por `session_date` del club activo, no depender exclusivamente de la relacion `dailyCashSessionId`.
 - El estado de jornada depende de RPCs club-scoped de jornada diaria disponibles en la base remota activa.
 - La resolución del estado diario debe ejecutarse con `app.current_club_id` seteado server-side para respetar RLS del club activo.
 
@@ -201,4 +204,5 @@ Do not reference current code files.
 - `not_started`: badge `Jornada pendiente` y solo CTA `Apertura de jornada`
 - `open`: badge `Jornada abierta` y CTAs `Cierre de jornada`, `Cargar movimiento` y `Cargar transferencia`
 - `closed`: badge `Jornada cerrada`, sin CTAs y con mensaje de jornada cerrada
+- `closed` mantiene visibles los saldos y los movimientos del `session_date` mientras existan registros para el club activo
 - `unresolved`: sin badge de jornada ni CTAs operativas, con copy seguro que no infiera ausencia de jornada; este estado aplica cuando la infraestructura de lectura falla, no cuando no existen filas

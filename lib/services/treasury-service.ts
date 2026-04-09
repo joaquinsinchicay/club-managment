@@ -716,7 +716,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   ]);
 
   const secretaryAccounts = accounts.filter((account) => account.visibleForSecretaria);
-  const movements = session ? await accessRepository.listTreasuryMovementsBySession(session.id) : [];
+  const movements = await accessRepository.listTreasuryMovementsByDate(context.activeClub.id, sessionDate);
   const visibleAccountIds = new Set(secretaryAccounts.map((account) => account.id));
   const visibleMovements = movements.filter((movement) => visibleAccountIds.has(movement.accountId));
   const users = await Promise.all(
@@ -738,7 +738,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     accounts: secretaryAccounts.map((account) => ({
       accountId: account.id,
       name: account.name,
-      balances: buildAccountBalances(account, movements)
+      balances: buildAccountBalances(account, visibleMovements)
     })),
     movements: visibleMovements
       .map((movement) => ({

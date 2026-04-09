@@ -719,6 +719,12 @@ Sí
 
 This contract depends on the club-scoped daily cash session RPCs being deployed in the active database.
 
+`accounts[].balances` must reflect the sum of visible `treasury_movements` for the active club and `session_date`.
+
+`movements[]` must list the visible `treasury_movements` of the active club and `session_date`, ordered from newest to oldest by `created_at`.
+
+The dashboard uses `daily_cash_sessions` only to resolve `session_status` and available actions. A movement that belongs to the active club, matches `session_date`, and is visible for Secretaría must still contribute to balances and appear in `movements[]` even if `dailyCashSessionId` is null or does not drive the read path.
+
 `session_status` can be:
 
 * `not_started` when no daily session exists for the active club and current date
@@ -1047,6 +1053,8 @@ Sí
 
 * devuelve el historial visible completo de la cuenta dentro del club activo
 * la UI puede agrupar los movimientos por `movement_date`
+* la UI pagina el render del historial a 10 movimientos por pagina
+* la paginacion visual se aplica sobre movimientos; un mismo `movement_date` puede aparecer en mas de una pagina si tiene suficientes registros
 
 ---
 

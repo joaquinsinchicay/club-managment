@@ -34,6 +34,7 @@ Desde la card del dashboard de Secretaría o desde la card de Tesorería en `/da
 - Visualización del estado de jornada del día.
 - Historial completo de movimientos visibles de la cuenta seleccionada.
 - Agrupación visual de movimientos por fecha.
+- Paginación visual del historial con 10 movimientos por página.
 - Cambio entre cuentas visibles para el rol operativo del acceso.
 - Estado vacío cuando la cuenta no tiene movimientos.
 - CTA visible para volver al dashboard.
@@ -75,6 +76,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 - La vista solo muestra información de la cuenta seleccionada en el club activo.
 - Los movimientos deben incluir el historial visible completo de la cuenta dentro del club activo.
 - El orden visible debe priorizar las fechas más recientes y agrupar los movimientos por `movementDate`.
+- La UI debe paginar el historial en bloques de 10 movimientos, manteniendo el orden cronológico descendente.
+- La paginación aplica sobre movimientos, no sobre fechas; un mismo `movementDate` puede quedar repartido entre páginas si supera el límite visible.
 - Si el acceso es desde Secretaría y hay jornada abierta, la vista puede ofrecer acceso rápido a registrar un nuevo movimiento.
 - El flujo principal de edición de Secretaría vive en el dashboard, no en esta vista de detalle.
 - Si el acceso es desde Tesorería, la vista no expone CTAs de operatoria de Secretaría.
@@ -87,6 +90,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 2. El sistema resuelve la cuenta seleccionada dentro del club activo y valida visibilidad para el rol del acceso.
 3. La UI muestra saldo actual, estado de jornada e historial de movimientos agrupado por fecha.
 4. El usuario puede cambiar de cuenta desde la misma vista.
+5. Si existen más de 10 movimientos, la UI permite navegar entre páginas del historial.
 
 ---
 
@@ -115,6 +119,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 - Debe permitir cambiar entre cuentas sin fricción.
 - Debe mostrar movimientos y saldos de forma fácil de escanear en mobile.
 - Debe mostrar encabezados de fecha para separar visualmente el historial.
+- Debe mostrar controles de paginación simples cuando el historial supere 10 movimientos.
 - No debe haber textos hardcodeados.
 
 ---
@@ -138,6 +143,10 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 | action | `dashboard.treasury.account_switch_label` | Selector o grupo de cambio de cuenta. |
 | action | `dashboard.treasury.back_to_dashboard_cta` | CTA de regreso al dashboard. |
 | label | `dashboard.treasury.detail_empty_movements` | Estado vacío sin movimientos. |
+| action | `dashboard.treasury.detail_pagination_previous_cta` | Navega a la página anterior del historial. |
+| action | `dashboard.treasury.detail_pagination_next_cta` | Navega a la página siguiente del historial. |
+| label | `dashboard.treasury.detail_pagination_status` | Estado de página visible del historial. |
+| label | `dashboard.treasury.detail_pagination_range` | Rango visible dentro del total de movimientos. |
 
 ---
 
@@ -148,6 +157,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 - `treasury_movements`: READ para obtener movimientos del día por cuenta.
 - `daily_cash_sessions`: READ para reflejar el estado de la jornada actual.
 - `users`: READ indirecto para mostrar responsable de carga cuando sea posible.
+- El backend mantiene la lectura del historial visible completo; la paginación se resuelve en la UI sin modificar el contrato del detalle.
 
 Do not reference current code files.
 

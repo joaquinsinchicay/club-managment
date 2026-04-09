@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 import {
   AccountTransferForm,
@@ -71,6 +71,129 @@ function getActionsCardDescription(sessionStatus: DashboardTreasuryCardData["ses
   return texts.dashboard.treasury.actions_card_description;
 }
 
+function SessionActionIcon({
+  kind,
+  className
+}: {
+  kind: "open" | "movement" | "transfer" | "close";
+  className?: string;
+}) {
+  const sharedProps = {
+    className: cn("size-6", className),
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 2
+  };
+
+  if (kind === "movement") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" {...sharedProps}>
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <path d="M7 8h10" />
+        <path d="M7 12h10" />
+        <path d="M12 16v-5" />
+        <path d="M9.5 13.5h5" />
+      </svg>
+    );
+  }
+
+  if (kind === "transfer") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" {...sharedProps}>
+        <path d="M6 7h11" />
+        <path d="m13 4 4 3-4 3" />
+        <path d="M18 17H7" />
+        <path d="m11 14-4 3 4 3" />
+      </svg>
+    );
+  }
+
+  if (kind === "close") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" {...sharedProps}>
+        <rect x="5" y="11" width="14" height="10" rx="2" />
+        <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+        <circle cx="17.5" cy="17.5" r="3.5" />
+        <path d="M17.5 15.8v1.9l1.2.8" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...sharedProps}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M8 2v4" />
+      <path d="M16 2v4" />
+      <path d="M4 10h16" />
+      <path d="M12 13v4" />
+      <path d="M10 15h4" />
+    </svg>
+  );
+}
+
+function SessionActionChevron() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      className="size-5 text-slate-300 transition group-hover:text-slate-400"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+    >
+      <path d="m7 4 6 6-6 6" />
+    </svg>
+  );
+}
+
+type SessionActionRowProps = {
+  title: string;
+  description: string;
+  iconKind: "open" | "movement" | "transfer" | "close";
+  toneClassName: string;
+  children: ReactNode;
+};
+
+function SessionActionRow({
+  title,
+  description,
+  iconKind,
+  toneClassName,
+  children
+}: SessionActionRowProps) {
+  return (
+    <div className="group relative overflow-hidden rounded-[20px] border border-border/90 bg-card shadow-[0_6px_20px_rgba(15,23,42,0.04)] transition hover:border-border hover:shadow-[0_10px_26px_rgba(15,23,42,0.08)]">
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-slate-100/70" />
+      {children}
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-5">
+        <SessionActionChevron />
+      </div>
+      <div className="pointer-events-none flex items-center gap-4 px-5 py-5 pr-14 sm:px-6">
+        <div
+          className={cn(
+            "flex size-14 shrink-0 items-center justify-center rounded-2xl border text-current",
+            toneClassName
+          )}
+        >
+          <SessionActionIcon kind={iconKind} />
+        </div>
+        <div className="min-w-0 space-y-1">
+          <p className="text-[1.05rem] font-semibold leading-tight tracking-tight text-foreground sm:text-[1.15rem]">
+            {title}
+          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-sm">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getMovementAmountClassName(movementType: TreasuryMovementType) {
   return movementType === "ingreso" ? "text-success" : "text-destructive";
 }
@@ -100,6 +223,31 @@ function getTotalBalances(accounts: DashboardTreasuryCardData["accounts"]): Tota
 
       return left.currencyCode.localeCompare(right.currencyCode);
     });
+}
+
+function ActionsCardHeader({
+  title,
+  description
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="space-y-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          {texts.dashboard.treasury.actions_card_eyebrow}
+        </p>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">{title}</h2>
+          <p className="max-w-sm text-sm leading-6 text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <div className="mt-1 hidden rounded-2xl border border-border bg-secondary/30 p-3 text-muted-foreground sm:flex">
+        <SessionActionIcon kind="open" className="size-5" />
+      </div>
+    </div>
+  );
 }
 
 function SummaryBalance({
@@ -415,50 +563,78 @@ export function TreasuryCard({
         </section>
 
         <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
-          <div className="space-y-1.5">
-            <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
-              {texts.dashboard.treasury.actions_card_title}
-            </h2>
-            <p className="text-sm leading-5 text-muted-foreground">
-              {getActionsCardDescription(treasuryCard.sessionStatus)}
-            </p>
-          </div>
+          <ActionsCardHeader
+            title={texts.dashboard.treasury.actions_card_title}
+            description={getActionsCardDescription(treasuryCard.sessionStatus)}
+          />
 
-          <div className="mt-5 grid gap-3">
+          <div className="mt-6 grid gap-4">
             {canOpenSession ? (
-              <NavigationLinkWithLoader
-                href="/dashboard/session/open"
-                className="inline-flex min-h-14 w-full items-center justify-center rounded-[18px] bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+              <SessionActionRow
+                title={texts.dashboard.treasury.open_session_flow_cta}
+                description={texts.dashboard.treasury.open_session_flow_description}
+                iconKind="open"
+                toneClassName="border-emerald-200/80 bg-emerald-50 text-emerald-600"
               >
-                {texts.dashboard.treasury.open_session_flow_cta}
-              </NavigationLinkWithLoader>
+                <NavigationLinkWithLoader
+                  href="/dashboard/session/open"
+                  className="absolute inset-0 z-10 flex items-center justify-center rounded-[20px]"
+                  aria-label={texts.dashboard.treasury.open_session_flow_cta}
+                >
+                  <span className="sr-only">{texts.dashboard.treasury.open_session_flow_cta}</span>
+                </NavigationLinkWithLoader>
+              </SessionActionRow>
             ) : null}
 
             {canCreateMovement ? (
-              <ModalTriggerButton
-                onClick={() => setActiveModal("movement")}
-                className="min-h-14 justify-center rounded-[18px] border border-border bg-card px-4 py-3 text-foreground hover:bg-secondary"
+              <SessionActionRow
+                title={texts.dashboard.treasury.movement_modal_cta}
+                description={texts.dashboard.treasury.movement_modal_description}
+                iconKind="movement"
+                toneClassName="border-emerald-200/80 bg-emerald-50 text-emerald-600"
               >
-                {texts.dashboard.treasury.movement_modal_cta}
-              </ModalTriggerButton>
+                <ModalTriggerButton
+                  onClick={() => setActiveModal("movement")}
+                  className="absolute inset-0 z-10 rounded-[20px] border-0 bg-transparent p-0 text-left hover:bg-emerald-50/20"
+                  aria-label={texts.dashboard.treasury.movement_modal_cta}
+                >
+                  <span className="sr-only">{texts.dashboard.treasury.movement_modal_cta}</span>
+                </ModalTriggerButton>
+              </SessionActionRow>
             ) : null}
 
             {canCreateMovement ? (
-              <ModalTriggerButton
-                onClick={() => setActiveModal("transfer")}
-                className="min-h-14 justify-center rounded-[18px] border border-border bg-card px-4 py-3 text-foreground hover:bg-secondary"
+              <SessionActionRow
+                title={texts.dashboard.treasury.transfer_modal_cta}
+                description={texts.dashboard.treasury.transfer_modal_description}
+                iconKind="transfer"
+                toneClassName="border-slate-200/90 bg-slate-50 text-slate-500"
               >
-                {texts.dashboard.treasury.transfer_modal_cta}
-              </ModalTriggerButton>
+                <ModalTriggerButton
+                  onClick={() => setActiveModal("transfer")}
+                  className="absolute inset-0 z-10 rounded-[20px] border-0 bg-transparent p-0 text-left hover:bg-slate-50/20"
+                  aria-label={texts.dashboard.treasury.transfer_modal_cta}
+                >
+                  <span className="sr-only">{texts.dashboard.treasury.transfer_modal_cta}</span>
+                </ModalTriggerButton>
+              </SessionActionRow>
             ) : null}
 
             {canCloseSession ? (
-              <NavigationLinkWithLoader
-                href="/dashboard/session/close"
-                className="inline-flex min-h-14 w-full items-center justify-center rounded-[18px] border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+              <SessionActionRow
+                title={texts.dashboard.treasury.close_session_flow_cta}
+                description={texts.dashboard.treasury.close_session_flow_description}
+                iconKind="close"
+                toneClassName="border-rose-200/80 bg-rose-50 text-rose-500"
               >
-                {texts.dashboard.treasury.close_session_flow_cta}
-              </NavigationLinkWithLoader>
+                <NavigationLinkWithLoader
+                  href="/dashboard/session/close"
+                  className="absolute inset-0 z-10 flex items-center justify-center rounded-[20px]"
+                  aria-label={texts.dashboard.treasury.close_session_flow_cta}
+                >
+                  <span className="sr-only">{texts.dashboard.treasury.close_session_flow_cta}</span>
+                </NavigationLinkWithLoader>
+              </SessionActionRow>
             ) : null}
           </div>
         </section>
