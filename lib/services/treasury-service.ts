@@ -1063,7 +1063,7 @@ export async function updateSecretariaMovementInOpenSession(input: {
     return { ok: false, code: "session_required" };
   }
 
-  const movement = await accessRepository.findTreasuryMovementById(input.movementId);
+  const movement = await accessRepository.findTreasuryMovementById(context.activeClub.id, input.movementId);
 
   if (
     !movement ||
@@ -1582,7 +1582,7 @@ export async function createTreasuryRoleMovement(input: {
   const created = await accessRepository.createTreasuryMovement({
     displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, movementDate),
     clubId: context.activeClub.id,
-    dailyCashSessionId: "",
+    dailyCashSessionId: null,
     accountId: account.id,
     movementType: input.movementType,
     categoryId: category.id,
@@ -1756,7 +1756,13 @@ export async function getTreasuryConsolidationDashboard(
 export async function getMovementAuditEntries(
   movementId: string
 ): Promise<ConsolidationAuditEntry[]> {
-  const movement = await accessRepository.findTreasuryMovementById(movementId);
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const movement = await accessRepository.findTreasuryMovementById(context.activeClub.id, movementId);
 
   if (!movement) {
     return [];
@@ -1807,7 +1813,7 @@ export async function updateMovementBeforeConsolidation(input: {
   }
 
   const clubId = context.activeClub.id;
-  const movement = await accessRepository.findTreasuryMovementById(input.movementId);
+  const movement = await accessRepository.findTreasuryMovementById(clubId, input.movementId);
 
   if (!movement || movement.clubId !== clubId || movement.status !== "pending_consolidation") {
     return { ok: false, code: "movement_not_found" };
@@ -1911,8 +1917,8 @@ export async function integrateMatchingMovement(input: {
 
   const clubId = context.activeClub.id;
   const [secretariaMovement, tesoreriaMovement, integrations] = await Promise.all([
-    accessRepository.findTreasuryMovementById(input.secretariaMovementId),
-    accessRepository.findTreasuryMovementById(input.tesoreriaMovementId),
+    accessRepository.findTreasuryMovementById(clubId, input.secretariaMovementId),
+    accessRepository.findTreasuryMovementById(clubId, input.tesoreriaMovementId),
     accessRepository.listMovementIntegrations()
   ]);
 

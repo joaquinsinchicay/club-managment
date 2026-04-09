@@ -131,6 +131,14 @@ Esto debe hacerlo:
 * backend (server actions / middleware)
 * nunca confiar en frontend únicamente
 
+Para lecturas y mutaciones operativas complejas, la alternativa preferida es exponer RPCs club-scoped que reciban `p_club_id` y hagan internamente:
+
+```sql
+perform set_config('app.current_club_id', p_club_id::text, true);
+```
+
+Esto aplica especialmente a flujos de `treasury_movements`, `daily_cash_sessions` y otras tablas operativas protegidas por RLS.
+
 ## 5.4 Excepción preselección de club
 
 Durante la resolución post-login todavía puede no existir `active_club_id`.
