@@ -109,7 +109,13 @@ export async function createAccountTransferAction(formData: FormData) {
     concept: String(formData.get("concept") ?? "")
   });
 
-  redirectToDashboard(result.code);
+  revalidatePath("/dashboard");
+
+  return {
+    ok: result.ok,
+    code: result.code,
+    movementDisplayId: result.movementDisplayId
+  } satisfies TreasuryActionResponse;
 }
 
 export async function createFxOperationAction(formData: FormData) {

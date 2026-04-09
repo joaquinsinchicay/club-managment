@@ -183,6 +183,7 @@ type AccessRepository = {
   closeDailyCashSession(sessionId: string, closedByUserId: string): Promise<DailyCashSession | null>;
   listTreasuryMovementsBySession(sessionId: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByAccount(clubId: string, accountId: string, movementDate: string): Promise<TreasuryMovement[]>;
+  listTreasuryMovementsHistoryByAccount(clubId: string, accountId: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByDate(clubId: string, movementDate: string): Promise<TreasuryMovement[]>;
   findTreasuryMovementById(movementId: string): Promise<TreasuryMovement | null>;
   updateTreasuryMovement(input: {
@@ -3034,6 +3035,11 @@ export const accessRepository: AccessRepository = {
         movement.clubId === clubId &&
         movement.accountId === accountId &&
         movement.movementDate === movementDate
+    );
+  },
+  async listTreasuryMovementsHistoryByAccount(clubId, accountId) {
+    return getStore().treasuryMovements.filter(
+      (movement) => movement.clubId === clubId && movement.accountId === accountId
     );
   },
   async listTreasuryMovementsByDate(clubId, movementDate) {

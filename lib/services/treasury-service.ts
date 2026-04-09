@@ -1224,7 +1224,7 @@ export async function createAccountTransfer(input: {
     return { ok: false, code: "unknown_error" };
   }
 
-  return { ok: true, code: "transfer_created" };
+  return { ok: true, code: "transfer_created", movementDisplayId: sourceMovement.displayId };
 }
 
 export async function createFxOperation(input: {
@@ -2148,11 +2148,7 @@ export async function getTreasuryAccountDetailForActiveClub(
     };
   }
 
-  const movements = await accessRepository.listTreasuryMovementsByAccount(
-    context.activeClub.id,
-    selectedAccount.id,
-    sessionDate
-  );
+  const movements = await accessRepository.listTreasuryMovementsHistoryByAccount(context.activeClub.id, selectedAccount.id);
 
   const visibleMovements = movements.filter((movement) => shouldIncludeMovementInRoleBalances(movement, role));
   const balances = buildAccountBalances(selectedAccount, visibleMovements);
@@ -2191,7 +2187,7 @@ export async function getTreasuryAccountDetailForActiveClub(
           createdAt: movement.createdAt
         };
       })
-      .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
   };
 
   return {

@@ -954,6 +954,15 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     And actualiza el estado a "Cerrada"
     And se actualizan los CTA disponibles
 
+  Scenario 09A: Confirmación de cierre con un único loader visible
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta
+    And estoy confirmando el cierre de jornada
+    When selecciono "Confirmar cierre"
+    Then visualizo un único loader visible durante el submit
+    And no se muestran indicadores duplicados del mismo estado pending
+
   Scenario 10: Acceso a registro de movimiento desde la card
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
@@ -998,6 +1007,13 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     And veo movimientos en la card operativa
     When visualizo la card de movimientos
     Then cada movimiento expone una acción para editarlo
+
+  Scenario 16: Mensaje específico en card de acciones con jornada cerrada
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And la jornada del día ya fue abierta y luego cerrada
+    When ingreso al dashboard
+    Then la card de acciones muestra el mensaje "La jornada ya fue cerrada. No se encuentra disponible para carga de movimientos."
 ```
 
 ---
@@ -1038,7 +1054,7 @@ Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
     And tengo rol "Secretaria" en el club activo
     And accedí al detalle de una cuenta
     When la vista carga
-    Then veo el listado de movimientos de la jornada actual para esa cuenta
+    Then veo el historial completo de movimientos visibles para esa cuenta
     And cada movimiento muestra fecha y hora
     And cada movimiento muestra concepto
     And cada movimiento muestra categoría
@@ -1046,20 +1062,22 @@ Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
     And cada movimiento muestra importe
     And cada movimiento muestra usuario responsable
 
-  Scenario 05: Orden cronológico de movimientos
+  Scenario 05: Agrupación y orden cronológico de movimientos
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
-    And existen múltiples movimientos en la cuenta durante la jornada
+    And existen múltiples movimientos en la cuenta en distintas fechas
     When visualizo el detalle de la cuenta
-    Then veo los movimientos ordenados cronológicamente
+    Then veo los movimientos agrupados por fecha
+    And veo primero las fechas más recientes
+    And dentro de cada fecha los movimientos aparecen de más recientes a más antiguos
 
   Scenario 06: Visualización sin movimientos
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
-    And accedí al detalle de una cuenta sin movimientos en la jornada actual
+    And accedí al detalle de una cuenta sin movimientos visibles en su historial
     When la vista carga
     Then veo el saldo actual de la cuenta
-    And veo un estado vacío indicando que no hay movimientos registrados para esa jornada
+    And veo un estado vacío indicando que no hay movimientos registrados para esa cuenta
 
   Scenario 07: Consistencia con el club activo
     Given estoy autenticado
@@ -1105,6 +1123,13 @@ Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
     And existen múltiples cuentas configuradas
     When selecciono otra cuenta para consultar
     Then veo el saldo y los movimientos correspondientes a la nueva cuenta seleccionada
+
+  Scenario 13A: CTA para volver al dashboard
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And accedí al detalle de una cuenta
+    When visualizo la vista
+    Then veo una acción para volver al dashboard
 
   Scenario 13: Estado sin cuentas configuradas
     Given estoy autenticado
@@ -2240,11 +2265,18 @@ Feature: US-25 — Registro de transferencias entre cuentas
     Given estoy viendo el formulario de transferencia
     And completé correctamente todos los campos obligatorios
     When selecciono "Crear"
-    Then el sistema registra una transferencia interna en el club activo
+    Then el modal se cierra
+    And visualizo la pantalla bloqueada con un loader
+    And el sistema registra una transferencia interna en el club activo
     And genera automáticamente un movimiento de egreso en la cuenta origen
     And genera automáticamente un movimiento de ingreso en la cuenta destino
     And ambos movimientos quedan asociados a la misma transferencia
     And ambos movimientos quedan asociados a la jornada abierta actual
+
+  Scenario 12A: Resolución visual al finalizar la creación
+    Given visualizo la pantalla bloqueada con un loader durante la creación de una transferencia
+    When finaliza la creación y el dashboard refresca los datos
+    Then desaparece el loader
     And veo un toast de confirmación
 
   Scenario 13: Ambos movimientos comparten trazabilidad común

@@ -31,6 +31,18 @@ function getSessionLabel(status: TreasuryAccountDetail["sessionStatus"]) {
   return texts.dashboard.treasury.session_not_started;
 }
 
+function formatMovementGroupDate(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "long"
+  }).format(date);
+}
+
 export function AccountDetailCard({
   context,
   detail,
@@ -42,6 +54,22 @@ export function AccountDetailCard({
   secondaryActionLabel,
   emptyAccountsLabel = texts.dashboard.treasury.empty_accounts
 }: AccountDetailCardProps) {
+  const movementGroups = detail
+    ? Array.from(
+        detail.movements.reduce((groups, movement) => {
+          const currentGroup = groups.get(movement.movementDate) ?? [];
+          currentGroup.push(movement);
+          groups.set(movement.movementDate, currentGroup);
+          return groups;
+        }, new Map<string, typeof detail.movements>()).entries()
+      )
+        .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate))
+        .map(([movementDate, movements]) => ({
+          movementDate,
+          movements: [...movements].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        }))
+    : [];
+
   return (
     <div className="min-h-screen">
       <AppHeader context={context} />
@@ -118,14 +146,25 @@ export function AccountDetailCard({
                   ))}
                 </div>
 
-                {canCreateMovement ? (
-                  <Link
-                    href="/dashboard"
-                    className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                  >
-                    {texts.dashboard.treasury.detail_create_movement_cta}
-                  </Link>
-                ) : null}
+                <div className="flex flex-wrap gap-3">
+                  {canCreateMovement ? (
+                    <Link
+                      href="/dashboard"
+                      className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                    >
+                      {texts.dashboard.treasury.detail_create_movement_cta}
+                    </Link>
+                  ) : null}
+
+                  {secondaryActionHref && secondaryActionLabel ? (
+                    <Link
+                      href={secondaryActionHref}
+                      className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                    >
+                      {secondaryActionLabel}
+                    </Link>
+                  ) : null}
+                </div>
 
                 {detail.movements.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
@@ -133,81 +172,87 @@ export function AccountDetailCard({
                   </div>
                 ) : (
                   <div className="grid gap-3">
-                    {detail.movements.map((movement) => (
-                      <article
-                        key={movement.movementId}
-                        className="rounded-2xl border border-border bg-secondary/40 p-4"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                              {movement.movementDisplayId}
-                            </p>
-                            <p className="text-sm font-semibold text-foreground">{movement.concept}</p>
-                          </div>
-                          <span className="text-sm font-semibold text-foreground">
-                            {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
-                          </span>
+                    {movementGroups.map((group) => (
+                      <section key={group.movementDate} className="space-y-3">
+                        <div className="rounded-2xl border border-border bg-card px-4 py-3">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                            {texts.dashboard.treasury.date_label}
+                          </p>
+                          <p className="mt-1 text-base font-semibold text-foreground">
+                            {formatMovementGroupDate(group.movementDate)}
+                          </p>
                         </div>
-                        <div className="mt-2 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-                          <p>{movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}</p>
-                          <p className="capitalize">{movement.movementType}</p>
-                          <p>{movement.movementDate}</p>
-                          <p>{movement.createdByUserName}</p>
-                          {movement.activityName ? (
-                            <p className="sm:col-span-2">
-                              <span className="font-medium text-foreground">
-                                {texts.dashboard.treasury.detail_activity_label}
-                              </span>{" "}
-                              {movement.activityName}
-                            </p>
-                          ) : null}
-                          {movement.calendarEventTitle ? (
-                            <p className="sm:col-span-2">
-                              <span className="font-medium text-foreground">
-                                {texts.dashboard.treasury.detail_calendar_label}
-                              </span>{" "}
-                              {movement.calendarEventTitle}
-                            </p>
-                          ) : null}
-                          {movement.transferReference ? (
-                            <p className="sm:col-span-2">
-                              <span className="font-medium text-foreground">
-                                {texts.dashboard.treasury.detail_transfer_label}
-                              </span>{" "}
-                              {movement.transferReference}
-                            </p>
-                          ) : null}
-                          {movement.fxOperationReference ? (
-                            <p className="sm:col-span-2">
-                              <span className="font-medium text-foreground">
-                                {texts.dashboard.treasury.detail_fx_label}
-                              </span>{" "}
-                              {movement.fxOperationReference}
-                            </p>
-                          ) : null}
-                          {movement.receiptNumber ? (
-                            <p className="sm:col-span-2">
-                              <span className="font-medium text-foreground">
-                                {texts.dashboard.treasury.detail_receipt_label}
-                              </span>{" "}
-                              {movement.receiptNumber}
-                            </p>
-                          ) : null}
+
+                        <div className="grid gap-3">
+                          {group.movements.map((movement) => (
+                            <article
+                              key={movement.movementId}
+                              className="rounded-2xl border border-border bg-secondary/40 p-4"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                    {movement.movementDisplayId}
+                                  </p>
+                                  <p className="text-sm font-semibold text-foreground">{movement.concept}</p>
+                                </div>
+                                <span className="text-sm font-semibold text-foreground">
+                                  {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
+                                </span>
+                              </div>
+                              <div className="mt-2 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                                <p>{movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}</p>
+                                <p className="capitalize">{movement.movementType}</p>
+                                <p>{movement.movementDate}</p>
+                                <p>{movement.createdByUserName}</p>
+                                {movement.activityName ? (
+                                  <p className="sm:col-span-2">
+                                    <span className="font-medium text-foreground">
+                                      {texts.dashboard.treasury.detail_activity_label}
+                                    </span>{" "}
+                                    {movement.activityName}
+                                  </p>
+                                ) : null}
+                                {movement.calendarEventTitle ? (
+                                  <p className="sm:col-span-2">
+                                    <span className="font-medium text-foreground">
+                                      {texts.dashboard.treasury.detail_calendar_label}
+                                    </span>{" "}
+                                    {movement.calendarEventTitle}
+                                  </p>
+                                ) : null}
+                                {movement.transferReference ? (
+                                  <p className="sm:col-span-2">
+                                    <span className="font-medium text-foreground">
+                                      {texts.dashboard.treasury.detail_transfer_label}
+                                    </span>{" "}
+                                    {movement.transferReference}
+                                  </p>
+                                ) : null}
+                                {movement.fxOperationReference ? (
+                                  <p className="sm:col-span-2">
+                                    <span className="font-medium text-foreground">
+                                      {texts.dashboard.treasury.detail_fx_label}
+                                    </span>{" "}
+                                    {movement.fxOperationReference}
+                                  </p>
+                                ) : null}
+                                {movement.receiptNumber ? (
+                                  <p className="sm:col-span-2">
+                                    <span className="font-medium text-foreground">
+                                      {texts.dashboard.treasury.detail_receipt_label}
+                                    </span>{" "}
+                                    {movement.receiptNumber}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </article>
+                          ))}
                         </div>
-                      </article>
+                      </section>
                     ))}
                   </div>
                 )}
-
-                {secondaryActionHref && secondaryActionLabel ? (
-                  <Link
-                    href={secondaryActionHref}
-                    className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                  >
-                    {secondaryActionLabel}
-                  </Link>
-                ) : null}
               </>
             ) : null}
           </div>

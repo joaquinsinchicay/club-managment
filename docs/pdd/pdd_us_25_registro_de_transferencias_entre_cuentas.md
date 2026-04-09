@@ -33,6 +33,8 @@ Secretaría debe disponer de un formulario específico para registrar una transf
   - moneda autoseleccionada según cuenta origen
   - validación inline sobre cuenta destino si la moneda no es compatible
   - importe con el mismo comportamiento de ingreso que el formulario de movimientos
+  - cierre inmediato del modal al enviar
+  - overlay bloqueante de pantalla hasta que el dashboard refresque la transferencia creada
 - Creación de un registro de transferencia interna.
 - Generación automática de dos movimientos asociados a la misma referencia.
 - Visualización de la referencia de transferencia en el detalle del movimiento.
@@ -61,6 +63,7 @@ Secretaría debe disponer de un formulario específico para registrar una transf
   - ingreso en la cuenta destino
 - Ambos movimientos comparten una misma referencia de transferencia.
 - La operación debe considerarse transferencia interna y no ingreso/egreso externo.
+- El feedback final debe mostrarse en toast, luego de liberar el overlay bloqueante.
 
 ---
 

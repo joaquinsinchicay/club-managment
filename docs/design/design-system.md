@@ -358,10 +358,11 @@ Rules:
 * every async mutation must show immediate feedback in the affected CTA
 * the affected form or card must become non-interactive while the mutation is pending
 * use local loading states, not fullscreen overlays, unless the flow truly blocks the whole screen
-* exception: creating a Secretaria movement from the dashboard modal may use a blocking screen overlay after submit, because the modal closes immediately and the dashboard waits for refreshed data
+* exception: creating a Secretaria movement or transfer from the dashboard modal may use a blocking screen overlay after submit, because the modal closes immediately and the dashboard waits for refreshed data
 * exception: Secretaria navigation CTAs that redirect to another operational screen may use a blocking screen overlay until the destination route finishes loading
 * edit modals must keep read-only fields visibly blocked instead of hiding them when business rules forbid editing
 * keep the post-action result in toast; loading only covers the in-flight state
+* a single submit must expose a single visible pending indicator; do not duplicate the same loading state in button and helper text simultaneously
 
 ---
 

@@ -141,8 +141,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | action | `dashboard.treasury.open_session_cta` | Acción de abrir jornada. |
 | action | `dashboard.treasury.close_session_cta` | Acción de cerrar jornada. |
 | status | `dashboard.treasury.navigation_loading` | Estado visible durante la navegación hacia apertura o cierre. |
-| status | `dashboard.treasury.confirm_open_session_loading` | Estado visible mientras se confirma la apertura. |
-| status | `dashboard.treasury.confirm_close_session_loading` | Estado visible mientras se confirma el cierre. |
+| status | `dashboard.treasury.confirm_open_session_loading` | Estado visible mientras se confirma la apertura, sin duplicar otros loaders del mismo submit. |
+| status | `dashboard.treasury.confirm_close_session_loading` | Estado visible mientras se confirma el cierre, sin duplicar otros loaders del mismo submit. |
 | feedback | `dashboard.feedback.session_opened` | Apertura exitosa. |
 | feedback | `dashboard.feedback.session_closed` | Cierre exitoso. |
 | feedback | `dashboard.feedback.session_already_exists` | Error de doble apertura. |

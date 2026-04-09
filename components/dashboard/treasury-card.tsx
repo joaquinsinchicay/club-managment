@@ -37,7 +37,7 @@ type TreasuryCardProps = {
   receiptFormats: ReceiptFormat[];
   createTreasuryMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateSecretariaMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
-  createAccountTransferAction: (formData: FormData) => Promise<void>;
+  createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
 };
 
 function getSessionLabel(status: DashboardTreasuryCardData["sessionStatus"]) {
@@ -63,6 +63,14 @@ function formatMovementDateTime(value: string) {
     dateStyle: "short",
     timeStyle: "short"
   }).format(date);
+}
+
+function getActionsCardDescription(sessionStatus: DashboardTreasuryCardData["sessionStatus"]) {
+  if (sessionStatus === "closed") {
+    return texts.dashboard.treasury.actions_card_closed_description;
+  }
+
+  return texts.dashboard.treasury.actions_card_description;
 }
 
 export function TreasuryCard({
@@ -91,6 +99,8 @@ export function TreasuryCard({
   const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [pendingMovementDisplayId, setPendingMovementDisplayId] = useState<string | null>(null);
+  const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
+  const [pendingTransferMovementDisplayId, setPendingTransferMovementDisplayId] = useState<string | null>(null);
   const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
   const [pendingMovementUpdate, setPendingMovementUpdate] = useState<{
     movementId: string;
@@ -118,6 +128,20 @@ export function TreasuryCard({
       setPendingMovementDisplayId(null);
     }
   }, [isMovementSubmissionPending, pendingMovementDisplayId, treasuryCard.movements]);
+
+  useEffect(() => {
+    if (!isTransferSubmissionPending) {
+      return;
+    }
+
+    if (
+      pendingTransferMovementDisplayId &&
+      treasuryCard.movements.some((movement) => movement.movementDisplayId === pendingTransferMovementDisplayId)
+    ) {
+      setIsTransferSubmissionPending(false);
+      setPendingTransferMovementDisplayId(null);
+    }
+  }, [isTransferSubmissionPending, pendingTransferMovementDisplayId, treasuryCard.movements]);
 
   useEffect(() => {
     if (!isMovementUpdatePending || !pendingMovementUpdate) {
@@ -217,8 +241,42 @@ export function TreasuryCard({
     }
   }
 
+  async function handleCreateAccountTransfer(formData: FormData) {
+    setIsTransferSubmissionPending(true);
+    setActiveModal(null);
+
+    try {
+      const result = await createAccountTransferAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+
+      if (result.movementDisplayId) {
+        nextParams.set("movement_id", result.movementDisplayId);
+      } else {
+        nextParams.delete("movement_id");
+      }
+
+      if (result.ok) {
+        setPendingTransferMovementDisplayId(result.movementDisplayId ?? null);
+      } else {
+        setPendingTransferMovementDisplayId(null);
+        setIsTransferSubmissionPending(false);
+      }
+
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      router.refresh();
+    } catch (error) {
+      setPendingTransferMovementDisplayId(null);
+      setIsTransferSubmissionPending(false);
+      throw error;
+    }
+  }
+
   const pendingOverlayLabel = isMovementSubmissionPending
     ? texts.dashboard.treasury.create_loading
+    : isTransferSubmissionPending
+      ? texts.dashboard.treasury.transfer_create_loading
     : isMovementUpdatePending
       ? texts.dashboard.treasury.update_loading
       : null;
@@ -306,7 +364,7 @@ export function TreasuryCard({
             {texts.dashboard.treasury.actions_card_title}
           </h2>
           <p className="text-sm leading-5 text-muted-foreground">
-            {texts.dashboard.treasury.actions_card_description}
+            {getActionsCardDescription(treasuryCard.sessionStatus)}
           </p>
         </div>
 
@@ -468,7 +526,7 @@ export function TreasuryCard({
           sourceAccounts={transferSourceAccounts}
           targetAccounts={transferTargetAccounts}
           currencies={currencies}
-          submitAction={createAccountTransferAction}
+          submitAction={handleCreateAccountTransfer}
           sessionDate={treasuryCard.sessionDate}
         />
       </Modal>

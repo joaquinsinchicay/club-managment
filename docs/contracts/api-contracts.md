@@ -1001,8 +1001,7 @@ Sí
 
 ```json
 {
-  "account_id": "uuid",
-  "date": "2026-04-02"
+  "account_id": "uuid"
 }
 ```
 
@@ -1030,6 +1029,11 @@ Sí
   ]
 }
 ```
+
+**Notes**
+
+* devuelve el historial visible completo de la cuenta dentro del club activo
+* la UI puede agrupar los movimientos por `movement_date`
 
 ---
 

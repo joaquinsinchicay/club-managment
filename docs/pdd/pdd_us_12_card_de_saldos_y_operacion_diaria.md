@@ -118,6 +118,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Debe ser mobile-first.
 - El estado de jornada debe entenderse de un vistazo.
 - Si el alta de movimiento de Secretaría se inicia desde el modal de esta card, la misma card es responsable de activar el bloqueo de pantalla y evitar interacción hasta que la mutación termine.
+- Si la jornada ya fue cerrada, la card de acciones debe reemplazar su descripción operativa por un mensaje explícito indicando que la carga de movimientos ya no está disponible.
 - Si una CTA de la card redirige a otra pantalla operativa, debe mostrar un loader bloqueante hasta que la ruta destino termine de cargar.
 - Si la jornada está abierta, cada movimiento visible debe ofrecer acceso directo a edición desde la card.
 - No debe haber textos hardcodeados.
@@ -148,6 +149,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | action | `dashboard.treasury.movement_modal_cta` | Abrir modal para registrar movimiento. |
 | action | `dashboard.treasury.edit_movement_cta` | Abrir modal para editar un movimiento visible. |
 | action | `dashboard.treasury.transfer_modal_cta` | Abrir modal para registrar transferencia. |
+| body | `dashboard.treasury.actions_card_closed_description` | Mensaje informativo para jornada cerrada en la card de acciones. |
 | title | `dashboard.treasury.movements_card_title` | Titulo de la card de movimientos del dia. |
 | body | `dashboard.treasury.movements_card_description` | Descripcion del listado de movimientos del dia. |
 | label | `dashboard.treasury.movements_empty` | Estado vacio del listado del dia. |
