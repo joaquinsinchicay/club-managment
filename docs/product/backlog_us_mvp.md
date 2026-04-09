@@ -707,6 +707,14 @@ Feature: US-10 — Apertura y cierre diario de movimientos
     When realizo apertura o cierre de jornada
     Then la operación aplica únicamente al club activo
     And no afecta la información de otros clubes
+
+  Scenario 11: Navegación con feedback hacia una pantalla operativa
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And veo una CTA que redirige a una pantalla de apertura o cierre diario
+    When selecciono la CTA
+    Then visualizo un loader bloqueante hasta que cargue la nueva página
+    And no puedo interactuar con la pantalla actual durante la redirección
 ```
 
 ---
@@ -811,7 +819,7 @@ Feature: US-11 — Registro de movimientos diarios
     Then el sistema registra el movimiento en el club activo
     And asocia el movimiento a la jornada abierta actual
     And impacta el saldo de la cuenta correspondiente
-    And veo un mensaje de confirmación
+    And veo un toast de confirmacion
 
   Scenario 14: Registro exitoso asociado a jornada y usuario responsable
     Given estoy viendo el formulario de registro de movimientos
@@ -828,6 +836,40 @@ Feature: US-11 — Registro de movimientos diarios
     When selecciono "Borrar formulario"
     Then el formulario vuelve a su estado inicial
     And conserva la fecha cargada por defecto
+
+  Scenario 16: Estado transitorio luego de crear un movimiento
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And estoy viendo el formulario de registro de movimientos
+    And completé correctamente todos los campos obligatorios visibles
+    When selecciono "Crear"
+    Then el modal se cierra inmediatamente
+    And la pantalla queda bloqueada con un loader visible
+    And no puedo interactuar con el dashboard mientras la creación sigue pendiente
+
+  Scenario 17: Resolución exitosa luego del loader
+    Given tengo rol "Secretaria" en el club activo
+    And seleccioné "Crear" en un formulario válido de registro de movimientos
+    And la pantalla está bloqueada con un loader
+    When finaliza la creación del movimiento
+    Then deja de mostrarse el loader
+    And veo un toast de confirmacion
+
+  Scenario 18: Edición de movimientos durante jornada abierta
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And existen movimientos visibles cargados en esa jornada
+    When visualizo el dashboard
+    Then todos los movimientos de la jornada abierta son editables
+
+  Scenario 19: Campos editables de un movimiento en jornada abierta
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And selecciono editar un movimiento visible de la jornada
+    When visualizo el formulario de edición
+    Then puedo editar todos los campos operativos del movimiento
+    And no puedo editar el ID visible del movimiento
+    And no puedo editar la fecha del movimiento
 ```
 
 ---
@@ -912,6 +954,15 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     And actualiza el estado a "Cerrada"
     And se actualizan los CTA disponibles
 
+  Scenario 09A: Confirmación de cierre con un único loader visible
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta
+    And estoy confirmando el cierre de jornada
+    When selecciono "Confirmar cierre"
+    Then visualizo un único loader visible durante el submit
+    And no se muestran indicadores duplicados del mismo estado pending
+
   Scenario 10: Acceso a registro de movimiento desde la card
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
@@ -940,6 +991,29 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     When ingreso al dashboard
     Then veo la card con un estado vacío
     And veo un mensaje indicando que no hay cuentas disponibles
+
+  Scenario 14: Navegación con feedback desde la card operativa
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And veo una CTA de navegación en la card operativa
+    When selecciono la CTA
+    Then visualizo un loader bloqueante hasta que cargue la nueva página
+    And no puedo interactuar con la pantalla actual durante la redirección
+
+  Scenario 15: CTA de edición sobre movimientos visibles
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta
+    And veo movimientos en la card operativa
+    When visualizo la card de movimientos
+    Then cada movimiento expone una acción para editarlo
+
+  Scenario 16: Mensaje específico en card de acciones con jornada cerrada
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And la jornada del día ya fue abierta y luego cerrada
+    When ingreso al dashboard
+    Then la card de acciones muestra el mensaje "La jornada ya fue cerrada. No se encuentra disponible para carga de movimientos."
 ```
 
 ---
@@ -980,7 +1054,7 @@ Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
     And tengo rol "Secretaria" en el club activo
     And accedí al detalle de una cuenta
     When la vista carga
-    Then veo el listado de movimientos de la jornada actual para esa cuenta
+    Then veo el historial completo de movimientos visibles para esa cuenta
     And cada movimiento muestra fecha y hora
     And cada movimiento muestra concepto
     And cada movimiento muestra categoría
@@ -988,20 +1062,22 @@ Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
     And cada movimiento muestra importe
     And cada movimiento muestra usuario responsable
 
-  Scenario 05: Orden cronológico de movimientos
+  Scenario 05: Agrupación y orden cronológico de movimientos
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
-    And existen múltiples movimientos en la cuenta durante la jornada
+    And existen múltiples movimientos en la cuenta en distintas fechas
     When visualizo el detalle de la cuenta
-    Then veo los movimientos ordenados cronológicamente
+    Then veo los movimientos agrupados por fecha
+    And veo primero las fechas más recientes
+    And dentro de cada fecha los movimientos aparecen de más recientes a más antiguos
 
   Scenario 06: Visualización sin movimientos
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
-    And accedí al detalle de una cuenta sin movimientos en la jornada actual
+    And accedí al detalle de una cuenta sin movimientos visibles en su historial
     When la vista carga
     Then veo el saldo actual de la cuenta
-    And veo un estado vacío indicando que no hay movimientos registrados para esa jornada
+    And veo un estado vacío indicando que no hay movimientos registrados para esa cuenta
 
   Scenario 07: Consistencia con el club activo
     Given estoy autenticado
@@ -1025,28 +1101,26 @@ Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
     When accedo al detalle de una cuenta específica
     Then veo únicamente los movimientos correspondientes a esa cuenta
 
-  Scenario 10: Acceso a registrar movimiento desde el detalle de cuenta
+  Scenario 10: No se muestra acción de registrar movimiento en el detalle de cuenta
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
-    And existe una jornada abierta para el día actual
-    And estoy visualizando el detalle de una cuenta
-    When selecciono "Registrar movimiento"
-    Then accedo al formulario de registro de movimientos
-    And la cuenta seleccionada puede quedar precargada
-
-  Scenario 11: No se muestra acción de registrar movimiento con jornada cerrada
-    Given estoy autenticado
-    And tengo rol "Secretaria" en el club activo
-    And no existe una jornada abierta para el día actual
     When accedo al detalle de una cuenta
     Then no veo la acción "Registrar movimiento"
 
-  Scenario 12: Cambio entre cuentas
+  Scenario 11: Cambio entre cuentas
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
     And existen múltiples cuentas configuradas
     When selecciono otra cuenta para consultar
     Then veo el saldo y los movimientos correspondientes a la nueva cuenta seleccionada
+
+  Scenario 12: CTA para volver al dashboard visible en el encabezado
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And accedí al detalle de una cuenta
+    When visualizo la vista
+    Then veo una acción para volver al dashboard
+    And la acción se encuentra antes del historial de movimientos
 
   Scenario 13: Estado sin cuentas configuradas
     Given estoy autenticado
@@ -1484,86 +1558,7 @@ Feature: US-15 — Configuración de cuentas y categorías del club
 
 ### E03 💰 Tesorería / US-16 — Configuración de campos adicionales del formulario de movimientos
 
-> *Como Admin del club, quiero configurar la visibilidad y obligatoriedad de los campos adicionales del formulario de movimientos, para adaptar la carga de Secretaria a la operatoria del club.*
-
-**Acceptance Criteria — Gherkin**
-
-```gherkin
-Feature: US-16 — Configuración de campos adicionales del formulario de movimientos
-
-  Scenario 01: Acceso a la configuración desde Tesorería
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy en "Configuración del club"
-    When ingreso a la solapa "Tesorería"
-    Then veo una sección de configuración de campos adicionales del formulario
-
-  Scenario 02: Usuario no admin no accede
-    Given estoy autenticado
-    And no soy admin del club activo
-    When intento acceder a la configuración
-    Then no tengo acceso a la funcionalidad
-
-  Scenario 03: Visualización de campos configurables
-    Given estoy autenticado
-    And soy admin del club activo
-    When ingreso a la configuración del formulario
-    Then veo los campos "Actividad", "Recibo" y "Calendario"
-
-  Scenario 04: Configuración de visibilidad de campo
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy configurando un campo adicional
-    When defino que el campo es visible para una categoría
-    Then el sistema guarda la configuración
-
-  Scenario 05: Configuración de obligatoriedad de campo
-    Given estoy autenticado
-    And soy admin del club activo
-    And estoy configurando un campo adicional
-    When defino que el campo es obligatorio para una categoría
-    Then el sistema guarda la configuración
-
-  Scenario 06: Configuración por categoría
-    Given estoy autenticado
-    And soy admin del club activo
-    And existe una categoría
-    When configuro un campo adicional para esa categoría
-    Then la regla aplica solo a esa categoría
-
-  Scenario 07: Secretaria ve campo según configuración
-    Given existe una configuración que hace visible un campo para una categoría
-    And tengo rol "Secretaria"
-    When selecciono esa categoría en el formulario de movimientos
-    Then veo el campo correspondiente
-
-  Scenario 08: Secretaria no ve campo si no aplica
-    Given existe una configuración de campo adicional
-    And tengo rol "Secretaria"
-    When selecciono una categoría que no tiene ese campo configurado
-    Then no veo ese campo en el formulario
-
-  Scenario 09: Campo obligatorio bloquea guardado
-    Given existe una configuración que hace obligatorio un campo adicional
-    And tengo rol "Secretaria"
-    When selecciono una categoría que requiere ese campo
-    And intento guardar sin completarlo
-    Then veo un mensaje de error
-    And el movimiento no se registra
-
-  Scenario 10: Cambios impactan en el formulario de Secretaria
-    Given estoy autenticado
-    And soy admin del club activo
-    When modifico la configuración de campos
-    Then los cambios se reflejan en el formulario de movimientos
-
-  Scenario 11: Configuración por club
-    Given estoy autenticado
-    And soy admin en más de un club
-    When configuro campos adicionales
-    Then la configuración aplica solo al club activo
-    And no afecta otros clubes
-```
+Historia retirada. El formulario manual mantiene `Actividad`, `Recibo` y `Calendario` como campos opcionales fijos y ya no existe configuración por categoría para estos campos.
 
 ---
 
@@ -2175,12 +2170,24 @@ Feature: US-25 — Registro de transferencias entre cuentas
     And existe una jornada abierta para el día actual
     When abro el formulario de transferencia entre cuentas
     Then veo el campo "Fecha" completo por defecto y no editable
-    And veo el campo "Cuenta origen"
-    And veo el campo "Cuenta destino"
-    And veo el campo "Moneda"
-    And veo el campo "Importe"
-    And veo el campo "Concepto"
+    And veo el campo obligatorio "Cuenta origen"
+    And veo el campo obligatorio "Cuenta destino"
+    And en "Cuenta origen" solo se listan cuentas visibles para mi rol
+    And en "Cuenta destino" solo se listan cuentas visibles para otros roles y no visibles para mi rol
+    And veo el campo obligatorio "Moneda"
+    And veo el campo obligatorio "Importe"
+    And veo el campo obligatorio "Concepto"
     And veo la acción "Crear"
+
+  Scenario 04A: Botón crear deshabilitado hasta completar obligatorios
+    Given estoy viendo el formulario de transferencia
+    When todavía no completé todos los campos obligatorios
+    Then la acción "Crear" permanece deshabilitada
+
+  Scenario 04B: Moneda por defecto según la cuenta origen
+    Given estoy viendo el formulario de transferencia
+    When selecciono una cuenta origen con moneda configurada
+    Then el campo "Moneda" se completa automáticamente con la moneda por defecto de esa cuenta
 
   Scenario 05: Cuenta origen obligatoria
     Given estoy viendo el formulario de transferencia
@@ -2221,23 +2228,47 @@ Feature: US-25 — Registro de transferencias entre cuentas
     When abro el formulario de transferencia
     Then solo puedo seleccionar cuentas del club activo
 
+  Scenario 10A: Cuenta destino excluye cuentas visibles para mi rol
+    Given estoy viendo el formulario de transferencia
+    And existe una cuenta visible para "Secretaria"
+    When abro el selector de cuenta destino
+    Then esa cuenta no se lista como opción disponible
+
+  Scenario 10B: Cuenta destino incluye cuentas visibles para otros roles
+    Given estoy viendo el formulario de transferencia
+    And existe una cuenta visible para "Tesoreria" y no visible para "Secretaria"
+    When abro el selector de cuenta destino
+    Then esa cuenta se lista como opción disponible
+
   Scenario 11: La moneda debe ser compatible con ambas cuentas
     Given estoy viendo el formulario de transferencia
     When selecciono una moneda que no es compatible con la cuenta origen o la cuenta destino
-    And intento guardar
-    Then veo un mensaje indicando que la moneda no es válida para las cuentas seleccionadas
+    Then veo un mensaje inline en "Cuenta destino" indicando que la moneda no es válida para la cuenta destino
+    And la acción "Crear" permanece deshabilitada
     And la transferencia no se registra
+
+  Scenario 11A: El importe replica el comportamiento del formulario de movimientos
+    Given estoy viendo el formulario de transferencia
+    When completo el campo "Importe"
+    Then el campo aplica el mismo saneamiento y restricciones de ingreso que el formulario "Registrar movimiento"
 
   Scenario 12: Registro exitoso de transferencia
     Given estoy viendo el formulario de transferencia
     And completé correctamente todos los campos obligatorios
     When selecciono "Crear"
-    Then el sistema registra una transferencia interna en el club activo
+    Then el modal se cierra
+    And visualizo la pantalla bloqueada con un loader
+    And el sistema registra una transferencia interna en el club activo
     And genera automáticamente un movimiento de egreso en la cuenta origen
     And genera automáticamente un movimiento de ingreso en la cuenta destino
     And ambos movimientos quedan asociados a la misma transferencia
     And ambos movimientos quedan asociados a la jornada abierta actual
-    And veo un mensaje de confirmación
+
+  Scenario 12A: Resolución visual al finalizar la creación
+    Given visualizo la pantalla bloqueada con un loader durante la creación de una transferencia
+    When finaliza la creación y el dashboard refresca los datos
+    Then desaparece el loader
+    And veo un toast de confirmación
 
   Scenario 13: Ambos movimientos comparten trazabilidad común
     Given registré exitosamente una transferencia entre cuentas

@@ -25,10 +25,8 @@ import type {
   PendingClubInvitation,
   ReceiptFormat,
   TreasuryAccount,
-  TreasuryAdditionalFieldName,
   TreasuryCurrencyCode,
   TreasuryCurrencyConfig,
-  TreasuryFieldRule,
   TreasuryMovementStatus,
   TreasuryMovementType,
   TreasuryCategory,
@@ -91,18 +89,8 @@ type AccessRepository = {
     isEnabledForTreasury: boolean;
   }): Promise<ClubCalendarEvent | null>;
   listReceiptFormatsForClub(clubId: string): Promise<ReceiptFormat[]>;
-  listTreasuryFieldRulesForClub(clubId: string): Promise<TreasuryFieldRule[]>;
   listTreasuryCurrenciesForClub(clubId: string): Promise<TreasuryCurrencyConfig[]>;
   listMovementTypeConfigForClub(clubId: string): Promise<MovementTypeConfig[]>;
-  setTreasuryFieldRulesForCategory(input: {
-    clubId: string;
-    categoryId: string;
-    rules: Array<{
-      fieldName: TreasuryAdditionalFieldName;
-      isVisible: boolean;
-      isRequired: boolean;
-    }>;
-  }): Promise<TreasuryFieldRule[]>;
   setTreasuryCurrenciesForClub(input: {
     clubId: string;
     currencies: Array<{
@@ -121,7 +109,6 @@ type AccessRepository = {
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -132,7 +119,6 @@ type AccessRepository = {
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -141,7 +127,6 @@ type AccessRepository = {
   createTreasuryCategory(input: {
     clubId: string;
     name: string;
-    status: TreasuryCategory["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -150,7 +135,6 @@ type AccessRepository = {
     categoryId: string;
     clubId: string;
     name: string;
-    status: TreasuryCategory["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -158,14 +142,16 @@ type AccessRepository = {
   createClubActivity(input: {
     clubId: string;
     name: string;
-    status: ClubActivity["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
     emoji: string | null;
   }): Promise<ClubActivity | null>;
   updateClubActivity(input: {
     activityId: string;
     clubId: string;
     name: string;
-    status: ClubActivity["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
     emoji: string | null;
   }): Promise<ClubActivity | null>;
   createReceiptFormat(input: {
@@ -194,9 +180,10 @@ type AccessRepository = {
     sessionDate: string,
     openedByUserId: string
   ): Promise<DailyCashSession | null>;
-  closeDailyCashSession(sessionId: string, closedByUserId: string): Promise<DailyCashSession | null>;
+  closeDailyCashSession(clubId: string, sessionId: string, closedByUserId: string): Promise<DailyCashSession | null>;
   listTreasuryMovementsBySession(sessionId: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByAccount(clubId: string, accountId: string, movementDate: string): Promise<TreasuryMovement[]>;
+  listTreasuryMovementsHistoryByAccount(clubId: string, accountId: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByDate(clubId: string, movementDate: string): Promise<TreasuryMovement[]>;
   findTreasuryMovementById(movementId: string): Promise<TreasuryMovement | null>;
   updateTreasuryMovement(input: {
@@ -208,6 +195,9 @@ type AccessRepository = {
     concept: string;
     currencyCode: string;
     amount: number;
+    activityId?: string | null;
+    receiptNumber?: string | null;
+    calendarEventId?: string | null;
     status?: TreasuryMovementStatus;
     consolidationBatchId?: string | null;
   }): Promise<TreasuryMovement | null>;
@@ -257,6 +247,7 @@ type AccessRepository = {
   createTreasuryMovement(input: {
     clubId: string;
     dailyCashSessionId: string | null;
+    displayId: string;
     accountId: string;
     movementType: TreasuryMovementType;
     categoryId: string;
@@ -273,7 +264,9 @@ type AccessRepository = {
     createdByUserId: string;
     status?: TreasuryMovementStatus;
   }): Promise<TreasuryMovement | null>;
+  countTreasuryMovementsByClubAndYear(clubId: string, year: string): Promise<number>;
   recordDailyCashSessionBalances(
+    clubId: string,
     input: Array<{
       sessionId: string;
       accountId: string;
@@ -285,6 +278,7 @@ type AccessRepository = {
     }>
   ): Promise<void>;
   recordBalanceAdjustment(input: {
+    clubId: string;
     sessionId: string;
     movementId: string;
     accountId: string;
@@ -343,7 +337,6 @@ type MockStore = {
   clubActivities: ClubActivity[];
   clubCalendarEvents: ClubCalendarEvent[];
   receiptFormats: ReceiptFormat[];
-  treasuryFieldRules: TreasuryFieldRule[];
   clubTreasuryCurrencies: TreasuryCurrencyConfig[];
   movementTypeConfig: MovementTypeConfig[];
   dailyCashSessions: DailyCashSession[];
@@ -510,7 +503,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Caja principal",
       accountType: "efectivo",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: false,
       emoji: "💵",
@@ -521,7 +513,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Banco operativo",
       accountType: "bancaria",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: false,
       emoji: "🏦",
@@ -532,7 +523,6 @@ function createStore(): MockStore {
       clubId: CLUB_SUR_ID,
       name: "Caja Sur",
       accountType: "efectivo",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: false,
       emoji: "💼",
@@ -543,7 +533,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Caja de inversion",
       accountType: "bancaria",
-      status: "active",
       visibleForSecretaria: false,
       visibleForTesoreria: true,
       emoji: "📈",
@@ -554,7 +543,6 @@ function createStore(): MockStore {
       clubId: CLUB_ID,
       name: "Reserva institucional",
       accountType: "bancaria",
-      status: "inactive",
       visibleForSecretaria: false,
       visibleForTesoreria: true,
       emoji: "🏛️",
@@ -567,7 +555,6 @@ function createStore(): MockStore {
       id: `category-system-${index + 1}`,
       clubId: CLUB_ID,
       name: definition.name,
-      status: "active" as const,
       visibleForSecretaria: definition.visibleForSecretaria,
       visibleForTesoreria: definition.visibleForTesoreria,
       emoji: definition.emoji
@@ -576,7 +563,6 @@ function createStore(): MockStore {
       id: "category-manual-gastos-001",
       clubId: CLUB_ID,
       name: "Gastos operativos",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: true,
       emoji: "🧾"
@@ -585,7 +571,6 @@ function createStore(): MockStore {
       id: "category-sur-manual-001",
       clubId: CLUB_SUR_ID,
       name: "Cuotas Sur",
-      status: "active",
       visibleForSecretaria: true,
       visibleForTesoreria: true,
       emoji: "🧾"
@@ -597,21 +582,24 @@ function createStore(): MockStore {
       id: "activity-boxeo-001",
       clubId: CLUB_ID,
       name: "Boxeo",
-      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: true,
       emoji: "🥊"
     },
     {
       id: "activity-futsal-001",
       clubId: CLUB_ID,
       name: "Futsal",
-      status: "inactive",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false,
       emoji: "⚽"
     },
     {
       id: "activity-sur-001",
       clubId: CLUB_SUR_ID,
       name: "Hockey",
-      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: true,
       emoji: "🏑"
     }
   ];
@@ -676,41 +664,6 @@ function createStore(): MockStore {
     }
   ];
 
-  const treasuryFieldRules: TreasuryFieldRule[] = [
-    {
-      id: "field-rule-club-001",
-      clubId: CLUB_ID,
-      categoryId: "category-manual-gastos-001",
-      fieldName: "receipt",
-      isVisible: true,
-      isRequired: true
-    },
-    {
-      id: "field-rule-club-002",
-      clubId: CLUB_ID,
-      categoryId: "category-manual-gastos-001",
-      fieldName: "activity",
-      isVisible: true,
-      isRequired: false
-    },
-    {
-      id: "field-rule-club-003",
-      clubId: CLUB_ID,
-      categoryId: "category-system-1",
-      fieldName: "calendar",
-      isVisible: true,
-      isRequired: false
-    },
-    {
-      id: "field-rule-sur-001",
-      clubId: CLUB_SUR_ID,
-      categoryId: "category-sur-manual-001",
-      fieldName: "receipt",
-      isVisible: true,
-      isRequired: false
-    }
-  ];
-
   const clubTreasuryCurrencies: TreasuryCurrencyConfig[] = [
     {
       clubId: CLUB_ID,
@@ -755,6 +708,7 @@ function createStore(): MockStore {
   const treasuryMovements: TreasuryMovement[] = [
     {
       id: "movement-secretaria-pending-001",
+      displayId: "PJ-MOV-2026-9463",
       clubId: CLUB_ID,
       dailyCashSessionId: "session-2026-04-05",
       accountId: "account-tesoreria-inversion-001",
@@ -776,6 +730,7 @@ function createStore(): MockStore {
     },
     {
       id: "movement-secretaria-pending-002",
+      displayId: "PJ-MOV-2026-9464",
       clubId: CLUB_ID,
       dailyCashSessionId: "session-2026-04-05",
       accountId: "account-secretaria-caja-001",
@@ -797,6 +752,7 @@ function createStore(): MockStore {
     },
     {
       id: "movement-tesoreria-posted-001",
+      displayId: "PJ-MOV-2026-9465",
       clubId: CLUB_ID,
       dailyCashSessionId: null,
       accountId: "account-tesoreria-inversion-001",
@@ -831,7 +787,6 @@ function createStore(): MockStore {
     clubActivities,
     clubCalendarEvents,
     receiptFormats,
-    treasuryFieldRules,
     clubTreasuryCurrencies,
     movementTypeConfig,
     dailyCashSessions,
@@ -1032,7 +987,6 @@ function mapTreasuryAccountRow(
     name: string;
     account_type: TreasuryAccount["accountType"];
     account_scope: string;
-    status: TreasuryAccount["status"];
     visible_for_secretaria: boolean | null;
     visible_for_tesoreria: boolean | null;
     emoji: string | null;
@@ -1044,7 +998,6 @@ function mapTreasuryAccountRow(
     clubId: row.club_id,
     name: row.name,
     accountType: row.account_type,
-    status: row.status,
     visibleForSecretaria: row.visible_for_secretaria ?? true,
     visibleForTesoreria: row.visible_for_tesoreria ?? true,
     emoji: row.emoji,
@@ -1063,7 +1016,6 @@ function mapTreasuryCategoryRow(row: {
   id: string;
   club_id: string;
   name: string;
-  status: TreasuryCategory["status"];
   visible_for_secretaria: boolean | null;
   visible_for_tesoreria: boolean | null;
   emoji: string | null;
@@ -1072,7 +1024,6 @@ function mapTreasuryCategoryRow(row: {
     id: row.id,
     clubId: row.club_id,
     name: row.name,
-    status: row.status,
     visibleForSecretaria: row.visible_for_secretaria ?? true,
     visibleForTesoreria: row.visible_for_tesoreria ?? true,
     emoji: row.emoji
@@ -1095,7 +1046,6 @@ async function reconcileRealSystemTreasuryCategories(
       const createdCategory = await createRealTreasuryCategory({
         clubId,
         name: definition.name,
-        status: "active",
         visibleForSecretaria: definition.visibleForSecretaria,
         visibleForTesoreria: definition.visibleForTesoreria,
         emoji: definition.emoji
@@ -1106,7 +1056,7 @@ async function reconcileRealSystemTreasuryCategories(
       continue;
     }
 
-    if (existingCategory.status === "active" && existingCategory.emoji === definition.emoji) {
+    if (existingCategory.emoji === definition.emoji) {
       continue;
     }
 
@@ -1114,7 +1064,6 @@ async function reconcileRealSystemTreasuryCategories(
       categoryId: existingCategory.id,
       clubId,
       name: definition.name,
-      status: "active",
       visibleForSecretaria: existingCategory.visibleForSecretaria,
       visibleForTesoreria: existingCategory.visibleForTesoreria,
       emoji: definition.emoji
@@ -1136,14 +1085,16 @@ function mapClubActivityRow(row: {
   id: string;
   club_id: string;
   name: string;
-  status: ClubActivity["status"];
+  visible_for_secretaria: boolean | null;
+  visible_for_tesoreria: boolean | null;
   emoji: string | null;
 }): ClubActivity {
   return {
     id: row.id,
     clubId: row.club_id,
     name: row.name,
-    status: row.status,
+    visibleForSecretaria: row.visible_for_secretaria ?? true,
+    visibleForTesoreria: row.visible_for_tesoreria ?? true,
     emoji: row.emoji
   };
 }
@@ -1203,7 +1154,6 @@ function reconcileMockSystemTreasuryCategories(clubId: string) {
         id: `category-system-${clubId}-${definition.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
         clubId,
         name: definition.name,
-        status: "active",
         visibleForSecretaria: definition.visibleForSecretaria,
         visibleForTesoreria: definition.visibleForTesoreria,
         emoji: definition.emoji
@@ -1212,7 +1162,6 @@ function reconcileMockSystemTreasuryCategories(clubId: string) {
     }
 
     existingCategory.name = definition.name;
-    existingCategory.status = "active";
     existingCategory.emoji = definition.emoji;
   }
 
@@ -1245,21 +1194,25 @@ function mapMovementTypeConfigRow(row: {
   };
 }
 
-function mapTreasuryFieldRuleRow(row: {
+function mapDailyCashSessionRow(row: {
   id: string;
   club_id: string;
-  category_id: string;
-  field_name: string;
-  is_visible: boolean | null;
-  is_required: boolean | null;
-}): TreasuryFieldRule {
+  session_date: string;
+  status: DailyCashSession["status"] | null;
+  opened_at: string | null;
+  closed_at: string | null;
+  opened_by_user_id: string;
+  closed_by_user_id: string | null;
+}): DailyCashSession {
   return {
     id: row.id,
     clubId: row.club_id,
-    categoryId: row.category_id,
-    fieldName: row.field_name as TreasuryAdditionalFieldName,
-    isVisible: row.is_visible ?? false,
-    isRequired: row.is_required ?? false
+    sessionDate: row.session_date,
+    status: row.status ?? "open",
+    openedAt: row.opened_at ?? now(),
+    closedAt: row.closed_at ?? null,
+    openedByUserId: row.opened_by_user_id,
+    closedByUserId: row.closed_by_user_id ?? null
   };
 }
 
@@ -1621,7 +1574,6 @@ async function listRealTreasuryAccountsForClub(clubId: string, client?: AccessRe
       name: string;
       account_type: TreasuryAccount["accountType"];
       account_scope: string;
-      status: TreasuryAccount["status"];
       visible_for_secretaria: boolean | null;
       visible_for_tesoreria: boolean | null;
       emoji: string | null;
@@ -1638,7 +1590,6 @@ async function listRealTreasuryCategoriesForClub(clubId: string, client?: Access
       id: string;
       club_id: string;
       name: string;
-      status: TreasuryCategory["status"];
       visible_for_secretaria: boolean | null;
       visible_for_tesoreria: boolean | null;
       emoji: string | null;
@@ -1657,7 +1608,8 @@ async function listRealClubActivitiesForClub(clubId: string, client?: AccessRepo
       id: string;
       club_id: string;
       name: string;
-      status: ClubActivity["status"];
+      visible_for_secretaria: boolean | null;
+      visible_for_tesoreria: boolean | null;
       emoji: string | null;
     }>
   >("get_club_activities_for_current_club", clubId, client);
@@ -1731,21 +1683,6 @@ async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepo
   return rows.map(mapReceiptFormatRow);
 }
 
-async function listRealTreasuryFieldRulesForClub(clubId: string, client?: AccessRepositoryClient) {
-  const rows = await runClubScopedReadRpc<
-    Array<{
-      id: string;
-      club_id: string;
-      category_id: string;
-      field_name: string;
-      is_visible: boolean | null;
-      is_required: boolean | null;
-    }>
-  >("get_treasury_field_rules_for_current_club", clubId, client);
-
-  return rows.map(mapTreasuryFieldRuleRow);
-}
-
 async function listRealTreasuryCurrenciesForClub(clubId: string, client?: AccessRepositoryClient) {
   const rows = await runClubScopedReadRpc<
     Array<{
@@ -1756,6 +1693,160 @@ async function listRealTreasuryCurrenciesForClub(clubId: string, client?: Access
   >("get_treasury_currencies_for_current_club", clubId, client);
 
   return rows.map(mapTreasuryCurrencyRow);
+}
+
+async function findRealDailyCashSessionByDate(clubId: string, sessionDate: string, client?: AccessRepositoryClient) {
+  const rows = await runClubScopedReadRpc<
+    Array<{
+      id: string;
+      club_id: string;
+      session_date: string;
+      status: DailyCashSession["status"] | null;
+      opened_at: string | null;
+      closed_at: string | null;
+      opened_by_user_id: string;
+      closed_by_user_id: string | null;
+    }>
+  >("get_daily_cash_session_for_current_club", clubId, client, {
+    operation: "get_daily_cash_session_by_date",
+    details: { sessionDate },
+    params: {
+      p_session_date: sessionDate
+    }
+  });
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return mapDailyCashSessionRow(rows[0]);
+}
+
+async function createRealDailyCashSession(
+  clubId: string,
+  sessionDate: string,
+  openedByUserId: string,
+  client?: AccessRepositoryClient
+) {
+  const row = await runClubScopedMutationRpc<{
+    id: string;
+    club_id: string;
+    session_date: string;
+    status: DailyCashSession["status"] | null;
+    opened_at: string | null;
+    closed_at: string | null;
+    opened_by_user_id: string;
+    closed_by_user_id: string | null;
+  }>("create_daily_cash_session_for_current_club", clubId, client, {
+    operation: "create_daily_cash_session",
+    details: { sessionDate, openedByUserId },
+    params: {
+      p_session_date: sessionDate,
+      p_opened_by_user_id: openedByUserId
+    }
+  });
+
+  if (!row) {
+    return null;
+  }
+
+  return mapDailyCashSessionRow(row);
+}
+
+async function closeRealDailyCashSession(
+  clubId: string,
+  sessionId: string,
+  closedByUserId: string,
+  client?: AccessRepositoryClient
+) {
+  const row = await runClubScopedMutationRpc<{
+    id: string;
+    club_id: string;
+    session_date: string;
+    status: DailyCashSession["status"] | null;
+    opened_at: string | null;
+    closed_at: string | null;
+    opened_by_user_id: string;
+    closed_by_user_id: string | null;
+  }>("close_daily_cash_session_for_current_club", clubId, client, {
+    operation: "close_daily_cash_session",
+    details: { sessionId, closedByUserId },
+    params: {
+      p_session_id: sessionId,
+      p_closed_by_user_id: closedByUserId
+    }
+  });
+
+  if (!row) {
+    return null;
+  }
+
+  return mapDailyCashSessionRow(row);
+}
+
+async function recordRealDailyCashSessionBalances(
+  clubId: string,
+  input: Array<{
+    sessionId: string;
+    accountId: string;
+    currencyCode: string;
+    balanceMoment: "opening" | "closing";
+    expectedBalance: number;
+    declaredBalance: number;
+    differenceAmount: number;
+  }>,
+  client?: AccessRepositoryClient
+) {
+  if (input.length === 0) {
+    return;
+  }
+
+  await runClubScopedMutationRpc("record_daily_cash_session_balances_for_current_club", clubId, client, {
+    operation: "record_daily_cash_session_balances",
+    details: {
+      sessionIds: [...new Set(input.map((entry) => entry.sessionId))]
+    },
+    params: {
+      p_entries: input.map((entry) => ({
+        session_id: entry.sessionId,
+        account_id: entry.accountId,
+        currency_code: entry.currencyCode,
+        balance_moment: entry.balanceMoment,
+        expected_balance: entry.expectedBalance,
+        declared_balance: entry.declaredBalance,
+        difference_amount: entry.differenceAmount
+      }))
+    },
+    expectResult: false
+  });
+}
+
+async function recordRealBalanceAdjustment(
+  input: {
+    clubId: string;
+    sessionId: string;
+    movementId: string;
+    accountId: string;
+    differenceAmount: number;
+    adjustmentMoment: "opening" | "closing";
+  },
+  client?: AccessRepositoryClient
+) {
+  await runClubScopedMutationRpc("record_balance_adjustment_for_current_club", input.clubId, client, {
+    operation: "record_balance_adjustment",
+    details: {
+      sessionId: input.sessionId,
+      movementId: input.movementId
+    },
+    params: {
+      p_session_id: input.sessionId,
+      p_movement_id: input.movementId,
+      p_account_id: input.accountId,
+      p_difference_amount: input.differenceAmount,
+      p_adjustment_moment: input.adjustmentMoment
+    },
+    expectResult: false
+  });
 }
 
 async function listRealMovementTypeConfigForClub(clubId: string, client?: AccessRepositoryClient) {
@@ -1773,7 +1864,12 @@ async function listRealMovementTypeConfigForClub(clubId: string, client?: Access
 async function runClubScopedReadRpc<T>(
   rpcName: string,
   clubId: string,
-  client?: AccessRepositoryClient
+  client?: AccessRepositoryClient,
+  options?: {
+    operation?: string;
+    details?: Record<string, unknown>;
+    params?: Record<string, unknown>;
+  }
 ) {
   const supabase = createAccessSupabaseClient(client);
 
@@ -1782,15 +1878,59 @@ async function runClubScopedReadRpc<T>(
   }
 
   const { data, error } = await supabase.rpc(rpcName, {
-    p_club_id: clubId
+    p_club_id: clubId,
+    ...(options?.params ?? {})
   });
 
   if (error || !data) {
-    logTreasurySettingsReadFailure(rpcName, { clubId }, error);
+    logTreasurySettingsReadFailure(options?.operation ?? rpcName, { clubId, ...(options?.details ?? {}) }, error);
     return [] as unknown as T;
   }
 
   return data as T;
+}
+
+async function runClubScopedMutationRpc<T>(
+  rpcName: string,
+  clubId: string,
+  client?: AccessRepositoryClient,
+  options?: {
+    operation?: string;
+    details?: Record<string, unknown>;
+    params?: Record<string, unknown>;
+    expectResult?: boolean;
+  }
+): Promise<T | null> {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase.rpc(rpcName, {
+    p_club_id: clubId,
+    ...(options?.params ?? {})
+  });
+
+  if (error) {
+    console.error("[club-scoped-rpc-failure]", {
+      operation: options?.operation ?? rpcName,
+      clubId,
+      ...(options?.details ?? {}),
+      error
+    });
+    return null;
+  }
+
+  if (options?.expectResult === false) {
+    return null;
+  }
+
+  if (Array.isArray(data)) {
+    return ((data[0] as T | undefined) ?? null);
+  }
+
+  return (data as T | null) ?? null;
 }
 
 async function syncRealTreasuryCurrenciesToAccounts(
@@ -1967,73 +2107,11 @@ async function setRealMovementTypeConfigForClub(
   return listRealMovementTypeConfigForClub(input.clubId, client);
 }
 
-async function setRealTreasuryFieldRulesForCategory(
-  input: {
-    clubId: string;
-    categoryId: string;
-    rules: Array<{
-      fieldName: TreasuryAdditionalFieldName;
-      isVisible: boolean;
-      isRequired: boolean;
-    }>;
-  },
-  client?: AccessRepositoryClient
-) {
-  const supabase = createRequiredTreasurySettingsAdminClient("set_treasury_field_rules_for_category", {
-    clubId: input.clubId,
-    categoryId: input.categoryId
-  });
-
-  const { error: deleteError } = await supabase
-    .from("treasury_field_rules")
-    .delete()
-    .eq("club_id", input.clubId)
-    .eq("category_id", input.categoryId);
-
-  if (deleteError) {
-    throwTreasurySettingsWriteFailure(
-      "set_treasury_field_rules_for_category",
-      { clubId: input.clubId, categoryId: input.categoryId },
-      deleteError
-    );
-  }
-
-  const nextRules = input.rules.filter((rule) => rule.isVisible || rule.isRequired);
-
-  if (nextRules.length === 0) {
-    return [] as TreasuryFieldRule[];
-  }
-
-  const { data, error } = await supabase
-    .from("treasury_field_rules")
-    .insert(
-      nextRules.map((rule) => ({
-        club_id: input.clubId,
-        category_id: input.categoryId,
-        field_name: rule.fieldName,
-        is_visible: rule.isVisible,
-        is_required: rule.isRequired
-      }))
-    )
-    .select("id,club_id,category_id,field_name,is_visible,is_required");
-
-  if (error || !data) {
-    throwTreasurySettingsWriteFailure(
-      "set_treasury_field_rules_for_category",
-      { clubId: input.clubId, categoryId: input.categoryId },
-      error
-    );
-  }
-
-  return data.map(mapTreasuryFieldRuleRow);
-}
-
 async function createRealTreasuryAccount(
   input: {
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -2052,7 +2130,7 @@ async function createRealTreasuryAccount(
       name: input.name,
       account_type: input.accountType,
       account_scope: resolveLegacyAccountScope(input),
-      status: input.status,
+      status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -2090,7 +2168,6 @@ async function updateRealTreasuryAccount(
     clubId: string;
     name: string;
     accountType: TreasuryAccount["accountType"];
-    status: TreasuryAccount["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -2109,7 +2186,7 @@ async function updateRealTreasuryAccount(
       name: input.name,
       account_type: input.accountType,
       account_scope: resolveLegacyAccountScope(input),
-      status: input.status,
+      status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -2164,7 +2241,6 @@ async function createRealTreasuryCategory(
   input: {
     clubId: string;
     name: string;
-    status: TreasuryCategory["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -2180,7 +2256,7 @@ async function createRealTreasuryCategory(
     .insert({
       club_id: input.clubId,
       name: input.name,
-      status: input.status,
+      status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -2200,7 +2276,6 @@ async function updateRealTreasuryCategory(
     categoryId: string;
     clubId: string;
     name: string;
-    status: TreasuryCategory["status"];
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
@@ -2216,7 +2291,7 @@ async function updateRealTreasuryCategory(
     .from("treasury_categories")
     .update({
       name: input.name,
-      status: input.status,
+      status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -2241,7 +2316,8 @@ async function createRealClubActivity(
   input: {
     clubId: string;
     name: string;
-    status: ClubActivity["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
     emoji: string | null;
   },
   client?: AccessRepositoryClient
@@ -2255,10 +2331,12 @@ async function createRealClubActivity(
     .insert({
       club_id: input.clubId,
       name: input.name,
-      status: input.status,
+      status: "active",
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
     })
-    .select("id,club_id,name,status,emoji")
+    .select("id,club_id,name,visible_for_secretaria,visible_for_tesoreria,emoji")
     .single();
 
   if (error || !data) {
@@ -2273,7 +2351,8 @@ async function updateRealClubActivity(
     activityId: string;
     clubId: string;
     name: string;
-    status: ClubActivity["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
     emoji: string | null;
   },
   client?: AccessRepositoryClient
@@ -2287,12 +2366,14 @@ async function updateRealClubActivity(
     .from("club_activities")
     .update({
       name: input.name,
-      status: input.status,
+      status: "active",
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria,
       emoji: input.emoji
     })
     .eq("id", input.activityId)
     .eq("club_id", input.clubId)
-    .select("id,club_id,name,status,emoji")
+    .select("id,club_id,name,visible_for_secretaria,visible_for_tesoreria,emoji")
     .maybeSingle();
 
   if (error || !data) {
@@ -2904,13 +2985,6 @@ export const accessRepository: AccessRepository = {
 
     return getStore().receiptFormats.filter((format) => format.clubId === clubId);
   },
-  async listTreasuryFieldRulesForClub(clubId) {
-    if (shouldUseSupabaseDatabase()) {
-      return listRealTreasuryFieldRulesForClub(clubId);
-    }
-
-    return getStore().treasuryFieldRules.filter((rule) => rule.clubId === clubId);
-  },
   async listTreasuryCurrenciesForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
       return listRealTreasuryCurrenciesForClub(clubId);
@@ -2979,31 +3053,6 @@ export const accessRepository: AccessRepository = {
 
     return nextMovementTypes;
   },
-  async setTreasuryFieldRulesForCategory(input) {
-    if (shouldUseSupabaseDatabase()) {
-      return setRealTreasuryFieldRulesForCategory(input);
-    }
-
-    const store = getStore();
-    store.treasuryFieldRules = store.treasuryFieldRules.filter(
-      (rule) => !(rule.clubId === input.clubId && rule.categoryId === input.categoryId)
-    );
-
-    const nextRules = input.rules
-      .filter((rule) => rule.isVisible || rule.isRequired)
-      .map((rule) => ({
-        id: `field-rule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        clubId: input.clubId,
-        categoryId: input.categoryId,
-        fieldName: rule.fieldName,
-        isVisible: rule.isVisible,
-        isRequired: rule.isRequired
-      }));
-
-    store.treasuryFieldRules.push(...nextRules);
-
-    return nextRules;
-  },
   async createTreasuryAccount(input) {
     if (shouldUseSupabaseDatabase()) {
       return createRealTreasuryAccount(input);
@@ -3014,7 +3063,6 @@ export const accessRepository: AccessRepository = {
       clubId: input.clubId,
       name: input.name,
       accountType: input.accountType,
-      status: input.status,
       visibleForSecretaria: input.visibleForSecretaria,
       visibleForTesoreria: input.visibleForTesoreria,
       emoji: input.emoji,
@@ -3040,7 +3088,6 @@ export const accessRepository: AccessRepository = {
 
     account.name = input.name;
     account.accountType = input.accountType;
-    account.status = input.status;
     account.visibleForSecretaria = input.visibleForSecretaria;
     account.visibleForTesoreria = input.visibleForTesoreria;
     account.emoji = input.emoji;
@@ -3057,7 +3104,6 @@ export const accessRepository: AccessRepository = {
       id: `category-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
       name: input.name,
-      status: input.status,
       visibleForSecretaria: input.visibleForSecretaria,
       visibleForTesoreria: input.visibleForTesoreria,
       emoji: input.emoji
@@ -3081,7 +3127,6 @@ export const accessRepository: AccessRepository = {
     }
 
     category.name = input.name;
-    category.status = input.status;
     category.visibleForSecretaria = input.visibleForSecretaria;
     category.visibleForTesoreria = input.visibleForTesoreria;
     category.emoji = input.emoji;
@@ -3097,7 +3142,8 @@ export const accessRepository: AccessRepository = {
       id: `activity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
       name: input.name,
-      status: input.status,
+      visibleForSecretaria: input.visibleForSecretaria,
+      visibleForTesoreria: input.visibleForTesoreria,
       emoji: input.emoji
     };
 
@@ -3118,7 +3164,8 @@ export const accessRepository: AccessRepository = {
     }
 
     activity.name = input.name;
-    activity.status = input.status;
+    activity.visibleForSecretaria = input.visibleForSecretaria;
+    activity.visibleForTesoreria = input.visibleForTesoreria;
     activity.emoji = input.emoji;
     return activity;
   },
@@ -3172,6 +3219,10 @@ export const accessRepository: AccessRepository = {
     );
   },
   async getDailyCashSessionByDate(clubId, sessionDate) {
+    if (shouldUseSupabaseDatabase()) {
+      return findRealDailyCashSessionByDate(clubId, sessionDate);
+    }
+
     return (
       getStore().dailyCashSessions.find(
         (session) => session.clubId === clubId && session.sessionDate === sessionDate
@@ -3179,6 +3230,10 @@ export const accessRepository: AccessRepository = {
     );
   },
   async createDailyCashSession(clubId, sessionDate, openedByUserId) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealDailyCashSession(clubId, sessionDate, openedByUserId);
+    }
+
     const session: DailyCashSession = {
       id: `session-${Date.now()}`,
       clubId,
@@ -3193,7 +3248,11 @@ export const accessRepository: AccessRepository = {
     getStore().dailyCashSessions.push(session);
     return session;
   },
-  async closeDailyCashSession(sessionId, closedByUserId) {
+  async closeDailyCashSession(clubId, sessionId, closedByUserId) {
+    if (shouldUseSupabaseDatabase()) {
+      return closeRealDailyCashSession(clubId, sessionId, closedByUserId);
+    }
+
     const store = getStore();
     const session = store.dailyCashSessions.find((entry) => entry.id === sessionId);
 
@@ -3215,6 +3274,11 @@ export const accessRepository: AccessRepository = {
         movement.clubId === clubId &&
         movement.accountId === accountId &&
         movement.movementDate === movementDate
+    );
+  },
+  async listTreasuryMovementsHistoryByAccount(clubId, accountId) {
+    return getStore().treasuryMovements.filter(
+      (movement) => movement.clubId === clubId && movement.accountId === accountId
     );
   },
   async listTreasuryMovementsByDate(clubId, movementDate) {
@@ -3241,6 +3305,10 @@ export const accessRepository: AccessRepository = {
     movement.concept = input.concept;
     movement.currencyCode = input.currencyCode;
     movement.amount = input.amount;
+    movement.activityId = input.activityId === undefined ? movement.activityId ?? null : input.activityId;
+    movement.receiptNumber = input.receiptNumber === undefined ? movement.receiptNumber ?? null : input.receiptNumber;
+    movement.calendarEventId =
+      input.calendarEventId === undefined ? movement.calendarEventId ?? null : input.calendarEventId;
     movement.status = input.status ?? movement.status;
     movement.consolidationBatchId =
       input.consolidationBatchId === undefined ? movement.consolidationBatchId ?? null : input.consolidationBatchId;
@@ -3350,6 +3418,7 @@ export const accessRepository: AccessRepository = {
   async createTreasuryMovement(input) {
     const movement: TreasuryMovement = {
       id: `movement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      displayId: input.displayId,
       clubId: input.clubId,
       dailyCashSessionId: input.dailyCashSessionId,
       accountId: input.accountId,
@@ -3373,7 +3442,16 @@ export const accessRepository: AccessRepository = {
     getStore().treasuryMovements.push(movement);
     return movement;
   },
-  async recordDailyCashSessionBalances(input) {
+  async countTreasuryMovementsByClubAndYear(clubId, year) {
+    return getStore().treasuryMovements.filter(
+      (movement) => movement.clubId === clubId && movement.movementDate.startsWith(`${year}-`)
+    ).length;
+  },
+  async recordDailyCashSessionBalances(clubId, input) {
+    if (shouldUseSupabaseDatabase()) {
+      return recordRealDailyCashSessionBalances(clubId, input);
+    }
+
     const store = getStore();
 
     input.forEach((entry) => {
@@ -3390,6 +3468,10 @@ export const accessRepository: AccessRepository = {
     });
   },
   async recordBalanceAdjustment(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return recordRealBalanceAdjustment(input);
+    }
+
     getStore().balanceAdjustments.push({
       id: `balance-adjustment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       sessionId: input.sessionId,

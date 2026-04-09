@@ -17,6 +17,8 @@ Su propósito es servir como referencia para implementar acciones del backend, s
 6. El signo operativo depende de `movement_type`.
 7. Todas las respuestas deben ser determinísticas y explícitas.
 8. Toda operación sensible debe devolver errores de permisos, validación o conflicto de forma clara.
+9. Las operaciones de jornada diaria deben resolver el estado vigente desde `daily_cash_sessions` del club activo.
+10. Toda lectura o mutación operativa dependiente de RLS por club debe ejecutarse con `app.current_club_id` seteado server-side antes de acceder a datos del club activo.
 
 ---
 
@@ -356,8 +358,7 @@ Sí
   "activities": [],
   "currencies": [],
   "movement_types": [],
-  "receipt_formats": [],
-  "field_rules": []
+  "receipt_formats": []
 }
 ```
 
@@ -380,7 +381,6 @@ Sí
 {
   "name": "Caja principal",
   "account_type": "efectivo",
-  "status": "active",
   "visibility": ["secretaria"],
   "emoji": "💵",
   "currencies": ["ARS"]
@@ -426,7 +426,6 @@ Sí
   "account_id": "uuid",
   "name": "Caja sede",
   "account_type": "efectivo",
-  "status": "active",
   "visibility": ["secretaria", "tesoreria"],
   "emoji": "💵",
   "currencies": ["ARS"]
@@ -460,7 +459,6 @@ Sí
 ```json
 {
   "name": "Cuotas",
-  "status": "active",
   "visibility": ["secretaria", "tesoreria"],
   "emoji": "📄"
 }
@@ -468,6 +466,8 @@ Sí
 
 **Validations**
 
+* `visibility` debe incluir `secretaria`, `tesoreria` o ambos
+* `visibility` debe incluir al menos un rol
 * `emoji` debe pertenecer al catálogo predefinido del sistema para categorías
 
 **Output**
@@ -497,7 +497,6 @@ Sí
 {
   "category_id": "uuid",
   "name": "Sueldos",
-  "status": "active",
   "visibility": ["secretaria", "tesoreria"],
   "emoji": "💼"
 }
@@ -530,13 +529,15 @@ Sí
 ```json
 {
   "name": "Boxeo",
-  "status": "active",
+  "visibility": ["secretaria"],
   "emoji": "🥊"
 }
 ```
 
 **Validations**
 
+* `visibility` debe incluir `secretaria`, `tesoreria` o ambos
+* `visibility` debe incluir al menos un rol
 * `emoji` debe pertenecer al catálogo predefinido del sistema para actividades
 
 **Output**
@@ -566,7 +567,7 @@ Sí
 {
   "activity_id": "uuid",
   "name": "Futsal",
-  "status": "active",
+  "visibility": ["secretaria", "tesoreria"],
   "emoji": "⚽"
 }
 ```
@@ -672,7 +673,7 @@ Obtener card resumida de saldos y estado operativo del día.
 Sí
 
 **Allowed roles**
-`secretaria`
+`tesoreria`
 
 **Input**
 
@@ -693,6 +694,20 @@ Sí
       "balances": [
         { "currency_code": "ARS", "amount": 150000.00 }
       ]
+    }
+  ],
+  "movements": [
+    {
+      "movement_id": "uuid",
+      "account_id": "uuid",
+      "account_name": "Caja principal",
+      "movement_type": "ingreso",
+      "category_name": "Cobranza",
+      "concept": "Cuota abril",
+      "currency_code": "ARS",
+      "amount": 150000.00,
+      "created_by_user_name": "Ana Perez",
+      "created_at": "2026-04-02T13:45:00.000Z"
     }
   ],
   "available_actions": [
@@ -734,6 +749,10 @@ Sí
         { "currency_code": "USD", "amount": 950.00 }
       ]
     }
+  ],
+  "available_actions": [
+    "create_movement",
+    "create_fx_operation"
   ]
 }
 ```
@@ -849,8 +868,7 @@ Sí
   "accounts": [],
   "categories": [],
   "currencies": [],
-  "movement_types": [],
-  "field_rules": []
+  "movement_types": []
 }
 ```
 
@@ -892,7 +910,7 @@ Sí
 * currency_code válida para la cuenta
 * receipt_number debe cumplir `^PAY-SOC-[0-9]{5}$` y ser `>= PAY-SOC-10556` cuando se informa
 * amount > 0
-* campos dinámicos obligatorios según categoría
+* `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
 * si el rol es `secretaria`, debe existir jornada abierta
 * si el rol es `secretaria`, `movement_date` debe ser la fecha del día y no editable por contrato
 * si el rol es `tesoreria`, la fecha puede ser editable según negocio
@@ -902,6 +920,7 @@ Sí
 ```json
 {
   "movement_id": "uuid",
+  "movement_display_id": "PJ-MOV-2026-9465",
   "status": "posted"
 }
 ```
@@ -910,6 +929,62 @@ Sí
 
 * si el movimiento lo crea `secretaria`, el status inicial es `pending_consolidation`
 * si el movimiento lo crea `tesoreria`, el status inicial es `posted`
+* los movimientos creados por compra/venta de Tesorería se registran como `posted`
+* `movement_display_id` es el identificador visible de negocio con formato `<iniciales_club>-MOV-<anio>-<secuencia>`
+
+---
+
+### 6.5B Update secretaria movement in open session
+
+**Purpose**
+Editar un movimiento de Secretaría mientras la jornada del día siga abierta.
+
+**Auth required**
+Sí
+
+**Allowed roles**
+`secretaria`
+
+**Input**
+
+```json
+{
+  "movement_id": "uuid",
+  "account_id": "uuid",
+  "movement_type": "ingreso",
+  "category_id": "uuid",
+  "activity_id": "uuid",
+  "receipt_number": "PAY-SOC-26205",
+  "calendar_event_id": "uuid",
+  "concept": "Pago cuota abril",
+  "currency_code": "ARS",
+  "amount": 25000
+}
+```
+
+**Validations**
+
+* debe existir jornada abierta para el día actual
+* el movimiento debe pertenecer al club activo
+* el movimiento debe pertenecer a la jornada abierta actual
+* cuenta válida del club activo y visible para `secretaria`
+* categoría válida y visible para `secretaria`
+* movement_type habilitado en el club
+* currency_code válida para la cuenta
+* `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
+* amount > 0
+* `movement_date` no es editable por contrato
+* no se permite editar referencias técnicas derivadas
+* la operación debe auditarse
+
+**Output**
+
+```json
+{
+  "movement_id": "uuid",
+  "updated": true
+}
+```
 
 ---
 
@@ -928,8 +1003,7 @@ Sí
 
 ```json
 {
-  "account_id": "uuid",
-  "date": "2026-04-02"
+  "account_id": "uuid"
 }
 ```
 
@@ -957,6 +1031,11 @@ Sí
   ]
 }
 ```
+
+**Notes**
+
+* devuelve el historial visible completo de la cuenta dentro del club activo
+* la UI puede agrupar los movimientos por `movement_date`
 
 ---
 
@@ -987,9 +1066,11 @@ Sí
 
 **Validations**
 
-* jornada abierta
+* requiere jornada abierta
 * cuentas distintas
 * ambas cuentas del club activo
+* la cuenta origen debe ser visible para `secretaria`
+* la cuenta destino debe ser visible para otro rol operativo y no visible para `secretaria`
 * moneda válida para ambas cuentas
 * amount > 0
 
@@ -1338,6 +1419,7 @@ Puede:
 9. Las operaciones de apertura/cierre deben ser transaccionales.
 10. Los estados de los movimientos deben tratarse como parte central del dominio.
 11. Toda operación que cree múltiples movimientos debe dejar referencias cruzadas trazables.
+12. La edición operativa de Secretaría en jornada abierta debe auditarse igual que la corrección en consolidación.
 
 ```
 ```

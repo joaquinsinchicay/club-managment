@@ -14,7 +14,6 @@ alter table treasury_categories enable row level security;
 alter table club_activities enable row level security;
 alter table club_calendar_events enable row level security;
 alter table receipt_formats enable row level security;
-alter table treasury_field_rules enable row level security;
 alter table club_treasury_currencies enable row level security;
 alter table club_movement_type_config enable row level security;
 alter table treasury_movements enable row level security;
@@ -594,36 +593,6 @@ with check (
 );
 
 -- =========================================
--- TREASURY FIELD RULES
--- =========================================
-
-drop policy if exists "Members can view treasury field rules" on treasury_field_rules;
-drop policy if exists "Admins manage treasury field rules in current club" on treasury_field_rules;
-drop policy if exists "Treasury manage treasury field rules in current club" on treasury_field_rules;
-
-create policy "Members can view treasury field rules"
-on treasury_field_rules
-for select
-to authenticated
-using (
-  club_id = current_club_id()
-  and is_member_of_current_club()
-);
-
-create policy "Admins manage treasury field rules in current club"
-on treasury_field_rules
-for all
-to authenticated
-using (
-  club_id = current_club_id()
-  and (select current_user_has_role('admin'))
-)
-with check (
-  club_id = current_club_id()
-  and (select current_user_has_role('admin'))
-);
-
--- =========================================
 -- DAILY CASH SESSIONS
 -- =========================================
 
@@ -750,6 +719,7 @@ with check (
 drop policy if exists "Members can view movements" on treasury_movements;
 drop policy if exists "Secretaria can insert movements in current club" on treasury_movements;
 drop policy if exists "Tesoreria can update movements in current club" on treasury_movements;
+drop policy if exists "Secretaria and tesoreria can update movements in current club" on treasury_movements;
 drop policy if exists "Admin full access movements in current club" on treasury_movements;
 
 create policy "Members can view movements"
@@ -770,17 +740,23 @@ with check (
   and (select current_user_has_role('secretaria'))
 );
 
-create policy "Tesoreria can update movements in current club"
+create policy "Secretaria and tesoreria can update movements in current club"
 on treasury_movements
 for update
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (
+    (select current_user_has_role('secretaria'))
+    or (select current_user_has_role('tesoreria'))
+  )
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (
+    (select current_user_has_role('secretaria'))
+    or (select current_user_has_role('tesoreria'))
+  )
 );
 
 create policy "Admin full access movements in current club"

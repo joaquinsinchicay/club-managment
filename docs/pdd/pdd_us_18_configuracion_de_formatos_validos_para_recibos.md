@@ -142,7 +142,6 @@ Usuario autenticado con membership `activo` y rol `admin` para visualizar la int
 | label | `settings.club.treasury.receipt_min_label` | Próximo recibo. |
 | body | `settings.club.treasury.receipt_formats_read_only` | Aclaración de solo lectura. |
 | label | `dashboard.treasury.receipt_label` | Campo recibo en formulario. |
-| body | `dashboard.treasury.receipt_helper_format` | Helper de patrón válido. |
 | body | `dashboard.treasury.receipt_helper_example` | Helper de ejemplo. |
 | body | `dashboard.treasury.receipt_helper_available_from` | Helper de disponibilidad. |
 | feedback | `dashboard.feedback.invalid_receipt_format` | Recibo inválido. |

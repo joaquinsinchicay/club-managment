@@ -1,4 +1,5 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+import { parseLocalizedAmount } from "@/lib/amounts";
 import { canOperateSecretaria, canOperateTesoreria } from "@/lib/domain/authorization";
 import type {
   ClubActivity,
@@ -11,10 +12,8 @@ import type {
   ReceiptFormat,
   SessionBalanceDraft,
   TreasuryAccount,
-  TreasuryAdditionalFieldName,
   TreasuryRoleDashboard,
   TreasuryCurrencyConfig,
-  TreasuryFieldRule,
   TreasuryMovementType,
   TreasuryAccountDetail,
   TreasuryConsolidationDashboard,
@@ -50,7 +49,6 @@ type TreasuryActionCode =
   | "invalid_account"
   | "invalid_category"
   | "invalid_activity"
-  | "activity_required"
   | "invalid_currency"
   | "source_account_required"
   | "target_account_required"
@@ -63,13 +61,12 @@ type TreasuryActionCode =
   | "target_amount_required"
   | "invalid_fx_operation"
   | "movement_not_found"
+  | "movement_not_editable"
   | "invalid_match"
   | "consolidation_date_required"
   | "consolidation_already_completed"
   | "consolidation_has_invalid_movements"
   | "invalid_receipt_format"
-  | "receipt_required"
-  | "calendar_required"
   | "invalid_calendar_event"
   | "no_accounts_available"
   | "declared_balance_required"
@@ -80,18 +77,49 @@ type TreasuryActionCode =
 export type TreasuryActionResult = {
   ok: boolean;
   code: TreasuryActionCode;
+  movementDisplayId?: string;
 };
 
-const TODAY = "2026-04-06";
+const OPERATIONAL_TIME_ZONE = "America/Argentina/Buenos_Aires";
 
 function getTodayDate() {
-  return TODAY;
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: OPERATIONAL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  const parts = formatter.formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
 }
 
 function getRelativeDate(date: string, deltaDays: number) {
   const next = new Date(`${date}T00:00:00.000Z`);
   next.setUTCDate(next.getUTCDate() + deltaDays);
   return next.toISOString().slice(0, 10);
+}
+
+function buildClubInitials(clubName: string) {
+  const initials = clubName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+
+  return initials || "CLUB";
+}
+
+async function generateMovementDisplayId(clubId: string, clubName: string, movementDate: string) {
+  const year = movementDate.slice(0, 4);
+  const prefix = buildClubInitials(clubName);
+  const sequence = (await accessRepository.countTreasuryMovementsByClubAndYear(clubId, year)) + 1;
+
+  return `${prefix}-MOV-${year}-${sequence}`;
 }
 
 function getDefaultConsolidationDate() {
@@ -145,6 +173,9 @@ function serializeMovementSnapshot(movement: TreasuryMovement) {
     accountId: movement.accountId,
     movementType: movement.movementType,
     categoryId: movement.categoryId,
+    activityId: movement.activityId ?? null,
+    receiptNumber: movement.receiptNumber ?? null,
+    calendarEventId: movement.calendarEventId ?? null,
     concept: movement.concept,
     currencyCode: movement.currencyCode,
     amount: movement.amount,
@@ -158,6 +189,11 @@ async function getSecretariaAccounts(clubId: string) {
   return accounts.filter((account) => account.visibleForSecretaria);
 }
 
+async function getTesoreriaAccounts(clubId: string) {
+  const accounts = await accessRepository.listTreasuryAccountsForClub(clubId);
+  return accounts.filter((account) => account.visibleForTesoreria);
+}
+
 function getAccountsVisibleForRole(
   accounts: TreasuryAccount[],
   role: TreasuryVisibilityRole
@@ -165,6 +201,10 @@ function getAccountsVisibleForRole(
   return accounts.filter((account) =>
     role === "secretaria" ? account.visibleForSecretaria : account.visibleForTesoreria
   );
+}
+
+function getTransferTargetAccountsForSecretaria(accounts: TreasuryAccount[]) {
+  return accounts.filter((account) => !account.visibleForSecretaria && account.visibleForTesoreria);
 }
 
 function buildAccountBalances(
@@ -212,27 +252,6 @@ async function getConfiguredMovementTypes(clubId: string): Promise<MovementTypeC
       isEnabled: true
     }
   ];
-}
-
-function buildFieldRulesMapForCategory(
-  fieldRules: TreasuryFieldRule[],
-  categoryId: string
-) {
-  return fieldRules
-    .filter((rule) => rule.categoryId === categoryId)
-    .reduce(
-      (accumulator, rule) => {
-        accumulator[rule.fieldName] = {
-          isVisible: rule.isVisible,
-          isRequired: rule.isRequired
-        };
-
-        return accumulator;
-      },
-      {} as Partial<
-        Record<TreasuryAdditionalFieldName, { isVisible: boolean; isRequired: boolean }>
-      >
-    );
 }
 
 async function buildAccountBalanceDrafts(
@@ -367,6 +386,7 @@ async function validateDeclaredBalances(
   | {
       ok: true;
       clubId: string;
+      clubName: string;
       userId: string;
       sessionDate: string;
       sessionId: string | null;
@@ -411,9 +431,9 @@ async function validateDeclaredBalances(
       return { ok: false, code: "declared_balance_required" };
     }
 
-    const parsed = Number(rawDeclared);
+    const parsed = parseLocalizedAmount(rawDeclared);
 
-    if (!Number.isFinite(parsed)) {
+    if (parsed === null) {
       return { ok: false, code: "declared_balance_invalid" };
     }
 
@@ -423,6 +443,7 @@ async function validateDeclaredBalances(
   return {
     ok: true,
     clubId: context.activeClub.id,
+    clubName: context.activeClub.name,
     userId: context.user.id,
     sessionDate: base.sessionDate,
     sessionId: base.sessionId,
@@ -432,6 +453,7 @@ async function validateDeclaredBalances(
 
 async function applyBalanceAdjustments(input: {
   clubId: string;
+  clubName: string;
   userId: string;
   sessionId: string;
   sessionDate: string;
@@ -446,6 +468,7 @@ async function applyBalanceAdjustments(input: {
 
   for (const draft of input.drafts.filter((entry) => entry.differenceAmount !== 0 && entry.adjustmentType)) {
     const movement = await accessRepository.createTreasuryMovement({
+      displayId: await generateMovementDisplayId(input.clubId, input.clubName, input.sessionDate),
       clubId: input.clubId,
       dailyCashSessionId: input.sessionId,
       accountId: draft.accountId,
@@ -463,6 +486,7 @@ async function applyBalanceAdjustments(input: {
     }
 
     await accessRepository.recordBalanceAdjustment({
+      clubId: input.clubId,
       sessionId: input.sessionId,
       movementId: movement.id,
       accountId: draft.accountId,
@@ -496,6 +520,7 @@ export async function openDailyCashSessionWithDeclaredBalances(input: Array<{
   }
 
   await accessRepository.recordDailyCashSessionBalances(
+    validation.clubId,
     validation.drafts.map((draft) => ({
       sessionId: createdSession.id,
       accountId: draft.accountId,
@@ -509,6 +534,7 @@ export async function openDailyCashSessionWithDeclaredBalances(input: Array<{
 
   const adjustmentResult = await applyBalanceAdjustments({
     clubId: validation.clubId,
+    clubName: validation.clubName,
     userId: validation.userId,
     sessionId: createdSession.id,
     sessionDate: validation.sessionDate,
@@ -535,6 +561,7 @@ export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
   }
 
   await accessRepository.recordDailyCashSessionBalances(
+    validation.clubId,
     validation.drafts.map((draft) => ({
       sessionId: validation.sessionId!,
       accountId: draft.accountId,
@@ -548,6 +575,7 @@ export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
 
   const adjustmentResult = await applyBalanceAdjustments({
     clubId: validation.clubId,
+    clubName: validation.clubName,
     userId: validation.userId,
     sessionId: validation.sessionId,
     sessionDate: validation.sessionDate,
@@ -559,7 +587,11 @@ export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
     return adjustmentResult;
   }
 
-  const updated = await accessRepository.closeDailyCashSession(validation.sessionId, validation.userId);
+  const updated = await accessRepository.closeDailyCashSession(
+    validation.clubId,
+    validation.sessionId,
+    validation.userId
+  );
 
   if (!updated) {
     return { ok: false, code: "unknown_error" };
@@ -580,13 +612,29 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   }
 
   const sessionDate = getTodayDate();
-  const [session, accounts] = await Promise.all([
+  const [session, accounts, categories, activities, calendarEvents] = await Promise.all([
     accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate),
-    accessRepository.listTreasuryAccountsForClub(context.activeClub.id)
+    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
+    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+    accessRepository.listClubActivitiesForClub(context.activeClub.id),
+    accessRepository.listClubCalendarEventsForClub(context.activeClub.id)
   ]);
 
   const secretaryAccounts = accounts.filter((account) => account.visibleForSecretaria);
   const movements = session ? await accessRepository.listTreasuryMovementsBySession(session.id) : [];
+  const visibleAccountIds = new Set(secretaryAccounts.map((account) => account.id));
+  const visibleMovements = movements.filter((movement) => visibleAccountIds.has(movement.accountId));
+  const users = await Promise.all(
+    [...new Set(visibleMovements.map((movement) => movement.createdByUserId))].map(async (userId) => [
+      userId,
+      await accessRepository.findUserById(userId)
+    ] as const)
+  );
+  const usersById = new Map(users);
+  const categoriesById = new Map(categories.map((category) => [category.id, category]));
+  const accountsById = new Map(secretaryAccounts.map((account) => [account.id, account]));
+  const activitiesById = new Map(activities.map((activity) => [activity.id, activity]));
+  const calendarEventsById = new Map(calendarEvents.map((event) => [event.id, event]));
 
   return {
     sessionStatus: session?.status ?? "not_started",
@@ -597,10 +645,39 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
       name: account.name,
       balances: buildAccountBalances(account, movements)
     })),
+    movements: visibleMovements
+      .map((movement) => ({
+        movementId: movement.id,
+        movementDisplayId: movement.displayId,
+        movementDate: movement.movementDate,
+        accountId: movement.accountId,
+        accountName: accountsById.get(movement.accountId)?.name ?? "",
+        movementType: movement.movementType,
+        categoryId: movement.categoryId,
+        categoryName: categoriesById.get(movement.categoryId)?.name ?? texts.dashboard.treasury.detail_uncategorized_category,
+        activityId: movement.activityId ?? null,
+        activityName: movement.activityId ? activitiesById.get(movement.activityId)?.name ?? null : null,
+        receiptNumber: movement.receiptNumber ?? null,
+        calendarEventId: movement.calendarEventId ?? null,
+        calendarEventTitle: movement.calendarEventId
+          ? calendarEventsById.get(movement.calendarEventId)?.title ?? null
+          : null,
+        transferReference: movement.transferGroupId ?? null,
+        fxOperationReference: movement.fxOperationGroupId ?? null,
+        concept: movement.concept,
+        currencyCode: movement.currencyCode,
+        amount: movement.amount,
+        createdByUserName: usersById.get(movement.createdByUserId)?.fullName ?? "",
+        createdAt: movement.createdAt,
+        canEdit: session?.status === "open"
+      }))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
     availableActions:
       session?.status === "open"
         ? ["close_session", "create_movement"]
-        : ["open_session"]
+        : session?.status === "closed"
+          ? []
+          : ["open_session"]
   };
 }
 
@@ -613,10 +690,7 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
 
   const clubId = context.activeClub.id;
   const sessionDate = getTodayDate();
-  const accounts = getAccountsVisibleForRole(
-    await accessRepository.listTreasuryAccountsForClub(clubId),
-    "tesoreria"
-  );
+  const accounts = getAccountsVisibleForRole(await accessRepository.listTreasuryAccountsForClub(clubId), "tesoreria");
 
   const movementsByAccount = await Promise.all(
     accounts.map(async (account) => ({
@@ -627,6 +701,21 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
     }))
   );
 
+  const [categories, roleMovements] = await Promise.all([
+    accessRepository.listTreasuryCategoriesForClub(clubId),
+    accessRepository.listTreasuryMovementsByDate(clubId, sessionDate)
+  ]);
+  const visibleAccountIds = new Set(accounts.map((account) => account.id));
+  const users = await Promise.all(
+    [...new Set(roleMovements.map((movement) => movement.createdByUserId))].map(async (userId) => [
+      userId,
+      await accessRepository.findUserById(userId)
+    ] as const)
+  );
+  const usersById = new Map(users);
+  const categoriesById = new Map(categories.map((category) => [category.id, category]));
+  const accountsById = new Map(accounts.map((account) => [account.id, account]));
+
   return {
     sessionDate,
     accounts: movementsByAccount.map(({ account, movements }) => ({
@@ -634,7 +723,25 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       name: account.name,
       balances: buildAccountBalances(account, movements)
     })),
-    availableActions: ["create_movement"]
+    movements: roleMovements
+      .filter((movement) => movement.status === "posted" && visibleAccountIds.has(movement.accountId))
+      .map((movement) => ({
+        movementId: movement.id,
+        movementDisplayId: movement.displayId,
+        movementDate: movement.movementDate,
+        accountId: movement.accountId,
+        accountName: accountsById.get(movement.accountId)?.name ?? "",
+        movementType: movement.movementType,
+        categoryName:
+          categoriesById.get(movement.categoryId)?.name ?? texts.dashboard.treasury.detail_uncategorized_category,
+        concept: movement.concept,
+        currencyCode: movement.currencyCode,
+        amount: movement.amount,
+        createdByUserName: usersById.get(movement.createdByUserId)?.fullName ?? "",
+        createdAt: movement.createdAt
+      }))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
+    availableActions: ["create_movement", "create_fx_operation"]
   };
 }
 
@@ -717,9 +824,9 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "amount_required" };
   }
 
-  const parsedAmount = Number(input.amount);
+  const parsedAmount = parseLocalizedAmount(input.amount);
 
-  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+  if (parsedAmount === null || parsedAmount <= 0) {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
@@ -732,7 +839,6 @@ export async function createTreasuryMovement(input: {
     categories,
     activities,
     calendarEvents,
-    fieldRules,
     configuredCurrencies,
     configuredMovementTypes
   ] = await Promise.all([
@@ -740,7 +846,6 @@ export async function createTreasuryMovement(input: {
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
     accessRepository.listClubActivitiesForClub(context.activeClub.id),
     accessRepository.listClubCalendarEventsForClub(context.activeClub.id),
-    accessRepository.listTreasuryFieldRulesForClub(context.activeClub.id),
     getConfiguredTreasuryCurrencies(context.activeClub.id),
     getConfiguredMovementTypes(context.activeClub.id)
   ]);
@@ -762,13 +867,13 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "invalid_account" };
   }
 
-  const category = categories.find((entry) => entry.id === input.categoryId);
+  const category = categories.find(
+    (entry) => entry.id === input.categoryId && entry.visibleForSecretaria
+  );
 
   if (!category) {
     return { ok: false, code: "invalid_category" };
   }
-
-  const categoryFieldRules = buildFieldRulesMapForCategory(fieldRules, category.id);
 
   if (!configuredCurrencies.some((currency) => currency.currencyCode === input.currencyCode)) {
     return { ok: false, code: "invalid_currency" };
@@ -780,12 +885,8 @@ export async function createTreasuryMovement(input: {
 
   const activity =
     input.activityId.trim().length > 0
-      ? activities.find((entry) => entry.id === input.activityId && entry.status === "active") ?? null
+      ? activities.find((entry) => entry.id === input.activityId && entry.visibleForSecretaria) ?? null
       : null;
-
-  if (categoryFieldRules.activity?.isRequired && !input.activityId.trim()) {
-    return { ok: false, code: "activity_required" };
-  }
 
   if (input.activityId.trim().length > 0 && !activity) {
     return { ok: false, code: "invalid_activity" };
@@ -793,10 +894,6 @@ export async function createTreasuryMovement(input: {
 
   const receiptNumber = input.receiptNumber.trim();
   const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
-
-  if (categoryFieldRules.receipt?.isRequired && receiptNumber.length === 0) {
-    return { ok: false, code: "receipt_required" };
-  }
 
   if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
     const isValidReceipt = activeReceiptFormats.some((format) =>
@@ -817,15 +914,12 @@ export async function createTreasuryMovement(input: {
         ) ?? null
       : null;
 
-  if (categoryFieldRules.calendar?.isRequired && !input.calendarEventId.trim()) {
-    return { ok: false, code: "calendar_required" };
-  }
-
   if (input.calendarEventId.trim().length > 0 && !calendarEvent) {
     return { ok: false, code: "invalid_calendar_event" };
   }
 
   const created = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
     dailyCashSessionId: session.id,
     accountId: account.id,
@@ -845,7 +939,180 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "unknown_error" };
   }
 
-  return { ok: true, code: "movement_created" };
+  return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
+}
+
+export async function updateSecretariaMovementInOpenSession(input: {
+  movementId: string;
+  accountId: string;
+  movementType: string;
+  categoryId: string;
+  activityId: string;
+  receiptNumber: string;
+  calendarEventId: string;
+  concept: string;
+  currencyCode: string;
+  amount: string;
+}): Promise<TreasuryActionResult> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  const session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+
+  if (!session || session.status !== "open") {
+    return { ok: false, code: "session_required" };
+  }
+
+  const movement = await accessRepository.findTreasuryMovementById(input.movementId);
+
+  if (
+    !movement ||
+    movement.clubId !== context.activeClub.id ||
+    movement.dailyCashSessionId !== session.id
+  ) {
+    return { ok: false, code: "movement_not_editable" };
+  }
+
+  if (!input.accountId) {
+    return { ok: false, code: "account_required" };
+  }
+
+  if (!input.movementType) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  if (!input.categoryId) {
+    return { ok: false, code: "category_required" };
+  }
+
+  if (!input.concept.trim()) {
+    return { ok: false, code: "concept_required" };
+  }
+
+  if (!input.currencyCode) {
+    return { ok: false, code: "currency_required" };
+  }
+
+  if (!input.amount) {
+    return { ok: false, code: "amount_required" };
+  }
+
+  const parsedAmount = parseLocalizedAmount(input.amount);
+
+  if (parsedAmount === null || parsedAmount <= 0) {
+    return { ok: false, code: "amount_must_be_positive" };
+  }
+
+  if (input.movementType !== "ingreso" && input.movementType !== "egreso") {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const [
+    accounts,
+    categories,
+    activities,
+    calendarEvents,
+    configuredCurrencies,
+    configuredMovementTypes
+  ] = await Promise.all([
+    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
+    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+    accessRepository.listClubActivitiesForClub(context.activeClub.id),
+    accessRepository.listClubCalendarEventsForClub(context.activeClub.id),
+    getConfiguredTreasuryCurrencies(context.activeClub.id),
+    getConfiguredMovementTypes(context.activeClub.id)
+  ]);
+
+  if (
+    !configuredMovementTypes.some(
+      (movementType) => movementType.movementType === input.movementType && movementType.isEnabled
+    )
+  ) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const account = accounts.find((entry) => entry.id === input.accountId && entry.visibleForSecretaria);
+
+  if (!account) {
+    return { ok: false, code: "invalid_account" };
+  }
+
+  const category = categories.find((entry) => entry.id === input.categoryId && entry.visibleForSecretaria);
+
+  if (!category) {
+    return { ok: false, code: "invalid_category" };
+  }
+
+  if (!configuredCurrencies.some((currency) => currency.currencyCode === input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  if (!account.currencies.includes(input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  const activity =
+    input.activityId.trim().length > 0
+      ? activities.find((entry) => entry.id === input.activityId && entry.visibleForSecretaria) ?? null
+      : null;
+
+  if (input.activityId.trim().length > 0 && !activity) {
+    return { ok: false, code: "invalid_activity" };
+  }
+
+  const receiptNumber = input.receiptNumber.trim();
+  const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
+
+  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
+    const isValidReceipt = activeReceiptFormats.some((format) =>
+      validateReceiptNumberAgainstFormat(receiptNumber, format)
+    );
+
+    if (!isValidReceipt) {
+      return { ok: false, code: "invalid_receipt_format" };
+    }
+  }
+
+  const calendarEvent =
+    input.calendarEventId.trim().length > 0
+      ? calendarEvents.find((entry) => entry.id === input.calendarEventId && entry.isEnabledForTreasury) ?? null
+      : null;
+
+  if (input.calendarEventId.trim().length > 0 && !calendarEvent) {
+    return { ok: false, code: "invalid_calendar_event" };
+  }
+
+  const beforeSnapshot = serializeMovementSnapshot(movement);
+  const updatedMovement = await accessRepository.updateTreasuryMovement({
+    movementId: movement.id,
+    clubId: context.activeClub.id,
+    accountId: account.id,
+    movementType: input.movementType,
+    categoryId: category.id,
+    activityId: activity?.id ?? null,
+    receiptNumber: receiptNumber || null,
+    calendarEventId: calendarEvent?.id ?? null,
+    concept: input.concept.trim(),
+    currencyCode: input.currencyCode,
+    amount: parsedAmount
+  });
+
+  if (!updatedMovement) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  await accessRepository.createMovementAuditLog({
+    movementId: updatedMovement.id,
+    actionType: "edited",
+    payloadBefore: beforeSnapshot,
+    payloadAfter: serializeMovementSnapshot(updatedMovement),
+    performedByUserId: context.user.id
+  });
+
+  return { ok: true, code: "movement_updated" };
 }
 
 export async function createAccountTransfer(input: {
@@ -887,15 +1154,19 @@ export async function createAccountTransfer(input: {
     return { ok: false, code: "amount_required" };
   }
 
-  const parsedAmount = Number(input.amount);
+  const parsedAmount = parseLocalizedAmount(input.amount);
 
-  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+  if (parsedAmount === null || parsedAmount <= 0) {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
-  const accounts = await getSecretariaAccounts(context.activeClub.id);
-  const sourceAccount = accounts.find((account) => account.id === input.sourceAccountId);
-  const targetAccount = accounts.find((account) => account.id === input.targetAccountId);
+  const allAccounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
+  const sourceAccount = getAccountsVisibleForRole(allAccounts, "secretaria").find(
+    (account) => account.id === input.sourceAccountId
+  );
+  const targetAccount = getTransferTargetAccountsForSecretaria(allAccounts).find(
+    (account) => account.id === input.targetAccountId
+  );
 
   if (!sourceAccount || !targetAccount) {
     return { ok: false, code: "invalid_transfer" };
@@ -923,6 +1194,7 @@ export async function createAccountTransfer(input: {
   }
 
   const sourceMovement = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
     dailyCashSessionId: session.id,
     accountId: sourceAccount.id,
@@ -941,6 +1213,7 @@ export async function createAccountTransfer(input: {
   }
 
   const targetMovement = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
     dailyCashSessionId: session.id,
     accountId: targetAccount.id,
@@ -958,7 +1231,7 @@ export async function createAccountTransfer(input: {
     return { ok: false, code: "unknown_error" };
   }
 
-  return { ok: true, code: "transfer_created" };
+  return { ok: true, code: "transfer_created", movementDisplayId: sourceMovement.displayId };
 }
 
 export async function createFxOperation(input: {
@@ -970,16 +1243,10 @@ export async function createFxOperation(input: {
   targetAmount: string;
   concept: string;
 }): Promise<TreasuryActionResult> {
-  const context = await getSecretariaSession();
+  const context = await getTesoreriaSession();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
-  }
-
-  const session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
-
-  if (!session || session.status !== "open") {
-    return { ok: false, code: "session_required" };
   }
 
   if (!input.sourceAccountId) {
@@ -1014,19 +1281,19 @@ export async function createFxOperation(input: {
     return { ok: false, code: "target_amount_required" };
   }
 
-  const parsedSourceAmount = Number(input.sourceAmount);
-  const parsedTargetAmount = Number(input.targetAmount);
+  const parsedSourceAmount = parseLocalizedAmount(input.sourceAmount);
+  const parsedTargetAmount = parseLocalizedAmount(input.targetAmount);
 
   if (
-    !Number.isFinite(parsedSourceAmount) ||
-    !Number.isFinite(parsedTargetAmount) ||
+    parsedSourceAmount === null ||
+    parsedTargetAmount === null ||
     parsedSourceAmount <= 0 ||
     parsedTargetAmount <= 0
   ) {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
-  const accounts = await getSecretariaAccounts(context.activeClub.id);
+  const accounts = await getTesoreriaAccounts(context.activeClub.id);
   const sourceAccount = accounts.find((account) => account.id === input.sourceAccountId);
   const targetAccount = accounts.find((account) => account.id === input.targetAccountId);
 
@@ -1058,8 +1325,9 @@ export async function createFxOperation(input: {
   }
 
   const sourceMovement = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
-    dailyCashSessionId: session.id,
+    dailyCashSessionId: null,
     accountId: sourceAccount.id,
     movementType: "egreso",
     categoryId: "",
@@ -1068,7 +1336,8 @@ export async function createFxOperation(input: {
     amount: parsedSourceAmount,
     fxOperationGroupId: operation.id,
     movementDate: getTodayDate(),
-    createdByUserId: context.user.id
+    createdByUserId: context.user.id,
+    status: "posted"
   });
 
   if (!sourceMovement) {
@@ -1076,8 +1345,9 @@ export async function createFxOperation(input: {
   }
 
   const targetMovement = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
     clubId: context.activeClub.id,
-    dailyCashSessionId: session.id,
+    dailyCashSessionId: null,
     accountId: targetAccount.id,
     movementType: "ingreso",
     categoryId: "",
@@ -1086,7 +1356,8 @@ export async function createFxOperation(input: {
     amount: parsedTargetAmount,
     fxOperationGroupId: operation.id,
     movementDate: getTodayDate(),
-    createdByUserId: context.user.id
+    createdByUserId: context.user.id,
+    status: "posted"
   });
 
   if (!targetMovement) {
@@ -1138,9 +1409,9 @@ export async function createTreasuryRoleMovement(input: {
   }
 
   const movementDate = input.movementDate.trim() || getTodayDate();
-  const parsedAmount = Number(input.amount);
+  const parsedAmount = parseLocalizedAmount(input.amount);
 
-  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+  if (parsedAmount === null || parsedAmount <= 0) {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
@@ -1174,7 +1445,7 @@ export async function createTreasuryRoleMovement(input: {
   }
 
   const category = categories.find(
-    (entry) => entry.id === input.categoryId && entry.visibleForTesoreria && entry.status === "active"
+    (entry) => entry.id === input.categoryId && entry.visibleForTesoreria
   );
 
   if (!category) {
@@ -1191,7 +1462,7 @@ export async function createTreasuryRoleMovement(input: {
 
   const activity =
     input.activityId.trim().length > 0
-      ? activities.find((entry) => entry.id === input.activityId && entry.status === "active") ?? null
+      ? activities.find((entry) => entry.id === input.activityId && entry.visibleForTesoreria) ?? null
       : null;
 
   if (input.activityId.trim().length > 0 && !activity) {
@@ -1212,6 +1483,7 @@ export async function createTreasuryRoleMovement(input: {
   }
 
   const created = await accessRepository.createTreasuryMovement({
+    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, movementDate),
     clubId: context.activeClub.id,
     dailyCashSessionId: "",
     accountId: account.id,
@@ -1231,7 +1503,7 @@ export async function createTreasuryRoleMovement(input: {
     return { ok: false, code: "unknown_error" };
   }
 
-  return { ok: true, code: "movement_created" };
+  return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
 }
 
 async function buildMovementUserName(userId: string) {
@@ -1253,11 +1525,11 @@ async function getConsolidationValidationIssues(
   const account = accounts.find((entry) => entry.id === movement.accountId && entry.clubId === clubId);
   const category = categories.find((entry) => entry.id === movement.categoryId && entry.clubId === clubId);
 
-  if (!account || account.status !== "active") {
+  if (!account || !account.visibleForTesoreria) {
     issues.push("invalid_account");
   }
 
-  if (!category || category.status !== "active") {
+  if (!category || !category.visibleForTesoreria) {
     issues.push("invalid_category");
   }
 
@@ -1326,6 +1598,7 @@ async function buildConsolidationMovement(
 
   return {
     movementId: movement.id,
+    movementDisplayId: movement.displayId,
     status:
       movement.status === "integrated" ? "integrated" : "pending_consolidation",
     movementDate: movement.movementDate,
@@ -1467,9 +1740,9 @@ export async function updateMovementBeforeConsolidation(input: {
     return { ok: false, code: "amount_required" };
   }
 
-  const parsedAmount = Number(input.amount);
+  const parsedAmount = parseLocalizedAmount(input.amount);
 
-  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+  if (parsedAmount === null || parsedAmount <= 0) {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
@@ -1483,8 +1756,8 @@ export async function updateMovementBeforeConsolidation(input: {
     getConfiguredTreasuryCurrencies(clubId)
   ]);
 
-  const account = accounts.find((entry) => entry.id === input.accountId && entry.status === "active");
-  const category = categories.find((entry) => entry.id === input.categoryId && entry.status === "active");
+  const account = accounts.find((entry) => entry.id === input.accountId && entry.visibleForTesoreria);
+  const category = categories.find((entry) => entry.id === input.categoryId && entry.visibleForTesoreria);
 
   if (!account) {
     return { ok: false, code: "invalid_account" };
@@ -1727,17 +2000,7 @@ export async function getActiveActivitiesForSecretaria(): Promise<ClubActivity[]
   }
 
   const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
-  return activities.filter((activity) => activity.status === "active");
-}
-
-export async function getTreasuryFieldRulesForSecretaria(): Promise<TreasuryFieldRule[]> {
-  const context = await getSecretariaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  return accessRepository.listTreasuryFieldRulesForClub(context.activeClub.id);
+  return activities.filter((activity) => activity.visibleForSecretaria);
 }
 
 export async function getEnabledCalendarEventsForSecretaria(): Promise<ClubCalendarEvent[]> {
@@ -1759,7 +2022,7 @@ export async function getActiveActivitiesForTesoreria(): Promise<ClubActivity[]>
   }
 
   const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
-  return activities.filter((activity) => activity.status === "active");
+  return activities.filter((activity) => activity.visibleForTesoreria);
 }
 
 export async function getActiveTreasuryCurrenciesForSecretaria(): Promise<TreasuryCurrencyConfig[]> {
@@ -1864,7 +2127,6 @@ export async function getTreasuryAccountDetailForActiveClub(
 ): Promise<{
   accounts: Awaited<ReturnType<typeof accessRepository.listTreasuryAccountsForClub>>;
   detail: TreasuryAccountDetail | null;
-  canCreateMovement: boolean;
 } | null> {
   const context = role === "secretaria" ? await getSecretariaSession() : await getTesoreriaSession();
 
@@ -1887,16 +2149,11 @@ export async function getTreasuryAccountDetailForActiveClub(
   if (!selectedAccount) {
     return {
       accounts: [],
-      detail: null,
-      canCreateMovement: false
+      detail: null
     };
   }
 
-  const movements = await accessRepository.listTreasuryMovementsByAccount(
-    context.activeClub.id,
-    selectedAccount.id,
-    sessionDate
-  );
+  const movements = await accessRepository.listTreasuryMovementsHistoryByAccount(context.activeClub.id, selectedAccount.id);
 
   const visibleMovements = movements.filter((movement) => shouldIncludeMovementInRoleBalances(movement, role));
   const balances = buildAccountBalances(selectedAccount, visibleMovements);
@@ -1919,6 +2176,7 @@ export async function getTreasuryAccountDetailForActiveClub(
           : null;
         return {
           movementId: movement.id,
+          movementDisplayId: movement.displayId,
           movementDate: movement.movementDate,
           movementType: movement.movementType,
           categoryName: category?.name ?? "",
@@ -1934,12 +2192,11 @@ export async function getTreasuryAccountDetailForActiveClub(
           createdAt: movement.createdAt
         };
       })
-      .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
   };
 
   return {
     accounts: visibleAccounts,
-    detail,
-    canCreateMovement: role === "secretaria" && session?.status === "open"
+    detail
   };
 }

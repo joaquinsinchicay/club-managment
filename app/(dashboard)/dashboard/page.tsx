@@ -6,6 +6,7 @@ import {
   createFxOperationAction,
   createTreasuryMovementAction,
   createTreasuryRoleMovementAction,
+  updateSecretariaMovementAction,
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { ActiveClubSelector } from "@/components/dashboard/active-club-selector";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
@@ -24,7 +25,6 @@ import {
   getActiveReceiptFormatsForTesoreria,
   getActiveReceiptFormatsForSecretaria,
   getDashboardTreasuryCardForActiveClub,
-  getTreasuryFieldRulesForSecretaria,
   getTreasuryRoleDashboardForActiveClub
 } from "@/lib/services/treasury-service";
 import { accessRepository } from "@/lib/repositories/access-repository";
@@ -50,32 +50,35 @@ export default async function DashboardPage() {
   const treasuryRoleDashboard = await getTreasuryRoleDashboardForActiveClub();
   const canOperateSecretariaRole = canOperateSecretaria(activeMembership);
   const canOperateTesoreriaRole = canOperateTesoreria(activeMembership);
-  const treasuryAccounts = canOperateSecretariaRole
-    ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
-        (account) => account.visibleForSecretaria
-      )
+  const allTreasuryAccounts = canOperateSecretariaRole || canOperateTesoreriaRole
+    ? await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)
+    : [];
+  const treasuryMovementAccounts = canOperateSecretariaRole
+    ? allTreasuryAccounts.filter((account) => account.visibleForSecretaria)
+    : [];
+  const treasuryTransferTargetAccounts = canOperateSecretariaRole
+    ? allTreasuryAccounts.filter((account) => !account.visibleForSecretaria && account.visibleForTesoreria)
     : [];
   const treasuryRoleAccounts = !canOperateSecretariaRole && canOperateTesoreriaRole
-    ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
-        (account) => account.visibleForTesoreria
-      )
+    ? allTreasuryAccounts.filter((account) => account.visibleForTesoreria)
     : [];
-  const [treasuryCategories, treasuryActivities, treasuryCalendarEvents, treasuryFieldRules, treasuryCurrencies, movementTypes, receiptFormats] = canOperateSecretariaRole
-    ? await Promise.all([
-        accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+  const [treasuryCategories, treasuryActivities, treasuryCalendarEvents, treasuryCurrencies, movementTypes, receiptFormats] = canOperateSecretariaRole
+      ? await Promise.all([
+        accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
+          categories.filter((category) => category.visibleForSecretaria)
+        ),
         getActiveActivitiesForSecretaria(),
         getEnabledCalendarEventsForSecretaria(),
-        getTreasuryFieldRulesForSecretaria(),
         getActiveTreasuryCurrenciesForSecretaria(),
         getEnabledMovementTypesForSecretaria(),
         getActiveReceiptFormatsForSecretaria()
       ])
-    : [[], [], [], [], [], [], []];
+    : [[], [], [], [], [], []];
   const [treasuryRoleCategories, treasuryRoleActivities, treasuryRoleCurrencies, treasuryRoleMovementTypes, treasuryRoleReceiptFormats] =
     !canOperateSecretariaRole && canOperateTesoreriaRole
       ? await Promise.all([
           accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
-            categories.filter((category) => category.visibleForTesoreria && category.status === "active")
+            categories.filter((category) => category.visibleForTesoreria)
           ),
           getActiveActivitiesForTesoreria(),
           getActiveTreasuryCurrenciesForTesoreria(),
@@ -88,9 +91,9 @@ export default async function DashboardPage() {
     <div className="min-h-screen">
       <AppHeader context={context} />
 
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10">
+      <main className="mx-auto flex w-full max-w-[920px] flex-col gap-4 px-4 py-6 sm:py-8">
         {context.availableClubs.length > 1 ? (
-          <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
+          <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
             <ActiveClubSelector
               clubs={context.availableClubs}
               activeClubId={context.activeClub?.id ?? context.availableClubs[0]?.id ?? ""}
@@ -102,17 +105,18 @@ export default async function DashboardPage() {
         {canOperateSecretariaRole && treasuryCard ? (
           <TreasuryCard
             treasuryCard={treasuryCard}
-            accounts={treasuryAccounts}
+            movementAccounts={treasuryMovementAccounts}
+            transferSourceAccounts={treasuryMovementAccounts}
+            transferTargetAccounts={treasuryTransferTargetAccounts}
             categories={treasuryCategories}
             activities={treasuryActivities}
             calendarEvents={treasuryCalendarEvents}
-            fieldRules={treasuryFieldRules}
             currencies={treasuryCurrencies}
             movementTypes={movementTypes}
             receiptFormats={receiptFormats}
             createTreasuryMovementAction={createTreasuryMovementAction}
+            updateSecretariaMovementAction={updateSecretariaMovementAction}
             createAccountTransferAction={createAccountTransferAction}
-            createFxOperationAction={createFxOperationAction}
           />
         ) : null}
 
@@ -126,6 +130,7 @@ export default async function DashboardPage() {
             movementTypes={treasuryRoleMovementTypes}
             receiptFormats={treasuryRoleReceiptFormats}
             createTreasuryRoleMovementAction={createTreasuryRoleMovementAction}
+            createFxOperationAction={createFxOperationAction}
           />
         ) : null}
       </main>

@@ -76,7 +76,6 @@ export type TreasuryMovementStatus =
   | "consolidated"
   | "posted"
   | "cancelled";
-export type TreasuryAdditionalFieldName = "activity" | "receipt" | "calendar";
 
 export type TreasuryCurrencyConfig = {
   clubId: string;
@@ -89,7 +88,6 @@ export type TreasuryAccount = {
   clubId: string;
   name: string;
   accountType: TreasuryAccountType;
-  status: TreasuryConfigStatus;
   visibleForSecretaria: boolean;
   visibleForTesoreria: boolean;
   emoji: string | null;
@@ -100,7 +98,6 @@ export type TreasuryCategory = {
   id: string;
   clubId: string;
   name: string;
-  status: TreasuryConfigStatus;
   visibleForSecretaria: boolean;
   visibleForTesoreria: boolean;
   emoji: string | null;
@@ -110,7 +107,8 @@ export type ClubActivity = {
   id: string;
   clubId: string;
   name: string;
-  status: TreasuryConfigStatus;
+  visibleForSecretaria: boolean;
+  visibleForTesoreria: boolean;
   emoji: string | null;
 };
 
@@ -131,15 +129,6 @@ export type MovementTypeConfig = {
   clubId: string;
   movementType: TreasuryMovementType;
   isEnabled: boolean;
-};
-
-export type TreasuryFieldRule = {
-  id: string;
-  clubId: string;
-  categoryId: string;
-  fieldName: TreasuryAdditionalFieldName;
-  isVisible: boolean;
-  isRequired: boolean;
 };
 
 export type ClubCalendarEvent = {
@@ -183,7 +172,6 @@ export type TreasurySettings = {
   receiptFormats: ReceiptFormat[];
   currencies: TreasuryCurrencyConfig[];
   movementTypes: MovementTypeConfig[];
-  fieldRules: TreasuryFieldRule[];
 };
 
 export type TreasurySessionStatus = "open" | "closed";
@@ -201,6 +189,7 @@ export type DailyCashSession = {
 
 export type TreasuryMovement = {
   id: string;
+  displayId: string;
   clubId: string;
   dailyCashSessionId: string | null;
   accountId: string;
@@ -280,6 +269,29 @@ export type DashboardTreasuryCard = {
       amount: number;
     }>;
   }>;
+  movements: Array<{
+    movementId: string;
+    movementDisplayId: string;
+    movementDate: string;
+    accountId: string;
+    accountName: string;
+    movementType: TreasuryMovementType;
+    categoryId: string;
+    categoryName: string;
+    activityId: string | null;
+    activityName: string | null;
+    receiptNumber: string | null;
+    calendarEventId: string | null;
+    calendarEventTitle: string | null;
+    transferReference: string | null;
+    fxOperationReference: string | null;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+    createdByUserName: string;
+    createdAt: string;
+    canEdit: boolean;
+  }>;
   availableActions: Array<"open_session" | "close_session" | "create_movement">;
 };
 
@@ -293,7 +305,21 @@ export type TreasuryRoleDashboard = {
       amount: number;
     }>;
   }>;
-  availableActions: Array<"create_movement">;
+  movements: Array<{
+    movementId: string;
+    movementDisplayId: string;
+    movementDate: string;
+    accountId: string;
+    accountName: string;
+    movementType: TreasuryMovementType;
+    categoryName: string;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+    createdByUserName: string;
+    createdAt: string;
+  }>;
+  availableActions: Array<"create_movement" | "create_fx_operation">;
 };
 
 export type TreasuryAccountDetail = {
@@ -308,6 +334,7 @@ export type TreasuryAccountDetail = {
   }>;
   movements: Array<{
     movementId: string;
+    movementDisplayId: string;
     movementDate: string;
     movementType: TreasuryMovementType;
     categoryName: string;
@@ -339,6 +366,7 @@ export type ConsolidationMatch = {
 
 export type ConsolidationMovement = {
   movementId: string;
+  movementDisplayId: string;
   status: "pending_consolidation" | "integrated";
   movementDate: string;
   accountId: string;

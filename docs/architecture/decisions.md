@@ -206,6 +206,12 @@ Una vez cerrada la jornada:
 * Secretaría no puede crear nuevos movimientos para esa jornada cerrada
 * Tesorería solo puede corregir mediante flujo de consolidación auditado
 
+Mientras la jornada sigue abierta:
+
+* Secretaría puede editar movimientos del día del club activo
+* la fecha y el identificador visible del movimiento permanecen read-only
+* toda edición debe quedar auditada
+
 ## 7.4 Ajustes automáticos
 
 Las diferencias detectadas entre saldo esperado y saldo declarado en apertura/cierre generan ajustes trazables.

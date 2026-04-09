@@ -22,7 +22,6 @@ const settingsSuccessFeedbackCodes = new Set([
   "activity_created",
   "activity_updated",
   "calendar_event_updated",
-  "field_rules_updated",
   "receipt_format_created",
   "receipt_format_updated"
 ]);
@@ -61,9 +60,17 @@ function resolveSettingsFeedback(code: string): FeedbackToast | null {
   };
 }
 
-function resolveDashboardFeedback(code: string): FeedbackToast | null {
+function resolveDashboardFeedback(code: string, searchParams: URLSearchParams): FeedbackToast | null {
   const feedbackMessages = texts.dashboard.feedback as Record<string, string>;
-  const message = feedbackMessages[code];
+  let message = feedbackMessages[code];
+
+  if (code === "movement_created") {
+    const movementId = searchParams.get("movement_id");
+
+    if (movementId) {
+      message = message.replace("{movementId}", movementId);
+    }
+  }
 
   if (!message) {
     return null;
@@ -104,9 +111,9 @@ export function resolveFeedbackToast(
   }
 
   if ((pathname === "/dashboard" || pathname === "/dashboard/treasury") && feedbackCode) {
-    const toast = resolveDashboardFeedback(feedbackCode);
+    const toast = resolveDashboardFeedback(feedbackCode, searchParams);
 
-    return toast ? { toast, consumedKeys: ["feedback"] } : null;
+    return toast ? { toast, consumedKeys: ["feedback", "movement_id"] } : null;
   }
 
   if (pathname === "/login" && errorCode) {

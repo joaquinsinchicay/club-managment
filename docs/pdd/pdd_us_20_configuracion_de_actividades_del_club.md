@@ -7,7 +7,7 @@
 | Campo | Valor |
 |---|---|
 | Epic | E03 · Tesorería |
-| User Story | Como Admin del club, quiero configurar las actividades del club, para que Secretaria pueda asociar los movimientos a la disciplina correspondiente. |
+| User Story | Como Tesoreria del club, quiero configurar las actividades del club, para que los formularios operativos puedan asociar movimientos a la disciplina correspondiente. |
 | Prioridad | Media |
 | Objetivo de negocio | Permitir que cada club mantenga su catálogo de actividades para mejorar la imputación operativa de movimientos y preparar futuras vinculaciones contables y de calendario. |
 
@@ -21,7 +21,7 @@ La tesorería diaria ya puede operar con cuentas y categorías, pero todavía no
 
 ## 3. Objetivo funcional
 
-Desde la solapa `Tesorería` de `Configuración del club`, un usuario `admin` debe poder ver, crear y editar actividades del club activo, dejando disponibles únicamente las actividades `active` para el formulario de movimientos de Secretaría.
+Desde la solapa `Tesorería` de `Configuración del club`, un usuario `tesoreria` debe poder ver, crear y editar actividades del club activo, definiendo su visibilidad por rol para disponibilizarlas en los formularios operativos correspondientes.
 
 ---
 
@@ -34,8 +34,9 @@ Desde la solapa `Tesorería` de `Configuración del club`, un usuario `admin` de
 - Edición de actividad.
 - Estado vacío cuando no existen actividades.
 - Validación de nombre obligatorio.
-- Validación de duplicado activo por club.
-- Disponibilización de actividades `active` para el formulario de movimientos.
+- Validación de duplicado por club.
+- Estado oculto cuando no se selecciona ningún rol en `Visibilidad`.
+- Disponibilización de actividades por visibilidad para el formulario de movimientos.
 
 ### No incluye
 - Baja de actividades.
@@ -46,14 +47,14 @@ Desde la solapa `Tesorería` de `Configuración del club`, un usuario `admin` de
 
 ## 5. Actor principal
 
-Usuario autenticado con membership `activo` y rol `admin` en el club activo.
+Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 ---
 
 ## 6. Precondiciones
 
 - El club activo está resuelto.
-- El usuario actual tiene permisos `admin`.
+- El usuario actual tiene permisos `tesoreria`.
 - La pantalla `Configuración del club` y la solapa `Tesorería` ya existen.
 
 ---
@@ -62,51 +63,57 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 
 | Escenario | Resultado esperado |
 |---|---|
-| Admin visualiza actividades | Ve el listado del club activo con nombre, estado y emoji. |
-| Admin crea actividad válida | La actividad queda registrada para el club activo. |
-| Admin edita actividad válida | La actividad queda actualizada solo en el club activo. |
-| Actividad inactiva | No se ofrece en el formulario de movimientos de Secretaría. |
-| Actividad activa | Puede quedar disponible para el formulario de movimientos cuando el campo se muestre. |
+| Tesorería visualiza actividades | Ve el listado del club activo con nombre, visibilidad y emoji. |
+| Tesorería crea actividad válida | La actividad queda registrada para el club activo. |
+| Tesorería edita actividad válida | La actividad queda actualizada solo en el club activo. |
+| Actividad visible para Secretaría | Se ofrece en el formulario de movimientos de Secretaría. |
+| Actividad visible para Tesorería | Se ofrece en el formulario de movimientos de Tesorería. |
 
 ---
 
 ## 8. Reglas de negocio
 
-- Solo `admin` puede crear y editar actividades.
+- Solo `tesoreria` puede crear y editar actividades.
 - Toda actividad pertenece solo al club activo.
 - El nombre de actividad es obligatorio.
-- No puede existir otra actividad `active` con el mismo nombre en el mismo club.
-- Solo actividades `active` pueden exponerse a Secretaría.
-- En este bloque, el formulario de movimientos puede consumir actividades activas como catálogo opcional.
+- No puede existir otra actividad con el mismo nombre en el mismo club.
+- Una actividad puede quedar sin roles seleccionados en `Visibilidad`; en ese caso permanece oculta para ambos roles.
+- En este bloque, el formulario de movimientos consume actividades visibles para el rol activo como catálogo opcional.
 
 ---
 
 ## 9. Flujo principal
 
-1. Un admin entra a `Configuración del club`.
+1. Un usuario de Tesorería entra a `Configuración del club`.
 2. Abre la solapa `Tesorería`.
 3. Visualiza la sección `Actividades`.
-4. Crea o edita una actividad con nombre, estado y emoji seleccionado desde un listado simple del sistema.
+4. Crea o edita una actividad con nombre, visibilidad y emoji seleccionado desde un listado simple del sistema.
 5. El sistema valida y guarda la configuración.
-6. Las actividades activas quedan disponibles para el formulario de movimientos.
+6. Las actividades quedan disponibles para los formularios del rol correspondiente según su visibilidad.
 
 ---
 
 ## 10. Flujos alternativos
 
-### A. Usuario no admin
+### A. Usuario sin Tesorería
 
-1. Un usuario sin rol `admin` intenta acceder.
+1. Un usuario sin rol `tesoreria` intenta acceder.
 2. La pantalla sigue bloqueada.
 
 ### B. Nombre faltante
 
-1. El admin intenta guardar una actividad sin nombre.
+1. Tesorería intenta guardar una actividad sin nombre.
 2. El sistema bloquea la operación y devuelve feedback.
 
-### C. Duplicado activo
+### C. Actividad sin visibilidad
 
-1. El admin intenta crear o editar una actividad con un nombre ya usado por otra actividad `active` del club.
+1. Tesorería crea o edita una actividad sin seleccionar ningún rol en `Visibilidad`.
+2. El sistema permite guardar la actividad.
+3. La actividad queda marcada como oculta y no aparece en formularios operativos.
+
+### D. Duplicado
+
+1. Tesorería intenta crear o editar una actividad con un nombre ya usado por otra actividad del club.
 2. El sistema bloquea la acción y devuelve feedback.
 
 ---
@@ -121,6 +128,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - El listado debe ser simple de escanear en mobile.
 - El estado vacío debe quedar claro y accionable.
 - El campo `Emoji` debe resolverse con un selector simple de opciones predefinidas del sistema.
+- Si no se selecciona ningún rol en una actividad, la UI debe representarla como `Oculta`.
 - Al crear o editar, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - No debe haber textos hardcodeados.
 
@@ -146,7 +154,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 | status | `settings.club.treasury.save_activity_loading` | Estado visible mientras se crea una actividad. |
 | status | `settings.club.treasury.update_activity_loading` | Estado visible mientras se actualiza una actividad. |
 | label | `settings.club.treasury.activity_name_label` | Nombre de la actividad. |
-| label | `settings.club.treasury.status_label` | Estado de la actividad. |
+| label | `settings.club.treasury.account_visibility_label` | Visibilidad de la actividad. |
 | label | `settings.club.treasury.emoji_label` | Emoji. |
 | label | `settings.club.treasury.emoji_placeholder` | Placeholder del selector de emoji. |
 | empty | `settings.club.treasury.empty_activities` | Estado vacío. |
@@ -171,8 +179,8 @@ Do not reference current code files.
 ## 14. Seguridad
 
 - Las actividades deben resolverse siempre dentro del club activo.
-- Un admin no puede editar actividades de otro club manipulando ids.
-- Secretaría solo debe consumir actividades activas del club activo.
+- Un usuario de Tesorería no puede editar actividades de otro club manipulando ids.
+- Secretaría y Tesorería solo deben consumir actividades visibles para su rol dentro del club activo.
 
 ---
 
@@ -180,7 +188,7 @@ Do not reference current code files.
 
 - contracts: `Create club activity`, `Update club activity`.
 - domain entities: `club_activities`, `treasury_movements`.
-- permissions: matriz donde solo `admin` crea y edita actividades.
+- permissions: matriz donde solo `tesoreria` crea y edita actividades.
 - other US if relevant: US-15 para compartir la misma solapa de configuración; US-19 para futura vinculación explícita de movimientos con actividad.
 
 ---
@@ -190,5 +198,5 @@ Do not reference current code files.
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
 | Mezclar actividades entre clubes | Media | Alta | Validar club activo server-side para todo READ/WRITE. |
-| Exponer actividades inactivas a Secretaría | Media | Media | Filtrar por `status = active` al construir opciones del formulario. |
+| Exponer actividades a roles no habilitados | Media | Media | Filtrar por visibilidad del rol al construir opciones del formulario. |
 | Generar duplicados semánticos | Media | Media | Validar nombre activo repetido antes de persistir. |

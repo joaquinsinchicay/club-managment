@@ -15,25 +15,23 @@
 
 ## 2. Problema a resolver
 
-La carga manual ya puede consumir actividades activas del club y las reglas por categoría pueden exigir el campo `Actividad`, pero faltaba consolidar el flujo completo para que la selección se refleje en el detalle del movimiento y el cambio de categoría limpie correctamente el valor previo cuando deja de aplicar.
+La carga manual ya puede consumir actividades visibles del club como dato opcional, pero faltaba consolidar el flujo completo para que la selección se refleje en el detalle del movimiento.
 
 ---
 
 ## 3. Objetivo funcional
 
-Secretaría debe poder vincular un movimiento manual con una actividad del club activo cuando la categoría lo requiera. La actividad elegida debe persistirse en el movimiento y mostrarse luego en el detalle de la cuenta.
+Secretaría debe poder vincular un movimiento manual con una actividad del club activo. La actividad elegida debe persistirse en el movimiento y mostrarse luego en el detalle de la cuenta.
 
 ---
 
 ## 4. Alcance
 
 ### Incluye
-- Reutilización de la configuración por categoría del campo `Actividad`.
-- Selección desde actividades activas del club activo.
-- Validación de obligatoriedad al guardar.
+- Campo `Actividad` opcional en el formulario manual.
+- Selección desde actividades visibles del club activo para el rol que opera.
 - Persistencia de `activity_id` en el movimiento.
 - Visualización de la actividad en el detalle del movimiento.
-- Limpieza del valor seleccionado cuando la categoría deja de requerir actividad.
 
 ### No incluye
 - Alta o edición de actividades.
@@ -52,7 +50,6 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 - Existe una jornada abierta para registrar movimientos.
 - El club activo tiene actividades configuradas.
-- La configuración de campos adicionales puede marcar `Actividad` como visible u obligatoria por categoría.
 
 ---
 
@@ -61,19 +58,16 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | Escenario | Resultado esperado |
 |---|---|
 | Secretaría guarda un movimiento con actividad válida | El movimiento queda registrado con `activity_id`. |
-| Secretaría cambia a una categoría sin actividad | El campo deja de mostrarse y el valor previo se limpia. |
 | Se consulta el detalle del movimiento | La actividad asociada se muestra si existe. |
 
 ---
 
 ## 8. Reglas de negocio
 
-- La visibilidad del campo `Actividad` depende de las reglas por categoría.
-- La obligatoriedad del campo `Actividad` depende de las reglas por categoría.
-- Solo se pueden seleccionar actividades `active` del club activo.
-- Actividades inactivas no deben aparecer para Secretaría.
-- Si la categoría deja de requerir actividad, el valor previamente seleccionado no debe conservarse.
-- Si se informa `activity_id`, debe pertenecer al club activo y estar activa.
+- El campo `Actividad` está disponible como dato opcional del formulario manual.
+- Solo se pueden seleccionar actividades visibles para el rol activo dentro del club activo.
+- Actividades sin visibilidad para el rol activo no deben aparecer en el selector.
+- Si se informa `activity_id`, debe pertenecer al club activo y estar visible para el rol que opera.
 - La actividad asociada se muestra en el detalle del movimiento cuando existe.
 
 ---
@@ -81,41 +75,26 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ## 9. Flujo principal
 
 1. Secretaría abre el formulario manual de movimientos.
-2. Selecciona una categoría.
-3. Si la categoría tiene `Actividad` visible, el formulario muestra el selector.
-4. Secretaría selecciona una actividad activa del club.
-5. Guarda el movimiento.
-6. El sistema persiste `activity_id`.
-7. En el detalle de la cuenta, el movimiento muestra la actividad vinculada.
+2. Selecciona una actividad visible para su rol dentro del club.
+3. Guarda el movimiento.
+4. El sistema persiste `activity_id`.
+5. En el detalle de la cuenta, el movimiento muestra la actividad vinculada.
 
 ---
 
 ## 10. Flujos alternativos
 
-### A. Categoría sin actividad
+### A. Actividad inválida
 
-1. Secretaría selecciona una categoría que no usa `Actividad`.
-2. El campo no se muestra.
-
-### B. Actividad obligatoria faltante
-
-1. Secretaría selecciona una categoría que exige actividad.
-2. Intenta guardar sin seleccionar una.
-3. El sistema rechaza el guardado.
-
-### C. Cambio de categoría
-
-1. Secretaría había seleccionado una actividad.
-2. Cambia la categoría por otra que no muestra actividad.
-3. El valor seleccionado se limpia y no se envía en el submit.
+1. Secretaría informa una actividad inexistente o no visible para su rol.
+2. El sistema rechaza el guardado.
 
 ---
 
 ## 11. UI / UX
 
-- El selector de actividad se muestra solo cuando la categoría lo requiere.
-- Debe listar únicamente actividades activas del club activo.
-- Al cambiar a una categoría que no usa actividad, el selector debe desaparecer y su valor resetearse.
+- El selector de actividad está disponible en el formulario manual como dato opcional.
+- Debe listar únicamente actividades visibles para el rol activo dentro del club activo.
 - El detalle del movimiento debe exponer la actividad de forma simple, sin añadir una vista nueva.
 
 ---
@@ -131,8 +110,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 |---|---|---|
 | label | `dashboard.treasury.activity_label` | Campo actividad en el formulario. |
 | placeholder | `dashboard.treasury.activity_placeholder` | Opción vacía del selector. |
-| feedback | `dashboard.feedback.activity_required` | Actividad obligatoria faltante. |
-| feedback | `dashboard.feedback.invalid_activity` | Actividad inválida o inactiva. |
+| feedback | `dashboard.feedback.invalid_activity` | Actividad inválida o no visible para el rol. |
 | label | `dashboard.treasury.detail_activity_label` | Actividad mostrada en el detalle del movimiento. |
 
 ---
@@ -141,8 +119,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 ### Entidades afectadas
 - `treasury_movements`: uso de `activity_id`.
-- `treasury_field_rules`: lectura de regla `activity`.
-- `club_activities`: lectura del catálogo activo del club.
+- `club_activities`: lectura del catálogo visible del club para el rol activo.
 
 Do not reference current code files.
 
@@ -158,7 +135,6 @@ Do not reference current code files.
 
 ## 15. Dependencias
 
-- US-16 para reglas de visibilidad/obligatoriedad por categoría.
 - US-20 para el catálogo de actividades del club.
 - US-11 para el registro de movimientos.
 - US-13 para la vista de detalle.
@@ -169,6 +145,5 @@ Do not reference current code files.
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
-| Mostrar actividades inactivas | Media | Media | Filtrar por `status = active` antes de renderizar opciones. |
-| Mantener un valor obsoleto al cambiar de categoría | Media | Media | Resetear el valor local cuando la categoría deje de requerir actividad. |
+| Mostrar actividades no visibles para el rol | Media | Media | Filtrar por visibilidad antes de renderizar opciones. |
 | Perder trazabilidad en detalle | Baja | Media | Mostrar la actividad guardada en el detalle del movimiento. |

@@ -32,6 +32,7 @@ El sistema debe permitir que un usuario con rol `secretaria` en el club activo a
 - Cierre de jornada abierta.
 - Validación de una sola jornada por día y club.
 - Exposición del estado de jornada dentro del dashboard.
+- Navegación con loader bloqueante desde las CTAs de Secretaría hacia las pantallas de apertura y cierre.
 - Reglas para permitir o bloquear la creación de movimientos según el estado de la jornada.
 
 ### No incluye
@@ -51,7 +52,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 - El club activo está resuelto en backend.
 - Existen cuentas visibles para Secretaría en el club activo.
-- El dashboard puede resolver el estado de jornada del día.
+- El dashboard resuelve el estado de jornada del día leyendo `daily_cash_sessions` del club activo.
+- La lectura y mutación de jornada diaria se ejecutan con `app.current_club_id` seteado server-side antes de aplicar RLS.
 
 ---
 
@@ -71,6 +73,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Solo `secretaria` puede abrir o cerrar jornada diaria.
 - Solo puede existir una jornada por día y por club.
 - La operación aplica únicamente al club activo.
+- La resolución de jornada del día debe leer la persistencia real del club activo, no estado efímero local.
 - La carga de movimientos de Secretaría requiere jornada `open`.
 - Una jornada `closed` no debe volver a habilitar la carga del mismo día en esta historia.
 
@@ -112,6 +115,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - El estado de jornada debe verse de forma clara en dashboard.
 - Las acciones disponibles deben cambiar según la jornada.
 - La interacción debe ser mobile-first y de baja fricción.
+- Al navegar desde una CTA de Secretaría hacia apertura o cierre, la pantalla actual debe mostrar un loader bloqueante hasta que cargue la nueva ruta.
 - Al confirmar apertura o cierre, el CTA debe entrar en loading de inmediato y el formulario de validación debe quedar bloqueado hasta resolver.
 - El resultado final de apertura o cierre debe mostrarse mediante toast.
 - No debe haber textos hardcodeados.
@@ -138,8 +142,9 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | label | `dashboard.treasury.session_not_started` | Jornada no iniciada. |
 | action | `dashboard.treasury.open_session_cta` | Acción de abrir jornada. |
 | action | `dashboard.treasury.close_session_cta` | Acción de cerrar jornada. |
-| status | `dashboard.treasury.confirm_open_session_loading` | Estado visible mientras se confirma la apertura. |
-| status | `dashboard.treasury.confirm_close_session_loading` | Estado visible mientras se confirma el cierre. |
+| status | `dashboard.treasury.navigation_loading` | Estado visible durante la navegación hacia apertura o cierre. |
+| status | `dashboard.treasury.confirm_open_session_loading` | Estado visible mientras se confirma la apertura, sin duplicar otros loaders del mismo submit. |
+| status | `dashboard.treasury.confirm_close_session_loading` | Estado visible mientras se confirma el cierre, sin duplicar otros loaders del mismo submit. |
 | feedback | `dashboard.feedback.session_opened` | Apertura exitosa. |
 | feedback | `dashboard.feedback.session_closed` | Cierre exitoso. |
 | feedback | `dashboard.feedback.session_already_exists` | Error de doble apertura. |
@@ -153,6 +158,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - `daily_cash_sessions`: READ para obtener la jornada del día; INSERT para apertura; UPDATE para cierre.
 - `treasury_accounts`: READ para alimentar la card operativa del club activo.
 - `treasury_movements`: READ para cálculo simple de saldos visibles en dashboard.
+- Las operaciones sobre `daily_cash_sessions` y sus registros asociados deben correr con contexto `app.current_club_id` del club activo.
 
 Do not reference current code files.
 

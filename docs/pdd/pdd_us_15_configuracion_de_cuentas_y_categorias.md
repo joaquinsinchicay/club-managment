@@ -21,21 +21,21 @@ La operatoria diaria de Secretaría ya puede registrar movimientos, pero todaví
 
 ## 3. Objetivo funcional
 
-Desde `Configuración del club`, un usuario `tesoreria` debe visualizar una solapa `Tesorería` y administrar cuentas y categorías del club activo, pudiendo listarlas, crearlas y editarlas con sus atributos operativos mínimos.
+Desde `Configuración del club`, un usuario `tesoreria` debe visualizar las cards de configuración operativa del club y administrar cuentas y categorías del club activo, pudiendo listarlas, crearlas y editarlas con sus atributos operativos mínimos.
 
 ---
 
 ## 4. Alcance
 
 ### Incluye
-- Solapa `Tesorería` dentro de `Configuración del club`.
+- Cards de `Cuentas` y `Categorías` dentro de `Configuración del club`.
 - Listado de cuentas del club activo.
 - Listado de categorías del club activo.
 - Alta de cuenta.
 - Edición de cuenta.
 - Alta de categoría.
 - Edición de categoría.
-- Validaciones de nombre obligatorio, tipo obligatorio y duplicados activos.
+- Validaciones de nombre obligatorio, tipo obligatorio, duplicados por club y visibilidad opcional para categorías.
 - Feedback visible en la misma pantalla.
 
 ### No incluye
@@ -65,7 +65,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 | Escenario | Resultado esperado |
 |---|---|
-| Tesorería entra a configuración | Ve la solapa `Tesorería`. |
+| Tesorería entra a configuración | Ve las cards de configuración operativa del club. |
 | Tesorería crea una cuenta válida | La cuenta queda registrada en el club activo. |
 | Tesorería edita una cuenta existente | La cuenta queda actualizada solo en el club activo. |
 | Tesorería crea una categoría válida | La categoría queda registrada en el club activo. |
@@ -82,12 +82,13 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - La visibilidad operativa de cuentas se define por rol y no por la combinación de `ámbito` más un campo visible redundante.
 - El club debe contar con un catálogo fijo de categorías del sistema, siempre presente y no eliminable.
 - Las categorías del sistema solo permiten editar su visibilidad por rol.
-- Las categorías manuales adicionales mantienen edición completa de nombre, visibilidad, estado y emoji.
+- Las categorías manuales adicionales mantienen edición completa de nombre, visibilidad y emoji.
+- Las categorías pueden guardarse sin roles seleccionados en `Visibilidad`; en ese caso quedan ocultas para la operatoria.
 - El nombre de cuenta es obligatorio.
 - El tipo de cuenta es obligatorio.
 - El nombre de categoría es obligatorio.
-- No puede existir otra cuenta `active` con el mismo nombre en el mismo club.
-- No puede existir otra categoría `active` con el mismo nombre en el mismo club.
+- No puede existir otra cuenta con el mismo nombre en el mismo club.
+- No puede existir otra categoría con el mismo nombre en el mismo club.
 - La edición debe respetar las mismas validaciones que el alta.
 
 ---
@@ -95,11 +96,10 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 ## 9. Flujo principal
 
 1. Un usuario de Tesorería entra a `Configuración del club`.
-2. La UI muestra tabs y una de ellas es `Tesorería`.
-3. Tesorería abre la solapa `Tesorería`.
-4. El sistema muestra cuentas y categorías del club activo.
-5. Tesorería crea o edita cuentas y categorías; para categorías del sistema solo ajusta visibilidad por rol.
-6. El sistema valida, persiste y vuelve a mostrar la configuración actualizada con feedback.
+2. La UI muestra la vista unificada de `Configuración del club`.
+3. El sistema muestra las cards de cuentas y categorías del club activo.
+4. Tesorería crea o edita cuentas y categorías; para categorías del sistema solo ajusta visibilidad por rol.
+5. El sistema valida, persiste y vuelve a mostrar la configuración actualizada con feedback.
 
 ---
 
@@ -115,9 +115,15 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 1. Tesorería intenta guardar una cuenta o categoría incompleta.
 2. El sistema rechaza la acción y devuelve feedback específico.
 
-### C. Duplicado activo
+### C. Categoría sin visibilidad
 
-1. Tesorería intenta crear o editar con un nombre ya usado por otra entidad `active` del mismo club.
+1. Tesorería crea o edita una categoría sin seleccionar ningún rol en `Visibilidad`.
+2. El sistema permite guardar la categoría.
+3. La configuración queda marcada como oculta y no aparece en formularios operativos.
+
+### D. Duplicado
+
+1. Tesorería intenta crear o editar con un nombre ya usado por otra entidad del mismo club.
 2. El sistema bloquea la operación y devuelve feedback.
 
 ---
@@ -129,11 +135,12 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 ### Reglas
 - La configuración debe mantenerse dentro de `settings/club`.
-- La solapa `Tesorería` debe ser visible al entrar a la pantalla solo para usuarios con rol `tesoreria`.
-- Un usuario con ambos roles puede alternar entre `Miembros` y `Tesorería` sin salir de la página.
+- Las cards de tesorería deben ser visibles dentro de la pantalla solo para usuarios con rol `tesoreria`.
+- Un usuario con ambos roles puede ver en una sola pantalla tanto la administración de miembros como las cards de tesorería.
 - La pantalla puede incluir bloques informativos read-only de catálogos fijos del sistema, sin convertirlos en configuraciones editables.
 - Al crear o editar cuentas/categorías, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - El campo `Visibilidad` de categorías debe usar el mismo patrón UI que el de cuentas, con selección por rol para `Secretaria` y `Tesoreria`.
+- Si no se selecciona ningún rol en una categoría, la UI debe representarla como `Oculta`.
 - El campo `Emoji` en cuentas y categorías debe resolverse con un selector simple de opciones predefinidas del sistema.
 - Los formularios deben ser mobile-first y no incluir textos hardcodeados.
 
@@ -152,7 +159,6 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 | Tipo | Key | Contexto |
 |---|---|---|
-| tab | `settings.club.tabs.treasury` | Nombre visible de la solapa. |
 | title | `settings.club.treasury.section_title` | Encabezado de Tesorería. |
 | body | `settings.club.treasury.section_description` | Descripción general. |
 | action | `settings.club.treasury.create_account_cta` | Alta de cuenta. |
@@ -166,7 +172,6 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 | label | `settings.club.treasury.account_name_label` | Nombre de cuenta. |
 | label | `settings.club.treasury.account_type_label` | Tipo de cuenta. |
 | label | `settings.club.treasury.account_visibility_label` | Visibilidad por rol en cuentas y categorías. |
-| label | `settings.club.treasury.status_label` | Estado. |
 | label | `settings.club.treasury.emoji_label` | Emoji. |
 | label | `settings.club.treasury.emoji_placeholder` | Placeholder del selector de emoji. |
 | feedback | `settings.club.treasury.feedback.account_name_required` | Validación de nombre de cuenta. |
@@ -211,5 +216,5 @@ Do not reference current code files.
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
 | Mezclar configuración de otro club | Media | Alta | Resolver siempre sobre club activo y validar ids server-side. |
-| Crear cuentas duplicadas activas | Media | Media | Validar nombres activos antes de persistir. |
+| Crear cuentas duplicadas | Media | Media | Validar nombres repetidos antes de persistir. |
 | Configuración incoherente con historias posteriores | Baja | Media | Tomar US-28 como fuente de verdad para monedas por cuenta y visibilidad por rol. |

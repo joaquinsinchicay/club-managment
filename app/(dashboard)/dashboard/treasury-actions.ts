@@ -9,22 +9,35 @@ import {
   createFxOperation,
   createTreasuryMovement,
   createTreasuryRoleMovement,
+  updateSecretariaMovementInOpenSession,
   openDailyCashSession
 } from "@/lib/services/treasury-service";
 
-function redirectToDashboard(code: string) {
+export type TreasuryActionResponse = {
+  ok: boolean;
+  code: string;
+  movementDisplayId?: string;
+};
+
+function redirectToDashboard(code: string, movementDisplayId?: string) {
   revalidatePath("/dashboard");
-  redirect(`/dashboard?feedback=${code}`);
+  const params = new URLSearchParams({ feedback: code });
+
+  if (movementDisplayId) {
+    params.set("movement_id", movementDisplayId);
+  }
+
+  redirect(`/dashboard?${params.toString()}`);
 }
 
 export async function openDailyCashSessionAction() {
   const result = await openDailyCashSession();
-  redirectToDashboard(result.code);
+  redirectToDashboard(result.code, result.movementDisplayId);
 }
 
 export async function closeDailyCashSessionAction() {
   const result = await closeDailyCashSession();
-  redirectToDashboard(result.code);
+  redirectToDashboard(result.code, result.movementDisplayId);
 }
 
 export async function createTreasuryMovementAction(formData: FormData) {
@@ -40,7 +53,13 @@ export async function createTreasuryMovementAction(formData: FormData) {
     amount: String(formData.get("amount") ?? "")
   });
 
-  redirectToDashboard(result.code);
+  revalidatePath("/dashboard");
+
+  return {
+    ok: result.ok,
+    code: result.code,
+    movementDisplayId: result.movementDisplayId
+  } satisfies TreasuryActionResponse;
 }
 
 export async function createTreasuryRoleMovementAction(formData: FormData) {
@@ -59,6 +78,28 @@ export async function createTreasuryRoleMovementAction(formData: FormData) {
   redirectToDashboard(result.code);
 }
 
+export async function updateSecretariaMovementAction(formData: FormData) {
+  const result = await updateSecretariaMovementInOpenSession({
+    movementId: String(formData.get("movement_id") ?? ""),
+    accountId: String(formData.get("account_id") ?? ""),
+    movementType: String(formData.get("movement_type") ?? ""),
+    categoryId: String(formData.get("category_id") ?? ""),
+    activityId: String(formData.get("activity_id") ?? ""),
+    receiptNumber: String(formData.get("receipt_number") ?? ""),
+    calendarEventId: String(formData.get("calendar_event_id") ?? ""),
+    concept: String(formData.get("concept") ?? ""),
+    currencyCode: String(formData.get("currency_code") ?? ""),
+    amount: String(formData.get("amount") ?? "")
+  });
+
+  revalidatePath("/dashboard");
+
+  return {
+    ok: result.ok,
+    code: result.code
+  } satisfies TreasuryActionResponse;
+}
+
 export async function createAccountTransferAction(formData: FormData) {
   const result = await createAccountTransfer({
     sourceAccountId: String(formData.get("source_account_id") ?? ""),
@@ -68,7 +109,13 @@ export async function createAccountTransferAction(formData: FormData) {
     concept: String(formData.get("concept") ?? "")
   });
 
-  redirectToDashboard(result.code);
+  revalidatePath("/dashboard");
+
+  return {
+    ok: result.ok,
+    code: result.code,
+    movementDisplayId: result.movementDisplayId
+  } satisfies TreasuryActionResponse;
 }
 
 export async function createFxOperationAction(formData: FormData) {

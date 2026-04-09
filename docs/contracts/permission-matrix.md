@@ -67,9 +67,15 @@ Roles disponibles:
 | Editar categoría               | ❌     | ❌          | ✅         |
 | Crear actividad                | ❌     | ❌          | ✅         |
 | Editar actividad               | ❌     | ❌          | ✅         |
+| Eliminar actividad             | ❌     | ❌          | ❌         |
 | Configurar monedas             | ❌     | ❌          | ✅         |
-| Configurar reglas de campos    | ❌     | ❌          | ✅         |
 | Configurar formatos de recibo  | ❌     | ❌          | ✅         |
+
+### Reglas
+
+* Las categorías y actividades pueden quedar ocultas para ambos roles si no tienen visibilidad seleccionada.
+* Un elemento oculto sigue siendo editable desde configuración, pero no debe aparecer en formularios operativos.
+* La baja de actividades no está permitida en esta versión.
 
 ---
 
@@ -95,7 +101,7 @@ Roles disponibles:
 | Ver dashboard de Tesorería | ❌     | ❌          | ✅         |
 | Ver movimientos     | ✅     | ✅          | ✅         |
 | Crear movimiento    | ⚠️    | ⚠️         | ⚠️        |
-| Editar movimiento   | ❌     | ❌          | ⚠️        |
+| Editar movimiento   | ❌     | ⚠️         | ⚠️        |
 | Cancelar movimiento | ⚠️    | ❌          | ⚠️        |
 
 ### Reglas
@@ -120,8 +126,15 @@ Roles disponibles:
 
 #### Editar movimiento
 
-* Solo Tesorería durante consolidación
-* Debe auditarse
+* Secretaria:
+  * puede editar movimientos de la jornada abierta del club activo
+  * no puede editar `movement_date`
+  * no puede editar el identificador visible del movimiento
+  * puede editar solo campos operativos del movimiento
+  * debe auditarse
+* Tesoreria:
+  * mantiene la corrección auditada durante consolidación
+  * debe auditarse
 
 #### Cancelar movimiento
 
@@ -139,6 +152,8 @@ Roles disponibles:
 ### Reglas
 
 * Requiere jornada abierta
+* La cuenta origen debe ser visible para `Secretaria`
+* La cuenta destino debe ser visible para otros roles operativos y no visible para `Secretaria`
 * Genera dos movimientos
 * Debe ser transaccional
 
@@ -148,11 +163,11 @@ Roles disponibles:
 
 | Acción             | Admin | Secretaria | Tesoreria |
 | ------------------ | ----- | ---------- | --------- |
-| Crear operación FX | ❌     | ✅          | ❌         |
+| Crear operación FX | ❌     | ❌          | ✅         |
 
 ### Reglas
 
-* Requiere jornada abierta
+* No requiere jornada abierta
 * Genera dos movimientos
 * Debe ser transaccional
 
@@ -203,7 +218,7 @@ Roles disponibles:
 * Operación diaria
 * Jornadas
 * Movimientos del día
-* Transferencias y FX
+* Transferencias
 
 ---
 
@@ -212,6 +227,7 @@ Roles disponibles:
 * Control financiero
 * Revisión
 * Consolidación
+* Operaciones FX
 * Auditoría
 
 ---

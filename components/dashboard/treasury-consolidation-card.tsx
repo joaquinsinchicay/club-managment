@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppHeader } from "@/components/navigation/app-header";
 import { CardShell } from "@/components/ui/card-shell";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { formatLocalizedAmount } from "@/lib/amounts";
 import type { SessionContext } from "@/lib/auth/service";
 import type {
   ConsolidationAuditEntry,
@@ -116,7 +117,7 @@ function MovementList({
                   </div>
                 </div>
                 <p className="text-base font-semibold text-foreground">
-                  {movement.currencyCode} {movement.amount.toFixed(2)}
+                  {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
                 </p>
               </div>
             </Link>
@@ -266,7 +267,7 @@ export function TreasuryConsolidationCard({
                           </p>
                           <p>{selectedMovement.createdByUserName}</p>
                           <p className="text-base font-semibold text-foreground">
-                            {selectedMovement.currencyCode} {selectedMovement.amount.toFixed(2)}
+                            {selectedMovement.currencyCode} {formatLocalizedAmount(selectedMovement.amount)}
                           </p>
                         </div>
 
@@ -357,11 +358,10 @@ export function TreasuryConsolidationCard({
                               <label className="grid gap-2 text-sm text-foreground">
                                 <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
                                 <input
-                                  type="number"
+                                  type="text"
                                   name="amount"
-                                  min="0.01"
-                                  step="0.01"
-                                  defaultValue={selectedMovement.amount}
+                                  inputMode="decimal"
+                                  defaultValue={formatLocalizedAmount(selectedMovement.amount)}
                                   className="min-h-11 rounded-2xl border border-border bg-secondary/20 px-4 py-3 text-sm text-foreground"
                                 />
                               </label>
@@ -396,7 +396,7 @@ export function TreasuryConsolidationCard({
                               <p>{selectedMovement.categoryName}</p>
                               <p>{selectedMovement.concept}</p>
                               <p>
-                                {selectedMovement.currencyCode} {selectedMovement.amount.toFixed(2)}
+                                {selectedMovement.currencyCode} {formatLocalizedAmount(selectedMovement.amount)}
                               </p>
                             </div>
                             <div className="rounded-2xl border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
@@ -408,7 +408,7 @@ export function TreasuryConsolidationCard({
                               <p>{selectedMovement.possibleMatch.concept}</p>
                               <p>
                                 {selectedMovement.possibleMatch.currencyCode}{" "}
-                                {selectedMovement.possibleMatch.amount.toFixed(2)}
+                                {formatLocalizedAmount(selectedMovement.possibleMatch.amount)}
                               </p>
                             </div>
                           </div>

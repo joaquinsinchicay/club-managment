@@ -4,6 +4,7 @@ import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateSecretaria } from "@/lib/domain/authorization";
 import { getTreasuryAccountDetailForActiveClub } from "@/lib/services/treasury-service";
 import { AccountDetailCard } from "@/components/dashboard/account-detail-card";
+import { texts } from "@/lib/texts";
 
 type AccountDetailPageProps = {
   params: {
@@ -38,8 +39,9 @@ export default async function AccountDetailPage({ params }: AccountDetailPagePro
       detail={accountDetailData.detail}
       accounts={accountDetailData.accounts}
       currentAccountId={params.accountId}
-      canCreateMovement={accountDetailData.canCreateMovement}
       accountHrefBase="/dashboard/accounts"
+      secondaryActionHref="/dashboard"
+      secondaryActionLabel={texts.dashboard.treasury.back_to_dashboard_cta}
     />
   );
 }

@@ -1,17 +1,14 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import type {
   ClubActivity,
-  ClubCalendarEvent,
   ReceiptFormat,
   TreasuryAccount,
-  TreasuryAdditionalFieldName,
   TreasuryCurrencyCode,
-  TreasuryFieldRule,
   TreasuryMovementType,
   TreasuryCategory,
   TreasurySettings
 } from "@/lib/domain/access";
-import { canAccessTreasurySettings, canManageClubMembers } from "@/lib/domain/authorization";
+import { canAccessTreasurySettings, canMutateTreasurySettings } from "@/lib/domain/authorization";
 import { getDefaultReceiptFormats } from "@/lib/receipt-formats";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { texts } from "@/lib/texts";
@@ -49,9 +46,6 @@ type TreasurySettingsActionCode =
   | "category_not_found"
   | "activity_not_found"
   | "receipt_format_not_found"
-  | "field_rules_updated"
-  | "field_rule_category_not_found"
-  | "field_rule_invalid"
   | "calendar_event_updated"
   | "calendar_event_not_found"
   | "treasury_admin_config_missing"
@@ -71,13 +65,7 @@ const TREASURY_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_ACCOUNT_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.accounts;
 const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
 const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
-const TREASURY_ADDITIONAL_FIELD_NAMES: TreasuryAdditionalFieldName[] = [
-  "activity",
-  "receipt",
-  "calendar"
-];
-
-const TREASURY_STATUSES: Array<TreasuryAccount["status"]> = ["active", "inactive"];
+const RECEIPT_FORMAT_STATUSES: Array<ReceiptFormat["status"]> = ["active", "inactive"];
 const TREASURY_CURRENCY_CODES: TreasuryCurrencyCode[] = ["ARS", "USD"];
 const TREASURY_MOVEMENT_TYPES: TreasuryMovementType[] = ["ingreso", "egreso"];
 const FIXED_TREASURY_CURRENCIES = TREASURY_CURRENCY_CODES.map((currencyCode, index) => ({
@@ -99,14 +87,14 @@ async function getTreasurySettingsContext() {
   return context;
 }
 
-async function getTreasuryFieldRulesContext() {
+async function getTreasurySettingsAdminContext() {
   const context = await getAuthenticatedSessionContext();
 
   if (!context?.activeClub || !context.activeMembership) {
     return null;
   }
 
-  if (!canManageClubMembers(context.activeMembership)) {
+  if (!canMutateTreasurySettings(context.activeMembership)) {
     return null;
   }
 
@@ -165,6 +153,10 @@ function normalizeCategoryVisibility(input: string[]) {
   return normalizeAccountVisibility(input);
 }
 
+function normalizeActivityVisibility(input: string[]) {
+  return normalizeAccountVisibility(input);
+}
+
 function resolveTreasurySettingsMutationError(
   error: unknown,
   operation: string,
@@ -205,7 +197,6 @@ function hasDuplicateActiveAccountName(
   return accounts.some(
     (account) =>
       account.id !== accountId &&
-      account.status === "active" &&
       account.name.trim().toLowerCase() === normalizedName
   );
 }
@@ -220,7 +211,6 @@ function hasDuplicateActiveCategoryName(
   return categories.some(
     (category) =>
       category.id !== categoryId &&
-      category.status === "active" &&
       category.name.trim().toLowerCase() === normalizedName
   );
 }
@@ -235,7 +225,6 @@ function hasDuplicateActiveActivityName(
   return activities.some(
     (activity) =>
       activity.id !== activityId &&
-      activity.status === "active" &&
       activity.name.trim().toLowerCase() === normalizedName
   );
 }
@@ -255,32 +244,6 @@ function hasDuplicateActiveReceiptFormatName(
   );
 }
 
-function normalizeTreasuryFieldRule(
-  fieldName: string,
-  input: { isVisible: boolean; isRequired: boolean }
-):
-  | { valid: true; rule: { fieldName: TreasuryAdditionalFieldName; isVisible: boolean; isRequired: boolean } }
-  | { valid: false } {
-  if (
-    !TREASURY_ADDITIONAL_FIELD_NAMES.includes(fieldName as TreasuryAdditionalFieldName)
-  ) {
-    return { valid: false };
-  }
-
-  if (input.isRequired && !input.isVisible) {
-    return { valid: false };
-  }
-
-  return {
-    valid: true,
-    rule: {
-      fieldName: fieldName as TreasuryAdditionalFieldName,
-      isVisible: input.isVisible,
-      isRequired: input.isRequired
-    }
-  };
-}
-
 export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettings | null> {
   const context = await getTreasurySettingsContext();
 
@@ -290,12 +253,11 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
 
   const activeClubId = context.activeClub.id;
 
-  const [accounts, categories, activities, calendarEvents, fieldRules] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(activeClubId),
     accessRepository.listTreasuryCategoriesForClub(activeClubId),
     accessRepository.listClubActivitiesForClub(activeClubId),
-    accessRepository.listClubCalendarEventsForClub(activeClubId),
-    accessRepository.listTreasuryFieldRulesForClub(activeClubId)
+    accessRepository.listClubCalendarEventsForClub(activeClubId)
   ]);
 
   return {
@@ -313,76 +275,15 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
       clubId: activeClubId,
       movementType,
       isEnabled: true
-    })),
-    fieldRules
+    }))
   };
-}
-
-export async function setTreasuryFieldRulesForCategoryForActiveClub(input: {
-  categoryId: string;
-  rules: Array<{
-    fieldName: string;
-    isVisible: boolean;
-    isRequired: boolean;
-  }>;
-}): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasuryFieldRulesContext();
-
-  if (!context?.activeClub) {
-    return { ok: false, code: "forbidden" };
-  }
-
-  const categories = await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id);
-  const category = categories.find((entry) => entry.id === input.categoryId);
-
-  if (!category) {
-    return { ok: false, code: "field_rule_category_not_found" };
-  }
-
-  const normalizedRules: TreasuryFieldRule["fieldName"][] = [];
-  const nextRules: Array<{
-    fieldName: TreasuryAdditionalFieldName;
-    isVisible: boolean;
-    isRequired: boolean;
-  }> = [];
-
-  for (const ruleInput of input.rules) {
-    const normalizedRule = normalizeTreasuryFieldRule(ruleInput.fieldName, ruleInput);
-
-    if (!normalizedRule.valid || normalizedRules.includes(normalizedRule.rule.fieldName)) {
-      return { ok: false, code: "field_rule_invalid" };
-    }
-
-    normalizedRules.push(normalizedRule.rule.fieldName);
-    nextRules.push(normalizedRule.rule);
-  }
-
-  if (nextRules.length !== TREASURY_ADDITIONAL_FIELD_NAMES.length) {
-    return { ok: false, code: "field_rule_invalid" };
-  }
-
-  try {
-    await accessRepository.setTreasuryFieldRulesForCategory({
-      clubId: context.activeClub.id,
-      categoryId: category.id,
-      rules: nextRules
-    });
-  } catch (error) {
-    return resolveTreasurySettingsMutationError(
-      error,
-      "setTreasuryFieldRulesForCategoryForActiveClub",
-      context.activeClub.id
-    );
-  }
-
-  return { ok: true, code: "field_rules_updated" };
 }
 
 export async function updateCalendarEventTreasuryAvailabilityForActiveClub(input: {
   eventId: string;
   isEnabledForTreasury: boolean;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasuryFieldRulesContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -417,10 +318,9 @@ export async function createTreasuryAccountForActiveClub(input: {
   accountType: string;
   visibility: string[];
   currencies: string[];
-  status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -438,10 +338,6 @@ export async function createTreasuryAccountForActiveClub(input: {
 
   if (!TREASURY_ACCOUNT_TYPES.includes(input.accountType as TreasuryAccount["accountType"])) {
     return { ok: false, code: "invalid_account_type" };
-  }
-
-  if (!TREASURY_STATUSES.includes(input.status as TreasuryAccount["status"])) {
-    return { ok: false, code: "invalid_config_status" };
   }
 
   const selectedVisibility = normalizeAccountVisibility(input.visibility);
@@ -486,7 +382,6 @@ export async function createTreasuryAccountForActiveClub(input: {
       clubId: context.activeClub.id,
       name,
       accountType: input.accountType as TreasuryAccount["accountType"],
-      status: input.status as TreasuryAccount["status"],
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji,
@@ -509,10 +404,9 @@ export async function updateTreasuryAccountForActiveClub(input: {
   accountType: string;
   visibility: string[];
   currencies: string[];
-  status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -530,10 +424,6 @@ export async function updateTreasuryAccountForActiveClub(input: {
 
   if (!TREASURY_ACCOUNT_TYPES.includes(input.accountType as TreasuryAccount["accountType"])) {
     return { ok: false, code: "invalid_account_type" };
-  }
-
-  if (!TREASURY_STATUSES.includes(input.status as TreasuryAccount["status"])) {
-    return { ok: false, code: "invalid_config_status" };
   }
 
   const selectedVisibility = normalizeAccountVisibility(input.visibility);
@@ -588,7 +478,6 @@ export async function updateTreasuryAccountForActiveClub(input: {
       clubId: context.activeClub.id,
       name,
       accountType: input.accountType as TreasuryAccount["accountType"],
-      status: input.status as TreasuryAccount["status"],
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji,
@@ -608,10 +497,9 @@ export async function updateTreasuryAccountForActiveClub(input: {
 export async function createTreasuryCategoryForActiveClub(input: {
   name: string;
   visibility: string[];
-  status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -621,10 +509,6 @@ export async function createTreasuryCategoryForActiveClub(input: {
 
   if (!name) {
     return { ok: false, code: "category_name_required" };
-  }
-
-  if (!TREASURY_STATUSES.includes(input.status as TreasuryCategory["status"])) {
-    return { ok: false, code: "invalid_config_status" };
   }
 
   const categories = await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id);
@@ -646,7 +530,6 @@ export async function createTreasuryCategoryForActiveClub(input: {
     created = await accessRepository.createTreasuryCategory({
       clubId: context.activeClub.id,
       name,
-      status: input.status as TreasuryCategory["status"],
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji
@@ -666,10 +549,9 @@ export async function updateTreasuryCategoryForActiveClub(input: {
   categoryId: string;
   name: string;
   visibility: string[];
-  status: string;
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -681,10 +563,6 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "category_name_required" };
   }
 
-  if (!TREASURY_STATUSES.includes(input.status as TreasuryCategory["status"])) {
-    return { ok: false, code: "invalid_config_status" };
-  }
-
   const categories = await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id);
   const existingCategory = categories.find((category) => category.id === input.categoryId);
 
@@ -694,7 +572,6 @@ export async function updateTreasuryCategoryForActiveClub(input: {
 
   const systemCategoryDefinition = getSystemTreasuryCategoryDefinition(existingCategory.name);
   const nextName = systemCategoryDefinition?.name ?? name;
-  const nextStatus = systemCategoryDefinition ? "active" : input.status;
   const nextEmojiInput = systemCategoryDefinition?.emoji ?? input.emoji;
   const selectedVisibility = normalizeCategoryVisibility(input.visibility);
 
@@ -719,7 +596,6 @@ export async function updateTreasuryCategoryForActiveClub(input: {
       categoryId: input.categoryId,
       clubId: context.activeClub.id,
       name: nextName,
-      status: nextStatus as TreasuryCategory["status"],
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji
@@ -737,10 +613,10 @@ export async function updateTreasuryCategoryForActiveClub(input: {
 
 export async function createClubActivityForActiveClub(input: {
   name: string;
-  status: string;
+  visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -752,11 +628,8 @@ export async function createClubActivityForActiveClub(input: {
     return { ok: false, code: "activity_name_required" };
   }
 
-  if (!TREASURY_STATUSES.includes(input.status as ClubActivity["status"])) {
-    return { ok: false, code: "invalid_config_status" };
-  }
-
   const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
+  const selectedVisibility = normalizeActivityVisibility(input.visibility);
 
   if (hasDuplicateActiveActivityName(activities, name)) {
     return { ok: false, code: "duplicate_activity_name" };
@@ -774,7 +647,8 @@ export async function createClubActivityForActiveClub(input: {
     created = await accessRepository.createClubActivity({
       clubId: context.activeClub.id,
       name,
-      status: input.status as ClubActivity["status"],
+      visibleForSecretaria: selectedVisibility.includes("secretaria"),
+      visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji
     });
   } catch (error) {
@@ -791,10 +665,10 @@ export async function createClubActivityForActiveClub(input: {
 export async function updateClubActivityForActiveClub(input: {
   activityId: string;
   name: string;
-  status: string;
+  visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -806,16 +680,14 @@ export async function updateClubActivityForActiveClub(input: {
     return { ok: false, code: "activity_name_required" };
   }
 
-  if (!TREASURY_STATUSES.includes(input.status as ClubActivity["status"])) {
-    return { ok: false, code: "invalid_config_status" };
-  }
-
   const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
   const existingActivity = activities.find((activity) => activity.id === input.activityId);
 
   if (!existingActivity) {
     return { ok: false, code: "activity_not_found" };
   }
+
+  const selectedVisibility = normalizeActivityVisibility(input.visibility);
 
   if (hasDuplicateActiveActivityName(activities, name, input.activityId)) {
     return { ok: false, code: "duplicate_activity_name" };
@@ -838,7 +710,8 @@ export async function updateClubActivityForActiveClub(input: {
       activityId: input.activityId,
       clubId: context.activeClub.id,
       name,
-      status: input.status as ClubActivity["status"],
+      visibleForSecretaria: selectedVisibility.includes("secretaria"),
+      visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji
     });
   } catch (error) {
@@ -860,7 +733,7 @@ export async function createReceiptFormatForActiveClub(input: {
   example: string;
   status: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -872,7 +745,7 @@ export async function createReceiptFormatForActiveClub(input: {
     return { ok: false, code: "receipt_format_name_required" };
   }
 
-  if (!TREASURY_STATUSES.includes(input.status as ReceiptFormat["status"])) {
+  if (!RECEIPT_FORMAT_STATUSES.includes(input.status as ReceiptFormat["status"])) {
     return { ok: false, code: "invalid_config_status" };
   }
 
@@ -937,7 +810,7 @@ export async function updateReceiptFormatForActiveClub(input: {
   example: string;
   status: string;
 }): Promise<TreasurySettingsActionResult> {
-  const context = await getTreasurySettingsContext();
+  const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
@@ -949,7 +822,7 @@ export async function updateReceiptFormatForActiveClub(input: {
     return { ok: false, code: "receipt_format_name_required" };
   }
 
-  if (!TREASURY_STATUSES.includes(input.status as ReceiptFormat["status"])) {
+  if (!RECEIPT_FORMAT_STATUSES.includes(input.status as ReceiptFormat["status"])) {
     return { ok: false, code: "invalid_config_status" };
   }
 

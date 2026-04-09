@@ -32,7 +32,10 @@ El dashboard debe mostrar una card de saldos únicamente para usuarios con rol `
 - Listado de cuentas visibles para el rol.
 - Saldos acumulados por cuenta y moneda.
 - Estado de jornada del día.
-- Acciones para abrir/cerrar jornada y registrar movimientos según corresponda.
+- Acciones para abrir/cerrar jornada y abrir modales de registro según corresponda.
+- Estado bloqueado de pantalla mientras se resuelve el alta de movimiento iniciada desde el modal de la card.
+- Loader bloqueante para CTAs de navegación de Secretaría originadas en la card.
+- CTA de edición sobre los movimientos visibles mientras la jornada siga abierta.
 - Estado vacío si no hay cuentas configuradas.
 
 ### No incluye
@@ -85,7 +88,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 1. Secretaría ingresa al dashboard del club activo.
 2. El sistema obtiene cuentas visibles, jornada del día y movimientos del día.
 3. La UI renderiza la card con saldos y estado operativo.
-4. La card habilita las acciones permitidas según exista o no jornada abierta.
+4. La experiencia se organiza en una card de saldos, una card de acciones y una card de movimientos del dia.
+5. La card habilita las acciones permitidas según exista o no jornada abierta.
 
 ---
 
@@ -113,6 +117,10 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Debe mostrar saldos de forma clara y escaneable.
 - Debe ser mobile-first.
 - El estado de jornada debe entenderse de un vistazo.
+- Si el alta de movimiento de Secretaría se inicia desde el modal de esta card, la misma card es responsable de activar el bloqueo de pantalla y evitar interacción hasta que la mutación termine.
+- Si la jornada ya fue cerrada, la card de acciones debe reemplazar su descripción operativa por un mensaje explícito indicando que la carga de movimientos ya no está disponible.
+- Si una CTA de la card redirige a otra pantalla operativa, debe mostrar un loader bloqueante hasta que la ruta destino termine de cargar.
+- Si la jornada está abierta, cada movimiento visible debe ofrecer acceso directo a edición desde la card.
 - No debe haber textos hardcodeados.
 
 ---
@@ -137,6 +145,14 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | action | `dashboard.treasury.open_session_cta` | Abrir jornada. |
 | action | `dashboard.treasury.close_session_cta` | Cerrar jornada. |
 | action | `dashboard.treasury.detail_cta` | Ver detalle de cuenta desde la card. |
+| status | `dashboard.treasury.navigation_loading` | Estado visible mientras una CTA de la card navega a otra pantalla. |
+| action | `dashboard.treasury.movement_modal_cta` | Abrir modal para registrar movimiento. |
+| action | `dashboard.treasury.edit_movement_cta` | Abrir modal para editar un movimiento visible. |
+| action | `dashboard.treasury.transfer_modal_cta` | Abrir modal para registrar transferencia. |
+| body | `dashboard.treasury.actions_card_closed_description` | Mensaje informativo para jornada cerrada en la card de acciones. |
+| title | `dashboard.treasury.movements_card_title` | Titulo de la card de movimientos del dia. |
+| body | `dashboard.treasury.movements_card_description` | Descripcion del listado de movimientos del dia. |
+| label | `dashboard.treasury.movements_empty` | Estado vacio del listado del dia. |
 
 ---
 
@@ -146,6 +162,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - `daily_cash_sessions`: READ para estado de jornada.
 - `treasury_accounts`: READ para cuentas visibles en la card.
 - `treasury_movements`: READ para cálculo de saldos del día.
+- La resolución del estado diario debe ejecutarse con `app.current_club_id` seteado server-side para respetar RLS del club activo.
 
 Do not reference current code files.
 

@@ -14,7 +14,6 @@ import {
   createReceiptFormatForActiveClub,
   createTreasuryAccountForActiveClub,
   createTreasuryCategoryForActiveClub,
-  setTreasuryFieldRulesForCategoryForActiveClub,
   updateCalendarEventTreasuryAvailabilityForActiveClub,
   updateClubActivityForActiveClub,
   updateReceiptFormatForActiveClub,
@@ -79,7 +78,6 @@ export async function createTreasuryAccountAction(formData: FormData) {
     accountType: String(formData.get("account_type") ?? ""),
     visibility: formData.getAll("visibility").map((value) => String(value)),
     currencies: formData.getAll("currencies").map((value) => String(value)),
-    status: String(formData.get("status") ?? ""),
     emoji: String(formData.get("emoji") ?? "")
   });
 
@@ -93,7 +91,6 @@ export async function updateTreasuryAccountAction(formData: FormData) {
     accountType: String(formData.get("account_type") ?? ""),
     visibility: formData.getAll("visibility").map((value) => String(value)),
     currencies: formData.getAll("currencies").map((value) => String(value)),
-    status: String(formData.get("status") ?? ""),
     emoji: String(formData.get("emoji") ?? "")
   });
 
@@ -104,7 +101,6 @@ export async function createTreasuryCategoryAction(formData: FormData) {
   const result = await createTreasuryCategoryForActiveClub({
     name: String(formData.get("name") ?? ""),
     visibility: formData.getAll("visibility").map((value) => String(value)),
-    status: String(formData.get("status") ?? ""),
     emoji: String(formData.get("emoji") ?? "")
   });
 
@@ -116,7 +112,6 @@ export async function updateTreasuryCategoryAction(formData: FormData) {
     categoryId: String(formData.get("category_id") ?? ""),
     name: String(formData.get("name") ?? ""),
     visibility: formData.getAll("visibility").map((value) => String(value)),
-    status: String(formData.get("status") ?? ""),
     emoji: String(formData.get("emoji") ?? "")
   });
 
@@ -126,7 +121,7 @@ export async function updateTreasuryCategoryAction(formData: FormData) {
 export async function createClubActivityAction(formData: FormData) {
   const result = await createClubActivityForActiveClub({
     name: String(formData.get("name") ?? ""),
-    status: String(formData.get("status") ?? ""),
+    visibility: formData.getAll("visibility").map((value) => String(value)),
     emoji: String(formData.get("emoji") ?? "")
   });
 
@@ -137,21 +132,8 @@ export async function updateClubActivityAction(formData: FormData) {
   const result = await updateClubActivityForActiveClub({
     activityId: String(formData.get("activity_id") ?? ""),
     name: String(formData.get("name") ?? ""),
-    status: String(formData.get("status") ?? ""),
+    visibility: formData.getAll("visibility").map((value) => String(value)),
     emoji: String(formData.get("emoji") ?? "")
-  });
-
-  redirectToSettings(result.code, "treasury");
-}
-
-export async function setTreasuryFieldRulesAction(formData: FormData) {
-  const result = await setTreasuryFieldRulesForCategoryForActiveClub({
-    categoryId: String(formData.get("category_id") ?? ""),
-    rules: ["activity", "receipt", "calendar"].map((fieldName) => ({
-      fieldName,
-      isVisible: formData.get(`field_${fieldName}_visible`) === "on",
-      isRequired: formData.get(`field_${fieldName}_required`) === "on"
-    }))
   });
 
   redirectToSettings(result.code, "treasury");

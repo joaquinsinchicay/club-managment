@@ -1,59 +1,44 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import {
+  AccountTransferForm,
+  SecretariaMovementEditForm,
+  SecretariaMovementForm
+} from "@/components/dashboard/treasury-operation-forms";
+import { Modal, ModalTriggerButton } from "@/components/ui/modal";
+import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
+import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
+import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
   ClubActivity,
   ClubCalendarEvent,
   DashboardTreasuryCard as DashboardTreasuryCardData,
   ReceiptFormat,
   TreasuryAccount,
-  TreasuryAdditionalFieldName,
   TreasuryCategory,
   TreasuryCurrencyConfig,
-  TreasuryFieldRule,
   TreasuryMovementType
 } from "@/lib/domain/access";
-import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
 
 type TreasuryCardProps = {
   treasuryCard: DashboardTreasuryCardData;
-  accounts: TreasuryAccount[];
+  movementAccounts: TreasuryAccount[];
+  transferSourceAccounts: TreasuryAccount[];
+  transferTargetAccounts: TreasuryAccount[];
   categories: TreasuryCategory[];
   activities: ClubActivity[];
   calendarEvents: ClubCalendarEvent[];
-  fieldRules: TreasuryFieldRule[];
   currencies: TreasuryCurrencyConfig[];
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
-  createTreasuryMovementAction: (formData: FormData) => Promise<void>;
-  createAccountTransferAction: (formData: FormData) => Promise<void>;
-  createFxOperationAction: (formData: FormData) => Promise<void>;
+  createTreasuryMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  updateSecretariaMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
 };
-
-function buildCategoryFieldRules(
-  fieldRules: TreasuryFieldRule[],
-  categoryId: string
-) {
-  return fieldRules
-    .filter((rule) => rule.categoryId === categoryId)
-    .reduce(
-      (accumulator, rule) => {
-        accumulator[rule.fieldName] = {
-          isVisible: rule.isVisible,
-          isRequired: rule.isRequired
-        };
-
-        return accumulator;
-      },
-      {} as Partial<
-        Record<TreasuryAdditionalFieldName, { isVisible: boolean; isRequired: boolean }>
-      >
-    );
-}
 
 function getSessionLabel(status: DashboardTreasuryCardData["sessionStatus"]) {
   if (status === "open") {
@@ -67,599 +52,484 @@ function getSessionLabel(status: DashboardTreasuryCardData["sessionStatus"]) {
   return texts.dashboard.treasury.session_not_started;
 }
 
+function formatMovementDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(date);
+}
+
+function getActionsCardDescription(sessionStatus: DashboardTreasuryCardData["sessionStatus"]) {
+  if (sessionStatus === "closed") {
+    return texts.dashboard.treasury.actions_card_closed_description;
+  }
+
+  return texts.dashboard.treasury.actions_card_description;
+}
+
 export function TreasuryCard({
   treasuryCard,
-  accounts,
+  movementAccounts,
+  transferSourceAccounts,
+  transferTargetAccounts,
   categories,
   activities,
   calendarEvents,
-  fieldRules,
   currencies,
   movementTypes,
   receiptFormats,
   createTreasuryMovementAction,
-  createAccountTransferAction,
-  createFxOperationAction
+  updateSecretariaMovementAction,
+  createAccountTransferAction
 }: TreasuryCardProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const canCreateMovement = treasuryCard.availableActions.includes("create_movement");
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
-  const [selectedAccountId, setSelectedAccountId] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [selectedActivityId, setSelectedActivityId] = useState("");
-  const availableCurrencies = useMemo(() => {
-    const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
-
-    if (!selectedAccount) {
-      return currencies;
-    }
-
-    return currencies.filter((currency) => selectedAccount.currencies.includes(currency.currencyCode));
-  }, [accounts, currencies, selectedAccountId]);
-  const categoryFieldRules = useMemo(
-    () => (selectedCategoryId ? buildCategoryFieldRules(fieldRules, selectedCategoryId) : {}),
-    [fieldRules, selectedCategoryId]
-  );
-  const isActivityVisible = Boolean(categoryFieldRules.activity?.isVisible);
-  const isReceiptVisible = Boolean(categoryFieldRules.receipt?.isVisible);
-  const isCalendarVisible = Boolean(categoryFieldRules.calendar?.isVisible);
-  const isActivityRequired = Boolean(categoryFieldRules.activity?.isRequired);
-  const isReceiptRequired = Boolean(categoryFieldRules.receipt?.isRequired);
-  const isCalendarRequired = Boolean(categoryFieldRules.calendar?.isRequired);
+  const hasMovements = treasuryCard.movements.length > 0;
+  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "transfer" | null>(null);
+  const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
+  const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
+  const [pendingMovementDisplayId, setPendingMovementDisplayId] = useState<string | null>(null);
+  const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
+  const [pendingTransferMovementDisplayId, setPendingTransferMovementDisplayId] = useState<string | null>(null);
+  const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
+  const [pendingMovementUpdate, setPendingMovementUpdate] = useState<{
+    movementId: string;
+    accountId: string;
+    categoryId: string;
+    movementType: TreasuryMovementType;
+    activityId: string | null;
+    receiptNumber: string | null;
+    calendarEventId: string | null;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+  } | null>(null);
 
   useEffect(() => {
-    if (!isActivityVisible) {
-      setSelectedActivityId("");
+    if (!isMovementSubmissionPending) {
+      return;
     }
-  }, [isActivityVisible, selectedCategoryId]);
+
+    if (
+      pendingMovementDisplayId &&
+      treasuryCard.movements.some((movement) => movement.movementDisplayId === pendingMovementDisplayId)
+    ) {
+      setIsMovementSubmissionPending(false);
+      setPendingMovementDisplayId(null);
+    }
+  }, [isMovementSubmissionPending, pendingMovementDisplayId, treasuryCard.movements]);
+
+  useEffect(() => {
+    if (!isTransferSubmissionPending) {
+      return;
+    }
+
+    if (
+      pendingTransferMovementDisplayId &&
+      treasuryCard.movements.some((movement) => movement.movementDisplayId === pendingTransferMovementDisplayId)
+    ) {
+      setIsTransferSubmissionPending(false);
+      setPendingTransferMovementDisplayId(null);
+    }
+  }, [isTransferSubmissionPending, pendingTransferMovementDisplayId, treasuryCard.movements]);
+
+  useEffect(() => {
+    if (!isMovementUpdatePending || !pendingMovementUpdate) {
+      return;
+    }
+
+    const matchingMovement = treasuryCard.movements.find((movement) => movement.movementId === pendingMovementUpdate.movementId);
+
+    if (
+      matchingMovement &&
+      matchingMovement.accountId === pendingMovementUpdate.accountId &&
+      matchingMovement.categoryId === pendingMovementUpdate.categoryId &&
+      matchingMovement.movementType === pendingMovementUpdate.movementType &&
+      matchingMovement.activityId === pendingMovementUpdate.activityId &&
+      matchingMovement.receiptNumber === pendingMovementUpdate.receiptNumber &&
+      matchingMovement.calendarEventId === pendingMovementUpdate.calendarEventId &&
+      matchingMovement.concept === pendingMovementUpdate.concept &&
+      matchingMovement.currencyCode === pendingMovementUpdate.currencyCode &&
+      matchingMovement.amount === pendingMovementUpdate.amount
+    ) {
+      setIsMovementUpdatePending(false);
+      setPendingMovementUpdate(null);
+    }
+  }, [isMovementUpdatePending, pendingMovementUpdate, treasuryCard.movements]);
+
+  async function handleCreateTreasuryMovement(formData: FormData) {
+    setIsMovementSubmissionPending(true);
+    setActiveModal(null);
+
+    try {
+      const result = await createTreasuryMovementAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+
+      if (result.movementDisplayId) {
+        nextParams.set("movement_id", result.movementDisplayId);
+      } else {
+        nextParams.delete("movement_id");
+      }
+
+      if (result.ok) {
+        setPendingMovementDisplayId(result.movementDisplayId ?? null);
+      } else {
+        setPendingMovementDisplayId(null);
+        setIsMovementSubmissionPending(false);
+      }
+
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      router.refresh();
+    } catch (error) {
+      setPendingMovementDisplayId(null);
+      setIsMovementSubmissionPending(false);
+      throw error;
+    }
+  }
+
+  async function handleUpdateSecretariaMovement(formData: FormData) {
+    const movementId = String(formData.get("movement_id") ?? "");
+    const movementType = String(formData.get("movement_type") ?? "");
+    const amount = String(formData.get("amount") ?? "");
+    const parsedAmount = parseLocalizedAmount(amount);
+
+    setIsMovementUpdatePending(true);
+    setActiveModal(null);
+    setPendingMovementUpdate({
+      movementId,
+      accountId: String(formData.get("account_id") ?? ""),
+      categoryId: String(formData.get("category_id") ?? ""),
+      movementType: movementType === "egreso" ? "egreso" : "ingreso",
+      activityId: String(formData.get("activity_id") ?? "").trim() || null,
+      receiptNumber: String(formData.get("receipt_number") ?? "").trim() || null,
+      calendarEventId: String(formData.get("calendar_event_id") ?? "").trim() || null,
+      concept: String(formData.get("concept") ?? "").trim(),
+      currencyCode: String(formData.get("currency_code") ?? ""),
+      amount: parsedAmount ?? 0
+    });
+
+    try {
+      const result = await updateSecretariaMovementAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+
+      if (!result.ok) {
+        setPendingMovementUpdate(null);
+        setIsMovementUpdatePending(false);
+      }
+
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      router.refresh();
+    } catch (error) {
+      setPendingMovementUpdate(null);
+      setIsMovementUpdatePending(false);
+      throw error;
+    }
+  }
+
+  async function handleCreateAccountTransfer(formData: FormData) {
+    setIsTransferSubmissionPending(true);
+    setActiveModal(null);
+
+    try {
+      const result = await createAccountTransferAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+
+      if (result.movementDisplayId) {
+        nextParams.set("movement_id", result.movementDisplayId);
+      } else {
+        nextParams.delete("movement_id");
+      }
+
+      if (result.ok) {
+        setPendingTransferMovementDisplayId(result.movementDisplayId ?? null);
+      } else {
+        setPendingTransferMovementDisplayId(null);
+        setIsTransferSubmissionPending(false);
+      }
+
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      router.refresh();
+    } catch (error) {
+      setPendingTransferMovementDisplayId(null);
+      setIsTransferSubmissionPending(false);
+      throw error;
+    }
+  }
+
+  const pendingOverlayLabel = isMovementSubmissionPending
+    ? texts.dashboard.treasury.create_loading
+    : isTransferSubmissionPending
+      ? texts.dashboard.treasury.transfer_create_loading
+    : isMovementUpdatePending
+      ? texts.dashboard.treasury.update_loading
+      : null;
 
   return (
-    <section className="rounded-[28px] border border-border bg-card p-6 shadow-soft sm:p-8">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">
-          {texts.dashboard.treasury.title}
-        </h2>
-        <p className="text-sm leading-6 text-muted-foreground">
-          {texts.dashboard.treasury.description}
-        </p>
-      </div>
+    <>
+      {pendingOverlayLabel ? (
+        <div
+          aria-busy="true"
+          aria-live="polite"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 px-4"
+          role="status"
+        >
+          <div className="flex w-full max-w-sm items-center justify-center gap-3 rounded-[28px] border border-border bg-card px-6 py-5 text-sm font-semibold text-foreground shadow-soft">
+            <span
+              aria-hidden="true"
+              className="inline-block size-5 animate-spin rounded-full border-2 border-current border-r-transparent"
+            />
+            <span>{pendingOverlayLabel}</span>
+          </div>
+        </div>
+      ) : null}
 
-      <div className="mt-6 grid gap-4">
-        <div className="rounded-2xl border border-border bg-secondary/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            {texts.dashboard.treasury.session_label}
-          </p>
-          <p className="mt-1 text-base font-semibold text-foreground">
-            {getSessionLabel(treasuryCard.sessionStatus)}
+      <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
+        <div className="space-y-1.5">
+          <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
+            {texts.dashboard.treasury.balances_card_title}
+          </h2>
+          <p className="text-sm leading-5 text-muted-foreground">
+            {texts.dashboard.treasury.balances_card_description}
           </p>
         </div>
 
-        {treasuryCard.accounts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
-            {texts.dashboard.treasury.empty_accounts}
+        <div className="mt-4 grid gap-3">
+          <div className="rounded-[20px] border border-border bg-secondary/35 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {texts.dashboard.treasury.session_label}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-foreground">{getSessionLabel(treasuryCard.sessionStatus)}</p>
           </div>
-        ) : (
-          <div className="grid gap-3">
-            {treasuryCard.accounts.map((account) => (
-              <article key={account.accountId} className="rounded-2xl border border-border bg-secondary/40 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-foreground">{account.name}</p>
-                  <Link
-                    href={`/dashboard/accounts/${account.accountId}`}
-                    className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
-                  >
-                    {texts.dashboard.treasury.detail_cta}
-                  </Link>
-                </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {account.balances.map((balance) => (
-                    <div key={`${account.accountId}-${balance.currencyCode}`} className="rounded-2xl border border-border/60 bg-card px-3 py-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                        {balance.currencyCode}
-                      </p>
-                      <p className="mt-1 font-medium text-foreground">{balance.amount.toFixed(2)}</p>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
 
-        <div className="grid gap-3 sm:grid-cols-2">
+          {treasuryCard.accounts.length === 0 ? (
+            <div className="rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
+              {texts.dashboard.treasury.empty_accounts}
+            </div>
+          ) : (
+            <div className="grid gap-2.5">
+              {treasuryCard.accounts.map((account) => (
+                <article key={account.accountId} className="rounded-[20px] border border-border bg-secondary/25 px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-[15px] font-semibold text-foreground">{account.name}</p>
+                    <NavigationLinkWithLoader
+                      href={`/dashboard/accounts/${account.accountId}`}
+                      className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                    >
+                      {texts.dashboard.treasury.detail_cta}
+                    </NavigationLinkWithLoader>
+                  </div>
+
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {account.balances.map((balance) => (
+                      <div
+                        key={`${account.accountId}-${balance.currencyCode}`}
+                        className="rounded-[18px] border border-border/70 bg-card px-4 py-2.5"
+                      >
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                          {balance.currencyCode}
+                        </p>
+                        <p className="mt-1 text-lg font-semibold text-foreground">
+                          {formatLocalizedAmount(balance.amount)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
+        <div className="space-y-1.5">
+          <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
+            {texts.dashboard.treasury.actions_card_title}
+          </h2>
+          <p className="text-sm leading-5 text-muted-foreground">
+            {getActionsCardDescription(treasuryCard.sessionStatus)}
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-2.5 md:grid-cols-2">
           {canOpenSession ? (
-            <Link
+            <NavigationLinkWithLoader
               href="/dashboard/session/open"
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-[18px] bg-foreground px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
             >
               {texts.dashboard.treasury.open_session_flow_cta}
-            </Link>
+            </NavigationLinkWithLoader>
           ) : null}
 
           {canCloseSession ? (
-            <Link
+            <NavigationLinkWithLoader
               href="/dashboard/session/close"
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-[18px] border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary"
             >
               {texts.dashboard.treasury.close_session_flow_cta}
-            </Link>
+            </NavigationLinkWithLoader>
+          ) : null}
+
+          {canCreateMovement ? (
+            <ModalTriggerButton
+              onClick={() => setActiveModal("movement")}
+              className="rounded-[18px] border border-border bg-card px-4 py-2.5 text-foreground hover:bg-secondary"
+            >
+              {texts.dashboard.treasury.movement_modal_cta}
+            </ModalTriggerButton>
+          ) : null}
+
+          {canCreateMovement ? (
+            <ModalTriggerButton
+              onClick={() => setActiveModal("transfer")}
+              className="rounded-[18px] border border-border bg-card px-4 py-2.5 text-foreground hover:bg-secondary"
+            >
+              {texts.dashboard.treasury.transfer_modal_cta}
+            </ModalTriggerButton>
           ) : null}
         </div>
+      </section>
 
-        {canCreateMovement ? (
-          <div className="rounded-[24px] border border-border bg-secondary/50 p-4">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                {texts.dashboard.treasury.movement_form_title}
-              </h3>
-              <p className="text-sm leading-6 text-muted-foreground">
-                {texts.dashboard.treasury.movement_form_description}
-              </p>
-            </div>
+      {hasMovements ? (
+        <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
+          <div className="space-y-1.5">
+            <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
+              {texts.dashboard.treasury.movements_card_title}
+            </h2>
+            <p className="text-sm leading-5 text-muted-foreground">
+              {texts.dashboard.treasury.movements_card_description}
+            </p>
+          </div>
 
-            <form action={createTreasuryMovementAction} className="mt-4 grid gap-4">
-              <PendingFieldset className="grid gap-4">
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
-                  <input
-                    type="text"
-                    value={treasuryCard.sessionDate}
-                    disabled
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-                  />
-                </label>
+          <div className="mt-4 grid gap-2.5">
+            {treasuryCard.movements.map((movement) => (
+              <article key={movement.movementId} className="rounded-[20px] border border-border bg-secondary/20 px-4 py-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      {movement.movementDisplayId}
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {movement.accountName} · {movement.categoryName}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{movement.concept}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-base font-semibold text-foreground">
+                      {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
+                    </p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                      {texts.dashboard.treasury.movement_types[movement.movementType]}
+                    </p>
+                  </div>
+                </div>
 
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
-                  <select
-                    name="account_id"
-                    defaultValue=""
-                    onChange={(event) => setSelectedAccountId(event.target.value)}
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {accounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="mt-2.5 flex flex-col gap-1 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                  <span>{formatMovementDateTime(movement.createdAt)}</span>
+                  <span>
+                    {texts.dashboard.treasury.movements_created_by_label}: {movement.createdByUserName}
+                  </span>
+                </div>
 
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.movement_type_label}</span>
-                  <select
-                    name="movement_type"
-                    defaultValue=""
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {movementTypes.map((movementType) => (
-                      <option key={movementType} value={movementType}>
-                        {texts.dashboard.treasury.movement_types[movementType]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.category_label}</span>
-                  <select
-                    name="category_id"
-                    defaultValue=""
-                    onChange={(event) => setSelectedCategoryId(event.target.value)}
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {isActivityVisible && activities.length > 0 ? (
-                  <label className="grid gap-2 text-sm text-foreground">
-                    <span className="font-medium">
-                      {texts.dashboard.treasury.activity_label}
-                      {isActivityRequired ? texts.dashboard.treasury.required_suffix : ""}
-                    </span>
-                    <select
-                      name="activity_id"
-                      value={selectedActivityId}
-                      onChange={(event) => setSelectedActivityId(event.target.value)}
-                      required={isActivityRequired}
-                      key={selectedCategoryId || "activity-select"}
-                      className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                {movement.canEdit ? (
+                  <div className="mt-3 flex justify-end">
+                    <ModalTriggerButton
+                      onClick={() => {
+                        setSelectedMovement(movement);
+                        setActiveModal("edit_movement");
+                      }}
+                      className="min-h-10 rounded-[18px] border border-border bg-card px-4 py-2 text-foreground hover:bg-secondary"
                     >
-                      <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
-                      {activities.map((activity) => (
-                        <option key={activity.id} value={activity.id}>
-                          {activity.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      {texts.dashboard.treasury.edit_movement_cta}
+                    </ModalTriggerButton>
+                  </div>
                 ) : null}
-
-                {isReceiptVisible ? (
-                  <label className="grid gap-2 text-sm text-foreground">
-                    <span className="font-medium">
-                      {texts.dashboard.treasury.receipt_label}
-                      {isReceiptRequired ? texts.dashboard.treasury.required_suffix : ""}
-                    </span>
-                    <input
-                      type="text"
-                      name="receipt_number"
-                      required={isReceiptRequired}
-                      className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                    />
-                    {receiptFormats.length > 0 ? (
-                      <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
-                        <span>
-                          {texts.dashboard.treasury.receipt_helper_format} {receiptFormats[0]?.pattern ?? DEFAULT_RECEIPT_PATTERN}
-                        </span>
-                        <span>
-                          {texts.dashboard.treasury.receipt_helper_example} {receiptFormats[0]?.example ?? "-"}
-                        </span>
-                        <span>
-                          {texts.dashboard.treasury.receipt_helper_available_from} {DEFAULT_RECEIPT_MIN_LABEL}
-                        </span>
-                      </div>
-                    ) : null}
-                  </label>
-                ) : null}
-
-                {isCalendarVisible ? (
-                  <label className="grid gap-2 text-sm text-foreground">
-                    <span className="font-medium">
-                      {texts.dashboard.treasury.calendar_label}
-                      {isCalendarRequired ? texts.dashboard.treasury.required_suffix : ""}
-                    </span>
-                    <select
-                      name="calendar_event_id"
-                      defaultValue=""
-                      required={isCalendarRequired}
-                      disabled={calendarEvents.length === 0}
-                      className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
-                    >
-                      <option value="">
-                        {calendarEvents.length > 0
-                          ? texts.dashboard.treasury.calendar_placeholder
-                          : texts.dashboard.treasury.empty_calendar_events}
-                      </option>
-                      {calendarEvents.map((event) => (
-                        <option key={event.id} value={event.id}>
-                          {event.title}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-                  <input
-                    type="text"
-                    name="concept"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-                  <select
-                    name="currency_code"
-                    key={selectedAccountId || "currency-select"}
-                    defaultValue=""
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {availableCurrencies.map((currency) => (
-                      <option key={currency.currencyCode} value={currency.currencyCode}>
-                        {currency.currencyCode}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-                  <input
-                    type="number"
-                    name="amount"
-                    min="0.01"
-                    step="0.01"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  />
-                </label>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <PendingSubmitButton
-                    idleLabel={texts.dashboard.treasury.create_cta}
-                    pendingLabel={texts.dashboard.treasury.create_loading}
-                    className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                  />
-                  <button
-                    type="reset"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                  >
-                    {texts.dashboard.treasury.reset_cta}
-                  </button>
-                </div>
-              </PendingFieldset>
-            </form>
+              </article>
+            ))}
           </div>
+        </section>
+      ) : null}
+
+      <Modal
+        open={activeModal === "movement"}
+        onClose={() => setActiveModal(null)}
+        title={texts.dashboard.treasury.movement_form_title}
+        description={texts.dashboard.treasury.movement_form_description}
+        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending}
+      >
+        <SecretariaMovementForm
+          accounts={movementAccounts}
+          categories={categories}
+          activities={activities}
+          calendarEvents={calendarEvents}
+          currencies={currencies}
+          movementTypes={movementTypes}
+          receiptFormats={receiptFormats}
+          submitAction={handleCreateTreasuryMovement}
+          submitLabel={texts.dashboard.treasury.create_cta}
+          pendingLabel={texts.dashboard.treasury.create_loading}
+          sessionDate={treasuryCard.sessionDate}
+        />
+      </Modal>
+
+      <Modal
+        open={activeModal === "edit_movement" && selectedMovement !== null}
+        onClose={() => {
+          setActiveModal(null);
+          setSelectedMovement(null);
+        }}
+        title={texts.dashboard.treasury.edit_form_title}
+        description={texts.dashboard.treasury.edit_form_description}
+        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending}
+      >
+        {selectedMovement ? (
+          <SecretariaMovementEditForm
+            accounts={movementAccounts}
+            categories={categories}
+            activities={activities}
+            calendarEvents={calendarEvents}
+            currencies={currencies}
+            movementTypes={movementTypes}
+            receiptFormats={receiptFormats}
+            submitAction={handleUpdateSecretariaMovement}
+            submitLabel={texts.dashboard.treasury.update_cta}
+            pendingLabel={texts.dashboard.treasury.update_loading}
+            movement={selectedMovement}
+          />
         ) : null}
+      </Modal>
 
-        {canCreateMovement ? (
-          <div className="rounded-[24px] border border-border bg-secondary/50 p-4">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                {texts.dashboard.treasury.transfer_form_title}
-              </h3>
-              <p className="text-sm leading-6 text-muted-foreground">
-                {texts.dashboard.treasury.transfer_form_description}
-              </p>
-            </div>
-
-            <form action={createAccountTransferAction} className="mt-4 grid gap-4">
-              <PendingFieldset className="grid gap-4">
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
-                  <input
-                    type="text"
-                    value={treasuryCard.sessionDate}
-                    disabled
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.transfer_source_account_label}</span>
-                  <select
-                    name="source_account_id"
-                    defaultValue=""
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {accounts.map((account) => (
-                      <option key={`source-${account.id}`} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.transfer_target_account_label}</span>
-                  <select
-                    name="target_account_id"
-                    defaultValue=""
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {accounts.map((account) => (
-                      <option key={`target-${account.id}`} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-                  <select
-                    name="currency_code"
-                    defaultValue=""
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {currencies.map((currency) => (
-                      <option key={`transfer-${currency.currencyCode}`} value={currency.currencyCode}>
-                        {currency.currencyCode}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-                  <input
-                    type="text"
-                    name="concept"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-                  <input
-                    type="number"
-                    name="amount"
-                    min="0.01"
-                    step="0.01"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  />
-                </label>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <PendingSubmitButton
-                    idleLabel={texts.dashboard.treasury.transfer_create_cta}
-                    pendingLabel={texts.dashboard.treasury.transfer_create_loading}
-                    className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                  />
-                  <button
-                    type="reset"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                  >
-                    {texts.dashboard.treasury.reset_cta}
-                  </button>
-                </div>
-              </PendingFieldset>
-            </form>
-          </div>
-        ) : null}
-
-        {canCreateMovement ? (
-          <div className="rounded-[24px] border border-border bg-secondary/50 p-4">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                {texts.dashboard.treasury.fx_form_title}
-              </h3>
-              <p className="text-sm leading-6 text-muted-foreground">
-                {texts.dashboard.treasury.fx_form_description}
-              </p>
-            </div>
-
-            <form action={createFxOperationAction} className="mt-4 grid gap-4">
-              <PendingFieldset className="grid gap-4">
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
-                  <input
-                    type="text"
-                    value={treasuryCard.sessionDate}
-                    disabled
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.fx_source_account_label}</span>
-                  <select
-                    name="source_account_id"
-                    defaultValue=""
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {accounts.map((account) => (
-                      <option key={`fx-source-${account.id}`} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.fx_source_currency_label}</span>
-                  <select
-                    name="source_currency_code"
-                    defaultValue=""
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {currencies.map((currency) => (
-                      <option key={`fx-source-currency-${currency.currencyCode}`} value={currency.currencyCode}>
-                        {currency.currencyCode}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.fx_source_amount_label}</span>
-                  <input
-                    type="number"
-                    name="source_amount"
-                    min="0.01"
-                    step="0.01"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.fx_target_account_label}</span>
-                  <select
-                    name="target_account_id"
-                    defaultValue=""
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {accounts.map((account) => (
-                      <option key={`fx-target-${account.id}`} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.fx_target_currency_label}</span>
-                  <select
-                    name="target_currency_code"
-                    defaultValue=""
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  >
-                    <option value="" disabled>
-                      {texts.settings.club.members.role_placeholder}
-                    </option>
-                    {currencies.map((currency) => (
-                      <option key={`fx-target-currency-${currency.currencyCode}`} value={currency.currencyCode}>
-                        {currency.currencyCode}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.fx_target_amount_label}</span>
-                  <input
-                    type="number"
-                    name="target_amount"
-                    min="0.01"
-                    step="0.01"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm text-foreground">
-                  <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-                  <input
-                    type="text"
-                    name="concept"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                  />
-                </label>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <PendingSubmitButton
-                    idleLabel={texts.dashboard.treasury.fx_create_cta}
-                    pendingLabel={texts.dashboard.treasury.fx_create_loading}
-                    className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                  />
-                  <button
-                    type="reset"
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                  >
-                    {texts.dashboard.treasury.reset_cta}
-                  </button>
-                </div>
-              </PendingFieldset>
-            </form>
-          </div>
-        ) : null}
-      </div>
-    </section>
+      <Modal
+        open={activeModal === "transfer"}
+        onClose={() => setActiveModal(null)}
+        title={texts.dashboard.treasury.transfer_form_title}
+        description={texts.dashboard.treasury.transfer_form_description}
+      >
+        <AccountTransferForm
+          sourceAccounts={transferSourceAccounts}
+          targetAccounts={transferTargetAccounts}
+          currencies={currencies}
+          submitAction={handleCreateAccountTransfer}
+          sessionDate={treasuryCard.sessionDate}
+        />
+      </Modal>
+    </>
   );
 }

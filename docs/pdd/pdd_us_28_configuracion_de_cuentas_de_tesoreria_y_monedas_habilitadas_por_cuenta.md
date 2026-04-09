@@ -74,7 +74,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - Debe existir al menos una visibilidad habilitada para la cuenta.
 - Debe existir al menos una moneda habilitada para la cuenta.
 - Las monedas de la cuenta solo pueden ser `ARS` y/o `USD`.
-- No puede existir otra cuenta `active` con el mismo nombre en el mismo club.
+- No puede existir otra cuenta con el mismo nombre en el mismo club.
 - Si la cuenta tiene visibilidad `secretaria`, Secretaría la ve en formularios y dashboard con todas sus monedas.
 - Si la cuenta tiene visibilidad `tesoreria`, Tesorería la ve en sus formularios y en su card del dashboard `/dashboard` con todas sus monedas.
 - Si la cuenta tiene ambas visibilidades, ambos roles la visualizan.
@@ -87,7 +87,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 1. Un admin entra a `Configuración del club`.
 2. Abre la solapa `Tesorería`.
 3. Visualiza el listado de cuentas del club.
-4. Crea o edita una cuenta indicando nombre, tipo, visibilidad, estado, emoji seleccionado desde un listado simple del sistema y monedas habilitadas.
+4. Crea o edita una cuenta indicando nombre, tipo, visibilidad, emoji seleccionado desde un listado simple del sistema y monedas habilitadas.
 5. El sistema valida y persiste la configuración.
 
 ---
@@ -114,9 +114,9 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 1. El admin intenta guardar una moneda fuera de `ARS` o `USD`.
 2. El sistema devuelve `invalid_account_currency`.
 
-### E. Duplicado activo
+### E. Duplicado
 
-1. El admin crea o edita una cuenta con nombre repetido en otra cuenta activa del mismo club.
+1. El admin crea o edita una cuenta con nombre repetido en otra cuenta del mismo club.
 2. El sistema bloquea la operación con `duplicate_account_name`.
 
 ---
@@ -129,7 +129,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 ### Reglas
 - La UI debe seguir dentro de la misma solapa `Tesorería`.
 - El formulario debe seguir siendo mobile-first.
-- El listado debe mostrar al menos nombre, estado, visibilidad y monedas habilitadas.
+- El listado debe mostrar al menos nombre, visibilidad y monedas habilitadas.
 - `Visibilidad` debe resolverse como multicheck con `Secretaría` y `Tesorería`.
 - `Monedas habilitadas` debe resolverse como multicheck con `ARS` y `USD`.
 - El formulario no debe permitir guardar una cuenta mientras no haya al menos una moneda seleccionada.

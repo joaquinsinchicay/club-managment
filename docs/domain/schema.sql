@@ -108,6 +108,8 @@ account_type account_type not null,
 -- Legacy field kept for compatibility. Business logic must resolve account
 -- visibility from `visible_for_secretaria` and `visible_for_tesoreria`.
 account_scope account_scope not null,
+-- Legacy field kept for compatibility. Business logic must resolve
+-- availability only from role visibility.
 status text not null,
 visible_for_secretaria boolean default true,
 visible_for_tesoreria boolean default true,
@@ -126,6 +128,8 @@ create table treasury_categories (
 id uuid primary key default uuid_generate_v4(),
 club_id uuid references clubs(id),
 name text not null,
+-- Legacy field kept for compatibility. Business logic must resolve
+-- availability only from role visibility.
 status text not null,
 visible_for_secretaria boolean default true,
 visible_for_tesoreria boolean default true,
@@ -137,7 +141,11 @@ create table club_activities (
 id uuid primary key default uuid_generate_v4(),
 club_id uuid references clubs(id),
 name text not null,
+-- Legacy field kept for compatibility. Business logic must resolve
+-- availability only from role visibility.
 status text not null,
+visible_for_secretaria boolean default true,
+visible_for_tesoreria boolean default false,
 emoji text
 );
 
@@ -159,15 +167,6 @@ pattern text,
 min_numeric_value numeric,
 example text,
 status text
-);
-
-create table treasury_field_rules (
-id uuid primary key default uuid_generate_v4(),
-club_id uuid references clubs(id),
-category_id uuid references treasury_categories(id),
-field_name text not null,
-is_visible boolean,
-is_required boolean
 );
 
 create table club_treasury_currencies (
@@ -217,6 +216,7 @@ difference_amount numeric
 
 create table treasury_movements (
 id uuid primary key default uuid_generate_v4(),
+display_id text not null,
 club_id uuid not null references clubs(id),
 
 origin_role movement_origin_role not null,

@@ -1,21 +1,54 @@
 import type { Membership } from "@/lib/domain/access";
-import { hasAnyMembershipRole, hasMembershipRole } from "@/lib/domain/membership-roles";
+import { hasMembershipRole } from "@/lib/domain/membership-roles";
 
 type MembershipLike = Pick<Membership, "roles" | "status"> | null | undefined;
+type ActiveMembershipLike = Exclude<MembershipLike, null | undefined>;
 
 function isActiveMembership(membership: MembershipLike) {
   return membership?.status === "activo";
 }
 
+export type ClubSettingsPermissions = {
+  canAccessPage: boolean;
+  canAccessNavigation: boolean;
+  canManageMembers: boolean;
+  canAccessTreasury: boolean;
+  canMutateTreasury: boolean;
+};
+
+function getActiveMembership(membership: MembershipLike): ActiveMembershipLike | null {
+  if (!isActiveMembership(membership)) {
+    return null;
+  }
+
+  return membership as ActiveMembershipLike;
+}
+
+export function getClubSettingsPermissions(membership: MembershipLike): ClubSettingsPermissions {
+  const activeMembership = getActiveMembership(membership);
+  const canManageMembers = Boolean(activeMembership && hasMembershipRole(activeMembership, "admin"));
+  const canAccessTreasury = Boolean(activeMembership && hasMembershipRole(activeMembership, "tesoreria"));
+  const canAccessPage = canManageMembers || canAccessTreasury;
+
+  return {
+    canAccessPage,
+    canAccessNavigation: canAccessPage,
+    canManageMembers,
+    canAccessTreasury,
+    canMutateTreasury: canAccessTreasury
+  };
+}
+
 export function canManageClubMembers(membership: MembershipLike) {
-  return isActiveMembership(membership) && hasMembershipRole(membership, "admin");
+  return getClubSettingsPermissions(membership).canManageMembers;
 }
 
 export function canAccessTreasurySettings(membership: MembershipLike) {
-  return (
-    isActiveMembership(membership) &&
-    hasAnyMembershipRole(membership, ["admin", "tesoreria"])
-  );
+  return getClubSettingsPermissions(membership).canAccessTreasury;
+}
+
+export function canMutateTreasurySettings(membership: MembershipLike) {
+  return getClubSettingsPermissions(membership).canMutateTreasury;
 }
 
 export function canOperateTesoreria(membership: MembershipLike) {
@@ -23,14 +56,11 @@ export function canOperateTesoreria(membership: MembershipLike) {
 }
 
 export function canAccessClubSettingsPage(membership: MembershipLike) {
-  return (
-    isActiveMembership(membership) &&
-    hasAnyMembershipRole(membership, ["admin", "tesoreria"])
-  );
+  return getClubSettingsPermissions(membership).canAccessPage;
 }
 
 export function canAccessClubSettingsNavigation(membership: MembershipLike) {
-  return canAccessClubSettingsPage(membership);
+  return getClubSettingsPermissions(membership).canAccessNavigation;
 }
 
 export function canOperateSecretaria(membership: MembershipLike) {
