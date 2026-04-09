@@ -121,6 +121,9 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - La interacción debe ser mobile-first y de baja fricción.
 - Al navegar desde una CTA de Secretaría hacia apertura o cierre, la pantalla actual debe mostrar un loader bloqueante hasta que cargue la nueva ruta.
 - Al confirmar apertura o cierre, el CTA debe entrar en loading de inmediato y el formulario de validación debe quedar bloqueado hasta resolver.
+- La CTA de apertura o cierre debe mostrar un unico texto visible durante el loading; no puede superponer el label base con el estado de carga.
+- Las filas de accion de la card operativa deben mantener altura consistente entre apertura, cierre y acciones modales.
+- Si la jornada esta pendiente y no hay movimientos, el dashboard debe resolver un estado vacio compacto sin generar scroll vertical sobrante.
 - El resultado final de apertura o cierre debe mostrarse mediante toast.
 - No debe haber textos hardcodeados.
 
@@ -166,6 +169,8 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - La lectura y mutación se apoyan en RPCs club-scoped de jornada diaria desplegadas en la base remota activa.
 - La lectura de `treasury_movements` para dashboard y validación de saldos depende de RPCs club-scoped de movimientos desplegadas en la base remota activa.
 - Las operaciones sobre `daily_cash_sessions` y sus registros asociados deben correr con contexto `app.current_club_id` del club activo.
+- `daily_cash_sessions.opened_at` debe persistirse en apertura como timestamp auditable del inicio real de la jornada.
+- `daily_cash_sessions.closed_at` debe persistirse en cierre como timestamp auditable del fin real de la jornada.
 
 Do not reference current code files.
 

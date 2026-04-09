@@ -181,7 +181,7 @@ export type DailyCashSession = {
   clubId: string;
   sessionDate: string;
   status: TreasurySessionStatus;
-  openedAt: string | null;
+  openedAt: string;
   closedAt: string | null;
   openedByUserId: string | null;
   closedByUserId: string | null;

@@ -12,6 +12,9 @@ type NavigationLinkWithLoaderProps = LinkProps &
   Omit<ComponentPropsWithoutRef<"a">, keyof LinkProps | "children"> & {
     children: ReactNode;
     loadingLabel?: string;
+    loadingClassName?: string;
+    loadingSpinnerClassName?: string;
+    loadingContentClassName?: string;
   };
 
 function shouldHandleNavigation(event: MouseEvent<HTMLAnchorElement>) {
@@ -30,6 +33,9 @@ export function NavigationLinkWithLoader({
   className,
   href,
   loadingLabel = texts.dashboard.treasury.navigation_loading,
+  loadingClassName,
+  loadingSpinnerClassName,
+  loadingContentClassName,
   onClick,
   replace,
   scroll,
@@ -73,9 +79,9 @@ export function NavigationLinkWithLoader({
       }}
     >
       {isNavigating ? (
-        <span className="inline-flex items-center gap-2">
-          <Spinner className="size-4" />
-          <span>{loadingLabel}</span>
+        <span className={cn("inline-flex items-center gap-2", loadingClassName)}>
+          <Spinner className={cn("size-4", loadingSpinnerClassName)} />
+          <span className={loadingContentClassName}>{loadingLabel}</span>
         </span>
       ) : (
         children

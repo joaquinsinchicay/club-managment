@@ -155,7 +155,10 @@ type SessionActionRowProps = {
   description: string;
   iconKind: "open" | "movement" | "transfer" | "close";
   toneClassName: string;
-  children: ReactNode;
+  href?: string;
+  loadingLabel?: string;
+  onClick?: () => void;
+  ariaLabel?: string;
 };
 
 function SessionActionRow({
@@ -163,34 +166,66 @@ function SessionActionRow({
   description,
   iconKind,
   toneClassName,
-  children
+  href,
+  loadingLabel,
+  onClick,
+  ariaLabel
 }: SessionActionRowProps) {
-  return (
-    <div className="group relative overflow-hidden rounded-[20px] border border-border/90 bg-card shadow-[0_6px_20px_rgba(15,23,42,0.04)] transition hover:border-border hover:shadow-[0_10px_26px_rgba(15,23,42,0.08)]">
+  const content = (
+    <>
       <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-slate-100/70" />
-      {children}
       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-5">
         <SessionActionChevron />
       </div>
-      <div className="pointer-events-none flex items-center gap-4 px-5 py-5 pr-14 sm:px-6">
+      <div className="flex min-h-[108px] items-center gap-4 px-5 py-4 pr-14 sm:px-6">
         <div
           className={cn(
-            "flex size-14 shrink-0 items-center justify-center rounded-2xl border text-current",
+            "flex size-12 shrink-0 items-center justify-center rounded-2xl border text-current",
             toneClassName
           )}
         >
           <SessionActionIcon kind={iconKind} />
         </div>
         <div className="min-w-0 space-y-1">
-          <p className="text-[1.05rem] font-semibold leading-tight tracking-tight text-foreground sm:text-[1.15rem]">
+          <p className="text-base font-semibold leading-tight tracking-tight text-foreground sm:text-[1.1rem]">
             {title}
           </p>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-[0.95rem]">
             {description}
           </p>
         </div>
       </div>
-    </div>
+    </>
+  );
+
+  const sharedClassName =
+    "group relative block overflow-hidden rounded-[20px] border border-border/90 bg-card text-left shadow-[0_6px_20px_rgba(15,23,42,0.04)] transition hover:border-border hover:shadow-[0_10px_26px_rgba(15,23,42,0.08)]";
+
+  if (href) {
+    return (
+      <NavigationLinkWithLoader
+        href={href}
+        aria-label={ariaLabel ?? title}
+        className={sharedClassName}
+        loadingLabel={loadingLabel}
+        loadingClassName="flex min-h-[108px] w-full items-center px-5 py-4 sm:px-6"
+        loadingSpinnerClassName="size-5"
+        loadingContentClassName="text-sm font-semibold tracking-tight text-foreground sm:text-base"
+      >
+        {content}
+      </NavigationLinkWithLoader>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel ?? title}
+      className={sharedClassName}
+    >
+      {content}
+    </button>
   );
 }
 
@@ -297,6 +332,10 @@ export function TreasuryCard({
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
   const isSessionStateUnresolved = treasuryCard.sessionStatus === "unresolved";
   const isMovementDataUnresolved = treasuryCard.movementDataStatus === "unresolved";
+  const shouldHideMovementsSection =
+    treasuryCard.sessionStatus === "not_started" &&
+    !isMovementDataUnresolved &&
+    treasuryCard.movements.length === 0;
   const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "transfer" | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
@@ -583,15 +622,10 @@ export function TreasuryCard({
                 description={texts.dashboard.treasury.open_session_flow_description}
                 iconKind="open"
                 toneClassName="border-emerald-200/80 bg-emerald-50 text-emerald-600"
-              >
-                <NavigationLinkWithLoader
-                  href="/dashboard/session/open"
-                  className="absolute inset-0 z-10 flex items-center justify-center rounded-[20px]"
-                  aria-label={texts.dashboard.treasury.open_session_flow_cta}
-                >
-                  <span className="sr-only">{texts.dashboard.treasury.open_session_flow_cta}</span>
-                </NavigationLinkWithLoader>
-              </SessionActionRow>
+                href="/dashboard/session/open"
+                loadingLabel={texts.dashboard.treasury.navigation_loading}
+                ariaLabel={texts.dashboard.treasury.open_session_flow_cta}
+              />
             ) : null}
 
             {canCreateMovement ? (
@@ -600,15 +634,9 @@ export function TreasuryCard({
                 description={texts.dashboard.treasury.movement_modal_description}
                 iconKind="movement"
                 toneClassName="border-emerald-200/80 bg-emerald-50 text-emerald-600"
-              >
-                <ModalTriggerButton
-                  onClick={() => setActiveModal("movement")}
-                  className="absolute inset-0 z-10 rounded-[20px] border-0 bg-transparent p-0 text-left hover:bg-emerald-50/20"
-                  aria-label={texts.dashboard.treasury.movement_modal_cta}
-                >
-                  <span className="sr-only">{texts.dashboard.treasury.movement_modal_cta}</span>
-                </ModalTriggerButton>
-              </SessionActionRow>
+                onClick={() => setActiveModal("movement")}
+                ariaLabel={texts.dashboard.treasury.movement_modal_cta}
+              />
             ) : null}
 
             {canCreateMovement ? (
@@ -617,15 +645,9 @@ export function TreasuryCard({
                 description={texts.dashboard.treasury.transfer_modal_description}
                 iconKind="transfer"
                 toneClassName="border-slate-200/90 bg-slate-50 text-slate-500"
-              >
-                <ModalTriggerButton
-                  onClick={() => setActiveModal("transfer")}
-                  className="absolute inset-0 z-10 rounded-[20px] border-0 bg-transparent p-0 text-left hover:bg-slate-50/20"
-                  aria-label={texts.dashboard.treasury.transfer_modal_cta}
-                >
-                  <span className="sr-only">{texts.dashboard.treasury.transfer_modal_cta}</span>
-                </ModalTriggerButton>
-              </SessionActionRow>
+                onClick={() => setActiveModal("transfer")}
+                ariaLabel={texts.dashboard.treasury.transfer_modal_cta}
+              />
             ) : null}
 
             {canCloseSession ? (
@@ -634,107 +656,104 @@ export function TreasuryCard({
                 description={texts.dashboard.treasury.close_session_flow_description}
                 iconKind="close"
                 toneClassName="border-rose-200/80 bg-rose-50 text-rose-500"
-              >
-                <NavigationLinkWithLoader
-                  href="/dashboard/session/close"
-                  className="absolute inset-0 z-10 flex items-center justify-center rounded-[20px]"
-                  aria-label={texts.dashboard.treasury.close_session_flow_cta}
-                >
-                  <span className="sr-only">{texts.dashboard.treasury.close_session_flow_cta}</span>
-                </NavigationLinkWithLoader>
-              </SessionActionRow>
+                href="/dashboard/session/close"
+                loadingLabel={texts.dashboard.treasury.navigation_loading}
+                ariaLabel={texts.dashboard.treasury.close_session_flow_cta}
+              />
             ) : null}
           </div>
         </section>
       </section>
 
-      <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
-        <div className="space-y-1.5">
-          <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
-            {texts.dashboard.treasury.movements_card_title}
-          </h2>
-          <p className="text-sm leading-5 text-muted-foreground">
-            {texts.dashboard.treasury.movements_card_description}
-          </p>
-        </div>
+      {!shouldHideMovementsSection ? (
+        <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
+          <div className="space-y-1.5">
+            <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
+              {texts.dashboard.treasury.movements_card_title}
+            </h2>
+            <p className="text-sm leading-5 text-muted-foreground">
+              {texts.dashboard.treasury.movements_card_description}
+            </p>
+          </div>
 
-        {isSessionStateUnresolved || isMovementDataUnresolved ? (
-          <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-            {texts.dashboard.treasury.movements_unresolved}
-          </div>
-        ) : treasuryCard.movements.length === 0 ? (
-          <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-            {texts.dashboard.treasury.movements_empty}
-          </div>
-        ) : (
-          <div className="mt-5">
-            <div className="hidden rounded-t-[18px] border border-border bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,2fr)_minmax(140px,0.9fr)_minmax(140px,0.9fr)_minmax(120px,0.75fr)] md:gap-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.dashboard.treasury.movements_concept_label}
-              </p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.dashboard.treasury.movements_amount_label}
-              </p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.dashboard.treasury.movements_account_label}
-              </p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.dashboard.treasury.movements_actions_label}
-              </p>
+          {isSessionStateUnresolved || isMovementDataUnresolved ? (
+            <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+              {texts.dashboard.treasury.movements_unresolved}
             </div>
+          ) : treasuryCard.movements.length === 0 ? (
+            <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+              {texts.dashboard.treasury.movements_empty}
+            </div>
+          ) : (
+            <div className="mt-5">
+              <div className="hidden rounded-t-[18px] border border-border bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,2fr)_minmax(140px,0.9fr)_minmax(140px,0.9fr)_minmax(120px,0.75fr)] md:gap-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {texts.dashboard.treasury.movements_concept_label}
+                </p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {texts.dashboard.treasury.movements_amount_label}
+                </p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {texts.dashboard.treasury.movements_account_label}
+                </p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {texts.dashboard.treasury.movements_actions_label}
+                </p>
+              </div>
 
-            <div className="grid gap-3 md:gap-0">
-              {treasuryCard.movements.map((movement, index) => (
-                <article
-                  key={movement.movementId}
-                  className={cn(
-                    "rounded-[18px] border border-border bg-card p-4 md:grid md:grid-cols-[minmax(0,2fr)_minmax(140px,0.9fr)_minmax(140px,0.9fr)_minmax(120px,0.75fr)] md:items-center md:gap-4 md:rounded-none md:border-t-0",
-                    index === 0 && "md:rounded-t-none",
-                    index === treasuryCard.movements.length - 1 && "md:rounded-b-[18px]"
-                  )}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-foreground">{movement.concept}</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                      {formatMovementDateTime(movement.createdAt)} · {texts.dashboard.treasury.movements_created_by_label}{" "}
-                      {movement.createdByUserName}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 md:mt-0">
-                    <p className={cn("text-lg font-semibold tracking-tight", getMovementAmountClassName(movement.movementType))}>
-                      {movement.movementType === "egreso" ? "-" : "+"} {movement.currencyCode}{" "}
-                      {formatLocalizedAmount(movement.amount)}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 md:mt-0">
-                    <p className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
-                      {movement.accountName}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 flex justify-start md:mt-0 md:justify-end">
-                    {movement.canEdit ? (
-                      <ModalTriggerButton
-                        onClick={() => {
-                          setSelectedMovement(movement);
-                          setActiveModal("edit_movement");
-                        }}
-                        className="min-h-10 rounded-[18px] border border-border bg-card px-4 py-2 text-foreground hover:bg-secondary"
-                      >
-                        {texts.dashboard.treasury.edit_movement_cta}
-                      </ModalTriggerButton>
-                    ) : (
-                      <span className="text-xs font-medium text-muted-foreground">-</span>
+              <div className="grid gap-3 md:gap-0">
+                {treasuryCard.movements.map((movement, index) => (
+                  <article
+                    key={movement.movementId}
+                    className={cn(
+                      "rounded-[18px] border border-border bg-card p-4 md:grid md:grid-cols-[minmax(0,2fr)_minmax(140px,0.9fr)_minmax(140px,0.9fr)_minmax(120px,0.75fr)] md:items-center md:gap-4 md:rounded-none md:border-t-0",
+                      index === 0 && "md:rounded-t-none",
+                      index === treasuryCard.movements.length - 1 && "md:rounded-b-[18px]"
                     )}
-                  </div>
-                </article>
-              ))}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-semibold text-foreground">{movement.concept}</p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                        {formatMovementDateTime(movement.createdAt)} · {texts.dashboard.treasury.movements_created_by_label}{" "}
+                        {movement.createdByUserName}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 md:mt-0">
+                      <p className={cn("text-lg font-semibold tracking-tight", getMovementAmountClassName(movement.movementType))}>
+                        {movement.movementType === "egreso" ? "-" : "+"} {movement.currencyCode}{" "}
+                        {formatLocalizedAmount(movement.amount)}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 md:mt-0">
+                      <p className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
+                        {movement.accountName}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 flex justify-start md:mt-0 md:justify-end">
+                      {movement.canEdit ? (
+                        <ModalTriggerButton
+                          onClick={() => {
+                            setSelectedMovement(movement);
+                            setActiveModal("edit_movement");
+                          }}
+                          className="min-h-10 rounded-[18px] border border-border bg-card px-4 py-2 text-foreground hover:bg-secondary"
+                        >
+                          {texts.dashboard.treasury.edit_movement_cta}
+                        </ModalTriggerButton>
+                      ) : (
+                        <span className="text-xs font-medium text-muted-foreground">-</span>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </section>
+          )}
+        </section>
+      ) : null}
 
       <Modal
         open={activeModal === "movement"}

@@ -139,6 +139,12 @@ perform set_config('app.current_club_id', p_club_id::text, true);
 
 Esto aplica especialmente a flujos de `treasury_movements`, `daily_cash_sessions` y otras tablas operativas protegidas por RLS.
 
+En `daily_cash_sessions`, los timestamps operativos deben persistirse en base como fuente de verdad auditable:
+
+* `opened_at` se fija al momento real de apertura
+* `closed_at` se fija al momento real de cierre
+* la aplicación no debe reconstruir estos valores localmente ante `NULL`
+
 Antes de asumir que un dashboard operativo esta realmente vacio en el entorno remoto, validar que existan y respondan correctamente estas RPCs club-scoped:
 
 * `get_daily_cash_session_for_current_club`

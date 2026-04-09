@@ -110,7 +110,7 @@ export function resolveFeedbackToast(
     return toast ? { toast, consumedKeys: ["feedback"] } : null;
   }
 
-  if ((pathname === "/dashboard" || pathname === "/dashboard/treasury") && feedbackCode) {
+  if ((pathname === "/dashboard" || pathname === "/dashboard/secretaria" || pathname === "/dashboard/treasury") && feedbackCode) {
     const toast = resolveDashboardFeedback(feedbackCode, searchParams);
 
     return toast ? { toast, consumedKeys: ["feedback", "movement_id"] } : null;

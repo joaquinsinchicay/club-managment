@@ -24,11 +24,11 @@ export default async function OpenDailyCashSessionPage() {
   const validation = await getDailyCashSessionValidationForActiveClub("open");
 
   if (!validation) {
-    redirect("/dashboard?feedback=unknown_error");
+    redirect("/dashboard/secretaria?feedback=session_open_failed");
   }
 
   if (validation.sessionStatus !== "not_started") {
-    redirect("/dashboard?feedback=session_already_exists");
+    redirect("/dashboard/secretaria?feedback=session_already_exists");
   }
 
   return (

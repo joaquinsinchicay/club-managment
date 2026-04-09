@@ -182,7 +182,61 @@ type AccessRepository = {
     sessionDate: string,
     openedByUserId: string
   ): Promise<DailyCashSession | null>;
+  openDailyCashSessionWithBalances(input: {
+    clubId: string;
+    sessionDate: string;
+    openedByUserId: string;
+    balances: Array<{
+      accountId: string;
+      currencyCode: string;
+      balanceMoment: "opening" | "closing";
+      expectedBalance: number;
+      declaredBalance: number;
+      differenceAmount: number;
+    }>;
+    adjustments: Array<{
+      accountId: string;
+      movementType: TreasuryMovementType;
+      categoryId: string;
+      concept: string;
+      currencyCode: string;
+      amount: number;
+      movementDate: string;
+      createdByUserId: string;
+      displayId: string;
+      status: TreasuryMovementStatus;
+      differenceAmount: number;
+      adjustmentMoment: "opening" | "closing";
+    }>;
+  }): Promise<DailyCashSession | null>;
   closeDailyCashSession(clubId: string, sessionId: string, closedByUserId: string): Promise<DailyCashSession | null>;
+  closeDailyCashSessionWithBalances(input: {
+    clubId: string;
+    sessionId: string;
+    closedByUserId: string;
+    balances: Array<{
+      accountId: string;
+      currencyCode: string;
+      balanceMoment: "opening" | "closing";
+      expectedBalance: number;
+      declaredBalance: number;
+      differenceAmount: number;
+    }>;
+    adjustments: Array<{
+      accountId: string;
+      movementType: TreasuryMovementType;
+      categoryId: string;
+      concept: string;
+      currencyCode: string;
+      amount: number;
+      movementDate: string;
+      createdByUserId: string;
+      displayId: string;
+      status: TreasuryMovementStatus;
+      differenceAmount: number;
+      adjustmentMoment: "opening" | "closing";
+    }>;
+  }): Promise<DailyCashSession | null>;
   listTreasuryMovementsBySession(sessionId: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByAccount(clubId: string, accountId: string, movementDate: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByAccountStrict(
@@ -1218,7 +1272,7 @@ function mapDailyCashSessionRow(row: {
   club_id: string;
   session_date: string;
   status: DailyCashSession["status"] | null;
-  opened_at: string | null;
+  opened_at: string;
   closed_at: string | null;
   opened_by_user_id: string;
   closed_by_user_id: string | null;
@@ -1228,7 +1282,7 @@ function mapDailyCashSessionRow(row: {
     clubId: row.club_id,
     sessionDate: row.session_date,
     status: row.status ?? "open",
-    openedAt: row.opened_at ?? now(),
+    openedAt: row.opened_at,
     closedAt: row.closed_at ?? null,
     openedByUserId: row.opened_by_user_id,
     closedByUserId: row.closed_by_user_id ?? null
@@ -1791,7 +1845,7 @@ async function findRealDailyCashSessionByDate(clubId: string, sessionDate: strin
     club_id: string;
     session_date: string;
     status: DailyCashSession["status"] | null;
-    opened_at: string | null;
+    opened_at: string;
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
@@ -1840,7 +1894,7 @@ async function createRealDailyCashSession(
     club_id: string;
     session_date: string;
     status: DailyCashSession["status"] | null;
-    opened_at: string | null;
+    opened_at: string;
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
@@ -1864,7 +1918,7 @@ async function closeRealDailyCashSession(
     club_id: string;
     session_date: string;
     status: DailyCashSession["status"] | null;
-    opened_at: string | null;
+    opened_at: string;
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
@@ -1882,6 +1936,182 @@ async function closeRealDailyCashSession(
   }
 
   return mapDailyCashSessionRow(row);
+}
+
+async function openRealDailyCashSessionWithBalances(input: {
+  clubId: string;
+  sessionDate: string;
+  openedByUserId: string;
+  balances: Array<{
+    accountId: string;
+    currencyCode: string;
+    balanceMoment: "opening" | "closing";
+    expectedBalance: number;
+    declaredBalance: number;
+    differenceAmount: number;
+  }>;
+  adjustments: Array<{
+    accountId: string;
+    movementType: TreasuryMovementType;
+    categoryId: string;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+    movementDate: string;
+    createdByUserId: string;
+    displayId: string;
+    status: TreasuryMovementStatus;
+    differenceAmount: number;
+    adjustmentMoment: "opening" | "closing";
+  }>;
+}, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "open_daily_cash_session_with_balances");
+  }
+
+  const { data, error } = await supabase.rpc("open_daily_cash_session_with_balances_for_current_club", {
+    p_club_id: input.clubId,
+    p_session_date: input.sessionDate,
+    p_opened_by_user_id: input.openedByUserId,
+    p_balance_entries: input.balances.map((entry) => ({
+      account_id: entry.accountId,
+      currency_code: entry.currencyCode,
+      balance_moment: entry.balanceMoment,
+      expected_balance: entry.expectedBalance,
+      declared_balance: entry.declaredBalance,
+      difference_amount: entry.differenceAmount
+    })),
+    p_adjustment_entries: input.adjustments.map((entry) => ({
+      account_id: entry.accountId,
+      movement_type: entry.movementType,
+      category_id: entry.categoryId,
+      concept: entry.concept,
+      currency_code: entry.currencyCode,
+      amount: entry.amount,
+      movement_date: entry.movementDate,
+      created_by_user_id: entry.createdByUserId,
+      display_id: entry.displayId,
+      status: entry.status,
+      difference_amount: entry.differenceAmount,
+      adjustment_moment: entry.adjustmentMoment
+    }))
+  });
+
+  if (error) {
+    console.error("[club-scoped-rpc-failure]", {
+      operation: "open_daily_cash_session_with_balances",
+      clubId: input.clubId,
+      sessionDate: input.sessionDate,
+      openedByUserId: input.openedByUserId,
+      error
+    });
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "open_daily_cash_session_with_balances", {
+      cause: error
+    });
+  }
+
+  const row = (((data ?? []) as Array<{
+    id: string;
+    club_id: string;
+    session_date: string;
+    status: DailyCashSession["status"] | null;
+    opened_at: string;
+    closed_at: string | null;
+    opened_by_user_id: string;
+    closed_by_user_id: string | null;
+  }>)[0] ?? null);
+
+  return row ? mapDailyCashSessionRow(row) : null;
+}
+
+async function closeRealDailyCashSessionWithBalances(input: {
+  clubId: string;
+  sessionId: string;
+  closedByUserId: string;
+  balances: Array<{
+    accountId: string;
+    currencyCode: string;
+    balanceMoment: "opening" | "closing";
+    expectedBalance: number;
+    declaredBalance: number;
+    differenceAmount: number;
+  }>;
+  adjustments: Array<{
+    accountId: string;
+    movementType: TreasuryMovementType;
+    categoryId: string;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+    movementDate: string;
+    createdByUserId: string;
+    displayId: string;
+    status: TreasuryMovementStatus;
+    differenceAmount: number;
+    adjustmentMoment: "opening" | "closing";
+  }>;
+}, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "close_daily_cash_session_with_balances");
+  }
+
+  const { data, error } = await supabase.rpc("close_daily_cash_session_with_balances_for_current_club", {
+    p_club_id: input.clubId,
+    p_session_id: input.sessionId,
+    p_closed_by_user_id: input.closedByUserId,
+    p_balance_entries: input.balances.map((entry) => ({
+      account_id: entry.accountId,
+      currency_code: entry.currencyCode,
+      balance_moment: entry.balanceMoment,
+      expected_balance: entry.expectedBalance,
+      declared_balance: entry.declaredBalance,
+      difference_amount: entry.differenceAmount
+    })),
+    p_adjustment_entries: input.adjustments.map((entry) => ({
+      account_id: entry.accountId,
+      movement_type: entry.movementType,
+      category_id: entry.categoryId,
+      concept: entry.concept,
+      currency_code: entry.currencyCode,
+      amount: entry.amount,
+      movement_date: entry.movementDate,
+      created_by_user_id: entry.createdByUserId,
+      display_id: entry.displayId,
+      status: entry.status,
+      difference_amount: entry.differenceAmount,
+      adjustment_moment: entry.adjustmentMoment
+    }))
+  });
+
+  if (error) {
+    console.error("[club-scoped-rpc-failure]", {
+      operation: "close_daily_cash_session_with_balances",
+      clubId: input.clubId,
+      sessionId: input.sessionId,
+      closedByUserId: input.closedByUserId,
+      error
+    });
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "close_daily_cash_session_with_balances", {
+      cause: error
+    });
+  }
+
+  const row = (((data ?? []) as Array<{
+    id: string;
+    club_id: string;
+    session_date: string;
+    status: DailyCashSession["status"] | null;
+    opened_at: string;
+    closed_at: string | null;
+    opened_by_user_id: string;
+    closed_by_user_id: string | null;
+  }>)[0] ?? null);
+
+  return row ? mapDailyCashSessionRow(row) : null;
 }
 
 async function recordRealDailyCashSessionBalances(
@@ -3629,6 +3859,70 @@ export const accessRepository: AccessRepository = {
     getStore().dailyCashSessions.push(session);
     return session;
   },
+  async openDailyCashSessionWithBalances(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return openRealDailyCashSessionWithBalances(input);
+    }
+
+    const session: DailyCashSession = {
+      id: `session-${Date.now()}`,
+      clubId: input.clubId,
+      sessionDate: input.sessionDate,
+      status: "open",
+      openedAt: now(),
+      closedAt: null,
+      openedByUserId: input.openedByUserId,
+      closedByUserId: null
+    };
+
+    const store = getStore();
+    store.dailyCashSessions.push(session);
+
+    input.balances.forEach((entry) => {
+      store.dailyCashSessionBalances.push({
+        id: `session-balance-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sessionId: session.id,
+        accountId: entry.accountId,
+        currencyCode: entry.currencyCode,
+        balanceMoment: entry.balanceMoment,
+        expectedBalance: entry.expectedBalance,
+        declaredBalance: entry.declaredBalance,
+        differenceAmount: entry.differenceAmount
+      });
+    });
+
+    input.adjustments.forEach((entry) => {
+      const movementId = `movement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+      store.treasuryMovements.push({
+        id: movementId,
+        displayId: entry.displayId,
+        clubId: input.clubId,
+        dailyCashSessionId: session.id,
+        accountId: entry.accountId,
+        movementType: entry.movementType,
+        categoryId: entry.categoryId,
+        concept: entry.concept,
+        currencyCode: entry.currencyCode,
+        amount: entry.amount,
+        movementDate: entry.movementDate,
+        createdByUserId: entry.createdByUserId,
+        status: entry.status,
+        createdAt: now()
+      });
+
+      store.balanceAdjustments.push({
+        id: `balance-adjustment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sessionId: session.id,
+        movementId,
+        accountId: entry.accountId,
+        differenceAmount: entry.differenceAmount,
+        adjustmentMoment: entry.adjustmentMoment
+      });
+    });
+
+    return session;
+  },
   async closeDailyCashSession(clubId, sessionId, closedByUserId) {
     if (shouldUseSupabaseDatabase()) {
       return closeRealDailyCashSession(clubId, sessionId, closedByUserId);
@@ -3644,6 +3938,67 @@ export const accessRepository: AccessRepository = {
     session.status = "closed";
     session.closedAt = now();
     session.closedByUserId = closedByUserId;
+    return session;
+  },
+  async closeDailyCashSessionWithBalances(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return closeRealDailyCashSessionWithBalances(input);
+    }
+
+    const store = getStore();
+    const session = store.dailyCashSessions.find((entry) => entry.id === input.sessionId && entry.clubId === input.clubId);
+
+    if (!session || session.status !== "open") {
+      return null;
+    }
+
+    input.balances.forEach((entry) => {
+      store.dailyCashSessionBalances.push({
+        id: `session-balance-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sessionId: session.id,
+        accountId: entry.accountId,
+        currencyCode: entry.currencyCode,
+        balanceMoment: entry.balanceMoment,
+        expectedBalance: entry.expectedBalance,
+        declaredBalance: entry.declaredBalance,
+        differenceAmount: entry.differenceAmount
+      });
+    });
+
+    input.adjustments.forEach((entry) => {
+      const movementId = `movement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+      store.treasuryMovements.push({
+        id: movementId,
+        displayId: entry.displayId,
+        clubId: input.clubId,
+        dailyCashSessionId: session.id,
+        accountId: entry.accountId,
+        movementType: entry.movementType,
+        categoryId: entry.categoryId,
+        concept: entry.concept,
+        currencyCode: entry.currencyCode,
+        amount: entry.amount,
+        movementDate: entry.movementDate,
+        createdByUserId: entry.createdByUserId,
+        status: entry.status,
+        createdAt: now()
+      });
+
+      store.balanceAdjustments.push({
+        id: `balance-adjustment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sessionId: session.id,
+        movementId,
+        accountId: entry.accountId,
+        differenceAmount: entry.differenceAmount,
+        adjustmentMoment: entry.adjustmentMoment
+      });
+    });
+
+    session.status = "closed";
+    session.closedAt = now();
+    session.closedByUserId = input.closedByUserId;
+
     return session;
   },
   async listTreasuryMovementsBySession(sessionId) {
