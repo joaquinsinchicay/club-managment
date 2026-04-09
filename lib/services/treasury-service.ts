@@ -61,6 +61,7 @@ type TreasuryActionCode =
   | "target_amount_required"
   | "invalid_fx_operation"
   | "movement_not_found"
+  | "movement_not_editable"
   | "invalid_match"
   | "consolidation_date_required"
   | "consolidation_already_completed"
@@ -172,6 +173,9 @@ function serializeMovementSnapshot(movement: TreasuryMovement) {
     accountId: movement.accountId,
     movementType: movement.movementType,
     categoryId: movement.categoryId,
+    activityId: movement.activityId ?? null,
+    receiptNumber: movement.receiptNumber ?? null,
+    calendarEventId: movement.calendarEventId ?? null,
     concept: movement.concept,
     currencyCode: movement.currencyCode,
     amount: movement.amount,
@@ -197,6 +201,10 @@ function getAccountsVisibleForRole(
   return accounts.filter((account) =>
     role === "secretaria" ? account.visibleForSecretaria : account.visibleForTesoreria
   );
+}
+
+function getTransferTargetAccountsForSecretaria(accounts: TreasuryAccount[]) {
+  return accounts.filter((account) => !account.visibleForSecretaria && account.visibleForTesoreria);
 }
 
 function buildAccountBalances(
@@ -597,10 +605,12 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   }
 
   const sessionDate = getTodayDate();
-  const [session, accounts, categories] = await Promise.all([
+  const [session, accounts, categories, activities, calendarEvents] = await Promise.all([
     accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate),
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
-    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id)
+    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+    accessRepository.listClubActivitiesForClub(context.activeClub.id),
+    accessRepository.listClubCalendarEventsForClub(context.activeClub.id)
   ]);
 
   const secretaryAccounts = accounts.filter((account) => account.visibleForSecretaria);
@@ -616,6 +626,8 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   const usersById = new Map(users);
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
   const accountsById = new Map(secretaryAccounts.map((account) => [account.id, account]));
+  const activitiesById = new Map(activities.map((activity) => [activity.id, activity]));
+  const calendarEventsById = new Map(calendarEvents.map((event) => [event.id, event]));
 
   return {
     sessionStatus: session?.status ?? "not_started",
@@ -630,15 +642,27 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
       .map((movement) => ({
         movementId: movement.id,
         movementDisplayId: movement.displayId,
+        movementDate: movement.movementDate,
         accountId: movement.accountId,
         accountName: accountsById.get(movement.accountId)?.name ?? "",
         movementType: movement.movementType,
+        categoryId: movement.categoryId,
         categoryName: categoriesById.get(movement.categoryId)?.name ?? texts.dashboard.treasury.detail_uncategorized_category,
+        activityId: movement.activityId ?? null,
+        activityName: movement.activityId ? activitiesById.get(movement.activityId)?.name ?? null : null,
+        receiptNumber: movement.receiptNumber ?? null,
+        calendarEventId: movement.calendarEventId ?? null,
+        calendarEventTitle: movement.calendarEventId
+          ? calendarEventsById.get(movement.calendarEventId)?.title ?? null
+          : null,
+        transferReference: movement.transferGroupId ?? null,
+        fxOperationReference: movement.fxOperationGroupId ?? null,
         concept: movement.concept,
         currencyCode: movement.currencyCode,
         amount: movement.amount,
         createdByUserName: usersById.get(movement.createdByUserId)?.fullName ?? "",
-        createdAt: movement.createdAt
+        createdAt: movement.createdAt,
+        canEdit: session?.status === "open"
       }))
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
     availableActions:
@@ -911,6 +935,179 @@ export async function createTreasuryMovement(input: {
   return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
 }
 
+export async function updateSecretariaMovementInOpenSession(input: {
+  movementId: string;
+  accountId: string;
+  movementType: string;
+  categoryId: string;
+  activityId: string;
+  receiptNumber: string;
+  calendarEventId: string;
+  concept: string;
+  currencyCode: string;
+  amount: string;
+}): Promise<TreasuryActionResult> {
+  const context = await getSecretariaSession();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  const session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+
+  if (!session || session.status !== "open") {
+    return { ok: false, code: "session_required" };
+  }
+
+  const movement = await accessRepository.findTreasuryMovementById(input.movementId);
+
+  if (
+    !movement ||
+    movement.clubId !== context.activeClub.id ||
+    movement.dailyCashSessionId !== session.id
+  ) {
+    return { ok: false, code: "movement_not_editable" };
+  }
+
+  if (!input.accountId) {
+    return { ok: false, code: "account_required" };
+  }
+
+  if (!input.movementType) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  if (!input.categoryId) {
+    return { ok: false, code: "category_required" };
+  }
+
+  if (!input.concept.trim()) {
+    return { ok: false, code: "concept_required" };
+  }
+
+  if (!input.currencyCode) {
+    return { ok: false, code: "currency_required" };
+  }
+
+  if (!input.amount) {
+    return { ok: false, code: "amount_required" };
+  }
+
+  const parsedAmount = parseLocalizedAmount(input.amount);
+
+  if (parsedAmount === null || parsedAmount <= 0) {
+    return { ok: false, code: "amount_must_be_positive" };
+  }
+
+  if (input.movementType !== "ingreso" && input.movementType !== "egreso") {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const [
+    accounts,
+    categories,
+    activities,
+    calendarEvents,
+    configuredCurrencies,
+    configuredMovementTypes
+  ] = await Promise.all([
+    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
+    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
+    accessRepository.listClubActivitiesForClub(context.activeClub.id),
+    accessRepository.listClubCalendarEventsForClub(context.activeClub.id),
+    getConfiguredTreasuryCurrencies(context.activeClub.id),
+    getConfiguredMovementTypes(context.activeClub.id)
+  ]);
+
+  if (
+    !configuredMovementTypes.some(
+      (movementType) => movementType.movementType === input.movementType && movementType.isEnabled
+    )
+  ) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const account = accounts.find((entry) => entry.id === input.accountId && entry.visibleForSecretaria);
+
+  if (!account) {
+    return { ok: false, code: "invalid_account" };
+  }
+
+  const category = categories.find((entry) => entry.id === input.categoryId && entry.visibleForSecretaria);
+
+  if (!category) {
+    return { ok: false, code: "invalid_category" };
+  }
+
+  if (!configuredCurrencies.some((currency) => currency.currencyCode === input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  if (!account.currencies.includes(input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  const activity =
+    input.activityId.trim().length > 0
+      ? activities.find((entry) => entry.id === input.activityId && entry.visibleForSecretaria) ?? null
+      : null;
+
+  if (input.activityId.trim().length > 0 && !activity) {
+    return { ok: false, code: "invalid_activity" };
+  }
+
+  const receiptNumber = input.receiptNumber.trim();
+  const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
+
+  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
+    const isValidReceipt = activeReceiptFormats.some((format) =>
+      validateReceiptNumberAgainstFormat(receiptNumber, format)
+    );
+
+    if (!isValidReceipt) {
+      return { ok: false, code: "invalid_receipt_format" };
+    }
+  }
+
+  const calendarEvent =
+    input.calendarEventId.trim().length > 0
+      ? calendarEvents.find((entry) => entry.id === input.calendarEventId && entry.isEnabledForTreasury) ?? null
+      : null;
+
+  if (input.calendarEventId.trim().length > 0 && !calendarEvent) {
+    return { ok: false, code: "invalid_calendar_event" };
+  }
+
+  const beforeSnapshot = serializeMovementSnapshot(movement);
+  const updatedMovement = await accessRepository.updateTreasuryMovement({
+    movementId: movement.id,
+    clubId: context.activeClub.id,
+    accountId: account.id,
+    movementType: input.movementType,
+    categoryId: category.id,
+    activityId: activity?.id ?? null,
+    receiptNumber: receiptNumber || null,
+    calendarEventId: calendarEvent?.id ?? null,
+    concept: input.concept.trim(),
+    currencyCode: input.currencyCode,
+    amount: parsedAmount
+  });
+
+  if (!updatedMovement) {
+    return { ok: false, code: "unknown_error" };
+  }
+
+  await accessRepository.createMovementAuditLog({
+    movementId: updatedMovement.id,
+    actionType: "edited",
+    payloadBefore: beforeSnapshot,
+    payloadAfter: serializeMovementSnapshot(updatedMovement),
+    performedByUserId: context.user.id
+  });
+
+  return { ok: true, code: "movement_updated" };
+}
+
 export async function createAccountTransfer(input: {
   sourceAccountId: string;
   targetAccountId: string;
@@ -956,9 +1153,13 @@ export async function createAccountTransfer(input: {
     return { ok: false, code: "amount_must_be_positive" };
   }
 
-  const accounts = await getSecretariaAccounts(context.activeClub.id);
-  const sourceAccount = accounts.find((account) => account.id === input.sourceAccountId);
-  const targetAccount = accounts.find((account) => account.id === input.targetAccountId);
+  const allAccounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
+  const sourceAccount = getAccountsVisibleForRole(allAccounts, "secretaria").find(
+    (account) => account.id === input.sourceAccountId
+  );
+  const targetAccount = getTransferTargetAccountsForSecretaria(allAccounts).find(
+    (account) => account.id === input.targetAccountId
+  );
 
   if (!sourceAccount || !targetAccount) {
     return { ok: false, code: "invalid_transfer" };

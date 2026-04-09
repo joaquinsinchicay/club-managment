@@ -33,6 +33,9 @@ El dashboard debe mostrar una card de saldos únicamente para usuarios con rol `
 - Saldos acumulados por cuenta y moneda.
 - Estado de jornada del día.
 - Acciones para abrir/cerrar jornada y abrir modales de registro según corresponda.
+- Estado bloqueado de pantalla mientras se resuelve el alta de movimiento iniciada desde el modal de la card.
+- Loader bloqueante para CTAs de navegación de Secretaría originadas en la card.
+- CTA de edición sobre los movimientos visibles mientras la jornada siga abierta.
 - Estado vacío si no hay cuentas configuradas.
 
 ### No incluye
@@ -114,6 +117,9 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Debe mostrar saldos de forma clara y escaneable.
 - Debe ser mobile-first.
 - El estado de jornada debe entenderse de un vistazo.
+- Si el alta de movimiento de Secretaría se inicia desde el modal de esta card, la misma card es responsable de activar el bloqueo de pantalla y evitar interacción hasta que la mutación termine.
+- Si una CTA de la card redirige a otra pantalla operativa, debe mostrar un loader bloqueante hasta que la ruta destino termine de cargar.
+- Si la jornada está abierta, cada movimiento visible debe ofrecer acceso directo a edición desde la card.
 - No debe haber textos hardcodeados.
 
 ---
@@ -138,7 +144,9 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | action | `dashboard.treasury.open_session_cta` | Abrir jornada. |
 | action | `dashboard.treasury.close_session_cta` | Cerrar jornada. |
 | action | `dashboard.treasury.detail_cta` | Ver detalle de cuenta desde la card. |
+| status | `dashboard.treasury.navigation_loading` | Estado visible mientras una CTA de la card navega a otra pantalla. |
 | action | `dashboard.treasury.movement_modal_cta` | Abrir modal para registrar movimiento. |
+| action | `dashboard.treasury.edit_movement_cta` | Abrir modal para editar un movimiento visible. |
 | action | `dashboard.treasury.transfer_modal_cta` | Abrir modal para registrar transferencia. |
 | title | `dashboard.treasury.movements_card_title` | Titulo de la card de movimientos del dia. |
 | body | `dashboard.treasury.movements_card_description` | Descripcion del listado de movimientos del dia. |

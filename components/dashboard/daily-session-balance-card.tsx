@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { AppHeader } from "@/components/navigation/app-header";
 import { CardShell } from "@/components/ui/card-shell";
+import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { PendingFieldset, PendingStatusText, PendingSubmitButton } from "@/components/ui/pending-form";
 import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
 import { texts } from "@/lib/texts";
@@ -126,12 +126,12 @@ export function DailySessionBalanceCard({
                 <p className="text-sm text-muted-foreground">
                   {texts.dashboard.treasury.session_validation_empty}
                 </p>
-                <Link
+                <NavigationLinkWithLoader
                   href="/dashboard"
                   className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
                 >
                   {texts.dashboard.treasury.back_to_dashboard_cta}
-                </Link>
+                </NavigationLinkWithLoader>
               </div>
             ) : (
               <form action={submitAction} className="space-y-5">
@@ -258,12 +258,12 @@ export function DailySessionBalanceCard({
                         : texts.dashboard.treasury.confirm_close_session_loading}
                       className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
                     />
-                    <Link
+                    <NavigationLinkWithLoader
                       href="/dashboard"
                       className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
                     >
                       {texts.dashboard.treasury.cancel_session_cta}
-                    </Link>
+                    </NavigationLinkWithLoader>
                   </div>
                   <PendingStatusText
                     idleLabel=""

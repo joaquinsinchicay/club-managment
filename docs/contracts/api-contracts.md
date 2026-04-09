@@ -932,6 +932,60 @@ Sí
 
 ---
 
+### 6.5B Update secretaria movement in open session
+
+**Purpose**
+Editar un movimiento de Secretaría mientras la jornada del día siga abierta.
+
+**Auth required**
+Sí
+
+**Allowed roles**
+`secretaria`
+
+**Input**
+
+```json
+{
+  "movement_id": "uuid",
+  "account_id": "uuid",
+  "movement_type": "ingreso",
+  "category_id": "uuid",
+  "activity_id": "uuid",
+  "receipt_number": "PAY-SOC-26205",
+  "calendar_event_id": "uuid",
+  "concept": "Pago cuota abril",
+  "currency_code": "ARS",
+  "amount": 25000
+}
+```
+
+**Validations**
+
+* debe existir jornada abierta para el día actual
+* el movimiento debe pertenecer al club activo
+* el movimiento debe pertenecer a la jornada abierta actual
+* cuenta válida del club activo y visible para `secretaria`
+* categoría válida y visible para `secretaria`
+* movement_type habilitado en el club
+* currency_code válida para la cuenta
+* `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
+* amount > 0
+* `movement_date` no es editable por contrato
+* no se permite editar referencias técnicas derivadas
+* la operación debe auditarse
+
+**Output**
+
+```json
+{
+  "movement_id": "uuid",
+  "updated": true
+}
+```
+
+---
+
 ### 6.6 Get account detail
 
 **Purpose**
@@ -1006,9 +1060,11 @@ Sí
 
 **Validations**
 
-* no requiere jornada abierta
+* requiere jornada abierta
 * cuentas distintas
 * ambas cuentas del club activo
+* la cuenta origen debe ser visible para `secretaria`
+* la cuenta destino debe ser visible para otro rol operativo y no visible para `secretaria`
 * moneda válida para ambas cuentas
 * amount > 0
 
@@ -1357,6 +1413,7 @@ Puede:
 9. Las operaciones de apertura/cierre deben ser transaccionales.
 10. Los estados de los movimientos deben tratarse como parte central del dominio.
 11. Toda operación que cree múltiples movimientos debe dejar referencias cruzadas trazables.
+12. La edición operativa de Secretaría en jornada abierta debe auditarse igual que la corrección en consolidación.
 
 ```
 ```

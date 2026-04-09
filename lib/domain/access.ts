@@ -272,15 +272,25 @@ export type DashboardTreasuryCard = {
   movements: Array<{
     movementId: string;
     movementDisplayId: string;
+    movementDate: string;
     accountId: string;
     accountName: string;
     movementType: TreasuryMovementType;
+    categoryId: string;
     categoryName: string;
+    activityId: string | null;
+    activityName: string | null;
+    receiptNumber: string | null;
+    calendarEventId: string | null;
+    calendarEventTitle: string | null;
+    transferReference: string | null;
+    fxOperationReference: string | null;
     concept: string;
     currencyCode: string;
     amount: number;
     createdByUserName: string;
     createdAt: string;
+    canEdit: boolean;
   }>;
   availableActions: Array<"open_session" | "close_session" | "create_movement">;
 };

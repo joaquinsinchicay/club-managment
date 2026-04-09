@@ -194,6 +194,9 @@ type AccessRepository = {
     concept: string;
     currencyCode: string;
     amount: number;
+    activityId?: string | null;
+    receiptNumber?: string | null;
+    calendarEventId?: string | null;
     status?: TreasuryMovementStatus;
     consolidationBatchId?: string | null;
   }): Promise<TreasuryMovement | null>;
@@ -3057,6 +3060,10 @@ export const accessRepository: AccessRepository = {
     movement.concept = input.concept;
     movement.currencyCode = input.currencyCode;
     movement.amount = input.amount;
+    movement.activityId = input.activityId === undefined ? movement.activityId ?? null : input.activityId;
+    movement.receiptNumber = input.receiptNumber === undefined ? movement.receiptNumber ?? null : input.receiptNumber;
+    movement.calendarEventId =
+      input.calendarEventId === undefined ? movement.calendarEventId ?? null : input.calendarEventId;
     movement.status = input.status ?? movement.status;
     movement.consolidationBatchId =
       input.consolidationBatchId === undefined ? movement.consolidationBatchId ?? null : input.consolidationBatchId;

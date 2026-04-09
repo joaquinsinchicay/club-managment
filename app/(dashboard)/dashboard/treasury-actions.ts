@@ -9,6 +9,7 @@ import {
   createFxOperation,
   createTreasuryMovement,
   createTreasuryRoleMovement,
+  updateSecretariaMovementInOpenSession,
   openDailyCashSession
 } from "@/lib/services/treasury-service";
 
@@ -75,6 +76,28 @@ export async function createTreasuryRoleMovementAction(formData: FormData) {
   });
 
   redirectToDashboard(result.code);
+}
+
+export async function updateSecretariaMovementAction(formData: FormData) {
+  const result = await updateSecretariaMovementInOpenSession({
+    movementId: String(formData.get("movement_id") ?? ""),
+    accountId: String(formData.get("account_id") ?? ""),
+    movementType: String(formData.get("movement_type") ?? ""),
+    categoryId: String(formData.get("category_id") ?? ""),
+    activityId: String(formData.get("activity_id") ?? ""),
+    receiptNumber: String(formData.get("receipt_number") ?? ""),
+    calendarEventId: String(formData.get("calendar_event_id") ?? ""),
+    concept: String(formData.get("concept") ?? ""),
+    currencyCode: String(formData.get("currency_code") ?? ""),
+    amount: String(formData.get("amount") ?? "")
+  });
+
+  revalidatePath("/dashboard");
+
+  return {
+    ok: result.ok,
+    code: result.code
+  } satisfies TreasuryActionResponse;
 }
 
 export async function createAccountTransferAction(formData: FormData) {

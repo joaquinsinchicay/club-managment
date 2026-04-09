@@ -32,6 +32,7 @@ El sistema debe permitir que un usuario con rol `secretaria` en el club activo a
 - Cierre de jornada abierta.
 - Validación de una sola jornada por día y club.
 - Exposición del estado de jornada dentro del dashboard.
+- Navegación con loader bloqueante desde las CTAs de Secretaría hacia las pantallas de apertura y cierre.
 - Reglas para permitir o bloquear la creación de movimientos según el estado de la jornada.
 
 ### No incluye
@@ -112,6 +113,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - El estado de jornada debe verse de forma clara en dashboard.
 - Las acciones disponibles deben cambiar según la jornada.
 - La interacción debe ser mobile-first y de baja fricción.
+- Al navegar desde una CTA de Secretaría hacia apertura o cierre, la pantalla actual debe mostrar un loader bloqueante hasta que cargue la nueva ruta.
 - Al confirmar apertura o cierre, el CTA debe entrar en loading de inmediato y el formulario de validación debe quedar bloqueado hasta resolver.
 - El resultado final de apertura o cierre debe mostrarse mediante toast.
 - No debe haber textos hardcodeados.
@@ -138,6 +140,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | label | `dashboard.treasury.session_not_started` | Jornada no iniciada. |
 | action | `dashboard.treasury.open_session_cta` | Acción de abrir jornada. |
 | action | `dashboard.treasury.close_session_cta` | Acción de cerrar jornada. |
+| status | `dashboard.treasury.navigation_loading` | Estado visible durante la navegación hacia apertura o cierre. |
 | status | `dashboard.treasury.confirm_open_session_loading` | Estado visible mientras se confirma la apertura. |
 | status | `dashboard.treasury.confirm_close_session_loading` | Estado visible mientras se confirma el cierre. |
 | feedback | `dashboard.feedback.session_opened` | Apertura exitosa. |

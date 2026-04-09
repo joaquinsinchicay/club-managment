@@ -2,10 +2,12 @@
 
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 
+import { formatLocalizedAmount } from "@/lib/amounts";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
   ClubCalendarEvent,
+  DashboardTreasuryCard,
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
@@ -25,7 +27,7 @@ type BaseMovementFormProps = {
   receiptFormats: ReceiptFormat[];
   submitLabel: string;
   pendingLabel: string;
-  submitAction: (formData: FormData) => Promise<void>;
+  submitAction: (formData: FormData) => Promise<unknown>;
 };
 
 const FORM_GRID_CLASSNAME = "grid gap-4 sm:grid-cols-2";
@@ -44,6 +46,14 @@ type MovementFormState = {
   calendarEventId?: string;
   concept: string;
   currencyCode: string;
+  amount: string;
+};
+
+type TransferFormState = {
+  sourceAccountId: string;
+  targetAccountId: string;
+  currencyCode: string;
+  concept: string;
   amount: string;
 };
 
@@ -329,6 +339,58 @@ function isMovementFormValid(formState: MovementFormState) {
   );
 }
 
+function buildEmptySecretariaMovementFormState(): MovementFormState {
+  return {
+    accountId: "",
+    movementType: "",
+    categoryId: "",
+    activityId: "",
+    receiptNumber: "",
+    calendarEventId: "",
+    concept: "",
+    currencyCode: "",
+    amount: ""
+  };
+}
+
+function buildEditMovementFormState(
+  movement: DashboardTreasuryCard["movements"][number]
+): MovementFormState {
+  return {
+    movementDate: movement.movementDate,
+    accountId: movement.accountId,
+    movementType: movement.movementType,
+    categoryId: movement.categoryId,
+    activityId: movement.activityId ?? "",
+    receiptNumber: movement.receiptNumber ?? "",
+    calendarEventId: movement.calendarEventId ?? "",
+    concept: movement.concept,
+    currencyCode: movement.currencyCode,
+    amount: formatLocalizedAmount(movement.amount)
+  };
+}
+
+function buildEmptyTransferFormState(): TransferFormState {
+  return {
+    sourceAccountId: "",
+    targetAccountId: "",
+    currencyCode: "",
+    concept: "",
+    amount: ""
+  };
+}
+
+function isTransferFormValid(formState: TransferFormState, targetAccountCurrencyError: string | null) {
+  return Boolean(
+    formState.sourceAccountId &&
+      formState.targetAccountId &&
+      formState.currencyCode &&
+      formState.concept.trim() &&
+      formState.amount.trim() &&
+      !targetAccountCurrencyError
+  );
+}
+
 export function SecretariaMovementForm({
   accounts,
   categories,
@@ -345,17 +407,7 @@ export function SecretariaMovementForm({
   calendarEvents: ClubCalendarEvent[];
   sessionDate: string;
 }) {
-  const [formState, setFormState] = useState<MovementFormState>({
-    accountId: "",
-    movementType: "",
-    categoryId: "",
-    activityId: "",
-    receiptNumber: "",
-    calendarEventId: "",
-    concept: "",
-    currencyCode: "",
-    amount: ""
-  });
+  const [formState, setFormState] = useState<MovementFormState>(buildEmptySecretariaMovementFormState);
 
   useEffect(() => {
     const selectedAccount = accounts.find((account) => account.id === formState.accountId);
@@ -373,21 +425,11 @@ export function SecretariaMovementForm({
 
   return (
     <form
-      action={submitAction}
+      action={async (formData) => {
+        await submitAction(formData);
+      }}
       className="grid gap-4"
-      onReset={() =>
-        setFormState({
-          accountId: "",
-          movementType: "",
-          categoryId: "",
-          activityId: "",
-          receiptNumber: "",
-          calendarEventId: "",
-          concept: "",
-          currencyCode: "",
-          amount: ""
-        })
-      }
+      onReset={() => setFormState(buildEmptySecretariaMovementFormState())}
     >
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
@@ -430,19 +472,180 @@ export function SecretariaMovementForm({
   );
 }
 
-export function AccountTransferForm({
+export function SecretariaMovementEditForm({
   accounts,
+  categories,
+  activities,
+  calendarEvents,
+  currencies,
+  movementTypes,
+  receiptFormats,
+  submitLabel,
+  pendingLabel,
+  submitAction,
+  movement
+}: BaseMovementFormProps & {
+  calendarEvents: ClubCalendarEvent[];
+  movement: DashboardTreasuryCard["movements"][number];
+}) {
+  const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
+
+  useEffect(() => {
+    setFormState(buildEditMovementFormState(movement));
+  }, [movement]);
+
+  useEffect(() => {
+    const selectedAccount = accounts.find((account) => account.id === formState.accountId);
+    const nextCurrencyCode = getDefaultCurrencyCode(selectedAccount, currencies);
+
+    if (!selectedAccount && formState.currencyCode) {
+      setFormState((current) => ({ ...current, currencyCode: "" }));
+      return;
+    }
+
+    if (selectedAccount && nextCurrencyCode && !selectedAccount.currencies.includes(formState.currencyCode)) {
+      setFormState((current) => ({ ...current, currencyCode: nextCurrencyCode }));
+    }
+  }, [accounts, currencies, formState.accountId, formState.currencyCode]);
+
+  return (
+    <form
+      action={async (formData) => {
+        await submitAction(formData);
+      }}
+      className="grid gap-4"
+      onReset={() => setFormState(buildEditMovementFormState(movement))}
+    >
+      <input type="hidden" name="movement_id" value={movement.movementId} />
+
+      <PendingFieldset className={FORM_GRID_CLASSNAME}>
+        <FormField>
+          <span className="font-medium">{texts.dashboard.treasury.movement_id_label}</span>
+          <input type="text" value={movement.movementDisplayId} disabled className={DISABLED_CONTROL_CLASSNAME} />
+        </FormField>
+
+        <FormField>
+          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <input type="text" value={movement.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
+        </FormField>
+
+        <MovementFormFields
+          accounts={accounts}
+          categories={categories}
+          activities={activities}
+          calendarEvents={calendarEvents}
+          currencies={currencies}
+          movementTypes={movementTypes}
+          receiptFormats={receiptFormats}
+          formState={formState}
+          onChange={(patch) => setFormState((current) => ({ ...current, ...patch }))}
+        />
+
+        {movement.transferReference ? (
+          <FormField fullWidth>
+            <span className="font-medium">{texts.dashboard.treasury.detail_transfer_label}</span>
+            <input type="text" value={movement.transferReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
+          </FormField>
+        ) : null}
+
+        {movement.fxOperationReference ? (
+          <FormField fullWidth>
+            <span className="font-medium">{texts.dashboard.treasury.detail_fx_label}</span>
+            <input type="text" value={movement.fxOperationReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
+          </FormField>
+        ) : null}
+
+        <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+          <PendingSubmitButton
+            idleLabel={submitLabel}
+            pendingLabel={pendingLabel}
+            disabled={!isMovementFormValid(formState)}
+            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+          />
+          <button
+            type="reset"
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+          >
+            {texts.dashboard.treasury.reset_cta}
+          </button>
+        </div>
+      </PendingFieldset>
+    </form>
+  );
+}
+
+export function AccountTransferForm({
+  sourceAccounts,
+  targetAccounts,
   currencies,
   submitAction,
   sessionDate
 }: {
-  accounts: TreasuryAccount[];
+  sourceAccounts: TreasuryAccount[];
+  targetAccounts: TreasuryAccount[];
   currencies: TreasuryCurrencyConfig[];
   submitAction: (formData: FormData) => Promise<void>;
   sessionDate: string;
 }) {
+  const [formState, setFormState] = useState<TransferFormState>(buildEmptyTransferFormState);
+
+  const selectedSourceAccount = useMemo(
+    () => sourceAccounts.find((account) => account.id === formState.sourceAccountId),
+    [formState.sourceAccountId, sourceAccounts]
+  );
+  const selectedTargetAccount = useMemo(
+    () => targetAccounts.find((account) => account.id === formState.targetAccountId),
+    [formState.targetAccountId, targetAccounts]
+  );
+  const availableCurrencies = useMemo(() => {
+    if (!selectedSourceAccount) {
+      return [];
+    }
+
+    return currencies.filter((currency) => selectedSourceAccount.currencies.includes(currency.currencyCode));
+  }, [currencies, selectedSourceAccount]);
+  const targetAccountCurrencyError =
+    selectedTargetAccount &&
+    formState.currencyCode &&
+    !selectedTargetAccount.currencies.includes(formState.currencyCode)
+      ? texts.dashboard.treasury.transfer_target_account_currency_error
+      : null;
+
+  useEffect(() => {
+    const nextCurrencyCode = getDefaultCurrencyCode(selectedSourceAccount, currencies);
+
+    if (!selectedSourceAccount && formState.currencyCode) {
+      setFormState((current) => ({ ...current, currencyCode: "" }));
+      return;
+    }
+
+    if (
+      selectedSourceAccount &&
+      nextCurrencyCode &&
+      !selectedSourceAccount.currencies.includes(formState.currencyCode)
+    ) {
+      setFormState((current) => ({ ...current, currencyCode: nextCurrencyCode }));
+    }
+  }, [currencies, formState.currencyCode, selectedSourceAccount]);
+
+  const handleReset = () => setFormState(buildEmptyTransferFormState());
+
   return (
-    <form action={submitAction} className="grid gap-4">
+    <form
+      action={async (formData) => {
+        await submitAction(formData);
+      }}
+      className="grid gap-4"
+      onReset={handleReset}
+      onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        if (!isTransferFormValid(formState, targetAccountCurrencyError)) {
+          event.preventDefault();
+          return;
+        }
+
+        window.setTimeout(handleReset, 0);
+      }}
+    >
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
           <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
@@ -455,12 +658,17 @@ export function AccountTransferForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.transfer_source_account_label}</span>
-          <select name="source_account_id" defaultValue="" className={CONTROL_CLASSNAME}>
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label)}</span>
+          <select
+            name="source_account_id"
+            value={formState.sourceAccountId}
+            onChange={(event) => setFormState((current) => ({ ...current, sourceAccountId: event.target.value }))}
+            className={CONTROL_CLASSNAME}
+          >
             <option value="" disabled>
               {texts.dashboard.treasury.transfer_source_account_placeholder}
             </option>
-            {accounts.map((account) => (
+            {sourceAccounts.map((account) => (
               <option key={`source-${account.id}`} value={account.id}>
                 {account.name}
               </option>
@@ -469,26 +677,48 @@ export function AccountTransferForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.transfer_target_account_label}</span>
-          <select name="target_account_id" defaultValue="" className={CONTROL_CLASSNAME}>
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label)}</span>
+          <select
+            name="target_account_id"
+            value={formState.targetAccountId}
+            onChange={(event) => setFormState((current) => ({ ...current, targetAccountId: event.target.value }))}
+            aria-describedby={targetAccountCurrencyError ? "transfer-target-account-error" : undefined}
+            aria-invalid={targetAccountCurrencyError ? "true" : undefined}
+            className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
+          >
             <option value="" disabled>
               {texts.dashboard.treasury.transfer_target_account_placeholder}
             </option>
-            {accounts.map((account) => (
+            {targetAccounts.map((account) => (
               <option key={`target-${account.id}`} value={account.id}>
                 {account.name}
               </option>
             ))}
           </select>
+          {targetAccountCurrencyError ? (
+            <span
+              id="transfer-target-account-error"
+              aria-live="polite"
+              className="text-xs leading-5 text-destructive"
+            >
+              {targetAccountCurrencyError}
+            </span>
+          ) : null}
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-          <select name="currency_code" defaultValue="" className={CONTROL_CLASSNAME}>
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.currency_label)}</span>
+          <select
+            name="currency_code"
+            value={formState.currencyCode}
+            onChange={(event) => setFormState((current) => ({ ...current, currencyCode: event.target.value }))}
+            disabled={availableCurrencies.length === 0}
+            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground")}
+          >
             <option value="" disabled>
               {texts.dashboard.treasury.currency_placeholder}
             </option>
-            {currencies.map((currency) => (
+            {availableCurrencies.map((currency) => (
               <option key={`transfer-${currency.currencyCode}`} value={currency.currencyCode}>
                 {currency.currencyCode}
               </option>
@@ -497,19 +727,38 @@ export function AccountTransferForm({
         </FormField>
 
         <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-          <input type="text" name="concept" className={CONTROL_CLASSNAME} />
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.concept_label)}</span>
+          <input
+            type="text"
+            name="concept"
+            value={formState.concept}
+            onChange={(event) => setFormState((current) => ({ ...current, concept: event.target.value }))}
+            className={CONTROL_CLASSNAME}
+          />
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-          <input type="text" name="amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.amount_label)}</span>
+          <input
+            type="text"
+            name="amount"
+            inputMode="decimal"
+            value={formState.amount}
+            onChange={(event) => setFormState((current) => ({ ...current, amount: sanitizeAmountInput(event.target.value) }))}
+            onKeyDown={(event) => {
+              if (event.key === "-") {
+                event.preventDefault();
+              }
+            }}
+            className={CONTROL_CLASSNAME}
+          />
         </FormField>
 
         <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
           <PendingSubmitButton
             idleLabel={texts.dashboard.treasury.transfer_create_cta}
             pendingLabel={texts.dashboard.treasury.transfer_create_loading}
+            disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
             className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
           <button
@@ -577,7 +826,9 @@ export function TreasuryRoleMovementForm({
 
   return (
     <form
-      action={submitAction}
+      action={async (formData) => {
+        await submitAction(formData);
+      }}
       className="grid gap-4"
       onReset={handleReset}
       onSubmit={(event: FormEvent<HTMLFormElement>) => {

@@ -6,6 +6,7 @@ import {
   createFxOperationAction,
   createTreasuryMovementAction,
   createTreasuryRoleMovementAction,
+  updateSecretariaMovementAction,
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { ActiveClubSelector } from "@/components/dashboard/active-club-selector";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
@@ -49,15 +50,17 @@ export default async function DashboardPage() {
   const treasuryRoleDashboard = await getTreasuryRoleDashboardForActiveClub();
   const canOperateSecretariaRole = canOperateSecretaria(activeMembership);
   const canOperateTesoreriaRole = canOperateTesoreria(activeMembership);
-  const treasuryAccounts = canOperateSecretariaRole
-    ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
-        (account) => account.visibleForSecretaria
-      )
+  const allTreasuryAccounts = canOperateSecretariaRole || canOperateTesoreriaRole
+    ? await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)
+    : [];
+  const treasuryMovementAccounts = canOperateSecretariaRole
+    ? allTreasuryAccounts.filter((account) => account.visibleForSecretaria)
+    : [];
+  const treasuryTransferTargetAccounts = canOperateSecretariaRole
+    ? allTreasuryAccounts.filter((account) => !account.visibleForSecretaria && account.visibleForTesoreria)
     : [];
   const treasuryRoleAccounts = !canOperateSecretariaRole && canOperateTesoreriaRole
-    ? (await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)).filter(
-        (account) => account.visibleForTesoreria
-      )
+    ? allTreasuryAccounts.filter((account) => account.visibleForTesoreria)
     : [];
   const [treasuryCategories, treasuryActivities, treasuryCalendarEvents, treasuryCurrencies, movementTypes, receiptFormats] = canOperateSecretariaRole
       ? await Promise.all([
@@ -102,7 +105,9 @@ export default async function DashboardPage() {
         {canOperateSecretariaRole && treasuryCard ? (
           <TreasuryCard
             treasuryCard={treasuryCard}
-            accounts={treasuryAccounts}
+            movementAccounts={treasuryMovementAccounts}
+            transferSourceAccounts={treasuryMovementAccounts}
+            transferTargetAccounts={treasuryTransferTargetAccounts}
             categories={treasuryCategories}
             activities={treasuryActivities}
             calendarEvents={treasuryCalendarEvents}
@@ -110,6 +115,7 @@ export default async function DashboardPage() {
             movementTypes={movementTypes}
             receiptFormats={receiptFormats}
             createTreasuryMovementAction={createTreasuryMovementAction}
+            updateSecretariaMovementAction={updateSecretariaMovementAction}
             createAccountTransferAction={createAccountTransferAction}
           />
         ) : null}

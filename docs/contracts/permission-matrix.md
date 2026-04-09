@@ -101,7 +101,7 @@ Roles disponibles:
 | Ver dashboard de Tesorería | ❌     | ❌          | ✅         |
 | Ver movimientos     | ✅     | ✅          | ✅         |
 | Crear movimiento    | ⚠️    | ⚠️         | ⚠️        |
-| Editar movimiento   | ❌     | ❌          | ⚠️        |
+| Editar movimiento   | ❌     | ⚠️         | ⚠️        |
 | Cancelar movimiento | ⚠️    | ❌          | ⚠️        |
 
 ### Reglas
@@ -126,8 +126,15 @@ Roles disponibles:
 
 #### Editar movimiento
 
-* Solo Tesorería durante consolidación
-* Debe auditarse
+* Secretaria:
+  * puede editar movimientos de la jornada abierta del club activo
+  * no puede editar `movement_date`
+  * no puede editar el identificador visible del movimiento
+  * puede editar solo campos operativos del movimiento
+  * debe auditarse
+* Tesoreria:
+  * mantiene la corrección auditada durante consolidación
+  * debe auditarse
 
 #### Cancelar movimiento
 
@@ -145,6 +152,8 @@ Roles disponibles:
 ### Reglas
 
 * Requiere jornada abierta
+* La cuenta origen debe ser visible para `Secretaria`
+* La cuenta destino debe ser visible para otros roles operativos y no visible para `Secretaria`
 * Genera dos movimientos
 * Debe ser transaccional
 

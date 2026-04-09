@@ -707,6 +707,14 @@ Feature: US-10 — Apertura y cierre diario de movimientos
     When realizo apertura o cierre de jornada
     Then la operación aplica únicamente al club activo
     And no afecta la información de otros clubes
+
+  Scenario 11: Navegación con feedback hacia una pantalla operativa
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And veo una CTA que redirige a una pantalla de apertura o cierre diario
+    When selecciono la CTA
+    Then visualizo un loader bloqueante hasta que cargue la nueva página
+    And no puedo interactuar con la pantalla actual durante la redirección
 ```
 
 ---
@@ -811,7 +819,7 @@ Feature: US-11 — Registro de movimientos diarios
     Then el sistema registra el movimiento en el club activo
     And asocia el movimiento a la jornada abierta actual
     And impacta el saldo de la cuenta correspondiente
-    And veo un mensaje de confirmación
+    And veo un toast de confirmacion
 
   Scenario 14: Registro exitoso asociado a jornada y usuario responsable
     Given estoy viendo el formulario de registro de movimientos
@@ -828,6 +836,40 @@ Feature: US-11 — Registro de movimientos diarios
     When selecciono "Borrar formulario"
     Then el formulario vuelve a su estado inicial
     And conserva la fecha cargada por defecto
+
+  Scenario 16: Estado transitorio luego de crear un movimiento
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And estoy viendo el formulario de registro de movimientos
+    And completé correctamente todos los campos obligatorios visibles
+    When selecciono "Crear"
+    Then el modal se cierra inmediatamente
+    And la pantalla queda bloqueada con un loader visible
+    And no puedo interactuar con el dashboard mientras la creación sigue pendiente
+
+  Scenario 17: Resolución exitosa luego del loader
+    Given tengo rol "Secretaria" en el club activo
+    And seleccioné "Crear" en un formulario válido de registro de movimientos
+    And la pantalla está bloqueada con un loader
+    When finaliza la creación del movimiento
+    Then deja de mostrarse el loader
+    And veo un toast de confirmacion
+
+  Scenario 18: Edición de movimientos durante jornada abierta
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And existen movimientos visibles cargados en esa jornada
+    When visualizo el dashboard
+    Then todos los movimientos de la jornada abierta son editables
+
+  Scenario 19: Campos editables de un movimiento en jornada abierta
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And selecciono editar un movimiento visible de la jornada
+    When visualizo el formulario de edición
+    Then puedo editar todos los campos operativos del movimiento
+    And no puedo editar el ID visible del movimiento
+    And no puedo editar la fecha del movimiento
 ```
 
 ---
@@ -940,6 +982,22 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     When ingreso al dashboard
     Then veo la card con un estado vacío
     And veo un mensaje indicando que no hay cuentas disponibles
+
+  Scenario 14: Navegación con feedback desde la card operativa
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And veo una CTA de navegación en la card operativa
+    When selecciono la CTA
+    Then visualizo un loader bloqueante hasta que cargue la nueva página
+    And no puedo interactuar con la pantalla actual durante la redirección
+
+  Scenario 15: CTA de edición sobre movimientos visibles
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta
+    And veo movimientos en la card operativa
+    When visualizo la card de movimientos
+    Then cada movimiento expone una acción para editarlo
 ```
 
 ---
@@ -2096,12 +2154,24 @@ Feature: US-25 — Registro de transferencias entre cuentas
     And existe una jornada abierta para el día actual
     When abro el formulario de transferencia entre cuentas
     Then veo el campo "Fecha" completo por defecto y no editable
-    And veo el campo "Cuenta origen"
-    And veo el campo "Cuenta destino"
-    And veo el campo "Moneda"
-    And veo el campo "Importe"
-    And veo el campo "Concepto"
+    And veo el campo obligatorio "Cuenta origen"
+    And veo el campo obligatorio "Cuenta destino"
+    And en "Cuenta origen" solo se listan cuentas visibles para mi rol
+    And en "Cuenta destino" solo se listan cuentas visibles para otros roles y no visibles para mi rol
+    And veo el campo obligatorio "Moneda"
+    And veo el campo obligatorio "Importe"
+    And veo el campo obligatorio "Concepto"
     And veo la acción "Crear"
+
+  Scenario 04A: Botón crear deshabilitado hasta completar obligatorios
+    Given estoy viendo el formulario de transferencia
+    When todavía no completé todos los campos obligatorios
+    Then la acción "Crear" permanece deshabilitada
+
+  Scenario 04B: Moneda por defecto según la cuenta origen
+    Given estoy viendo el formulario de transferencia
+    When selecciono una cuenta origen con moneda configurada
+    Then el campo "Moneda" se completa automáticamente con la moneda por defecto de esa cuenta
 
   Scenario 05: Cuenta origen obligatoria
     Given estoy viendo el formulario de transferencia
@@ -2142,12 +2212,29 @@ Feature: US-25 — Registro de transferencias entre cuentas
     When abro el formulario de transferencia
     Then solo puedo seleccionar cuentas del club activo
 
+  Scenario 10A: Cuenta destino excluye cuentas visibles para mi rol
+    Given estoy viendo el formulario de transferencia
+    And existe una cuenta visible para "Secretaria"
+    When abro el selector de cuenta destino
+    Then esa cuenta no se lista como opción disponible
+
+  Scenario 10B: Cuenta destino incluye cuentas visibles para otros roles
+    Given estoy viendo el formulario de transferencia
+    And existe una cuenta visible para "Tesoreria" y no visible para "Secretaria"
+    When abro el selector de cuenta destino
+    Then esa cuenta se lista como opción disponible
+
   Scenario 11: La moneda debe ser compatible con ambas cuentas
     Given estoy viendo el formulario de transferencia
     When selecciono una moneda que no es compatible con la cuenta origen o la cuenta destino
-    And intento guardar
-    Then veo un mensaje indicando que la moneda no es válida para las cuentas seleccionadas
+    Then veo un mensaje inline en "Cuenta destino" indicando que la moneda no es válida para la cuenta destino
+    And la acción "Crear" permanece deshabilitada
     And la transferencia no se registra
+
+  Scenario 11A: El importe replica el comportamiento del formulario de movimientos
+    Given estoy viendo el formulario de transferencia
+    When completo el campo "Importe"
+    Then el campo aplica el mismo saneamiento y restricciones de ingreso que el formulario "Registrar movimiento"
 
   Scenario 12: Registro exitoso de transferencia
     Given estoy viendo el formulario de transferencia
@@ -2158,7 +2245,7 @@ Feature: US-25 — Registro de transferencias entre cuentas
     And genera automáticamente un movimiento de ingreso en la cuenta destino
     And ambos movimientos quedan asociados a la misma transferencia
     And ambos movimientos quedan asociados a la jornada abierta actual
-    And veo un mensaje de confirmación
+    And veo un toast de confirmación
 
   Scenario 13: Ambos movimientos comparten trazabilidad común
     Given registré exitosamente una transferencia entre cuentas

@@ -719,6 +719,7 @@ with check (
 drop policy if exists "Members can view movements" on treasury_movements;
 drop policy if exists "Secretaria can insert movements in current club" on treasury_movements;
 drop policy if exists "Tesoreria can update movements in current club" on treasury_movements;
+drop policy if exists "Secretaria and tesoreria can update movements in current club" on treasury_movements;
 drop policy if exists "Admin full access movements in current club" on treasury_movements;
 
 create policy "Members can view movements"
@@ -739,17 +740,23 @@ with check (
   and (select current_user_has_role('secretaria'))
 );
 
-create policy "Tesoreria can update movements in current club"
+create policy "Secretaria and tesoreria can update movements in current club"
 on treasury_movements
 for update
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (
+    (select current_user_has_role('secretaria'))
+    or (select current_user_has_role('tesoreria'))
+  )
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (
+    (select current_user_has_role('secretaria'))
+    or (select current_user_has_role('tesoreria'))
+  )
 );
 
 create policy "Admin full access movements in current club"

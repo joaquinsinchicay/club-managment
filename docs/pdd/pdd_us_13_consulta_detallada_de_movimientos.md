@@ -37,7 +37,6 @@ Desde la card del dashboard de Secretaría o desde la card de Tesorería en `/da
 - Estado vacío cuando la cuenta no tiene movimientos.
 
 ### No incluye
-- Edición de movimientos existentes.
 - Filtros por fecha histórica.
 - Vista de cuentas de otros roles o clubes.
 
@@ -75,6 +74,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 - Los movimientos se limitan a la jornada actual.
 - El orden visible debe ser cronológico.
 - Si el acceso es desde Secretaría y hay jornada abierta, la vista puede ofrecer acceso rápido a registrar un nuevo movimiento.
+- El flujo principal de edición de Secretaría vive en el dashboard, no en esta vista de detalle.
 - Si el acceso es desde Tesorería, la vista no expone CTAs de operatoria de Secretaría.
 
 ---

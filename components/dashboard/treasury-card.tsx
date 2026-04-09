@@ -1,12 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { AccountTransferForm, SecretariaMovementForm } from "@/components/dashboard/treasury-operation-forms";
+import {
+  AccountTransferForm,
+  SecretariaMovementEditForm,
+  SecretariaMovementForm
+} from "@/components/dashboard/treasury-operation-forms";
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
-import { formatLocalizedAmount } from "@/lib/amounts";
+import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
+import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
   ClubActivity,
@@ -22,7 +26,9 @@ import { texts } from "@/lib/texts";
 
 type TreasuryCardProps = {
   treasuryCard: DashboardTreasuryCardData;
-  accounts: TreasuryAccount[];
+  movementAccounts: TreasuryAccount[];
+  transferSourceAccounts: TreasuryAccount[];
+  transferTargetAccounts: TreasuryAccount[];
   categories: TreasuryCategory[];
   activities: ClubActivity[];
   calendarEvents: ClubCalendarEvent[];
@@ -30,6 +36,7 @@ type TreasuryCardProps = {
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
   createTreasuryMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  updateSecretariaMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createAccountTransferAction: (formData: FormData) => Promise<void>;
 };
 
@@ -60,7 +67,9 @@ function formatMovementDateTime(value: string) {
 
 export function TreasuryCard({
   treasuryCard,
-  accounts,
+  movementAccounts,
+  transferSourceAccounts,
+  transferTargetAccounts,
   categories,
   activities,
   calendarEvents,
@@ -68,6 +77,7 @@ export function TreasuryCard({
   movementTypes,
   receiptFormats,
   createTreasuryMovementAction,
+  updateSecretariaMovementAction,
   createAccountTransferAction
 }: TreasuryCardProps) {
   const pathname = usePathname();
@@ -77,9 +87,23 @@ export function TreasuryCard({
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
   const hasMovements = treasuryCard.movements.length > 0;
-  const [activeModal, setActiveModal] = useState<"movement" | "transfer" | null>(null);
+  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "transfer" | null>(null);
+  const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [pendingMovementDisplayId, setPendingMovementDisplayId] = useState<string | null>(null);
+  const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
+  const [pendingMovementUpdate, setPendingMovementUpdate] = useState<{
+    movementId: string;
+    accountId: string;
+    categoryId: string;
+    movementType: TreasuryMovementType;
+    activityId: string | null;
+    receiptNumber: string | null;
+    calendarEventId: string | null;
+    concept: string;
+    currencyCode: string;
+    amount: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!isMovementSubmissionPending) {
@@ -95,8 +119,33 @@ export function TreasuryCard({
     }
   }, [isMovementSubmissionPending, pendingMovementDisplayId, treasuryCard.movements]);
 
+  useEffect(() => {
+    if (!isMovementUpdatePending || !pendingMovementUpdate) {
+      return;
+    }
+
+    const matchingMovement = treasuryCard.movements.find((movement) => movement.movementId === pendingMovementUpdate.movementId);
+
+    if (
+      matchingMovement &&
+      matchingMovement.accountId === pendingMovementUpdate.accountId &&
+      matchingMovement.categoryId === pendingMovementUpdate.categoryId &&
+      matchingMovement.movementType === pendingMovementUpdate.movementType &&
+      matchingMovement.activityId === pendingMovementUpdate.activityId &&
+      matchingMovement.receiptNumber === pendingMovementUpdate.receiptNumber &&
+      matchingMovement.calendarEventId === pendingMovementUpdate.calendarEventId &&
+      matchingMovement.concept === pendingMovementUpdate.concept &&
+      matchingMovement.currencyCode === pendingMovementUpdate.currencyCode &&
+      matchingMovement.amount === pendingMovementUpdate.amount
+    ) {
+      setIsMovementUpdatePending(false);
+      setPendingMovementUpdate(null);
+    }
+  }, [isMovementUpdatePending, pendingMovementUpdate, treasuryCard.movements]);
+
   async function handleCreateTreasuryMovement(formData: FormData) {
     setIsMovementSubmissionPending(true);
+    setActiveModal(null);
 
     try {
       const result = await createTreasuryMovementAction(formData);
@@ -112,7 +161,6 @@ export function TreasuryCard({
 
       if (result.ok) {
         setPendingMovementDisplayId(result.movementDisplayId ?? null);
-        setActiveModal(null);
       } else {
         setPendingMovementDisplayId(null);
         setIsMovementSubmissionPending(false);
@@ -127,16 +175,69 @@ export function TreasuryCard({
     }
   }
 
+  async function handleUpdateSecretariaMovement(formData: FormData) {
+    const movementId = String(formData.get("movement_id") ?? "");
+    const movementType = String(formData.get("movement_type") ?? "");
+    const amount = String(formData.get("amount") ?? "");
+    const parsedAmount = parseLocalizedAmount(amount);
+
+    setIsMovementUpdatePending(true);
+    setActiveModal(null);
+    setPendingMovementUpdate({
+      movementId,
+      accountId: String(formData.get("account_id") ?? ""),
+      categoryId: String(formData.get("category_id") ?? ""),
+      movementType: movementType === "egreso" ? "egreso" : "ingreso",
+      activityId: String(formData.get("activity_id") ?? "").trim() || null,
+      receiptNumber: String(formData.get("receipt_number") ?? "").trim() || null,
+      calendarEventId: String(formData.get("calendar_event_id") ?? "").trim() || null,
+      concept: String(formData.get("concept") ?? "").trim(),
+      currencyCode: String(formData.get("currency_code") ?? ""),
+      amount: parsedAmount ?? 0
+    });
+
+    try {
+      const result = await updateSecretariaMovementAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+
+      if (!result.ok) {
+        setPendingMovementUpdate(null);
+        setIsMovementUpdatePending(false);
+      }
+
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      router.refresh();
+    } catch (error) {
+      setPendingMovementUpdate(null);
+      setIsMovementUpdatePending(false);
+      throw error;
+    }
+  }
+
+  const pendingOverlayLabel = isMovementSubmissionPending
+    ? texts.dashboard.treasury.create_loading
+    : isMovementUpdatePending
+      ? texts.dashboard.treasury.update_loading
+      : null;
+
   return (
     <>
-      {isMovementSubmissionPending ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 px-4">
+      {pendingOverlayLabel ? (
+        <div
+          aria-busy="true"
+          aria-live="polite"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 px-4"
+          role="status"
+        >
           <div className="flex w-full max-w-sm items-center justify-center gap-3 rounded-[28px] border border-border bg-card px-6 py-5 text-sm font-semibold text-foreground shadow-soft">
             <span
               aria-hidden="true"
               className="inline-block size-5 animate-spin rounded-full border-2 border-current border-r-transparent"
             />
-            <span>{texts.dashboard.treasury.create_loading}</span>
+            <span>{pendingOverlayLabel}</span>
           </div>
         </div>
       ) : null}
@@ -169,12 +270,12 @@ export function TreasuryCard({
                 <article key={account.accountId} className="rounded-[20px] border border-border bg-secondary/25 px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-[15px] font-semibold text-foreground">{account.name}</p>
-                    <Link
+                    <NavigationLinkWithLoader
                       href={`/dashboard/accounts/${account.accountId}`}
                       className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
                     >
                       {texts.dashboard.treasury.detail_cta}
-                    </Link>
+                    </NavigationLinkWithLoader>
                   </div>
 
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -211,21 +312,21 @@ export function TreasuryCard({
 
         <div className="mt-4 grid gap-2.5 md:grid-cols-2">
           {canOpenSession ? (
-            <Link
+            <NavigationLinkWithLoader
               href="/dashboard/session/open"
               className="inline-flex min-h-11 w-full items-center justify-center rounded-[18px] bg-foreground px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
             >
               {texts.dashboard.treasury.open_session_flow_cta}
-            </Link>
+            </NavigationLinkWithLoader>
           ) : null}
 
           {canCloseSession ? (
-            <Link
+            <NavigationLinkWithLoader
               href="/dashboard/session/close"
               className="inline-flex min-h-11 w-full items-center justify-center rounded-[18px] border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary"
             >
               {texts.dashboard.treasury.close_session_flow_cta}
-            </Link>
+            </NavigationLinkWithLoader>
           ) : null}
 
           {canCreateMovement ? (
@@ -288,6 +389,20 @@ export function TreasuryCard({
                     {texts.dashboard.treasury.movements_created_by_label}: {movement.createdByUserName}
                   </span>
                 </div>
+
+                {movement.canEdit ? (
+                  <div className="mt-3 flex justify-end">
+                    <ModalTriggerButton
+                      onClick={() => {
+                        setSelectedMovement(movement);
+                        setActiveModal("edit_movement");
+                      }}
+                      className="min-h-10 rounded-[18px] border border-border bg-card px-4 py-2 text-foreground hover:bg-secondary"
+                    >
+                      {texts.dashboard.treasury.edit_movement_cta}
+                    </ModalTriggerButton>
+                  </div>
+                ) : null}
               </article>
             ))}
           </div>
@@ -299,10 +414,10 @@ export function TreasuryCard({
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury.movement_form_title}
         description={texts.dashboard.treasury.movement_form_description}
-        closeDisabled={isMovementSubmissionPending}
+        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending}
       >
         <SecretariaMovementForm
-          accounts={accounts}
+          accounts={movementAccounts}
           categories={categories}
           activities={activities}
           calendarEvents={calendarEvents}
@@ -317,13 +432,41 @@ export function TreasuryCard({
       </Modal>
 
       <Modal
+        open={activeModal === "edit_movement" && selectedMovement !== null}
+        onClose={() => {
+          setActiveModal(null);
+          setSelectedMovement(null);
+        }}
+        title={texts.dashboard.treasury.edit_form_title}
+        description={texts.dashboard.treasury.edit_form_description}
+        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending}
+      >
+        {selectedMovement ? (
+          <SecretariaMovementEditForm
+            accounts={movementAccounts}
+            categories={categories}
+            activities={activities}
+            calendarEvents={calendarEvents}
+            currencies={currencies}
+            movementTypes={movementTypes}
+            receiptFormats={receiptFormats}
+            submitAction={handleUpdateSecretariaMovement}
+            submitLabel={texts.dashboard.treasury.update_cta}
+            pendingLabel={texts.dashboard.treasury.update_loading}
+            movement={selectedMovement}
+          />
+        ) : null}
+      </Modal>
+
+      <Modal
         open={activeModal === "transfer"}
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury.transfer_form_title}
         description={texts.dashboard.treasury.transfer_form_description}
       >
         <AccountTransferForm
-          accounts={accounts}
+          sourceAccounts={transferSourceAccounts}
+          targetAccounts={transferTargetAccounts}
           currencies={currencies}
           submitAction={createAccountTransferAction}
           sessionDate={treasuryCard.sessionDate}
