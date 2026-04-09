@@ -53,6 +53,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - El club activo está resuelto en backend.
 - Existen cuentas visibles para Secretaría en el club activo.
 - El dashboard resuelve el estado de jornada del día leyendo `daily_cash_sessions` del club activo.
+- Las RPCs remotas de jornada diaria están desplegadas y disponibles en la base activa.
 - La lectura y mutación de jornada diaria se ejecutan con `app.current_club_id` seteado server-side antes de aplicar RLS.
 
 ---
@@ -159,6 +160,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - `daily_cash_sessions`: READ para obtener la jornada del día; INSERT para apertura; UPDATE para cierre.
 - `treasury_accounts`: READ para alimentar la card operativa del club activo.
 - `treasury_movements`: READ para cálculo simple de saldos visibles en dashboard.
+- La lectura y mutación se apoyan en RPCs club-scoped de jornada diaria desplegadas en la base remota activa.
 - Las operaciones sobre `daily_cash_sessions` y sus registros asociados deben correr con contexto `app.current_club_id` del club activo.
 
 Do not reference current code files.
@@ -189,6 +191,7 @@ Do not reference current code files.
 | Permitir múltiples jornadas el mismo día | Media | Alta | Validar existencia previa antes de abrir. |
 | Cerrar jornada sin haber abierto una | Media | Media | Validar sesión `open` previa antes de cerrar. |
 | Mostrar estado ambiguo en dashboard | Media | Media | Exponer un único estado efectivo del día y accionar acorde. |
+| Drift entre migraciones locales y base remota | Media | Alta | Verificar despliegue de RPCs antes de asumir `Jornada pendiente`; tratar ausencia de función como error de infraestructura. |
 
 ## 17. Comportamiento esperado en la tab Secretaría
 

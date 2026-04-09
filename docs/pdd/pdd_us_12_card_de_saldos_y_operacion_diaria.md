@@ -165,6 +165,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - `daily_cash_sessions`: READ para estado de jornada.
 - `treasury_accounts`: READ para cuentas visibles en la card.
 - `treasury_movements`: READ para cálculo de saldos del día.
+- El estado de jornada depende de RPCs club-scoped de jornada diaria disponibles en la base remota activa.
 - La resolución del estado diario debe ejecutarse con `app.current_club_id` seteado server-side para respetar RLS del club activo.
 
 Do not reference current code files.
@@ -200,4 +201,4 @@ Do not reference current code files.
 - `not_started`: badge `Jornada pendiente` y solo CTA `Apertura de jornada`
 - `open`: badge `Jornada abierta` y CTAs `Cierre de jornada`, `Cargar movimiento` y `Cargar transferencia`
 - `closed`: badge `Jornada cerrada`, sin CTAs y con mensaje de jornada cerrada
-- `unresolved`: sin badge de jornada ni CTAs operativas, con copy seguro que no infiera ausencia de jornada
+- `unresolved`: sin badge de jornada ni CTAs operativas, con copy seguro que no infiera ausencia de jornada; este estado aplica cuando la infraestructura de lectura falla, no cuando no existen filas

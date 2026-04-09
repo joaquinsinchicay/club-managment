@@ -673,7 +673,7 @@ Obtener card resumida de saldos y estado operativo del día.
 Sí
 
 **Allowed roles**
-`tesoreria`
+`secretaria`
 
 **Input**
 
@@ -717,12 +717,16 @@ Sí
 }
 ```
 
+This contract depends on the club-scoped daily cash session RPCs being deployed in the active database.
+
 `session_status` can be:
 
 * `not_started` when no daily session exists for the active club and current date
 * `open` when the current daily session is open
 * `closed` when the current daily session is closed
 * `unresolved` when the dashboard could not resolve `daily_cash_sessions` reliably; in that case the UI must not infer `Jornada pendiente` or expose operational CTAs
+
+Absence of a daily session must resolve as "no rows" and therefore `not_started`, not as an infrastructure error.
 
 ---
 
