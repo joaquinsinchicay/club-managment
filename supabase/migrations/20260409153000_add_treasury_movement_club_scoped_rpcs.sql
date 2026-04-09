@@ -52,8 +52,8 @@ begin
     tm.consolidation_batch_id,
     tm.movement_date,
     tm.created_by_user_id,
-    tm.status,
-    tm.created_at
+    tm.status::text,
+    tm.created_at::timestamptz
   from public.treasury_movements tm
   where tm.club_id = p_club_id
     and tm.account_id = p_account_id
@@ -115,8 +115,8 @@ begin
     tm.consolidation_batch_id,
     tm.movement_date,
     tm.created_by_user_id,
-    tm.status,
-    tm.created_at
+    tm.status::text,
+    tm.created_at::timestamptz
   from public.treasury_movements tm
   where tm.club_id = p_club_id
     and tm.account_id = p_account_id
@@ -177,8 +177,8 @@ begin
     tm.consolidation_batch_id,
     tm.movement_date,
     tm.created_by_user_id,
-    tm.status,
-    tm.created_at
+    tm.status::text,
+    tm.created_at::timestamptz
   from public.treasury_movements tm
   where tm.club_id = p_club_id
     and tm.movement_date = p_movement_date
@@ -239,8 +239,8 @@ begin
     tm.consolidation_batch_id,
     tm.movement_date,
     tm.created_by_user_id,
-    tm.status,
-    tm.created_at
+    tm.status::text,
+    tm.created_at::timestamptz
   from public.treasury_movements tm
   where tm.club_id = p_club_id
     and tm.id = p_movement_id
@@ -357,8 +357,8 @@ begin
     treasury_movements.consolidation_batch_id,
     treasury_movements.movement_date,
     treasury_movements.created_by_user_id,
-    treasury_movements.status,
-    treasury_movements.created_at;
+    treasury_movements.status::text,
+    treasury_movements.created_at::timestamptz;
 end;
 $$;
 
@@ -441,8 +441,8 @@ begin
     tm.consolidation_batch_id,
     tm.movement_date,
     tm.created_by_user_id,
-    tm.status,
-    tm.created_at;
+    tm.status::text,
+    tm.created_at::timestamptz;
 end;
 $$;
 
