@@ -41,7 +41,6 @@ export default async function TreasuryAccountDetailPage({
       detail={accountDetailData.detail}
       accounts={accountDetailData.accounts}
       currentAccountId={params.accountId}
-      canCreateMovement={false}
       accountHrefBase="/dashboard/treasury/accounts"
       secondaryActionHref="/dashboard"
       secondaryActionLabel={texts.dashboard.treasury_role.back_to_dashboard_cta}

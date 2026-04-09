@@ -1101,35 +1101,26 @@ Feature: US-13 — Consulta detallada de movimientos y saldos por cuenta
     When accedo al detalle de una cuenta específica
     Then veo únicamente los movimientos correspondientes a esa cuenta
 
-  Scenario 10: Acceso a registrar movimiento desde el detalle de cuenta
+  Scenario 10: No se muestra acción de registrar movimiento en el detalle de cuenta
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
-    And existe una jornada abierta para el día actual
-    And estoy visualizando el detalle de una cuenta
-    When selecciono "Registrar movimiento"
-    Then accedo al formulario de registro de movimientos
-    And la cuenta seleccionada puede quedar precargada
-
-  Scenario 11: No se muestra acción de registrar movimiento con jornada cerrada
-    Given estoy autenticado
-    And tengo rol "Secretaria" en el club activo
-    And no existe una jornada abierta para el día actual
     When accedo al detalle de una cuenta
     Then no veo la acción "Registrar movimiento"
 
-  Scenario 12: Cambio entre cuentas
+  Scenario 11: Cambio entre cuentas
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
     And existen múltiples cuentas configuradas
     When selecciono otra cuenta para consultar
     Then veo el saldo y los movimientos correspondientes a la nueva cuenta seleccionada
 
-  Scenario 13A: CTA para volver al dashboard
+  Scenario 12: CTA para volver al dashboard visible en el encabezado
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
     And accedí al detalle de una cuenta
     When visualizo la vista
     Then veo una acción para volver al dashboard
+    And la acción se encuentra antes del historial de movimientos
 
   Scenario 13: Estado sin cuentas configuradas
     Given estoy autenticado

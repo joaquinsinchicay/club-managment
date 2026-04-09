@@ -52,7 +52,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 - El club activo está resuelto en backend.
 - Existen cuentas visibles para Secretaría en el club activo.
-- El dashboard puede resolver el estado de jornada del día.
+- El dashboard resuelve el estado de jornada del día leyendo `daily_cash_sessions` del club activo.
 
 ---
 
@@ -72,6 +72,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Solo `secretaria` puede abrir o cerrar jornada diaria.
 - Solo puede existir una jornada por día y por club.
 - La operación aplica únicamente al club activo.
+- La resolución de jornada del día debe leer la persistencia real del club activo, no estado efímero local.
 - La carga de movimientos de Secretaría requiere jornada `open`.
 - Una jornada `closed` no debe volver a habilitar la carga del mismo día en esta historia.
 

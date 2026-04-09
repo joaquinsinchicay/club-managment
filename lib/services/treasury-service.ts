@@ -2120,7 +2120,6 @@ export async function getTreasuryAccountDetailForActiveClub(
 ): Promise<{
   accounts: Awaited<ReturnType<typeof accessRepository.listTreasuryAccountsForClub>>;
   detail: TreasuryAccountDetail | null;
-  canCreateMovement: boolean;
 } | null> {
   const context = role === "secretaria" ? await getSecretariaSession() : await getTesoreriaSession();
 
@@ -2143,8 +2142,7 @@ export async function getTreasuryAccountDetailForActiveClub(
   if (!selectedAccount) {
     return {
       accounts: [],
-      detail: null,
-      canCreateMovement: false
+      detail: null
     };
   }
 
@@ -2192,7 +2190,6 @@ export async function getTreasuryAccountDetailForActiveClub(
 
   return {
     accounts: visibleAccounts,
-    detail,
-    canCreateMovement: role === "secretaria" && session?.status === "open"
+    detail
   };
 }

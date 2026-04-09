@@ -39,7 +39,6 @@ export default async function AccountDetailPage({ params }: AccountDetailPagePro
       detail={accountDetailData.detail}
       accounts={accountDetailData.accounts}
       currentAccountId={params.accountId}
-      canCreateMovement={accountDetailData.canCreateMovement}
       accountHrefBase="/dashboard/accounts"
       secondaryActionHref="/dashboard"
       secondaryActionLabel={texts.dashboard.treasury.back_to_dashboard_cta}

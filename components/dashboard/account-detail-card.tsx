@@ -12,7 +12,6 @@ type AccountDetailCardProps = {
   detail: TreasuryAccountDetail | null;
   accounts: TreasuryAccount[];
   currentAccountId?: string;
-  canCreateMovement: boolean;
   accountHrefBase: string;
   secondaryActionHref?: string;
   secondaryActionLabel?: string;
@@ -48,7 +47,6 @@ export function AccountDetailCard({
   detail,
   accounts,
   currentAccountId,
-  canCreateMovement,
   accountHrefBase,
   secondaryActionHref,
   secondaryActionLabel,
@@ -82,6 +80,17 @@ export function AccountDetailCard({
           className="max-w-4xl"
         >
           <div className="space-y-5">
+            {secondaryActionHref && secondaryActionLabel ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <Link
+                  href={secondaryActionHref}
+                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary sm:shrink-0"
+                >
+                  {secondaryActionLabel}
+                </Link>
+              </div>
+            ) : null}
+
             {accounts.length > 0 ? (
               <div className="grid gap-2">
                 <p className="text-sm font-medium text-foreground">
@@ -144,26 +153,6 @@ export function AccountDetailCard({
                       </p>
                     </div>
                   ))}
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                  {canCreateMovement ? (
-                    <Link
-                      href="/dashboard"
-                      className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                    >
-                      {texts.dashboard.treasury.detail_create_movement_cta}
-                    </Link>
-                  ) : null}
-
-                  {secondaryActionHref && secondaryActionLabel ? (
-                    <Link
-                      href={secondaryActionHref}
-                      className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                    >
-                      {secondaryActionLabel}
-                    </Link>
-                  ) : null}
                 </div>
 
                 {detail.movements.length === 0 ? (

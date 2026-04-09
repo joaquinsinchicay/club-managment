@@ -135,7 +135,6 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 | title | `dashboard.treasury.detail_title` | Título de la vista de detalle. |
 | body | `dashboard.treasury.detail_description` | Descripción de la vista. |
 | label | `dashboard.treasury.detail_account_label` | Cuenta seleccionada. |
-| action | `dashboard.treasury.detail_create_movement_cta` | Atajo para registrar movimiento. |
 | action | `dashboard.treasury.account_switch_label` | Selector o grupo de cambio de cuenta. |
 | action | `dashboard.treasury.back_to_dashboard_cta` | CTA de regreso al dashboard. |
 | label | `dashboard.treasury.detail_empty_movements` | Estado vacío sin movimientos. |

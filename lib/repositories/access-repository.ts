@@ -1192,6 +1192,28 @@ function mapMovementTypeConfigRow(row: {
   };
 }
 
+function mapDailyCashSessionRow(row: {
+  id: string;
+  club_id: string;
+  session_date: string;
+  status: DailyCashSession["status"] | null;
+  opened_at: string | null;
+  closed_at: string | null;
+  opened_by_user_id: string;
+  closed_by_user_id: string | null;
+}): DailyCashSession {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    sessionDate: row.session_date,
+    status: row.status ?? "open",
+    openedAt: row.opened_at ?? now(),
+    closedAt: row.closed_at ?? null,
+    openedByUserId: row.opened_by_user_id,
+    closedByUserId: row.closed_by_user_id ?? null
+  };
+}
+
 function alignAccountCurrenciesWithClubSelection(
   currentCurrencies: string[],
   allowedCurrencies: TreasuryCurrencyCode[],
@@ -1669,6 +1691,159 @@ async function listRealTreasuryCurrenciesForClub(clubId: string, client?: Access
   >("get_treasury_currencies_for_current_club", clubId, client);
 
   return rows.map(mapTreasuryCurrencyRow);
+}
+
+async function findRealDailyCashSessionByDate(clubId: string, sessionDate: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("daily_cash_sessions")
+    .select("id,club_id,session_date,status,opened_at,closed_at,opened_by_user_id,closed_by_user_id")
+    .eq("club_id", clubId)
+    .eq("session_date", sessionDate)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapDailyCashSessionRow(data);
+}
+
+async function createRealDailyCashSession(
+  clubId: string,
+  sessionDate: string,
+  openedByUserId: string,
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("daily_cash_sessions")
+    .insert({
+      club_id: clubId,
+      session_date: sessionDate,
+      status: "open",
+      opened_by_user_id: openedByUserId
+    })
+    .select("id,club_id,session_date,status,opened_at,closed_at,opened_by_user_id,closed_by_user_id")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapDailyCashSessionRow(data);
+}
+
+async function closeRealDailyCashSession(sessionId: string, closedByUserId: string, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("daily_cash_sessions")
+    .update({
+      status: "closed",
+      closed_at: now(),
+      closed_by_user_id: closedByUserId
+    })
+    .eq("id", sessionId)
+    .select("id,club_id,session_date,status,opened_at,closed_at,opened_by_user_id,closed_by_user_id")
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapDailyCashSessionRow(data);
+}
+
+async function recordRealDailyCashSessionBalances(
+  input: Array<{
+    sessionId: string;
+    accountId: string;
+    currencyCode: string;
+    balanceMoment: "opening" | "closing";
+    expectedBalance: number;
+    declaredBalance: number;
+    differenceAmount: number;
+  }>,
+  client?: AccessRepositoryClient
+) {
+  if (input.length === 0) {
+    return;
+  }
+
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return;
+  }
+
+  const { error } = await supabase.from("daily_cash_session_balances").insert(
+    input.map((entry) => ({
+      session_id: entry.sessionId,
+      account_id: entry.accountId,
+      currency_code: entry.currencyCode,
+      balance_moment: entry.balanceMoment,
+      expected_balance: entry.expectedBalance,
+      declared_balance: entry.declaredBalance,
+      difference_amount: entry.differenceAmount
+    }))
+  );
+
+  if (error) {
+    console.error("[daily-cash-session-balances-write-failure]", {
+      operation: "record_daily_cash_session_balances",
+      sessionIds: [...new Set(input.map((entry) => entry.sessionId))],
+      error
+    });
+  }
+}
+
+async function recordRealBalanceAdjustment(
+  input: {
+    sessionId: string;
+    movementId: string;
+    accountId: string;
+    differenceAmount: number;
+    adjustmentMoment: "opening" | "closing";
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return;
+  }
+
+  const { error } = await supabase.from("balance_adjustments").insert({
+    session_id: input.sessionId,
+    movement_id: input.movementId,
+    account_id: input.accountId,
+    difference_amount: input.differenceAmount,
+    adjustment_moment: input.adjustmentMoment
+  });
+
+  if (error) {
+    console.error("[balance-adjustment-write-failure]", {
+      operation: "record_balance_adjustment",
+      sessionId: input.sessionId,
+      movementId: input.movementId,
+      error
+    });
+  }
 }
 
 async function listRealMovementTypeConfigForClub(clubId: string, client?: AccessRepositoryClient) {
@@ -2992,6 +3167,10 @@ export const accessRepository: AccessRepository = {
     );
   },
   async getDailyCashSessionByDate(clubId, sessionDate) {
+    if (shouldUseSupabaseDatabase()) {
+      return findRealDailyCashSessionByDate(clubId, sessionDate);
+    }
+
     return (
       getStore().dailyCashSessions.find(
         (session) => session.clubId === clubId && session.sessionDate === sessionDate
@@ -2999,6 +3178,10 @@ export const accessRepository: AccessRepository = {
     );
   },
   async createDailyCashSession(clubId, sessionDate, openedByUserId) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealDailyCashSession(clubId, sessionDate, openedByUserId);
+    }
+
     const session: DailyCashSession = {
       id: `session-${Date.now()}`,
       clubId,
@@ -3014,6 +3197,10 @@ export const accessRepository: AccessRepository = {
     return session;
   },
   async closeDailyCashSession(sessionId, closedByUserId) {
+    if (shouldUseSupabaseDatabase()) {
+      return closeRealDailyCashSession(sessionId, closedByUserId);
+    }
+
     const store = getStore();
     const session = store.dailyCashSessions.find((entry) => entry.id === sessionId);
 
@@ -3209,6 +3396,10 @@ export const accessRepository: AccessRepository = {
     ).length;
   },
   async recordDailyCashSessionBalances(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return recordRealDailyCashSessionBalances(input);
+    }
+
     const store = getStore();
 
     input.forEach((entry) => {
@@ -3225,6 +3416,10 @@ export const accessRepository: AccessRepository = {
     });
   },
   async recordBalanceAdjustment(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return recordRealBalanceAdjustment(input);
+    }
+
     getStore().balanceAdjustments.push({
       id: `balance-adjustment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       sessionId: input.sessionId,

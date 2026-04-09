@@ -17,6 +17,7 @@ Su propósito es servir como referencia para implementar acciones del backend, s
 6. El signo operativo depende de `movement_type`.
 7. Todas las respuestas deben ser determinísticas y explícitas.
 8. Toda operación sensible debe devolver errores de permisos, validación o conflicto de forma clara.
+9. Las operaciones de jornada diaria deben resolver el estado vigente desde `daily_cash_sessions` del club activo.
 
 ---
 

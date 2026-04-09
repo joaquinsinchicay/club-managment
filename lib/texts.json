@@ -118,7 +118,6 @@
       "detail_title": "Detalle de cuenta",
       "detail_description": "Consulta saldos e historial de movimientos de la cuenta seleccionada.",
       "detail_account_label": "Cuenta seleccionada",
-      "detail_create_movement_cta": "Registrar movimiento",
       "detail_activity_label": "Actividad:",
       "detail_calendar_label": "Calendario:",
       "detail_transfer_label": "Transferencia:",
