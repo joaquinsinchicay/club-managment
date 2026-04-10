@@ -70,6 +70,13 @@ export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
 export type TreasuryConfigStatus = "active" | "inactive";
 export type TreasuryCurrencyCode = "ARS" | "USD";
 export type TreasuryMovementType = "ingreso" | "egreso";
+export type TreasuryMovementOriginRole = "secretaria" | "tesoreria" | "system";
+export type TreasuryMovementOriginSource =
+  | "manual"
+  | "transfer"
+  | "fx"
+  | "adjustment"
+  | "consolidation";
 export type TreasuryMovementStatus =
   | "pending_consolidation"
   | "integrated"

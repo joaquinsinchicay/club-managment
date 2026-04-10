@@ -27,6 +27,8 @@ import type {
   TreasuryAccount,
   TreasuryCurrencyCode,
   TreasuryCurrencyConfig,
+  TreasuryMovementOriginRole,
+  TreasuryMovementOriginSource,
   TreasuryMovementStatus,
   TreasuryMovementType,
   TreasuryCategory,
@@ -310,6 +312,8 @@ type AccessRepository = {
     clubId: string;
     dailyCashSessionId: string | null;
     displayId: string;
+    originRole: TreasuryMovementOriginRole;
+    originSource: TreasuryMovementOriginSource;
     accountId: string;
     movementType: TreasuryMovementType;
     categoryId: string;
@@ -1335,6 +1339,15 @@ function mapTreasuryMovementRow(row: TreasuryMovementRow): TreasuryMovement {
     status: row.status ?? "pending_consolidation",
     createdAt: row.created_at ?? now()
   };
+}
+
+function normalizeNullableUuidParam(value?: string | null) {
+  if (typeof value !== "string") {
+    return value ?? null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : null;
 }
 
 function alignAccountCurrenciesWithClubSelection(
@@ -2376,11 +2389,11 @@ async function updateRealTreasuryMovement(
         p_concept: input.concept,
         p_currency_code: input.currencyCode,
         p_amount: input.amount,
-        p_activity_id: input.activityId ?? null,
+        p_activity_id: normalizeNullableUuidParam(input.activityId),
         p_receipt_number: input.receiptNumber ?? null,
-        p_calendar_event_id: input.calendarEventId ?? null,
+        p_calendar_event_id: normalizeNullableUuidParam(input.calendarEventId),
         p_status: input.status ?? null,
-        p_consolidation_batch_id: input.consolidationBatchId ?? null
+        p_consolidation_batch_id: normalizeNullableUuidParam(input.consolidationBatchId)
       }
     }
   );
@@ -2393,6 +2406,8 @@ async function createRealTreasuryMovement(
     clubId: string;
     dailyCashSessionId: string | null;
     displayId: string;
+    originRole: TreasuryMovementOriginRole;
+    originSource: TreasuryMovementOriginSource;
     accountId: string;
     movementType: TreasuryMovementType;
     categoryId: string;
@@ -2419,20 +2434,22 @@ async function createRealTreasuryMovement(
       operation: "create_treasury_movement",
       details: { accountId: input.accountId, movementDate: input.movementDate },
       params: {
-        p_daily_cash_session_id: input.dailyCashSessionId,
+        p_daily_cash_session_id: normalizeNullableUuidParam(input.dailyCashSessionId),
         p_display_id: input.displayId,
+        p_origin_role: input.originRole,
+        p_origin_source: input.originSource,
         p_account_id: input.accountId,
         p_movement_type: input.movementType,
         p_category_id: input.categoryId,
         p_concept: input.concept,
         p_currency_code: input.currencyCode,
         p_amount: input.amount,
-        p_activity_id: input.activityId ?? null,
+        p_activity_id: normalizeNullableUuidParam(input.activityId),
         p_receipt_number: input.receiptNumber ?? null,
-        p_calendar_event_id: input.calendarEventId ?? null,
-        p_transfer_group_id: input.transferGroupId ?? null,
-        p_fx_operation_group_id: input.fxOperationGroupId ?? null,
-        p_consolidation_batch_id: input.consolidationBatchId ?? null,
+        p_calendar_event_id: normalizeNullableUuidParam(input.calendarEventId),
+        p_transfer_group_id: normalizeNullableUuidParam(input.transferGroupId),
+        p_fx_operation_group_id: normalizeNullableUuidParam(input.fxOperationGroupId),
+        p_consolidation_batch_id: normalizeNullableUuidParam(input.consolidationBatchId),
         p_movement_date: input.movementDate,
         p_created_by_user_id: input.createdByUserId,
         p_status: input.status ?? "pending_consolidation"
