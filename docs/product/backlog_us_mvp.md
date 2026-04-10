@@ -74,23 +74,21 @@ Feature: US-02 — Avatar con menú de sesión en el header
     When toco mi avatar
     Then se despliega un menú con la opción "Cerrar sesión"
 
-  Scenario 03: Menú del avatar para usuario admin
+  Scenario 03: Menú del avatar para usuario con permisos de configuración
     Given estoy autenticado
-    And soy admin del club activo
+    And tengo permisos para acceder a la configuración del club activo
     When toco mi avatar
-    Then se despliega un menú con las opciones "Configuración del club" y "Cerrar sesión"
+    Then se despliega un menú con la opción "Cerrar sesión"
 
   Scenario 04: Acceso a configuración del club
     Given estoy autenticado
-    And soy admin del club activo
-    And el menú del avatar está abierto
-    When selecciono "Configuración del club"
+    And tengo permisos para acceder a la configuración del club activo
+    When selecciono la tab "Configuración" del upper bar
     Then soy redirigido a la página de configuración del club
-    And el menú se cierra
 
   Scenario 05: Intento de acceso a configuración sin permisos
     Given estoy autenticado
-    And no soy admin del club activo
+    And no tengo permisos para acceder a la configuración del club activo
     When intento acceder a la página de configuración del club
     Then no tengo acceso a la página
     And veo un mensaje de permisos insuficientes o soy redirigido al dashboard
@@ -127,7 +125,7 @@ Feature: US-03 — Asignación de rol
   Scenario 01: Acceso a configuración del club
     Given estoy autenticado
     And soy admin del club activo
-    When accedo a la configuración del club desde el menú del avatar
+    When accedo a la configuración del club desde la tab "Configuración" del upper bar
     Then veo la pantalla de configuración del club activo
 
   Scenario 02: Ver lista de miembros del club activo

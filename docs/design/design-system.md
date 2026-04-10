@@ -70,13 +70,13 @@ Rules:
 * minimum touch target 44px
 * club selector lives here, not inside dashboard content
 * avoid long welcome sentences in the header
-* `Configuracion` is not a primary tab; it lives in the avatar menu
+* `Configuracion` is a first-level tab when the user can access `settings/club`
+* place `Configuracion` as the last visible tab in the upper bar
 
 ### 3.3 Avatar menu
 
 The avatar menu remains the single entrypoint for:
 
-* club settings navigation when allowed
 * sign out
 
 Do not move club switching into the avatar menu.
@@ -94,6 +94,7 @@ Current top-level modules:
 * `Dashboard` → `/dashboard`
 * `Secretaria` → `/dashboard/secretaria`
 * `Tesoreria` → `/dashboard/treasury`
+* `Configuracion` → `/settings/club`
 
 ### 4.2 Visibility by role
 
@@ -104,10 +105,10 @@ Rules:
 * `Dashboard` is visible only when the active membership is not `secretaria` only
 * `Secretaria` visible only when `canOperateSecretaria(...)`
 * `Tesoreria` visible only when `canOperateTesoreria(...)`
+* `Configuracion` visible only when `canAccessClubSettingsNavigation(...)`
 
 Do not render disabled tabs.
 Do not rely on redirection as the primary navigation pattern.
-Expose `Configuracion` only through the avatar menu when the user has permission.
 
 ### 4.3 Secondary views
 

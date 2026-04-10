@@ -23,12 +23,16 @@ type AppHeaderProps = {
 };
 
 type HeaderNavigationItem = {
-  key: "dashboard" | "secretaria" | "tesoreria";
+  key: "dashboard" | "secretaria" | "tesoreria" | "settings";
   href: string;
   label: string;
 };
 
 function getActiveSection(pathname: string) {
+  if (pathname.startsWith("/settings/club")) {
+    return "settings";
+  }
+
   if (pathname.startsWith("/dashboard/treasury")) {
     return "tesoreria";
   }
@@ -84,6 +88,15 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
             label: texts.header.navigation.secretaria
           }
         ]
+      : []),
+    ...(canAccessSettings
+      ? [
+          {
+            key: "settings" as const,
+            href: "/settings/club",
+            label: texts.header.navigation.settings
+          }
+        ]
       : [])
   ];
 
@@ -130,7 +143,6 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
               fullName={context.user.fullName}
               email={context.user.email}
               avatarUrl={context.user.avatarUrl}
-              canAccessClubSettings={canAccessSettings}
             />
           </div>
         </div>

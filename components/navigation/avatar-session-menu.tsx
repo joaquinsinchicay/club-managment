@@ -11,7 +11,6 @@ type AvatarSessionMenuProps = {
   fullName: string;
   email: string;
   avatarUrl: string | null;
-  canAccessClubSettings: boolean;
 };
 
 function getInitials(fullName: string, email: string) {
@@ -31,8 +30,7 @@ function getInitials(fullName: string, email: string) {
 export function AvatarSessionMenu({
   fullName,
   email,
-  avatarUrl,
-  canAccessClubSettings
+  avatarUrl
 }: AvatarSessionMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const fallbackDescriptionId = "avatar-fallback-description";
@@ -103,17 +101,6 @@ export function AvatarSessionMenu({
           aria-label={texts.header.avatar_menu.menu_aria_label}
           className="absolute right-0 top-14 z-20 min-w-56 rounded-3xl border border-border bg-card p-2 shadow-soft"
         >
-          {canAccessClubSettings ? (
-            <Link
-              role="menuitem"
-              href="/settings/club"
-              onClick={() => setIsOpen(false)}
-              className="block rounded-2xl px-4 py-3 text-sm font-medium text-foreground transition hover:bg-secondary"
-            >
-              {texts.header.avatar_menu.club_settings}
-            </Link>
-          ) : null}
-
           <button
             type="button"
             role="menuitem"

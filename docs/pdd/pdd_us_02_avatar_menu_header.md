@@ -7,25 +7,25 @@
 | Campo | Valor |
 |---|---|
 | Epic | E02 · Navegación |
-| User Story | Como usuario autenticado, quiero ver mi avatar en el header y poder acceder a la configuración del club (si soy admin) y cerrar sesión desde ahí. |
+| User Story | Como usuario autenticado, quiero ver mi avatar en el header y poder cerrar sesión desde ahí, manteniendo la configuración del club como una tab del upper bar según permisos. |
 | Prioridad | Alta |
-| Objetivo de negocio | Centralizar el acceso a acciones de sesión y configuración en un punto consistente del header, respetando el rol del usuario en el club activo y reduciendo fricción de navegación. |
+| Objetivo de negocio | Centralizar las acciones de sesión en un punto consistente del header, separando la navegación de módulos en el upper bar y manteniendo un cierre de sesión seguro y explícito. |
 
 ---
 
 ## 2. Problema a resolver
 
-Un usuario autenticado necesita identificar rápidamente su contexto de sesión desde cualquier pantalla y disponer de acciones de cuenta y administración del club sin navegar por rutas dispersas. A la vez, el sistema debe evitar que usuarios sin rol admin vean o accedan a configuración restringida y debe permitir un cierre de sesión seguro y explícito.
+Un usuario autenticado necesita identificar rápidamente su contexto de sesión desde cualquier pantalla y disponer de acciones de cuenta sin navegar por rutas dispersas. A la vez, el sistema debe mantener la configuración del club dentro del modelo de tabs del upper bar, evitar que usuarios sin permisos accedan a configuración restringida y permitir un cierre de sesión seguro y explícito.
 
 ---
 
 ## 3. Objetivo funcional
 
-El sistema debe mostrar en el header global un avatar asociado al usuario autenticado y, al interactuar con él, desplegar un menú de sesión cuyo contenido dependa del rol de la membership activa en el club activo:
+El sistema debe mostrar en el header global un avatar asociado al usuario autenticado y, al interactuar con él, desplegar un menú de sesión para acciones de cuenta:
 
 - cualquier usuario autenticado puede cerrar sesión desde el menú
-- solo un usuario con rol `admin` en el club activo puede ver y abrir la configuración del club
-- un usuario no admin no debe poder acceder a la página de configuración del club
+- la configuración del club debe resolverse como tab del upper bar según permisos vigentes
+- un usuario sin permisos no debe poder acceder a la página de configuración del club
 - el menú debe poder cerrarse sin ejecutar acciones
 - el avatar debe mostrar la foto de perfil disponible o un fallback de iniciales
 
@@ -37,8 +37,7 @@ El sistema debe mostrar en el header global un avatar asociado al usuario autent
 - Renderizado del avatar del usuario autenticado en el header global.
 - Fallback a iniciales cuando no hay `avatar_url`.
 - Apertura y cierre del menú del avatar.
-- Opción de configuración del club visible solo para `admin` del club activo.
-- Navegación a configuración del club desde el menú cuando el usuario tiene permisos.
+- Menú de sesión con la única acción operativa `Cerrar sesión`.
 - Protección funcional de la página de configuración para usuarios no admin.
 - Cierre de sesión desde el menú con diálogo de confirmación y redirección a login.
 
@@ -72,8 +71,8 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 |---|---|
 | Usuario autenticado navega cualquier pantalla | El avatar queda visible en el header y representa su perfil con foto o iniciales. |
 | Usuario no admin abre el menú | El menú ofrece solo la acción de cerrar sesión. |
-| Usuario admin abre el menú | El menú ofrece configuración del club y cerrar sesión. |
-| Admin selecciona configuración del club | El sistema navega a la página de configuración del club y el menú queda cerrado. |
+| Usuario autenticado abre el menú | El menú ofrece la acción de cerrar sesión. |
+| Usuario con permisos de configuración navega desde upper bar | El sistema permite abrir la página de configuración del club desde la tab correspondiente. |
 | Usuario no admin intenta acceder a configuración | El sistema bloquea el acceso y muestra mensaje de permisos insuficientes o redirige a dashboard. |
 | Usuario confirma cierre de sesión | La sesión se cierra y el usuario vuelve a la pantalla de login. |
 | Usuario cierra el menú sin seleccionar opción | El menú se oculta sin ejecutar acciones ni cambiar sesión. |
@@ -82,10 +81,9 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 
 ## 8. Reglas de negocio
 
-- La visibilidad de la opción de configuración depende exclusivamente del rol de la membership activa del usuario en el club activo.
-- Solo `admin` puede acceder a configuración del club.
-- `secretaria` y `tesoreria` no deben ver la opción de configuración del club en el menú del avatar.
-- Aunque la opción no se muestre en UI, el backend o guard de ruta debe bloquear acceso directo a configuración cuando el usuario no sea `admin` del club activo.
+- La visibilidad de la tab de configuración depende exclusivamente del rol de la membership activa del usuario en el club activo.
+- Solo los usuarios habilitados por `canAccessClubSettingsNavigation(...)` pueden ver la tab de configuración.
+- Aunque la tab no se muestre en UI, el backend o guard de ruta debe bloquear acceso directo a configuración cuando el usuario no tenga permisos en el club activo.
 - Solo memberships con `status = activo` habilitan operaciones dentro del club activo.
 - El avatar debe priorizar `avatar_url`; si no existe, debe usar iniciales derivadas del nombre o email del usuario autenticado.
 - El cierre de sesión debe requerir confirmación explícita antes de invalidar la sesión.
@@ -101,9 +99,8 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 3. Si existe `avatar_url`, el avatar renderiza la foto de perfil; si no existe, renderiza iniciales como fallback.
 4. El usuario toca o hace click en el avatar.
 5. El sistema abre un menú contextual anclado al avatar.
-6. El sistema determina las opciones del menú según el rol de la membership activa en el club activo.
-7. Si el usuario es `admin`, muestra `Configuración del club` y `Cerrar sesión`.
-8. Si el usuario no es `admin`, muestra solo `Cerrar sesión`.
+6. El menú expone la acción `Cerrar sesión`.
+7. La configuración del club permanece como tab del upper bar cuando el usuario tiene permisos vigentes.
 
 ---
 
@@ -111,11 +108,9 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 
 ### A. Acceso a configuración del club
 
-1. Un usuario `admin` abre el menú del avatar.
-2. Selecciona la opción de configuración del club.
-3. El sistema cierra el menú.
-4. El sistema navega a la página de configuración del club activo.
-5. La ruta valida nuevamente que el usuario tenga membership `activo` con rol `admin` en el club activo.
+1. Un usuario con permisos de configuración usa la tab `Configuración` del upper bar.
+2. El sistema navega a la página de configuración del club activo.
+3. La ruta valida nuevamente que el usuario tenga una membership `activa` con permisos vigentes sobre el club activo.
 
 ### B. Intento de acceso a configuración sin permisos
 
@@ -151,7 +146,7 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 - El header debe ser persistente, compacto y visible en todas las pantallas autenticadas.
 - El avatar debe ubicarse en la esquina superior derecha del header y respetar touch target mínimo de 44px.
 - El menú del avatar debe abrirse de forma clara, sin ambigüedad de estado, y mantenerse visualmente anclado al avatar.
-- El contenido del menú debe reflejar el rol de la membership activa sin exponer acciones prohibidas a usuarios no admin.
+- La configuración del club debe integrarse al modelo de tabs del upper bar y no competir con el menú del avatar.
 - La acción de cierre de sesión debe solicitar confirmación mediante un diálogo explícito antes de ejecutar logout.
 - El menú debe soportar cierre por interacción fuera del componente, re-click/re-tap del avatar y tecla ESC.
 - La UI debe conservar estilo mobile-first, baja carga visual y foco operativo.
@@ -172,8 +167,8 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 
 | Tipo | Key | Contexto |
 |---|---|---|
-| menu_item | `header.avatar_menu.club_settings` | Etiqueta de la opción para navegar a configuración del club. Missing |
 | menu_item | `header.avatar_menu.sign_out` | Etiqueta de la opción para cerrar sesión. Missing |
+| tab_label | `header.navigation.settings` | Etiqueta de la tab de configuración en el upper bar. |
 | dialog_title | `auth.sign_out.confirm_title` | Título del diálogo de confirmación de cierre de sesión. Missing |
 | dialog_body | `auth.sign_out.confirm_description` | Texto descriptivo del diálogo de confirmación de logout. Missing |
 | dialog_action | `auth.sign_out.confirm_cta` | Botón de confirmación del cierre de sesión. Missing |
@@ -191,7 +186,7 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 
 ### Entidades afectadas
 - `users`: READ para obtener `full_name`, `email` y `avatar_url` del usuario autenticado; no-op para escritura en esta US.
-- `memberships`: READ para resolver `role` y `status` de la membership del usuario en el club activo y decidir opciones del menú y acceso a settings; no-op para escritura.
+- `memberships`: READ para resolver `role` y `status` de la membership del usuario en el club activo y decidir acceso a settings; no-op para escritura.
 - `user_club_preferences`: READ indirecto si la navegación o el dashboard necesitan mantener el club activo tras volver de settings; no-op en esta US.
 - `clubs`: READ para identificar el club activo y la pantalla de configuración asociada; no-op para escritura en esta US.
 
@@ -200,9 +195,9 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 ## 14. Seguridad
 
 - Todas las pantallas que renderizan el avatar y su menú requieren sesión autenticada válida.
-- La visibilidad de `Configuración del club` debe derivarse del contexto autenticado y del rol de membership activa en backend o server-side data, no de estado local sin validar.
-- La ruta/página de configuración del club debe aplicar autorización server-side y permitir acceso solo si `membership.roles` incluye `admin` y `membership.status = activo` para el `active_club_id`.
-- Un usuario no admin no debe poder forzar acceso a configuración manipulando el frontend o escribiendo la URL manualmente.
+- La visibilidad de `Configuración` debe derivarse del contexto autenticado y del rol de membership activa en backend o server-side data, no de estado local sin validar.
+- La ruta/página de configuración del club debe aplicar autorización server-side y permitir acceso solo si la membership activa tiene permisos vigentes para `settings/club` y `status = activo` para el `active_club_id`.
+- Un usuario sin permisos no debe poder forzar acceso a configuración manipulando el frontend o escribiendo la URL manualmente.
 - El logout debe cerrar la sesión Supabase y eliminar el contexto autenticado usado por la UI.
 - Toda lectura de memberships, clubs y datos de configuración debe respetar `app.current_club_id` y RLS.
 - No debe existir exposición cross-club de nombres, miembros ni configuración.
@@ -214,7 +209,7 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 
 - auth: Supabase Auth con sesión activa y operación de sign out.
 - domain entities: `users`, `memberships`, `clubs`, `user_club_preferences`.
-- permissions: matriz de permisos donde solo `admin` puede ver configuración.
+- permissions: matriz de permisos donde `admin` y `tesoreria` pueden navegar a configuración según la lógica vigente.
 - other US if relevant: US-01 para login y resolución inicial de sesión; US-03 para contenido funcional de configuración del club; US-04/US-05 para consistencia del club activo y redirecciones post-auth.
 
 ---
@@ -259,19 +254,18 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 - Cuando toca o hace click en su avatar.
 - Entonces el sistema despliega un menú que contiene únicamente la opción `Cerrar sesión`.
 
-### Scenario 03: Menú del avatar para usuario admin
-- Dado que el usuario está autenticado y su membership activa en el club activo tiene rol `admin`.
+### Scenario 03: Menú del avatar para usuario con permisos de configuración
+- Dado que el usuario está autenticado y su membership activa en el club activo puede acceder a `settings/club`.
 - Cuando toca o hace click en su avatar.
-- Entonces el sistema despliega un menú con las opciones `Configuración del club` y `Cerrar sesión`.
+- Entonces el sistema despliega un menú que contiene únicamente la opción `Cerrar sesión`.
 
 ### Scenario 04: Acceso a configuración del club
-- Dado que el usuario está autenticado, es admin del club activo y el menú del avatar está abierto.
-- Cuando selecciona `Configuración del club`.
+- Dado que el usuario está autenticado y su membership activa tiene permisos para `settings/club`.
+- Cuando selecciona la tab `Configuración` del upper bar.
 - Entonces el sistema lo redirige a la página de configuración del club activo.
-- Y el menú se cierra.
 
 ### Scenario 05: Intento de acceso a configuración sin permisos
-- Dado que el usuario está autenticado y no es admin del club activo.
+- Dado que el usuario está autenticado y no tiene permisos sobre `settings/club` en el club activo.
 - Cuando intenta acceder a la página de configuración del club, incluyendo acceso manual por URL.
 - Entonces el sistema no permite abrir la página.
 - Y el usuario ve un mensaje de permisos insuficientes o es redirigido al dashboard.
@@ -294,11 +288,10 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 
 - Must render an authenticated-user avatar in the persistent header on private screens.
 - Must use `avatar_url` when available and a deterministic initials fallback when it is not.
-- Must expose `Configuración del club` in the avatar menu only for users whose active membership in the active club is `admin` and `activo`.
+- Must expose `Configuración` as a top-level upper-bar tab only for users whose active membership in the active club can navigate to `settings/club`.
 - Must expose `Cerrar sesión` in the avatar menu for every authenticated user.
-- Must close the avatar menu after selecting `Configuración del club`.
-- Must protect the club settings route server-side so non-admin users cannot access it by direct URL.
-- Must show a controlled forbidden state or redirect to dashboard when a non-admin attempts to access club settings.
+- Must protect the club settings route server-side so users without permissions cannot access it by direct URL.
+- Must show a controlled forbidden state or redirect to dashboard when a user without permissions attempts to access club settings.
 - Must show a confirmation dialog before executing logout.
 - Must sign out through Supabase Auth and redirect to login after successful confirmation.
 - Must close the menu without side effects on outside click/tap, avatar re-toggle, or ESC.
@@ -311,7 +304,7 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 ## 20. No permitido
 
 - Hardcodear labels, mensajes, aria-labels o textos de diálogo en componentes.
-- Mostrar la opción de configuración del club a usuarios no admin.
+- Mostrar `Configuración` en el upper bar a usuarios sin permisos.
 - Confiar solo en ocultamiento visual de UI para proteger `/settings` o rutas equivalentes.
 - Permitir logout inmediato sin confirmación si la UX definida exige diálogo.
 - Hacer fetch directo a Supabase o DB desde componentes de UI cuando corresponde pasar por repositorios/servicios.
