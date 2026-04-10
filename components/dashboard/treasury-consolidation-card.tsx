@@ -217,15 +217,8 @@ export function TreasuryConsolidationCard({
                   )}
                 </button>
               </PendingFieldset>
-              <span aria-live="polite" className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-                {isDateNavigationPending ? (
-                  <>
-                    <Spinner className="size-3.5" />
-                    <span>{texts.dashboard.consolidation.load_loading}</span>
-                  </>
-                ) : (
-                  <span>{texts.dashboard.consolidation.load_helper}</span>
-                )}
+              <span aria-live="polite" className="text-xs text-muted-foreground">
+                {texts.dashboard.consolidation.load_helper}
               </span>
               <p className="text-xs text-muted-foreground">
                 {texts.dashboard.consolidation.default_date_hint} {dashboard.defaultDate}
