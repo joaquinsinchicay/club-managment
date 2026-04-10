@@ -32,7 +32,9 @@ type TreasuryActionCode =
   | "session_open_failed"
   | "session_close_failed"
   | "movement_created"
+  | "movement_create_failed"
   | "movement_updated"
+  | "movement_update_failed"
   | "movement_integrated"
   | "transfer_created"
   | "fx_operation_created"
@@ -1069,7 +1071,7 @@ export async function createTreasuryMovement(input: {
   });
 
   if (!created) {
-    return { ok: false, code: "unknown_error" };
+    return { ok: false, code: "movement_create_failed" };
   }
 
   return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
@@ -1234,7 +1236,7 @@ export async function updateSecretariaMovementInOpenSession(input: {
   });
 
   if (!updatedMovement) {
-    return { ok: false, code: "unknown_error" };
+    return { ok: false, code: "movement_update_failed" };
   }
 
   await accessRepository.createMovementAuditLog({
@@ -1633,7 +1635,7 @@ export async function createTreasuryRoleMovement(input: {
   });
 
   if (!created) {
-    return { ok: false, code: "unknown_error" };
+    return { ok: false, code: "movement_create_failed" };
   }
 
   return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
@@ -1927,7 +1929,7 @@ export async function updateMovementBeforeConsolidation(input: {
   });
 
   if (!updatedMovement) {
-    return { ok: false, code: "unknown_error" };
+    return { ok: false, code: "movement_update_failed" };
   }
 
   await accessRepository.createMovementAuditLog({

@@ -139,6 +139,8 @@ perform set_config('app.current_club_id', p_club_id::text, true);
 
 Esto aplica especialmente a flujos de `treasury_movements`, `daily_cash_sessions` y otras tablas operativas protegidas por RLS.
 
+En las RPCs de `treasury_movements`, los parametros `status` deben tiparse como `public.movement_status` y no como `text`, para evitar drift con el schema remoto y errores de escritura al insertar o editar movimientos.
+
 En `daily_cash_sessions`, los timestamps operativos deben persistirse en base como fuente de verdad auditable:
 
 * `opened_at` se fija al momento real de apertura
