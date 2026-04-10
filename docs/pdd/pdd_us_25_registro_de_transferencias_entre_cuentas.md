@@ -58,11 +58,13 @@ Secretaría debe disponer de un formulario específico para registrar una transf
 - La moneda debe autocompletarse a partir de la cuenta origen con la misma regla usada en el alta de movimientos.
 - Si la cuenta destino no soporta la moneda seleccionada, el formulario debe mostrar error inline en ese campo y bloquear la creación.
 - El importe debe ser mayor a cero.
+- La cuenta origen debe tener saldo disponible suficiente en la moneda seleccionada.
 - La operación genera dos movimientos:
   - egreso en la cuenta origen
   - ingreso en la cuenta destino
 - Ambos movimientos comparten una misma referencia de transferencia.
 - La operación debe considerarse transferencia interna y no ingreso/egreso externo.
+- La creación debe ejecutarse de forma transaccional para evitar estados parciales.
 - El feedback final debe mostrarse en toast, luego de liberar el overlay bloqueante.
 
 ---
@@ -71,6 +73,7 @@ Secretaría debe disponer de un formulario específico para registrar una transf
 
 - `account_transfers`
 - `treasury_movements.transfer_group_id`
+- La escritura remota debe resolverse mediante un RPC club-scoped transaccional que cree la transferencia y ambos movimientos dentro de la misma operación.
 
 Do not reference current code files.
 

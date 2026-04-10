@@ -44,6 +44,12 @@ import {
 
 type AccessRepositoryClient = ReturnType<typeof createServerSupabaseClient>;
 
+type AccountTransferMutationResult = {
+  transfer: AccountTransfer;
+  sourceMovementDisplayId: string;
+  targetMovementDisplayId: string;
+};
+
 export class AccessRepositoryInfraError extends Error {
   code: "treasury_admin_config_missing" | "treasury_settings_write_failed" | "club_scoped_rpc_failed";
   operation: string;
@@ -307,12 +313,17 @@ type AccessRepository = {
   }): Promise<MovementAuditLog | null>;
   createAccountTransfer(input: {
     clubId: string;
+    dailyCashSessionId: string;
     sourceAccountId: string;
     targetAccountId: string;
     currencyCode: string;
     amount: number;
     concept: string;
-  }): Promise<AccountTransfer | null>;
+    sourceMovementDisplayId: string;
+    targetMovementDisplayId: string;
+    movementDate: string;
+    createdByUserId: string;
+  }): Promise<AccountTransferMutationResult | null>;
   createFxOperation(input: {
     clubId: string;
     sourceAccountId: string;
@@ -1315,7 +1326,7 @@ type TreasuryMovementRow = {
   daily_cash_session_id: string | null;
   account_id: string;
   movement_type: TreasuryMovementType;
-  category_id: string;
+  category_id: string | null;
   concept: string;
   currency_code: string;
   amount: number | string;
@@ -1339,7 +1350,7 @@ function mapTreasuryMovementRow(row: TreasuryMovementRow): TreasuryMovement {
     dailyCashSessionId: row.daily_cash_session_id,
     accountId: row.account_id,
     movementType: row.movement_type,
-    categoryId: row.category_id,
+    categoryId: row.category_id ?? "",
     concept: row.concept,
     currencyCode: row.currency_code as TreasuryMovement["currencyCode"],
     amount: Number(row.amount),
@@ -1363,6 +1374,36 @@ function normalizeNullableUuidParam(value?: string | null) {
 
   const trimmedValue = value.trim();
   return trimmedValue.length > 0 ? trimmedValue : null;
+}
+
+type AccountTransferMutationRow = {
+  transfer_id: string;
+  club_id: string;
+  source_account_id: string;
+  target_account_id: string;
+  currency_code: string;
+  amount: number | string;
+  concept: string;
+  created_at: string | null;
+  source_movement_display_id: string;
+  target_movement_display_id: string;
+};
+
+function mapAccountTransferMutationRow(row: AccountTransferMutationRow): AccountTransferMutationResult {
+  return {
+    transfer: {
+      id: row.transfer_id,
+      clubId: row.club_id,
+      sourceAccountId: row.source_account_id,
+      targetAccountId: row.target_account_id,
+      currencyCode: row.currency_code,
+      amount: Number(row.amount),
+      concept: row.concept,
+      createdAt: row.created_at ?? now()
+    },
+    sourceMovementDisplayId: row.source_movement_display_id,
+    targetMovementDisplayId: row.target_movement_display_id
+  };
 }
 
 function alignAccountCurrenciesWithClubSelection(
@@ -2588,6 +2629,51 @@ async function createRealTreasuryMovement(
   );
 
   return row ? mapTreasuryMovementRow(row) : null;
+}
+
+async function createRealAccountTransfer(
+  input: {
+    clubId: string;
+    dailyCashSessionId: string;
+    sourceAccountId: string;
+    targetAccountId: string;
+    currencyCode: string;
+    amount: number;
+    concept: string;
+    sourceMovementDisplayId: string;
+    targetMovementDisplayId: string;
+    movementDate: string;
+    createdByUserId: string;
+  },
+  client?: AccessRepositoryClient
+) {
+  const row = await runClubScopedMutationRpc<AccountTransferMutationRow>(
+    "create_account_transfer_for_current_club",
+    input.clubId,
+    client,
+    {
+      operation: "create_account_transfer",
+      details: {
+        sourceAccountId: input.sourceAccountId,
+        targetAccountId: input.targetAccountId,
+        movementDate: input.movementDate
+      },
+      params: {
+        p_daily_cash_session_id: input.dailyCashSessionId,
+        p_source_account_id: input.sourceAccountId,
+        p_target_account_id: input.targetAccountId,
+        p_currency_code: input.currencyCode,
+        p_amount: input.amount,
+        p_concept: input.concept,
+        p_source_movement_display_id: input.sourceMovementDisplayId,
+        p_target_movement_display_id: input.targetMovementDisplayId,
+        p_movement_date: input.movementDate,
+        p_created_by_user_id: input.createdByUserId
+      }
+    }
+  );
+
+  return row ? mapAccountTransferMutationRow(row) : null;
 }
 
 async function countRealTreasuryMovementsByClubAndYear(
@@ -4374,6 +4460,10 @@ export const accessRepository: AccessRepository = {
     return log;
   },
   async createAccountTransfer(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealAccountTransfer(input);
+    }
+
     const transfer: AccountTransfer = {
       id: `transfer-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
@@ -4386,7 +4476,60 @@ export const accessRepository: AccessRepository = {
     };
 
     getStore().accountTransfers.push(transfer);
-    return transfer;
+
+    const sourceMovement: TreasuryMovement = {
+      id: `movement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      displayId: input.sourceMovementDisplayId,
+      clubId: input.clubId,
+      dailyCashSessionId: input.dailyCashSessionId,
+      accountId: input.sourceAccountId,
+      movementType: "egreso",
+      categoryId: "",
+      concept: input.concept,
+      currencyCode: input.currencyCode,
+      amount: input.amount,
+      activityId: null,
+      receiptNumber: null,
+      calendarEventId: null,
+      transferGroupId: transfer.id,
+      fxOperationGroupId: null,
+      consolidationBatchId: null,
+      movementDate: input.movementDate,
+      createdByUserId: input.createdByUserId,
+      status: "pending_consolidation",
+      createdAt: now()
+    };
+
+    const targetMovement: TreasuryMovement = {
+      id: `movement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      displayId: input.targetMovementDisplayId,
+      clubId: input.clubId,
+      dailyCashSessionId: input.dailyCashSessionId,
+      accountId: input.targetAccountId,
+      movementType: "ingreso",
+      categoryId: "",
+      concept: input.concept,
+      currencyCode: input.currencyCode,
+      amount: input.amount,
+      activityId: null,
+      receiptNumber: null,
+      calendarEventId: null,
+      transferGroupId: transfer.id,
+      fxOperationGroupId: null,
+      consolidationBatchId: null,
+      movementDate: input.movementDate,
+      createdByUserId: input.createdByUserId,
+      status: "pending_consolidation",
+      createdAt: now()
+    };
+
+    getStore().treasuryMovements.push(sourceMovement, targetMovement);
+
+    return {
+      transfer,
+      sourceMovementDisplayId: sourceMovement.displayId,
+      targetMovementDisplayId: targetMovement.displayId
+    };
   },
   async createFxOperation(input) {
     const operation: FxOperation = {

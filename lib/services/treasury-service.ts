@@ -58,6 +58,7 @@ type TreasuryActionCode =
   | "target_account_required"
   | "accounts_must_be_distinct"
   | "invalid_transfer"
+  | "insufficient_funds"
   | "source_currency_required"
   | "target_currency_required"
   | "currencies_must_be_distinct"
@@ -183,6 +184,19 @@ async function generateMovementDisplayId(clubId: string, clubName: string, movem
   const sequence = (await accessRepository.countTreasuryMovementsByClubAndYear(clubId, year)) + 1;
 
   return `${prefix}-MOV-${year}-${sequence}`;
+}
+
+async function generateMovementDisplayIds(
+  clubId: string,
+  clubName: string,
+  movementDate: string,
+  quantity: number
+) {
+  const year = movementDate.slice(0, 4);
+  const prefix = buildClubInitials(clubName);
+  const baseSequence = await accessRepository.countTreasuryMovementsByClubAndYear(clubId, year);
+
+  return Array.from({ length: quantity }, (_, index) => `${prefix}-MOV-${year}-${baseSequence + index + 1}`);
 }
 
 function getDefaultConsolidationDate() {
@@ -1426,63 +1440,44 @@ export async function createAccountTransfer(input: {
     return { ok: false, code: "invalid_transfer" };
   }
 
+  const sourceAccountMovements = await accessRepository.listTreasuryMovementsHistoryByAccount(
+    context.activeClub.id,
+    sourceAccount.id
+  );
+  const availableBalance = sourceAccountMovements
+    .filter((movement) => movement.currencyCode === input.currencyCode)
+    .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0);
+
+  if (parsedAmount > availableBalance) {
+    return { ok: false, code: "insufficient_funds" };
+  }
+
   const concept = input.concept.trim() || texts.dashboard.treasury.transfer_default_concept;
+  const [sourceMovementDisplayId, targetMovementDisplayId] = await generateMovementDisplayIds(
+    context.activeClub.id,
+    context.activeClub.name,
+    getTodayDate(),
+    2
+  );
   const transfer = await accessRepository.createAccountTransfer({
     clubId: context.activeClub.id,
+    dailyCashSessionId: session.id,
     sourceAccountId: sourceAccount.id,
     targetAccountId: targetAccount.id,
     currencyCode: input.currencyCode,
     amount: parsedAmount,
-    concept
+    concept,
+    sourceMovementDisplayId,
+    targetMovementDisplayId,
+    movementDate: getTodayDate(),
+    createdByUserId: context.user.id
   });
 
   if (!transfer) {
     return { ok: false, code: "unknown_error" };
   }
 
-  const sourceMovement = await accessRepository.createTreasuryMovement({
-    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
-    clubId: context.activeClub.id,
-    dailyCashSessionId: session.id,
-    originRole: "secretaria",
-    originSource: "transfer",
-    accountId: sourceAccount.id,
-    movementType: "egreso",
-    categoryId: "",
-    concept,
-    currencyCode: input.currencyCode,
-    amount: parsedAmount,
-    transferGroupId: transfer.id,
-    movementDate: getTodayDate(),
-    createdByUserId: context.user.id
-  });
-
-  if (!sourceMovement) {
-    return { ok: false, code: "unknown_error" };
-  }
-
-  const targetMovement = await accessRepository.createTreasuryMovement({
-    displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, getTodayDate()),
-    clubId: context.activeClub.id,
-    dailyCashSessionId: session.id,
-    originRole: "secretaria",
-    originSource: "transfer",
-    accountId: targetAccount.id,
-    movementType: "ingreso",
-    categoryId: "",
-    concept,
-    currencyCode: input.currencyCode,
-    amount: parsedAmount,
-    transferGroupId: transfer.id,
-    movementDate: getTodayDate(),
-    createdByUserId: context.user.id
-  });
-
-  if (!targetMovement) {
-    return { ok: false, code: "unknown_error" };
-  }
-
-  return { ok: true, code: "transfer_created", movementDisplayId: sourceMovement.displayId };
+  return { ok: true, code: "transfer_created", movementDisplayId: transfer.sourceMovementDisplayId };
 }
 
 export async function createFxOperation(input: {

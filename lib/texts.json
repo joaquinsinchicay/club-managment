@@ -100,6 +100,7 @@
       "target_account_required": "Debes seleccionar una cuenta destino.",
       "accounts_must_be_distinct": "Las cuentas origen y destino deben ser distintas.",
       "invalid_transfer": "La transferencia no es valida para las cuentas o moneda seleccionadas.",
+      "insufficient_funds": "La cuenta origen no tiene saldo suficiente para completar la transferencia.",
       "source_currency_required": "Debes seleccionar una moneda origen.",
       "target_currency_required": "Debes seleccionar una moneda destino.",
       "currencies_must_be_distinct": "Las monedas origen y destino deben ser distintas.",

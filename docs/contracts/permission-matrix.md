@@ -155,6 +155,7 @@ Roles disponibles:
 * Requiere jornada abierta
 * La cuenta origen debe ser visible para `Secretaria`
 * La cuenta destino debe ser visible para otros roles operativos y no visible para `Secretaria`
+* La cuenta origen debe tener saldo disponible suficiente en la moneda seleccionada
 * Genera dos movimientos
 * Debe ser transaccional
 

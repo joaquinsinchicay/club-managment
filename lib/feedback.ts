@@ -33,6 +33,8 @@ const dashboardSuccessFeedbackCodes = new Set([
   "movement_created",
   "movement_updated",
   "movement_integrated",
+  "transfer_created",
+  "fx_operation_created",
   "consolidation_completed"
 ]);
 

@@ -2259,6 +2259,13 @@ Feature: US-25 — Registro de transferencias entre cuentas
     When completo el campo "Importe"
     Then el campo aplica el mismo saneamiento y restricciones de ingreso que el formulario "Registrar movimiento"
 
+  Scenario 11B: La cuenta origen debe tener saldo suficiente
+    Given estoy viendo el formulario de transferencia
+    And la cuenta origen no tiene saldo suficiente en la moneda seleccionada
+    When intento registrar una transferencia por un importe mayor al saldo disponible
+    Then veo un mensaje indicando que la cuenta origen no tiene saldo suficiente
+    And la transferencia no se registra
+
   Scenario 12: Registro exitoso de transferencia
     Given estoy viendo el formulario de transferencia
     And completé correctamente todos los campos obligatorios

@@ -1103,6 +1103,7 @@ Sí
 * la cuenta destino debe ser visible para otro rol operativo y no visible para `secretaria`
 * moneda válida para ambas cuentas
 * amount > 0
+* la cuenta origen debe tener saldo disponible suficiente en la moneda seleccionada
 
 **Output**
 
@@ -1116,6 +1117,7 @@ Sí
 **Notes**
 
 * ambos movimientos deben compartir una referencia común de transferencia
+* la operación debe ejecutarse de forma transaccional; si falla cualquier paso, no debe persistirse ningún registro
 
 ---
 
@@ -1429,6 +1431,7 @@ Puede:
 * `invalid_receipt_format`
 * `invalid_field_rule`
 * `invalid_transfer`
+* `insufficient_funds`
 * `invalid_fx_operation`
 * `consolidation_already_completed`
 * `consolidation_has_invalid_movements`
