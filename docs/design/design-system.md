@@ -258,6 +258,19 @@ These patterns must be reused instead of reinvented per screen.
 
 ### 7.1 `AppHeader`
 
+### 7.2 Operational movement list
+
+Use the same movement list pattern in operational dashboards such as `Secretaria` and `Tesoreria`.
+
+Rules:
+
+* every row shows the same fields in the same order across modules
+* highlighted fields are `amount` first and `concept` second
+* metadata stays secondary: `created_at`, `created_by`, `account`
+* `account` must use a neutral chip, not semantic color
+* row actions live at the far right and must not compete with amount prominence
+* mobile and desktop must preserve the same hierarchy, even when layout changes
+
 Use for the authenticated upper bar only.
 
 Responsibilities:
