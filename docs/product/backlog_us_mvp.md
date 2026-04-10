@@ -2377,12 +2377,12 @@ Feature: US-26 — Registro de compra y venta de moneda extranjera
     Then veo un mensaje indicando que ambas cuentas son obligatorias
     And la operación no se registra
 
-  Scenario 07: Cuenta origen y destino deben ser distintas
+  Scenario 07: La misma cuenta puede usarse si las monedas son distintas
     Given estoy viendo el formulario de compra o venta de moneda
     When selecciono la misma cuenta como origen y destino
+    And selecciono monedas distintas y válidas para esa cuenta
     And intento guardar
-    Then veo un mensaje indicando que las cuentas deben ser distintas
-    And la operación no se registra
+    Then la operación puede registrarse si el resto de los datos son válidos
 
   Scenario 08: Moneda origen y moneda destino obligatorias
     Given estoy viendo el formulario de compra o venta de moneda
@@ -2422,6 +2422,18 @@ Feature: US-26 — Registro de compra y venta de moneda extranjera
     And genera automáticamente un movimiento de ingreso en la cuenta destino por el importe destino
     And ambos movimientos quedan asociados a la misma operación
     And ambos movimientos quedan asociados a la jornada abierta actual
+    And veo un mensaje de confirmación
+
+  Scenario 12b: Registro exitoso dentro de una misma cuenta bimonetaria
+    Given estoy viendo el formulario de compra o venta de moneda
+    And seleccioné la misma cuenta bimonetaria como origen y destino
+    And seleccioné monedas distintas y válidas para esa cuenta
+    And completé correctamente todos los campos obligatorios
+    When selecciono "Crear"
+    Then el sistema registra una operación de cambio de moneda en el club activo
+    And genera automáticamente un movimiento de egreso y un movimiento de ingreso sobre la misma cuenta
+    And cada movimiento impacta únicamente la moneda correspondiente
+    And ambos movimientos quedan asociados a la misma operación
     And veo un mensaje de confirmación
 
   Scenario 13: La operación registra tipo de cambio implícito

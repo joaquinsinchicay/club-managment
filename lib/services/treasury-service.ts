@@ -1503,10 +1503,6 @@ export async function createFxOperation(input: {
     return { ok: false, code: "target_account_required" };
   }
 
-  if (input.sourceAccountId === input.targetAccountId) {
-    return { ok: false, code: "accounts_must_be_distinct" };
-  }
-
   if (!input.sourceCurrencyCode) {
     return { ok: false, code: "source_currency_required" };
   }
