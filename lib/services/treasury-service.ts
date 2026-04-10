@@ -157,6 +157,26 @@ function isSessionAlreadyExistsRepositoryError(error: unknown) {
   return typeof message === "string" && message.toLowerCase().includes("daily_cash_sessions");
 }
 
+function isMissingStaleSessionAutoCloseRpcError(error: unknown) {
+  const code = getRepositoryErrorCode(error);
+
+  if (code === "42883" || code === "PGRST202") {
+    return true;
+  }
+
+  if (!isAccessRepositoryInfraError(error) || !error.cause || typeof error.cause !== "object") {
+    return false;
+  }
+
+  const message = String((error.cause as { message?: unknown }).message ?? "").toLowerCase();
+
+  return (
+    message.includes("get_last_open_daily_cash_session_before_date_for_current_club") ||
+    message.includes("auto_close_stale_daily_cash_session_with_balances_for_current_club") ||
+    message.includes("function") && message.includes("does not exist")
+  );
+}
+
 async function generateMovementDisplayId(clubId: string, clubName: string, movementDate: string) {
   const year = movementDate.slice(0, 4);
   const prefix = buildClubInitials(clubName);
@@ -335,26 +355,37 @@ async function reconcileStaleOpenDailyCashSessionForActiveClub(context: {
   activeClub: { id: string };
   user: { id: string };
 }) {
-  const todayDate = getTodayDate();
-  const staleSession = await accessRepository.getLastOpenDailyCashSessionBeforeDate(
-    context.activeClub.id,
-    todayDate
-  );
+  try {
+    const todayDate = getTodayDate();
+    const staleSession = await accessRepository.getLastOpenDailyCashSessionBeforeDate(
+      context.activeClub.id,
+      todayDate
+    );
 
-  if (!staleSession) {
-    return null;
+    if (!staleSession) {
+      return null;
+    }
+
+    const accounts = await getSecretariaAccounts(context.activeClub.id);
+    const drafts = await buildAccountBalanceDrafts(context.activeClub.id, staleSession.sessionDate, accounts);
+
+    return await accessRepository.autoCloseStaleDailyCashSessionWithBalances({
+      clubId: context.activeClub.id,
+      beforeDate: todayDate,
+      expectedSessionId: staleSession.id,
+      closedByUserId: context.user.id,
+      balances: buildSessionBalanceEntries(drafts, "closing")
+    });
+  } catch (error) {
+    if (isMissingStaleSessionAutoCloseRpcError(error)) {
+      console.warn("[stale-session-autoclose-rpc-missing]", {
+        clubId: context.activeClub.id
+      });
+      return null;
+    }
+
+    throw error;
   }
-
-  const accounts = await getSecretariaAccounts(context.activeClub.id);
-  const drafts = await buildAccountBalanceDrafts(context.activeClub.id, staleSession.sessionDate, accounts);
-
-  return accessRepository.autoCloseStaleDailyCashSessionWithBalances({
-    clubId: context.activeClub.id,
-    beforeDate: todayDate,
-    expectedSessionId: staleSession.id,
-    closedByUserId: context.user.id,
-    balances: buildSessionBalanceEntries(drafts, "closing")
-  });
 }
 
 function buildDraftFromDeclaredValue(
