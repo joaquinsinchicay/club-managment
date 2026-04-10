@@ -91,6 +91,7 @@ Roles disponibles:
 
 * Solo puede existir una jornada por día y club.
 * Solo Secretaría opera jornadas.
+* El autocierre por cambio de día sigue siendo una operación del dominio de Secretaría, pero se ejecuta únicamente en backend para el club activo.
 
 ---
 

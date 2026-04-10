@@ -742,6 +742,8 @@ The dashboard uses `daily_cash_sessions` only to resolve `session_status` and av
 
 Absence of a daily session must resolve as "no rows" and therefore `not_started`, not as an infrastructure error.
 
+Before resolving `session_status` for the current date, the backend may reconcile and close the latest stale `daily_cash_session` that is still `open` for a previous date in the active club.
+
 ---
 
 ### 6.1B Get treasury role dashboard
@@ -855,6 +857,7 @@ Sí
 **Validations**
 
 * debe existir jornada abierta del día
+* si existe una jornada `open` de un día anterior en el club activo, el backend debe cerrarla automáticamente antes de validar el cierre manual del día actual
 * si hay diferencia, debe generarse ajuste
 * luego del cierre, Secretaría no puede editar movimientos del día
 

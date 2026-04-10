@@ -331,6 +331,32 @@ async function buildAccountBalanceDrafts(
   );
 }
 
+async function reconcileStaleOpenDailyCashSessionForActiveClub(context: {
+  activeClub: { id: string };
+  user: { id: string };
+}) {
+  const todayDate = getTodayDate();
+  const staleSession = await accessRepository.getLastOpenDailyCashSessionBeforeDate(
+    context.activeClub.id,
+    todayDate
+  );
+
+  if (!staleSession) {
+    return null;
+  }
+
+  const accounts = await getSecretariaAccounts(context.activeClub.id);
+  const drafts = await buildAccountBalanceDrafts(context.activeClub.id, staleSession.sessionDate, accounts);
+
+  return accessRepository.autoCloseStaleDailyCashSessionWithBalances({
+    clubId: context.activeClub.id,
+    beforeDate: todayDate,
+    expectedSessionId: staleSession.id,
+    closedByUserId: context.user.id,
+    balances: buildSessionBalanceEntries(drafts, "closing")
+  });
+}
+
 function buildDraftFromDeclaredValue(
   draft: SessionBalanceDraft,
   declaredBalance: number
@@ -365,6 +391,10 @@ async function getSessionValidationBase(
   let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
 
   try {
+    await reconcileStaleOpenDailyCashSessionForActiveClub({
+      activeClub: { id: context.activeClub.id },
+      user: { id: context.user.id }
+    });
     [session] = await Promise.all([
       accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
     ]);
@@ -723,6 +753,10 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   let movementDataResolved = true;
 
   try {
+    await reconcileStaleOpenDailyCashSessionForActiveClub({
+      activeClub: { id: context.activeClub.id },
+      user: { id: context.user.id }
+    });
     session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate);
   } catch (error) {
     sessionStateResolved = false;
@@ -929,7 +963,22 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "forbidden" };
   }
 
-  const session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+  let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
+
+  try {
+    await reconcileStaleOpenDailyCashSessionForActiveClub({
+      activeClub: { id: context.activeClub.id },
+      user: { id: context.user.id }
+    });
+    session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+  } catch (error) {
+    console.error("[create-treasury-movement-session-resolution-failed]", {
+      clubId: context.activeClub.id,
+      sessionDate: getTodayDate(),
+      error
+    });
+    return { ok: false, code: "forbidden" };
+  }
 
   if (!session || session.status !== "open") {
     return { ok: false, code: "session_required" };
@@ -1097,7 +1146,22 @@ export async function updateSecretariaMovementInOpenSession(input: {
     return { ok: false, code: "forbidden" };
   }
 
-  const session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+  let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
+
+  try {
+    await reconcileStaleOpenDailyCashSessionForActiveClub({
+      activeClub: { id: context.activeClub.id },
+      user: { id: context.user.id }
+    });
+    session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+  } catch (error) {
+    console.error("[update-secretaria-movement-session-resolution-failed]", {
+      clubId: context.activeClub.id,
+      sessionDate: getTodayDate(),
+      error
+    });
+    return { ok: false, code: "forbidden" };
+  }
 
   if (!session || session.status !== "open") {
     return { ok: false, code: "session_required" };
@@ -1265,7 +1329,22 @@ export async function createAccountTransfer(input: {
     return { ok: false, code: "forbidden" };
   }
 
-  const session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+  let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
+
+  try {
+    await reconcileStaleOpenDailyCashSessionForActiveClub({
+      activeClub: { id: context.activeClub.id },
+      user: { id: context.user.id }
+    });
+    session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+  } catch (error) {
+    console.error("[create-account-transfer-session-resolution-failed]", {
+      clubId: context.activeClub.id,
+      sessionDate: getTodayDate(),
+      error
+    });
+    return { ok: false, code: "forbidden" };
+  }
 
   if (!session || session.status !== "open") {
     return { ok: false, code: "session_required" };
@@ -2285,6 +2364,21 @@ export async function getTreasuryAccountDetailForActiveClub(
 
   if (!context?.activeClub) {
     return null;
+  }
+
+  if (role === "secretaria") {
+    try {
+      await reconcileStaleOpenDailyCashSessionForActiveClub({
+        activeClub: { id: context.activeClub.id },
+        user: { id: context.user.id }
+      });
+    } catch (error) {
+      console.error("[account-detail-stale-session-reconciliation-failed]", {
+        clubId: context.activeClub.id,
+        sessionDate: getTodayDate(),
+        error
+      });
+    }
   }
 
   const sessionDate = getTodayDate();

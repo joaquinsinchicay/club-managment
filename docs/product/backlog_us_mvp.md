@@ -687,26 +687,35 @@ Feature: US-10 — Apertura y cierre diario de movimientos
     Then el sistema bloquea la acción
     And veo un mensaje indicando que no hay jornada abierta
 
-  Scenario 08: No se pueden registrar movimientos fuera de una jornada abierta
+  Scenario 08: Cierre automático de jornada vencida por cambio de día
+    Given estoy autenticado
+    And tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta del día anterior para el club activo
+    When el sistema resuelve la operatoria luego del cambio de día
+    Then la jornada anterior se cierra automáticamente con los saldos actuales
+    And queda registrada la fecha y hora de cierre
+    And la nueva fecha no hereda una jornada abierta
+
+  Scenario 09: No se pueden registrar movimientos fuera de una jornada abierta
     Given no existe una jornada abierta para el día actual
     When intento registrar un movimiento
     Then el sistema bloquea la acción
     And veo un mensaje indicando que debo abrir la jornada
 
-  Scenario 09: Registro de horario laboral implícito
+  Scenario 10: Registro de horario laboral implícito
     Given realizo la apertura y cierre de jornada
     When la jornada queda cerrada
     Then el sistema registra el rango horario trabajado
     And ese registro queda asociado a mi usuario y al club activo
 
-  Scenario 10: Consistencia por club activo
+  Scenario 11: Consistencia por club activo
     Given estoy autenticado
     And tengo rol "Secretaria" en distintos clubes
     When realizo apertura o cierre de jornada
     Then la operación aplica únicamente al club activo
     And no afecta la información de otros clubes
 
-  Scenario 11: Navegación con feedback hacia una pantalla operativa
+  Scenario 12: Navegación con feedback hacia una pantalla operativa
     Given estoy autenticado
     And tengo rol "Secretaria" en el club activo
     And veo una CTA que redirige a una pantalla de apertura o cierre diario

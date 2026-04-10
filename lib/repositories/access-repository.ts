@@ -179,6 +179,7 @@ type AccessRepository = {
   }): Promise<ReceiptFormat | null>;
   findTreasuryAdjustmentCategory(clubId: string): Promise<TreasuryCategory | null>;
   getDailyCashSessionByDate(clubId: string, sessionDate: string): Promise<DailyCashSession | null>;
+  getLastOpenDailyCashSessionBeforeDate(clubId: string, beforeDate: string): Promise<DailyCashSession | null>;
   createDailyCashSession(
     clubId: string,
     sessionDate: string,
@@ -237,6 +238,20 @@ type AccessRepository = {
       status: TreasuryMovementStatus;
       differenceAmount: number;
       adjustmentMoment: "opening" | "closing";
+    }>;
+  }): Promise<DailyCashSession | null>;
+  autoCloseStaleDailyCashSessionWithBalances(input: {
+    clubId: string;
+    beforeDate: string;
+    expectedSessionId: string | null;
+    closedByUserId: string;
+    balances: Array<{
+      accountId: string;
+      currencyCode: string;
+      balanceMoment: "opening" | "closing";
+      expectedBalance: number;
+      declaredBalance: number;
+      differenceAmount: number;
     }>;
   }): Promise<DailyCashSession | null>;
   listTreasuryMovementsBySession(sessionId: string): Promise<TreasuryMovement[]>;
@@ -1875,6 +1890,52 @@ async function findRealDailyCashSessionByDate(clubId: string, sessionDate: strin
   return mapDailyCashSessionRow(rows[0]);
 }
 
+async function findRealLastOpenDailyCashSessionBeforeDate(
+  clubId: string,
+  beforeDate: string,
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "get_last_open_daily_cash_session_before_date");
+  }
+
+  const { data, error } = await supabase.rpc("get_last_open_daily_cash_session_before_date_for_current_club", {
+    p_club_id: clubId,
+    p_before_date: beforeDate
+  });
+
+  if (error) {
+    console.error("[club-scoped-rpc-failure]", {
+      operation: "get_last_open_daily_cash_session_before_date",
+      clubId,
+      beforeDate,
+      error
+    });
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "get_last_open_daily_cash_session_before_date", {
+      cause: error
+    });
+  }
+
+  const rows = (data ?? []) as Array<{
+    id: string;
+    club_id: string;
+    session_date: string;
+    status: DailyCashSession["status"] | null;
+    opened_at: string;
+    closed_at: string | null;
+    opened_by_user_id: string;
+    closed_by_user_id: string | null;
+  }>;
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return mapDailyCashSessionRow(rows[0]);
+}
+
 async function createRealDailyCashSession(
   clubId: string,
   sessionDate: string,
@@ -2113,6 +2174,75 @@ async function closeRealDailyCashSessionWithBalances(input: {
       error
     });
     throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "close_daily_cash_session_with_balances", {
+      cause: error
+    });
+  }
+
+  const row = (((data ?? []) as Array<{
+    id: string;
+    club_id: string;
+    session_date: string;
+    status: DailyCashSession["status"] | null;
+    opened_at: string;
+    closed_at: string | null;
+    opened_by_user_id: string;
+    closed_by_user_id: string | null;
+  }>)[0] ?? null);
+
+  return row ? mapDailyCashSessionRow(row) : null;
+}
+
+async function autoCloseRealStaleDailyCashSessionWithBalances(input: {
+  clubId: string;
+  beforeDate: string;
+  expectedSessionId: string | null;
+  closedByUserId: string;
+  balances: Array<{
+    accountId: string;
+    currencyCode: string;
+    balanceMoment: "opening" | "closing";
+    expectedBalance: number;
+    declaredBalance: number;
+    differenceAmount: number;
+  }>;
+}, client?: AccessRepositoryClient) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    throw new AccessRepositoryInfraError(
+      "club_scoped_rpc_failed",
+      "auto_close_stale_daily_cash_session_with_balances"
+    );
+  }
+
+  const { data, error } = await supabase.rpc(
+    "auto_close_stale_daily_cash_session_with_balances_for_current_club",
+    {
+      p_club_id: input.clubId,
+      p_before_date: input.beforeDate,
+      p_expected_session_id: input.expectedSessionId,
+      p_closed_by_user_id: input.closedByUserId,
+      p_balance_entries: input.balances.map((entry) => ({
+        account_id: entry.accountId,
+        currency_code: entry.currencyCode,
+        balance_moment: entry.balanceMoment,
+        expected_balance: entry.expectedBalance,
+        declared_balance: entry.declaredBalance,
+        difference_amount: entry.differenceAmount
+      }))
+    }
+  );
+
+  if (error) {
+    console.error("[club-scoped-rpc-failure]", {
+      operation: "auto_close_stale_daily_cash_session_with_balances",
+      clubId: input.clubId,
+      beforeDate: input.beforeDate,
+      expectedSessionId: input.expectedSessionId,
+      closedByUserId: input.closedByUserId,
+      error
+    });
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "auto_close_stale_daily_cash_session_with_balances", {
       cause: error
     });
   }
@@ -3864,6 +3994,22 @@ export const accessRepository: AccessRepository = {
       ) ?? null
     );
   },
+  async getLastOpenDailyCashSessionBeforeDate(clubId, beforeDate) {
+    if (shouldUseSupabaseDatabase()) {
+      return findRealLastOpenDailyCashSessionBeforeDate(clubId, beforeDate);
+    }
+
+    return (
+      [...getStore().dailyCashSessions]
+        .filter(
+          (session) =>
+            session.clubId === clubId &&
+            session.status === "open" &&
+            session.sessionDate < beforeDate
+        )
+        .sort((left, right) => right.sessionDate.localeCompare(left.sessionDate))[0] ?? null
+    );
+  },
   async createDailyCashSession(clubId, sessionDate, openedByUserId) {
     if (shouldUseSupabaseDatabase()) {
       return createRealDailyCashSession(clubId, sessionDate, openedByUserId);
@@ -4016,6 +4162,49 @@ export const accessRepository: AccessRepository = {
         accountId: entry.accountId,
         differenceAmount: entry.differenceAmount,
         adjustmentMoment: entry.adjustmentMoment
+      });
+    });
+
+    session.status = "closed";
+    session.closedAt = now();
+    session.closedByUserId = input.closedByUserId;
+
+    return session;
+  },
+  async autoCloseStaleDailyCashSessionWithBalances(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return autoCloseRealStaleDailyCashSessionWithBalances(input);
+    }
+
+    const store = getStore();
+    const session =
+      [...store.dailyCashSessions]
+        .filter(
+          (entry) =>
+            entry.clubId === input.clubId &&
+            entry.status === "open" &&
+            entry.sessionDate < input.beforeDate
+        )
+        .sort((left, right) => right.sessionDate.localeCompare(left.sessionDate))[0] ?? null;
+
+    if (!session) {
+      return null;
+    }
+
+    if (input.expectedSessionId && session.id !== input.expectedSessionId) {
+      return null;
+    }
+
+    input.balances.forEach((entry) => {
+      store.dailyCashSessionBalances.push({
+        id: `session-balance-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sessionId: session.id,
+        accountId: entry.accountId,
+        currencyCode: entry.currencyCode,
+        balanceMoment: entry.balanceMoment,
+        expectedBalance: entry.expectedBalance,
+        declaredBalance: entry.declaredBalance,
+        differenceAmount: entry.differenceAmount
       });
     });
 

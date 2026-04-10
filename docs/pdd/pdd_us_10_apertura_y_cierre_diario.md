@@ -21,7 +21,7 @@ La operatoria diaria de Secretaría necesita un marco explícito de jornada para
 
 ## 3. Objetivo funcional
 
-El sistema debe permitir que un usuario con rol `secretaria` en el club activo abra una jornada diaria, opere movimientos durante ese período y la cierre al finalizar, manteniendo una única jornada por día y por club.
+El sistema debe permitir que un usuario con rol `secretaria` en el club activo abra una jornada diaria, opere movimientos durante ese período y la cierre al finalizar, manteniendo una única jornada por día y por club. Si una jornada quedó `open` al finalizar el día operativo, el backend debe cerrarla automáticamente en la primera interacción posterior al cambio de día.
 
 ---
 
@@ -31,6 +31,7 @@ El sistema debe permitir que un usuario con rol `secretaria` en el club activo a
 - Apertura de jornada diaria para Secretaría.
 - Cierre de jornada abierta.
 - Validación de una sola jornada por día y club.
+- Autocierre backend-only de la última jornada `open` vencida al detectar cambio de día.
 - Exposición del estado de jornada dentro del dashboard.
 - Navegación con loader bloqueante desde las CTAs de Secretaría hacia las pantallas de apertura y cierre.
 - Reglas para permitir o bloquear la creación de movimientos según el estado de la jornada.
@@ -66,6 +67,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | Secretaría intenta abrir otra jornada el mismo día | La acción se bloquea. |
 | Secretaría cierra jornada abierta | La jornada cambia a `closed` y deja de habilitar carga de movimientos. |
 | Secretaría intenta cerrar sin jornada abierta | La acción se bloquea. |
+| Existe una jornada `open` de un día anterior | El backend la cierra automáticamente con los saldos acumulados reales de esa fecha antes de resolver la operatoria del nuevo día. |
 
 ---
 
@@ -77,6 +79,9 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - La resolución de jornada del día debe leer la persistencia real del club activo, no estado efímero local.
 - La carga de movimientos de Secretaría requiere jornada `open`.
 - Una jornada `closed` no debe volver a habilitar la carga del mismo día en esta historia.
+- No puede persistir una jornada `open` de un día anterior cuando el sistema empieza a operar un nuevo día; debe cerrarse automáticamente en backend antes de resolver la jornada actual.
+- El autocierre toma los saldos acumulados reales de la fecha de la jornada vencida y los registra como cierre sin diferencias ni ajustes adicionales.
+- El autocierre usa la misma zona horaria operativa `America/Argentina/Buenos_Aires` que la resolución del día actual.
 
 ---
 
@@ -104,6 +109,15 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 1. No existe jornada abierta para el día.
 2. Secretaría intenta cerrar.
 3. El sistema rechaza la operación.
+
+### C. Jornada vencida por cambio de día
+
+1. Existe una jornada `open` de un día anterior en el club activo.
+2. Secretaría ingresa al dashboard o ejecuta una acción operativa en un nuevo día.
+3. El backend detecta la jornada vencida antes de resolver la operatoria actual.
+4. El sistema registra balances de cierre con los saldos acumulados reales de esa jornada.
+5. La jornada anterior cambia a `closed`.
+6. El nuevo día queda sin jornada abierta hasta que Secretaría la abra explícitamente.
 
 ---
 
@@ -171,6 +185,10 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Las operaciones sobre `daily_cash_sessions` y sus registros asociados deben correr con contexto `app.current_club_id` del club activo.
 - `daily_cash_sessions.opened_at` debe persistirse en apertura como timestamp auditable del inicio real de la jornada.
 - `daily_cash_sessions.closed_at` debe persistirse en cierre como timestamp auditable del fin real de la jornada.
+- El autocierre debe localizar la última jornada `open` anterior al día operativo actual del club activo.
+- El autocierre debe persistir registros `daily_cash_session_balances` de tipo `closing` con `expected_balance` y `declared_balance` iguales al saldo acumulado real de la jornada vencida.
+- El autocierre debe cerrar la jornada vencida de forma idempotente y transaccional.
+- En modo `on-demand`, `closed_by_user_id` debe quedar asociado al usuario autenticado que disparó la reconciliación backend.
 
 Do not reference current code files.
 
@@ -201,6 +219,8 @@ Do not reference current code files.
 | Cerrar jornada sin haber abierto una | Media | Media | Validar sesión `open` previa antes de cerrar. |
 | Mostrar estado ambiguo en dashboard | Media | Media | Exponer un único estado efectivo del día y accionar acorde. |
 | Drift entre migraciones locales y base remota | Media | Alta | Verificar despliegue de RPCs antes de asumir `Jornada pendiente`; tratar ausencia de función como error de infraestructura. |
+| Mantener una jornada `open` vencida al cambiar de día | Media | Alta | Reconciliar y autocerrar la última jornada vencida antes de resolver la operatoria del día actual. |
+| Doble cierre concurrente de una jornada vencida | Baja | Alta | Ejecutar el autocierre con función transaccional e idempotente que bloquee la fila `open` antes de cerrar. |
 
 ## 17. Comportamiento esperado en la tab Secretaría
 
