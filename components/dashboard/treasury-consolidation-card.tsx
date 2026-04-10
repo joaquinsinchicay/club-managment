@@ -56,56 +56,75 @@ function MovementList({
         </div>
       ) : (
         <div className="grid gap-3">
-          {movements.map((movement) => (
-            <Link
-              key={movement.movementId}
-              href={`/dashboard/treasury/consolidation?date=${encodeURIComponent(
-                consolidationDate
-              )}&movement=${encodeURIComponent(movement.movementId)}`}
-              className={`rounded-xl border p-4 transition ${
-                movement.movementId === selectedMovementId
-                  ? "border-foreground bg-card"
-                  : "border-border bg-secondary/40 hover:bg-secondary/60"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-base font-semibold text-foreground">{movement.concept}</p>
-                    <StatusBadge
-                      label={
-                        movement.status === "integrated"
-                          ? texts.dashboard.consolidation.status_integrated
-                          : texts.dashboard.consolidation.status_pending
-                      }
-                      tone={movement.status === "integrated" ? "neutral" : "warning"}
-                    />
-                    {!movement.isValid ? (
-                      <StatusBadge label={texts.dashboard.consolidation.status_invalid} tone="danger" />
-                    ) : null}
-                    {movement.possibleMatch ? (
+          {movements.map((movement) => {
+            const isSelected = movement.movementId === selectedMovementId;
+
+            return (
+              <Link
+                key={movement.movementId}
+                href={`/dashboard/treasury/consolidation?date=${encodeURIComponent(
+                  consolidationDate
+                )}&movement=${encodeURIComponent(movement.movementId)}`}
+                aria-current={isSelected ? "page" : undefined}
+                className={`relative rounded-xl border p-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 ${
+                  isSelected
+                    ? "border-foreground bg-card shadow-soft ring-1 ring-foreground/10"
+                    : "border-border bg-secondary/40 hover:bg-secondary/60"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`absolute inset-y-3 left-0 w-1 rounded-full transition ${
+                    isSelected ? "bg-foreground" : "bg-transparent"
+                  }`}
+                />
+
+                <div className="flex items-start justify-between gap-3 pl-2">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-base font-semibold text-foreground">{movement.concept}</p>
+                      {isSelected ? (
+                        <StatusBadge
+                          label={texts.dashboard.consolidation.selected_label}
+                          tone="neutral"
+                          className="border-foreground/15 bg-foreground/5"
+                        />
+                      ) : null}
                       <StatusBadge
-                        label={texts.dashboard.consolidation.status_possible_match}
-                        tone="success"
+                        label={
+                          movement.status === "integrated"
+                            ? texts.dashboard.consolidation.status_integrated
+                            : texts.dashboard.consolidation.status_pending
+                        }
+                        tone={movement.status === "integrated" ? "neutral" : "warning"}
                       />
-                    ) : null}
+                      {!movement.isValid ? (
+                        <StatusBadge label={texts.dashboard.consolidation.status_invalid} tone="danger" />
+                      ) : null}
+                      {movement.possibleMatch ? (
+                        <StatusBadge
+                          label={texts.dashboard.consolidation.status_possible_match}
+                          tone="success"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="grid gap-1 text-sm text-muted-foreground">
+                      <p>
+                        {movement.movementDate} · {movement.accountName}
+                      </p>
+                      <p>
+                        {movement.categoryName} · {texts.dashboard.treasury.movement_types[movement.movementType]} ·{" "}
+                        {movement.createdByUserName}
+                      </p>
+                    </div>
                   </div>
-                  <div className="grid gap-1 text-sm text-muted-foreground">
-                    <p>
-                      {movement.movementDate} · {movement.accountName}
-                    </p>
-                    <p>
-                      {movement.categoryName} · {texts.dashboard.treasury.movement_types[movement.movementType]} ·{" "}
-                      {movement.createdByUserName}
-                    </p>
-                  </div>
+                  <p className="text-2xl font-semibold tracking-tight text-foreground">
+                    {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
+                  </p>
                 </div>
-                <p className="text-2xl font-semibold tracking-tight text-foreground">
-                  {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
-                </p>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </section>
@@ -164,12 +183,6 @@ export function TreasuryConsolidationCard({
         backLabel={texts.dashboard.consolidation.back_to_treasury_cta}
       />
 
-      {isDateNavigationPending ? (
-        <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground">
-          {texts.dashboard.treasury.navigation_loading}
-        </div>
-      ) : null}
-
       <section className="w-full rounded-[20px] border border-border bg-card p-6 sm:p-8">
         <div className="grid gap-6">
           <div className="rounded-xl border border-border bg-secondary/40 p-4">
@@ -208,7 +221,7 @@ export function TreasuryConsolidationCard({
                 {isDateNavigationPending ? (
                   <>
                     <Spinner className="size-3.5" />
-                    <span>{texts.dashboard.treasury.navigation_loading}</span>
+                    <span>{texts.dashboard.consolidation.load_loading}</span>
                   </>
                 ) : (
                   <span>{texts.dashboard.consolidation.load_helper}</span>

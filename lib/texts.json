@@ -320,6 +320,7 @@
       "status_integrated": "Integrado",
       "status_invalid": "Invalido",
       "status_possible_match": "Coincidencia",
+      "selected_label": "Seleccionado",
       "detail_title": "Detalle del movimiento",
       "detail_description": "Revisa la imputacion completa y corrige los datos antes de consolidar si hace falta.",
       "invalid_title": "Este movimiento requiere correccion antes de consolidar.",
