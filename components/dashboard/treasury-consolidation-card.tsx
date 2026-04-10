@@ -1,9 +1,11 @@
 "use client";
 
+import { type FormEvent, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { PageContentHeader } from "@/components/ui/page-content-header";
-import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import type {
@@ -121,6 +123,37 @@ export function TreasuryConsolidationCard({
   integrateMatchingMovementAction,
   executeDailyConsolidationAction
 }: TreasuryConsolidationCardProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [selectedDate, setSelectedDate] = useState(dashboard.consolidationDate);
+  const [isDateNavigationPending, startDateNavigationTransition] = useTransition();
+
+  useEffect(() => {
+    setSelectedDate(dashboard.consolidationDate);
+  }, [dashboard.consolidationDate]);
+
+  function handleLoadDateSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const nextDate = selectedDate.trim();
+
+    if (!nextDate) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("date", nextDate);
+    nextParams.delete("movement");
+    nextParams.delete("feedback");
+
+    startDateNavigationTransition(() => {
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    });
+  }
+
+  const hasMovements = dashboard.pendingMovements.length > 0 || dashboard.integratedMovements.length > 0;
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
       <PageContentHeader
@@ -131,29 +164,60 @@ export function TreasuryConsolidationCard({
         backLabel={texts.dashboard.consolidation.back_to_treasury_cta}
       />
 
+      {isDateNavigationPending ? (
+        <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground">
+          {texts.dashboard.treasury.navigation_loading}
+        </div>
+      ) : null}
+
       <section className="w-full rounded-[20px] border border-border bg-card p-6 sm:p-8">
         <div className="grid gap-6">
           <div className="rounded-xl border border-border bg-secondary/40 p-4">
-            <form method="get" className="grid gap-4 sm:grid-cols-[minmax(0,220px)_auto] sm:items-end">
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.dashboard.consolidation.date_label}</span>
-                <input
-                  type="date"
-                  name="date"
-                  defaultValue={dashboard.consolidationDate}
-                  className="min-h-11 rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-                />
-              </label>
-              <button
-                type="submit"
-                className="min-h-11 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            <form onSubmit={handleLoadDateSubmit} className="grid gap-4">
+              <PendingFieldset
+                disabled={isDateNavigationPending}
+                className="grid gap-4 sm:grid-cols-[minmax(0,220px)_auto] sm:items-end"
               >
-                {texts.dashboard.consolidation.load_cta}
-              </button>
+                <label className="grid gap-2 text-sm text-foreground">
+                  <span className="font-medium">{texts.dashboard.consolidation.date_label}</span>
+                  <input
+                    type="date"
+                    name="date"
+                    value={selectedDate}
+                    onChange={(event) => setSelectedDate(event.target.value)}
+                    className="min-h-11 rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={!selectedDate.trim() || isDateNavigationPending}
+                  aria-disabled={!selectedDate.trim() || isDateNavigationPending}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isDateNavigationPending ? (
+                    <>
+                      <Spinner />
+                      <span>{texts.dashboard.consolidation.load_loading}</span>
+                    </>
+                  ) : (
+                    <span>{texts.dashboard.consolidation.load_cta}</span>
+                  )}
+                </button>
+              </PendingFieldset>
+              <span aria-live="polite" className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                {isDateNavigationPending ? (
+                  <>
+                    <Spinner className="size-3.5" />
+                    <span>{texts.dashboard.treasury.navigation_loading}</span>
+                  </>
+                ) : (
+                  <span>{texts.dashboard.consolidation.load_helper}</span>
+                )}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {texts.dashboard.consolidation.default_date_hint} {dashboard.defaultDate}
+              </p>
             </form>
-            <p className="mt-3 text-xs text-muted-foreground">
-              {texts.dashboard.consolidation.default_date_hint} {dashboard.defaultDate}
-            </p>
           </div>
 
           {dashboard.batch ? (
@@ -182,11 +246,11 @@ export function TreasuryConsolidationCard({
             </div>
           ) : null}
 
-          {dashboard.pendingMovements.length === 0 && dashboard.integratedMovements.length === 0 ? (
+          {!hasMovements && dashboard.hasLoadedDate ? (
             <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
               {texts.dashboard.consolidation.empty}
             </div>
-          ) : (
+          ) : hasMovements ? (
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
               <div className="grid gap-6">
                 <MovementList
@@ -449,7 +513,7 @@ export function TreasuryConsolidationCard({
                 )}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       </section>
     </main>

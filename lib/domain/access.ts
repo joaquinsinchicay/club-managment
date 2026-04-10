@@ -405,6 +405,7 @@ export type ConsolidationAuditEntry = {
 export type TreasuryConsolidationDashboard = {
   consolidationDate: string;
   defaultDate: string;
+  hasLoadedDate: boolean;
   batch: DailyConsolidationBatch | null;
   pendingMovements: ConsolidationMovement[];
   integratedMovements: ConsolidationMovement[];

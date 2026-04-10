@@ -1902,6 +1902,7 @@ export async function getTreasuryConsolidationDashboard(
   return {
     consolidationDate: selectedDate,
     defaultDate: getDefaultConsolidationDate(),
+    hasLoadedDate: Boolean(consolidationDate?.trim()),
     batch,
     pendingMovements: mapped.filter((movement) => movement.status === "pending_consolidation"),
     integratedMovements: mapped.filter((movement) => movement.status === "integrated")
