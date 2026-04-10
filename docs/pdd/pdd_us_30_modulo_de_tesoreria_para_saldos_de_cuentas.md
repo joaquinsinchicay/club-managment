@@ -152,6 +152,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - `treasury_account_currencies`: READ indirecto para monedas habilitadas por cuenta.
 - `treasury_movements`: READ para calcular saldos del día por cuenta y moneda.
 - `treasury_movements`: INSERT para registrar movimientos de Tesorería sin jornada.
+- La lectura y escritura de `treasury_movements` en base remota debe resolverse mediante RPCs club-scoped que seteen `app.current_club_id` y respeten RLS del club activo.
 
 Do not reference current code files.
 

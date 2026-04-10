@@ -22,7 +22,8 @@ function mapDeclaredBalances(formData: FormData) {
 
 function redirectToDashboard(code: string) {
   revalidatePath("/dashboard");
-  redirect(`/dashboard?feedback=${code}`);
+  revalidatePath("/dashboard/secretaria");
+  redirect(`/dashboard/secretaria?feedback=${code}`);
 }
 
 export async function openDailyCashSessionWithBalancesAction(formData: FormData) {

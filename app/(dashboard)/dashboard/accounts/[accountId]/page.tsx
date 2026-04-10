@@ -10,9 +10,22 @@ type AccountDetailPageProps = {
   params: {
     accountId: string;
   };
+  searchParams?: {
+    page?: string;
+  };
 };
 
-export default async function AccountDetailPage({ params }: AccountDetailPageProps) {
+function getCurrentPage(searchParams?: { page?: string }) {
+  const rawPage = Number(searchParams?.page ?? "1");
+
+  if (!Number.isFinite(rawPage) || rawPage < 1) {
+    return 1;
+  }
+
+  return Math.floor(rawPage);
+}
+
+export default async function AccountDetailPage({ params, searchParams }: AccountDetailPageProps) {
   const context = await getAuthenticatedSessionContext();
 
   if (!context) {
@@ -35,13 +48,14 @@ export default async function AccountDetailPage({ params }: AccountDetailPagePro
 
   return (
     <AccountDetailCard
-      context={context}
       detail={accountDetailData.detail}
       accounts={accountDetailData.accounts}
       currentAccountId={params.accountId}
       accountHrefBase="/dashboard/accounts"
-      secondaryActionHref="/dashboard"
-      secondaryActionLabel={texts.dashboard.treasury.back_to_dashboard_cta}
+      detailPageHref={`/dashboard/accounts/${params.accountId}`}
+      currentPage={getCurrentPage(searchParams)}
+      secondaryActionHref="/dashboard/secretaria"
+      secondaryActionLabel={texts.dashboard.treasury.back_to_secretaria_cta}
     />
   );
 }

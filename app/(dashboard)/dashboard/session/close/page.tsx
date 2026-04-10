@@ -24,12 +24,11 @@ export default async function CloseDailyCashSessionPage() {
   const validation = await getDailyCashSessionValidationForActiveClub("close");
 
   if (!validation || validation.sessionStatus !== "open") {
-    redirect("/dashboard?feedback=session_not_open");
+    redirect("/dashboard/secretaria?feedback=session_not_open");
   }
 
   return (
     <DailySessionBalanceCard
-      context={context}
       validation={validation}
       submitAction={closeDailyCashSessionWithBalancesAction}
     />

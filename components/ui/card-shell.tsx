@@ -18,12 +18,12 @@ export function CardShell({
   return (
     <section
       className={cn(
-        "w-full max-w-md rounded-[28px] border border-border/70 bg-card p-6 shadow-soft sm:p-8",
+        "w-full max-w-md rounded-[20px] border border-border bg-card p-6 sm:p-8",
         className
       )}
     >
       <div className="mb-6 space-y-3">
-        <span className="inline-flex rounded-full bg-accent/14 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
+        <span className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {eyebrow}
         </span>
         <div className="space-y-2">

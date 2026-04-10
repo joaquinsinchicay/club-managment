@@ -382,6 +382,8 @@ Atributos:
 Reglas:
 
 * Genera 2 movimientos.
+* Debe rechazar importes mayores al saldo disponible de la cuenta origen para la moneda seleccionada.
+* Debe persistirse de forma transaccional junto con los dos movimientos asociados.
 
 ---
 

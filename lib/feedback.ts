@@ -33,6 +33,8 @@ const dashboardSuccessFeedbackCodes = new Set([
   "movement_created",
   "movement_updated",
   "movement_integrated",
+  "transfer_created",
+  "fx_operation_created",
   "consolidation_completed"
 ]);
 
@@ -110,7 +112,15 @@ export function resolveFeedbackToast(
     return toast ? { toast, consumedKeys: ["feedback"] } : null;
   }
 
-  if ((pathname === "/dashboard" || pathname === "/dashboard/treasury") && feedbackCode) {
+  if (
+    (
+      pathname === "/dashboard" ||
+      pathname === "/dashboard/secretaria" ||
+      pathname === "/dashboard/treasury" ||
+      pathname === "/dashboard/treasury/consolidation"
+    ) &&
+    feedbackCode
+  ) {
     const toast = resolveDashboardFeedback(feedbackCode, searchParams);
 
     return toast ? { toast, consumedKeys: ["feedback", "movement_id"] } : null;

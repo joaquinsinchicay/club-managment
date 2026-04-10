@@ -185,6 +185,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 ### Entidades afectadas
 - `treasury_movements`: INSERT para el alta del movimiento; READ para recomputar saldos de la card.
+- La lectura y escritura de `treasury_movements` en base remota debe ejecutarse con RPCs club-scoped que seteen `app.current_club_id` server-side antes de aplicar RLS.
 - `daily_cash_sessions`: READ para validar jornada abierta y vincular el movimiento.
 - `treasury_accounts`: READ para validar cuenta y moneda.
 - `treasury_categories`: READ para validar categoría.

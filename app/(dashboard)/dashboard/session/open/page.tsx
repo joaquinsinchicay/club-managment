@@ -23,13 +23,16 @@ export default async function OpenDailyCashSessionPage() {
 
   const validation = await getDailyCashSessionValidationForActiveClub("open");
 
-  if (!validation || validation.sessionStatus !== "not_started") {
-    redirect("/dashboard?feedback=session_already_exists");
+  if (!validation) {
+    redirect("/dashboard/secretaria?feedback=session_open_failed");
+  }
+
+  if (validation.sessionStatus !== "not_started") {
+    redirect("/dashboard/secretaria?feedback=session_already_exists");
   }
 
   return (
     <DailySessionBalanceCard
-      context={context}
       validation={validation}
       submitAction={openDailyCashSessionWithBalancesAction}
     />

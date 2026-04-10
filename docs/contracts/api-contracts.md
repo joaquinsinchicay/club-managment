@@ -373,7 +373,7 @@ Crear cuenta del club.
 Sí
 
 **Allowed roles**
-`tesoreria`
+`secretaria`
 
 **Input**
 
@@ -673,7 +673,7 @@ Obtener card resumida de saldos y estado operativo del día.
 Sí
 
 **Allowed roles**
-`tesoreria`
+`secretaria`
 
 **Input**
 
@@ -686,6 +686,7 @@ Sí
 ```json
 {
   "session_status": "open",
+  "movement_data_status": "resolved",
   "session_date": "2026-04-02",
   "accounts": [
     {
@@ -716,6 +717,32 @@ Sí
   ]
 }
 ```
+
+This contract depends on the club-scoped daily cash session RPCs being deployed in the active database.
+
+This contract also depends on the club-scoped treasury movement RPCs being deployed in the active database.
+
+`accounts[].balances` must reflect the sum of visible `treasury_movements` for the active club and `session_date`.
+
+`movements[]` must list the visible `treasury_movements` of the active club and `session_date`, ordered from newest to oldest by `created_at`.
+
+The dashboard uses `daily_cash_sessions` only to resolve `session_status` and available actions. A movement that belongs to the active club, matches `session_date`, and is visible for Secretaría must still contribute to balances and appear in `movements[]` even if `dailyCashSessionId` is null or does not drive the read path.
+
+`movement_data_status` can be:
+
+* `resolved` when the dashboard could read `treasury_movements` for the active club and `session_date`
+* `unresolved` when the dashboard could not read `treasury_movements` reliably; in that case the UI must not infer balances `0,00`, empty movements, or account detail availability from that failure
+
+`session_status` can be:
+
+* `not_started` when no daily session exists for the active club and current date
+* `open` when the current daily session is open
+* `closed` when the current daily session is closed
+* `unresolved` when the dashboard could not resolve `daily_cash_sessions` reliably; in that case the UI must not infer `Jornada pendiente` or expose operational CTAs
+
+Absence of a daily session must resolve as "no rows" and therefore `not_started`, not as an infrastructure error.
+
+Before resolving `session_status` for the current date, the backend may reconcile and close the latest stale `daily_cash_session` that is still `open` for a previous date in the active club.
 
 ---
 
@@ -830,6 +857,7 @@ Sí
 **Validations**
 
 * debe existir jornada abierta del día
+* si existe una jornada `open` de un día anterior en el club activo, el backend debe cerrarla automáticamente antes de validar el cierre manual del día actual
 * si hay diferencia, debe generarse ajuste
 * luego del cierre, Secretaría no puede editar movimientos del día
 
@@ -1036,6 +1064,8 @@ Sí
 
 * devuelve el historial visible completo de la cuenta dentro del club activo
 * la UI puede agrupar los movimientos por `movement_date`
+* la UI pagina el render del historial a 10 movimientos por pagina
+* la paginacion visual se aplica sobre movimientos; un mismo `movement_date` puede aparecer en mas de una pagina si tiene suficientes registros
 
 ---
 
@@ -1073,6 +1103,7 @@ Sí
 * la cuenta destino debe ser visible para otro rol operativo y no visible para `secretaria`
 * moneda válida para ambas cuentas
 * amount > 0
+* la cuenta origen debe tener saldo disponible suficiente en la moneda seleccionada
 
 **Output**
 
@@ -1086,6 +1117,7 @@ Sí
 **Notes**
 
 * ambos movimientos deben compartir una referencia común de transferencia
+* la operación debe ejecutarse de forma transaccional; si falla cualquier paso, no debe persistirse ningún registro
 
 ---
 
@@ -1399,6 +1431,7 @@ Puede:
 * `invalid_receipt_format`
 * `invalid_field_rule`
 * `invalid_transfer`
+* `insufficient_funds`
 * `invalid_fx_operation`
 * `consolidation_already_completed`
 * `consolidation_has_invalid_movements`

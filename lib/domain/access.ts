@@ -70,6 +70,13 @@ export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
 export type TreasuryConfigStatus = "active" | "inactive";
 export type TreasuryCurrencyCode = "ARS" | "USD";
 export type TreasuryMovementType = "ingreso" | "egreso";
+export type TreasuryMovementOriginRole = "secretaria" | "tesoreria" | "system";
+export type TreasuryMovementOriginSource =
+  | "manual"
+  | "transfer"
+  | "fx"
+  | "adjustment"
+  | "consolidation";
 export type TreasuryMovementStatus =
   | "pending_consolidation"
   | "integrated"
@@ -181,7 +188,7 @@ export type DailyCashSession = {
   clubId: string;
   sessionDate: string;
   status: TreasurySessionStatus;
-  openedAt: string | null;
+  openedAt: string;
   closedAt: string | null;
   openedByUserId: string | null;
   closedByUserId: string | null;
@@ -258,7 +265,8 @@ export type BalanceAdjustment = {
 };
 
 export type DashboardTreasuryCard = {
-  sessionStatus: TreasurySessionStatus | "not_started";
+  sessionStatus: TreasurySessionStatus | "not_started" | "unresolved";
+  movementDataStatus: "resolved" | "unresolved";
   sessionDate: string;
   sessionId: string | null;
   accounts: Array<{
@@ -397,6 +405,7 @@ export type ConsolidationAuditEntry = {
 export type TreasuryConsolidationDashboard = {
   consolidationDate: string;
   defaultDate: string;
+  hasLoadedDate: boolean;
   batch: DailyConsolidationBatch | null;
   pendingMovements: ConsolidationMovement[];
   integratedMovements: ConsolidationMovement[];

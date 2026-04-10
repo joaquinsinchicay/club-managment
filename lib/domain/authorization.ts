@@ -55,6 +55,20 @@ export function canOperateTesoreria(membership: MembershipLike) {
   return isActiveMembership(membership) && hasMembershipRole(membership, "tesoreria");
 }
 
+export function canAccessDashboardSummary(membership: MembershipLike) {
+  const activeMembership = getActiveMembership(membership);
+
+  if (!activeMembership) {
+    return false;
+  }
+
+  const hasAdminRole = hasMembershipRole(activeMembership, "admin");
+  const hasSecretariaRole = hasMembershipRole(activeMembership, "secretaria");
+  const hasTesoreriaRole = hasMembershipRole(activeMembership, "tesoreria");
+
+  return !hasSecretariaRole || hasTesoreriaRole || hasAdminRole;
+}
+
 export function canAccessClubSettingsPage(membership: MembershipLike) {
   return getClubSettingsPermissions(membership).canAccessPage;
 }

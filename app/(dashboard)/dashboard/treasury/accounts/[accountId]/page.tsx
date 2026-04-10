@@ -10,10 +10,24 @@ type TreasuryAccountDetailPageProps = {
   params: {
     accountId: string;
   };
+  searchParams?: {
+    page?: string;
+  };
 };
 
+function getCurrentPage(searchParams?: { page?: string }) {
+  const rawPage = Number(searchParams?.page ?? "1");
+
+  if (!Number.isFinite(rawPage) || rawPage < 1) {
+    return 1;
+  }
+
+  return Math.floor(rawPage);
+}
+
 export default async function TreasuryAccountDetailPage({
-  params
+  params,
+  searchParams
 }: TreasuryAccountDetailPageProps) {
   const context = await getAuthenticatedSessionContext();
 
@@ -37,13 +51,14 @@ export default async function TreasuryAccountDetailPage({
 
   return (
     <AccountDetailCard
-      context={context}
       detail={accountDetailData.detail}
       accounts={accountDetailData.accounts}
       currentAccountId={params.accountId}
       accountHrefBase="/dashboard/treasury/accounts"
-      secondaryActionHref="/dashboard"
-      secondaryActionLabel={texts.dashboard.treasury_role.back_to_dashboard_cta}
+      detailPageHref={`/dashboard/treasury/accounts/${params.accountId}`}
+      currentPage={getCurrentPage(searchParams)}
+      secondaryActionHref="/dashboard/treasury"
+      secondaryActionLabel={texts.dashboard.treasury_role.back_to_treasury_cta}
       emptyAccountsLabel={texts.dashboard.treasury_role.empty_accounts}
     />
   );

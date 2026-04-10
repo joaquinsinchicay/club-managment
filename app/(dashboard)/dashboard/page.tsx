@@ -1,33 +1,45 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { setActiveClubAction } from "@/app/(dashboard)/dashboard/actions";
-import {
-  createAccountTransferAction,
-  createFxOperationAction,
-  createTreasuryMovementAction,
-  createTreasuryRoleMovementAction,
-  updateSecretariaMovementAction,
-} from "@/app/(dashboard)/dashboard/treasury-actions";
-import { ActiveClubSelector } from "@/components/dashboard/active-club-selector";
-import { TreasuryCard } from "@/components/dashboard/treasury-card";
-import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
-import { AppHeader } from "@/components/navigation/app-header";
+import { PageContentHeader } from "@/components/ui/page-content-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { formatLocalizedAmount } from "@/lib/amounts";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { canOperateSecretaria, canOperateTesoreria } from "@/lib/domain/authorization";
 import {
-  getActiveActivitiesForTesoreria,
-  getActiveActivitiesForSecretaria,
-  getEnabledCalendarEventsForSecretaria,
-  getActiveTreasuryCurrenciesForTesoreria,
-  getActiveTreasuryCurrenciesForSecretaria,
-  getEnabledMovementTypesForTesoreria,
-  getEnabledMovementTypesForSecretaria,
-  getActiveReceiptFormatsForTesoreria,
-  getActiveReceiptFormatsForSecretaria,
+  canAccessDashboardSummary,
+  canAccessClubSettingsNavigation,
+  canOperateSecretaria,
+  canOperateTesoreria
+} from "@/lib/domain/authorization";
+import {
   getDashboardTreasuryCardForActiveClub,
   getTreasuryRoleDashboardForActiveClub
 } from "@/lib/services/treasury-service";
-import { accessRepository } from "@/lib/repositories/access-repository";
+import { texts } from "@/lib/texts";
+
+function getSessionTone(status: "open" | "closed" | "not_started") {
+  if (status === "open") {
+    return "success";
+  }
+
+  if (status === "closed") {
+    return "danger";
+  }
+
+  return "warning";
+}
+
+function getSessionLabel(status: "open" | "closed" | "not_started") {
+  if (status === "open") {
+    return texts.dashboard.treasury.session_open;
+  }
+
+  if (status === "closed") {
+    return texts.dashboard.treasury.session_closed;
+  }
+
+  return texts.dashboard.treasury.session_not_started;
+}
 
 export default async function DashboardPage() {
   const context = await getAuthenticatedSessionContext();
@@ -36,104 +48,167 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  if (context.activeMemberships.length === 0 || !context.activeClub) {
+  if (context.activeMemberships.length === 0 || !context.activeClub || !context.activeMembership) {
     redirect("/pending-approval");
   }
 
-  const activeMembership = context.activeMembership;
-
-  if (!activeMembership) {
-    redirect("/pending-approval");
+  if (!canAccessDashboardSummary(context.activeMembership)) {
+    redirect("/dashboard/secretaria");
   }
 
-  const treasuryCard = await getDashboardTreasuryCardForActiveClub();
-  const treasuryRoleDashboard = await getTreasuryRoleDashboardForActiveClub();
-  const canOperateSecretariaRole = canOperateSecretaria(activeMembership);
-  const canOperateTesoreriaRole = canOperateTesoreria(activeMembership);
-  const allTreasuryAccounts = canOperateSecretariaRole || canOperateTesoreriaRole
-    ? await accessRepository.listTreasuryAccountsForClub(context.activeClub.id)
-    : [];
-  const treasuryMovementAccounts = canOperateSecretariaRole
-    ? allTreasuryAccounts.filter((account) => account.visibleForSecretaria)
-    : [];
-  const treasuryTransferTargetAccounts = canOperateSecretariaRole
-    ? allTreasuryAccounts.filter((account) => !account.visibleForSecretaria && account.visibleForTesoreria)
-    : [];
-  const treasuryRoleAccounts = !canOperateSecretariaRole && canOperateTesoreriaRole
-    ? allTreasuryAccounts.filter((account) => account.visibleForTesoreria)
-    : [];
-  const [treasuryCategories, treasuryActivities, treasuryCalendarEvents, treasuryCurrencies, movementTypes, receiptFormats] = canOperateSecretariaRole
-      ? await Promise.all([
-        accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
-          categories.filter((category) => category.visibleForSecretaria)
-        ),
-        getActiveActivitiesForSecretaria(),
-        getEnabledCalendarEventsForSecretaria(),
-        getActiveTreasuryCurrenciesForSecretaria(),
-        getEnabledMovementTypesForSecretaria(),
-        getActiveReceiptFormatsForSecretaria()
-      ])
-    : [[], [], [], [], [], []];
-  const [treasuryRoleCategories, treasuryRoleActivities, treasuryRoleCurrencies, treasuryRoleMovementTypes, treasuryRoleReceiptFormats] =
-    !canOperateSecretariaRole && canOperateTesoreriaRole
-      ? await Promise.all([
-          accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
-            categories.filter((category) => category.visibleForTesoreria)
-          ),
-          getActiveActivitiesForTesoreria(),
-          getActiveTreasuryCurrenciesForTesoreria(),
-          getEnabledMovementTypesForTesoreria(),
-          getActiveReceiptFormatsForTesoreria()
-        ])
-      : [[], [], [], [], []];
+  const canOperateSecretariaRole = canOperateSecretaria(context.activeMembership);
+  const canOperateTesoreriaRole = canOperateTesoreria(context.activeMembership);
+  const canAccessSettings = canAccessClubSettingsNavigation(context.activeMembership);
+  const treasuryCard = canOperateSecretariaRole ? await getDashboardTreasuryCardForActiveClub() : null;
+  const treasuryRoleDashboard = canOperateTesoreriaRole ? await getTreasuryRoleDashboardForActiveClub() : null;
+
+  const secretariaTotal = treasuryCard
+    ? treasuryCard.accounts.reduce(
+        (total, account) => total + account.balances.reduce((sum, balance) => sum + balance.amount, 0),
+        0
+      )
+    : 0;
+  const tesoreriaTotal = treasuryRoleDashboard
+    ? treasuryRoleDashboard.accounts.reduce(
+        (total, account) => total + account.balances.reduce((sum, balance) => sum + balance.amount, 0),
+        0
+      )
+    : 0;
 
   return (
-    <div className="min-h-screen">
-      <AppHeader context={context} />
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
+      <PageContentHeader
+        eyebrow={texts.header.navigation.dashboard}
+        title={texts.dashboard.overview.title}
+        description={texts.dashboard.overview.description}
+      />
 
-      <main className="mx-auto flex w-full max-w-[920px] flex-col gap-4 px-4 py-6 sm:py-8">
-        {context.availableClubs.length > 1 ? (
-          <section className="rounded-[24px] border border-border bg-card p-5 shadow-soft sm:p-6">
-            <ActiveClubSelector
-              clubs={context.availableClubs}
-              activeClubId={context.activeClub?.id ?? context.availableClubs[0]?.id ?? ""}
-              setActiveClubAction={setActiveClubAction}
-            />
-          </section>
-        ) : null}
-
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {canOperateSecretariaRole && treasuryCard ? (
-          <TreasuryCard
-            treasuryCard={treasuryCard}
-            movementAccounts={treasuryMovementAccounts}
-            transferSourceAccounts={treasuryMovementAccounts}
-            transferTargetAccounts={treasuryTransferTargetAccounts}
-            categories={treasuryCategories}
-            activities={treasuryActivities}
-            calendarEvents={treasuryCalendarEvents}
-            currencies={treasuryCurrencies}
-            movementTypes={movementTypes}
-            receiptFormats={receiptFormats}
-            createTreasuryMovementAction={createTreasuryMovementAction}
-            updateSecretariaMovementAction={updateSecretariaMovementAction}
-            createAccountTransferAction={createAccountTransferAction}
-          />
+          <article className="rounded-[20px] border border-border bg-card p-5">
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                    {texts.header.navigation.secretaria}
+                  </p>
+                  <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                    {texts.dashboard.overview.secretaria_title}
+                  </h2>
+                </div>
+                {treasuryCard.sessionStatus === "unresolved" ? null : (
+                  <StatusBadge
+                    label={getSessionLabel(treasuryCard.sessionStatus)}
+                    tone={getSessionTone(treasuryCard.sessionStatus)}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {texts.dashboard.overview.visible_accounts_label}
+                </p>
+                <p className="text-4xl font-semibold tracking-tight text-foreground">
+                  {treasuryCard.accounts.length}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-secondary/50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {texts.dashboard.overview.total_balance_label}
+                </p>
+                <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                  {formatLocalizedAmount(secretariaTotal)}
+                </p>
+              </div>
+
+              <Link
+                href="/dashboard/secretaria"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+              >
+                {texts.dashboard.overview.open_module_cta}
+              </Link>
+            </div>
+          </article>
         ) : null}
 
-        {!canOperateSecretariaRole && canOperateTesoreriaRole && treasuryRoleDashboard ? (
-          <TreasuryRoleCard
-            dashboard={treasuryRoleDashboard}
-            accounts={treasuryRoleAccounts}
-            categories={treasuryRoleCategories}
-            activities={treasuryRoleActivities}
-            currencies={treasuryRoleCurrencies}
-            movementTypes={treasuryRoleMovementTypes}
-            receiptFormats={treasuryRoleReceiptFormats}
-            createTreasuryRoleMovementAction={createTreasuryRoleMovementAction}
-            createFxOperationAction={createFxOperationAction}
-          />
+        {canOperateTesoreriaRole && treasuryRoleDashboard ? (
+          <article className="rounded-[20px] border border-border bg-card p-5">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  {texts.header.navigation.tesoreria}
+                </p>
+                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                  {texts.dashboard.overview.tesoreria_title}
+                </h2>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-border bg-secondary/50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    {texts.dashboard.overview.visible_accounts_label}
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
+                    {treasuryRoleDashboard.accounts.length}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-border bg-secondary/50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    {texts.dashboard.overview.recent_movements_label}
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
+                    {treasuryRoleDashboard.movements.length}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-secondary/50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {texts.dashboard.overview.total_balance_label}
+                </p>
+                <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                  {formatLocalizedAmount(tesoreriaTotal)}
+                </p>
+              </div>
+
+              <Link
+                href="/dashboard/treasury"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+              >
+                {texts.dashboard.overview.open_module_cta}
+              </Link>
+            </div>
+          </article>
         ) : null}
-      </main>
-    </div>
+
+        {canAccessSettings ? (
+          <article className="rounded-[20px] border border-border bg-card p-5">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  {texts.dashboard.overview.settings_title}
+                </p>
+                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                  {texts.dashboard.overview.settings_title}
+                </h2>
+              </div>
+
+              <p className="text-sm leading-6 text-muted-foreground">
+                {texts.dashboard.overview.settings_description}
+              </p>
+
+              <Link
+                href="/settings/club"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+              >
+                {texts.dashboard.overview.open_settings_cta}
+              </Link>
+            </div>
+          </article>
+        ) : null}
+      </section>
+    </main>
   );
 }
