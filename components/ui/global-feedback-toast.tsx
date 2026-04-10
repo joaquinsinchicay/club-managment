@@ -10,20 +10,90 @@ type ToastCardProps = FeedbackToast & {
   visible: boolean;
 };
 
+function ToastToneIcon({ tone }: Pick<FeedbackToast, "tone">) {
+  const sharedClassName = "size-5";
+
+  if (tone === "success") {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        className={sharedClassName}
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      >
+        <circle cx="10" cy="10" r="7" />
+        <path d="m6.5 10 2.2 2.2 4.8-4.8" />
+      </svg>
+    );
+  }
+
+  if (tone === "warning") {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        className={sharedClassName}
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      >
+        <path d="M10 3.5 17 16.5H3L10 3.5Z" />
+        <path d="M10 7.5v4" />
+        <path d="M10 14h.01" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      className={sharedClassName}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+    >
+      <circle cx="10" cy="10" r="7" />
+      <path d="M10 6.5v4.5" />
+      <path d="M10 13.5h.01" />
+    </svg>
+  );
+}
+
 function ToastCard({ message, tone, visible }: ToastCardProps) {
   return (
     <div
       role={tone === "destructive" ? "alert" : "status"}
       aria-live={tone === "destructive" ? "assertive" : "polite"}
       className={cn(
-        "w-full max-w-md rounded-2xl border px-4 py-3 text-sm shadow-soft transition duration-200",
-        visible ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0",
-        tone === "destructive" && "border-destructive/25 bg-card text-foreground",
-        tone === "warning" && "border-warning/25 bg-card text-foreground",
-        tone === "success" && "border-success/20 bg-card text-foreground"
+        "w-full max-w-xl rounded-[28px] border bg-card p-5 shadow-soft transition duration-200 sm:p-6",
+        visible ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-[0.98] opacity-0",
+        tone === "destructive" && "border-destructive/25 text-foreground",
+        tone === "warning" && "border-warning/25 text-foreground",
+        tone === "success" && "border-success/20 text-foreground"
       )}
     >
-      {message}
+      <div className="flex items-start gap-4">
+        <div
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-2xl border",
+            tone === "destructive" && "border-destructive/25 bg-destructive/10 text-foreground",
+            tone === "warning" && "border-warning/25 bg-warning/10 text-foreground",
+            tone === "success" && "border-success/20 bg-success/10 text-foreground"
+          )}
+        >
+          <ToastToneIcon tone={tone} />
+        </div>
+        <p className="pt-1 text-sm leading-6 text-foreground sm:text-[15px]">{message}</p>
+      </div>
     </div>
   );
 }
@@ -92,8 +162,13 @@ export function GlobalFeedbackToast() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-4 top-4 z-50 flex justify-center sm:left-auto sm:right-4 sm:top-20 sm:w-full sm:max-w-md">
-      <div className="pointer-events-auto w-full">
+    <div
+      className={cn(
+        "pointer-events-none fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/45 p-3 transition duration-200 sm:items-center sm:p-6",
+        isVisible ? "opacity-100" : "opacity-0"
+      )}
+    >
+      <div className="pointer-events-auto w-full max-w-xl">
         <ToastCard {...activeToast} visible={isVisible} />
       </div>
     </div>
