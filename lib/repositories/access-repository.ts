@@ -77,6 +77,57 @@ export function isAccessRepositoryInfraError(error: unknown): error is AccessRep
   return error instanceof AccessRepositoryInfraError;
 }
 
+function getSupabaseErrorCode(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
+}
+
+function getSupabaseErrorMessage(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return "";
+  }
+
+  const message = (error as { message?: unknown }).message;
+  return typeof message === "string" ? message : "";
+}
+
+function isMissingStaleSessionAutoCloseRpcCause(error: unknown) {
+  const code = getSupabaseErrorCode(error);
+
+  if (code === "42883" || code === "PGRST202") {
+    return true;
+  }
+
+  const message = getSupabaseErrorMessage(error).toLowerCase();
+
+  return (
+    message.includes("get_last_open_daily_cash_session_before_date_for_current_club") ||
+    message.includes("auto_close_stale_daily_cash_session_with_balances_for_current_club") ||
+    (message.includes("function") && message.includes("does not exist"))
+  );
+}
+
+function logClubScopedRpcFailure(
+  operation: string,
+  details: Record<string, unknown>,
+  error: unknown,
+  options?: { suppressKnownMissingStaleSessionRpc?: boolean }
+) {
+  if (options?.suppressKnownMissingStaleSessionRpc && isMissingStaleSessionAutoCloseRpcCause(error)) {
+    return;
+  }
+
+  console.error("[club-scoped-rpc-failure]", {
+    operation,
+    ...details,
+    error
+  });
+}
+
 type AccessRepository = {
   getGoogleProfile(profileKey: GoogleProfileKey): GoogleProfile;
   findUserByEmail(email: string, client?: AccessRepositoryClient): Promise<User | null>;
@@ -1948,12 +1999,15 @@ async function findRealLastOpenDailyCashSessionBeforeDate(
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
-      operation: "get_last_open_daily_cash_session_before_date",
-      clubId,
-      beforeDate,
-      error
-    });
+    logClubScopedRpcFailure(
+      "get_last_open_daily_cash_session_before_date",
+      {
+        clubId,
+        beforeDate
+      },
+      error,
+      { suppressKnownMissingStaleSessionRpc: true }
+    );
     throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "get_last_open_daily_cash_session_before_date", {
       cause: error
     });
@@ -2275,14 +2329,17 @@ async function autoCloseRealStaleDailyCashSessionWithBalances(input: {
   );
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
-      operation: "auto_close_stale_daily_cash_session_with_balances",
-      clubId: input.clubId,
-      beforeDate: input.beforeDate,
-      expectedSessionId: input.expectedSessionId,
-      closedByUserId: input.closedByUserId,
-      error
-    });
+    logClubScopedRpcFailure(
+      "auto_close_stale_daily_cash_session_with_balances",
+      {
+        clubId: input.clubId,
+        beforeDate: input.beforeDate,
+        expectedSessionId: input.expectedSessionId,
+        closedByUserId: input.closedByUserId
+      },
+      error,
+      { suppressKnownMissingStaleSessionRpc: true }
+    );
     throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "auto_close_stale_daily_cash_session_with_balances", {
       cause: error
     });

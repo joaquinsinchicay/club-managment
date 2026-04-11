@@ -178,6 +178,8 @@ function isMissingStaleSessionAutoCloseRpcError(error: unknown) {
   );
 }
 
+const warnedMissingStaleSessionAutoCloseRpcClubIds = new Set<string>();
+
 async function generateMovementDisplayId(clubId: string, clubName: string, movementDate: string) {
   const year = movementDate.slice(0, 4);
   const prefix = buildClubInitials(clubName);
@@ -412,9 +414,12 @@ async function reconcileStaleOpenDailyCashSessionForActiveClub(context: {
     });
   } catch (error) {
     if (isMissingStaleSessionAutoCloseRpcError(error)) {
-      console.warn("[stale-session-autoclose-rpc-missing]", {
-        clubId: context.activeClub.id
-      });
+      if (!warnedMissingStaleSessionAutoCloseRpcClubIds.has(context.activeClub.id)) {
+        warnedMissingStaleSessionAutoCloseRpcClubIds.add(context.activeClub.id);
+        console.warn("[stale-session-autoclose-rpc-missing]", {
+          clubId: context.activeClub.id
+        });
+      }
       return null;
     }
 

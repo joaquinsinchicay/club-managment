@@ -162,6 +162,7 @@ type SessionActionRowProps = {
   iconKind: "open" | "movement" | "transfer" | "close";
   toneClassName: string;
   href?: string;
+  prefetch?: boolean;
   loadingLabel?: string;
   onClick?: () => void;
   ariaLabel?: string;
@@ -173,6 +174,7 @@ function SessionActionRow({
   iconKind,
   toneClassName,
   href,
+  prefetch,
   loadingLabel,
   onClick,
   ariaLabel
@@ -211,6 +213,7 @@ function SessionActionRow({
     return (
       <NavigationLinkWithLoader
         href={href}
+        prefetch={prefetch}
         aria-label={ariaLabel ?? title}
         className={sharedClassName}
         loadingLabel={loadingLabel}
@@ -625,6 +628,7 @@ export function TreasuryCard({
                 iconKind="open"
                 toneClassName="border-emerald-200/80 bg-emerald-50 text-emerald-600"
                 href="/dashboard/session/open"
+                prefetch={false}
                 loadingLabel={texts.dashboard.treasury.navigation_loading}
                 ariaLabel={texts.dashboard.treasury.open_session_flow_cta}
               />
@@ -659,6 +663,7 @@ export function TreasuryCard({
                 iconKind="close"
                 toneClassName="border-rose-200/80 bg-rose-50 text-rose-500"
                 href="/dashboard/session/close"
+                prefetch={false}
                 loadingLabel={texts.dashboard.treasury.navigation_loading}
                 ariaLabel={texts.dashboard.treasury.close_session_flow_cta}
               />
