@@ -640,10 +640,7 @@ export function AccountTransferForm({
       onSubmit={(event: FormEvent<HTMLFormElement>) => {
         if (!isTransferFormValid(formState, targetAccountCurrencyError)) {
           event.preventDefault();
-          return;
         }
-
-        window.setTimeout(handleReset, 0);
       }}
     >
       <PendingFieldset className={FORM_GRID_CLASSNAME}>

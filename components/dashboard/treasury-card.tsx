@@ -8,7 +8,7 @@ import {
   SecretariaMovementEditForm,
   SecretariaMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
-import { MovementList } from "@/components/dashboard/movement-list";
+import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
@@ -134,6 +134,24 @@ function SessionActionChevron() {
       strokeWidth="2"
     >
       <path d="m7 4 6 6-6 6" />
+    </svg>
+  );
+}
+
+function EditMovementIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={cn("size-4", className)}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
   );
 }
@@ -670,9 +688,10 @@ export function TreasuryCard({
             </div>
           ) : (
             <div className="mt-5">
-              <MovementList
+              <SecretariaMovementList
                 items={treasuryCard.movements.map((movement) => ({
                   movementId: movement.movementId,
+                  movementDisplayId: movement.movementDisplayId,
                   concept: movement.concept,
                   createdAt: movement.createdAt,
                   createdByUserName: movement.createdByUserName,
@@ -680,21 +699,29 @@ export function TreasuryCard({
                   movementType: movement.movementType,
                   currencyCode: movement.currencyCode,
                   amount: movement.amount,
+                  categoryName: movement.categoryName,
+                  activityName: movement.activityName,
+                  receiptNumber: movement.receiptNumber,
+                  calendarEventTitle: movement.calendarEventTitle,
+                  transferReference: movement.transferReference,
+                  fxOperationReference: movement.fxOperationReference,
                   action: movement.canEdit ? (
                     <ModalTriggerButton
                       onClick={() => {
                         setSelectedMovement(movement);
                         setActiveModal("edit_movement");
                       }}
-                      className="min-h-10 rounded-[18px] border border-border bg-card px-4 py-2 text-foreground hover:bg-secondary"
+                      aria-label={texts.dashboard.treasury.edit_movement_cta}
+                      className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
                     >
-                      {texts.dashboard.treasury.edit_movement_cta}
+                      <EditMovementIcon />
                     </ModalTriggerButton>
                   ) : undefined
                 }))}
                 conceptLabel={texts.dashboard.treasury.movements_concept_label}
-                amountLabel={texts.dashboard.treasury.movements_amount_label}
                 accountLabel={texts.dashboard.treasury.movements_account_label}
+                detailLabel={texts.dashboard.treasury.movements_detail_label}
+                amountLabel={texts.dashboard.treasury.movements_amount_label}
                 actionsLabel={texts.dashboard.treasury.movements_actions_label}
                 createdByLabel={texts.dashboard.treasury.movements_created_by_label}
               />
