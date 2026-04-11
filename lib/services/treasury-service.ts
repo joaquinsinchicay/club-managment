@@ -235,6 +235,22 @@ function buildMovementSignedAmount(movementType: "ingreso" | "egreso", amount: n
   return movementType === "ingreso" ? amount : amount * -1;
 }
 
+async function getAvailableBalanceForAccountCurrency(input: {
+  clubId: string;
+  accountId: string;
+  currencyCode: string;
+  effectiveDate?: string;
+  excludeMovementId?: string;
+}) {
+  const movements = await accessRepository.listTreasuryMovementsHistoryByAccount(input.clubId, input.accountId);
+
+  return movements
+    .filter((movement) => movement.currencyCode === input.currencyCode)
+    .filter((movement) => !input.effectiveDate || movement.movementDate <= input.effectiveDate)
+    .filter((movement) => !input.excludeMovementId || movement.id !== input.excludeMovementId)
+    .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0);
+}
+
 function shouldIncludeMovementInRoleBalances(
   movement: Pick<TreasuryMovement, "status">,
   role: TreasuryVisibilityRole
@@ -1137,6 +1153,19 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "invalid_currency" };
   }
 
+  if (input.movementType === "egreso") {
+    const availableBalance = await getAvailableBalanceForAccountCurrency({
+      clubId: context.activeClub.id,
+      accountId: account.id,
+      currencyCode: input.currencyCode,
+      effectiveDate: getTodayDate()
+    });
+
+    if (parsedAmount > availableBalance) {
+      return { ok: false, code: "insufficient_funds" };
+    }
+  }
+
   const activity =
     input.activityId.trim().length > 0
       ? activities.find((entry) => entry.id === input.activityId && entry.visibleForSecretaria) ?? null
@@ -1325,6 +1354,20 @@ export async function updateSecretariaMovementInOpenSession(input: {
     return { ok: false, code: "invalid_currency" };
   }
 
+  if (input.movementType === "egreso") {
+    const availableBalance = await getAvailableBalanceForAccountCurrency({
+      clubId: context.activeClub.id,
+      accountId: account.id,
+      currencyCode: input.currencyCode,
+      effectiveDate: movement.movementDate,
+      excludeMovementId: movement.id
+    });
+
+    if (parsedAmount > availableBalance) {
+      return { ok: false, code: "insufficient_funds" };
+    }
+  }
+
   const activity =
     input.activityId.trim().length > 0
       ? activities.find((entry) => entry.id === input.activityId && entry.visibleForSecretaria) ?? null
@@ -1465,13 +1508,12 @@ export async function createAccountTransfer(input: {
     return { ok: false, code: "invalid_transfer" };
   }
 
-  const sourceAccountMovements = await accessRepository.listTreasuryMovementsHistoryByAccount(
-    context.activeClub.id,
-    sourceAccount.id
-  );
-  const availableBalance = sourceAccountMovements
-    .filter((movement) => movement.currencyCode === input.currencyCode)
-    .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0);
+  const availableBalance = await getAvailableBalanceForAccountCurrency({
+    clubId: context.activeClub.id,
+    accountId: sourceAccount.id,
+    currencyCode: input.currencyCode,
+    effectiveDate: getTodayDate()
+  });
 
   if (parsedAmount > availableBalance) {
     return { ok: false, code: "insufficient_funds" };
@@ -1573,6 +1615,17 @@ export async function createFxOperation(input: {
     !targetAccount.currencies.includes(input.targetCurrencyCode)
   ) {
     return { ok: false, code: "invalid_fx_operation" };
+  }
+
+  const availableBalance = await getAvailableBalanceForAccountCurrency({
+    clubId: context.activeClub.id,
+    accountId: sourceAccount.id,
+    currencyCode: input.sourceCurrencyCode,
+    effectiveDate: getTodayDate()
+  });
+
+  if (parsedSourceAmount > availableBalance) {
+    return { ok: false, code: "insufficient_funds" };
   }
 
   const concept = input.concept.trim() || texts.dashboard.treasury.fx_default_concept;
@@ -1729,6 +1782,19 @@ export async function createTreasuryRoleMovement(input: {
 
   if (!account.currencies.includes(input.currencyCode)) {
     return { ok: false, code: "invalid_currency" };
+  }
+
+  if (input.movementType === "egreso") {
+    const availableBalance = await getAvailableBalanceForAccountCurrency({
+      clubId: context.activeClub.id,
+      accountId: account.id,
+      currencyCode: input.currencyCode,
+      effectiveDate: movementDate
+    });
+
+    if (parsedAmount > availableBalance) {
+      return { ok: false, code: "insufficient_funds" };
+    }
   }
 
   const activity =

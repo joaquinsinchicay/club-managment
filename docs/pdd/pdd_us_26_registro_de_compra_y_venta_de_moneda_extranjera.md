@@ -44,6 +44,7 @@ Secretaría debe poder registrar una operación de cambio entre cuentas del club
 - La moneda origen y la moneda destino deben ser distintas.
 - Cada moneda debe ser válida para la cuenta correspondiente.
 - Ambos importes deben ser mayores a cero.
+- La cuenta origen debe tener saldo disponible suficiente en la moneda origen.
 - La operación genera:
   - egreso por el importe origen en la cuenta origen
   - ingreso por el importe destino en la cuenta destino

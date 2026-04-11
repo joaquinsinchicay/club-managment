@@ -514,7 +514,6 @@ export function SecretariaMovementEditForm({
         await submitAction(formData);
       }}
       className="grid gap-4"
-      onReset={() => setFormState(buildEditMovementFormState(movement))}
     >
       <input type="hidden" name="movement_id" value={movement.movementId} />
 
@@ -555,19 +554,13 @@ export function SecretariaMovementEditForm({
           </FormField>
         ) : null}
 
-        <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <PendingSubmitButton
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
             disabled={!isMovementFormValid(formState)}
             className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
-          <button
-            type="reset"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {texts.dashboard.treasury.reset_cta}
-          </button>
         </div>
       </PendingFieldset>
     </form>

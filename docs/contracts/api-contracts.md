@@ -940,6 +940,8 @@ Sí
 * currency_code válida para la cuenta
 * receipt_number debe cumplir `^PAY-SOC-[0-9]{5}$` y ser `>= PAY-SOC-10556` cuando se informa
 * amount > 0
+* si `movement_type = egreso`, la cuenta debe tener saldo disponible suficiente en la moneda seleccionada
+* para `tesoreria`, el saldo disponible se valida contra el acumulado hasta `movement_date`
 * `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
 * si el rol es `secretaria`, debe existir jornada abierta
 * si el rol es `secretaria`, `movement_date` debe ser la fecha del día y no editable por contrato
@@ -1003,6 +1005,7 @@ Sí
 * currency_code válida para la cuenta
 * `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
 * amount > 0
+* si el resultado editado es un `egreso`, la cuenta debe conservar saldo disponible suficiente en la moneda seleccionada
 * `movement_date` no es editable por contrato
 * no se permite editar referencias técnicas derivadas
 * la operación debe auditarse
@@ -1154,6 +1157,7 @@ Sí
 * cuentas válidas
 * monedas distintas
 * importes > 0
+* la cuenta origen debe tener saldo disponible suficiente en la moneda origen
 
 **Output**
 

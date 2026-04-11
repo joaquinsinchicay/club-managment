@@ -49,6 +49,7 @@ Un usuario con rol `tesoreria` en el club activo debe poder consultar saldos de 
 - `Fecha` se precarga con la fecha actual, pero Tesorería puede editarla.
 - El importe debe ser mayor a cero.
 - La moneda elegida debe estar habilitada globalmente para el club y también para la cuenta seleccionada.
+- Si el movimiento es `egreso`, la cuenta debe tener saldo disponible suficiente en la moneda seleccionada para la `Fecha` elegida.
 - Si la cuenta es bimonetaria, el movimiento impacta únicamente el saldo de la moneda informada.
 - El movimiento debe registrar `created_at` y `created_by_user_id`.
 - El movimiento creado por Tesorería queda con estado `posted`.

@@ -217,6 +217,11 @@ export function AccountDetailCard({
                                   <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                                     {movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
                                   </span>
+                                  {movement.activityName ? (
+                                    <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                      {movement.activityName}
+                                    </span>
+                                  ) : null}
                                 </div>
                                 {movement.transferReference ? (
                                   <p>
