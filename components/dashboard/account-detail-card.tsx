@@ -27,6 +27,19 @@ function getMovementAmountClassName(movementType: "ingreso" | "egreso") {
   return movementType === "ingreso" ? "text-success" : "text-destructive";
 }
 
+function formatMovementDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(date);
+}
+
 function formatMovementGroupDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
 
@@ -37,6 +50,10 @@ function formatMovementGroupDate(value: string) {
   return new Intl.DateTimeFormat("es-AR", {
     dateStyle: "long"
   }).format(date);
+}
+
+function getTransferReferenceSuffix(value: string) {
+  return value.slice(-6);
 }
 
 export function AccountDetailCard({
@@ -152,7 +169,7 @@ export function AccountDetailCard({
                       </div>
 
                       <div className="overflow-hidden rounded-[18px] border border-border">
-                        <div className="hidden bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,1.8fr)_minmax(180px,0.9fr)_minmax(180px,0.9fr)_minmax(170px,0.8fr)] md:items-center md:gap-4">
+                        <div className="hidden bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(170px,0.8fr)] md:items-center md:gap-4">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                             {texts.dashboard.treasury.movements_concept_label}
                           </p>
@@ -160,7 +177,7 @@ export function AccountDetailCard({
                             {texts.dashboard.treasury.movements_account_label}
                           </p>
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                            {texts.dashboard.treasury.movements_created_by_label}
+                            {texts.dashboard.treasury.movements_detail_label}
                           </p>
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
                             {texts.dashboard.treasury.movements_amount_label}
@@ -171,7 +188,7 @@ export function AccountDetailCard({
                           {group.movements.map((movement, index) => (
                             <article
                               key={movement.movementId}
-                              className={`rounded-[18px] border border-border bg-card p-4 shadow-soft md:grid md:grid-cols-[minmax(0,1.8fr)_minmax(180px,0.9fr)_minmax(180px,0.9fr)_minmax(170px,0.8fr)] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none ${
+                              className={`rounded-[18px] border border-border bg-card p-4 shadow-soft md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(170px,0.8fr)] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none ${
                                 index === 0 ? "md:border-t-0" : ""
                               } ${index === group.movements.length - 1 ? "md:last:rounded-b-[18px]" : ""}`}
                             >
@@ -180,56 +197,9 @@ export function AccountDetailCard({
                                   {movement.movementDisplayId}
                                 </p>
                                 <p className="mt-1 text-base font-semibold text-foreground">{movement.concept}</p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-secondary px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground">
-                                    {texts.dashboard.treasury.movement_types[movement.movementType]}
-                                  </span>
-                                  <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                    {movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
-                                  </span>
-                                </div>
-                                <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-                                  {movement.activityName ? (
-                                    <p>
-                                      <span className="font-medium text-foreground">
-                                        {texts.dashboard.treasury.detail_activity_label}
-                                      </span>{" "}
-                                      {movement.activityName}
-                                    </p>
-                                  ) : null}
-                                  {movement.calendarEventTitle ? (
-                                    <p>
-                                      <span className="font-medium text-foreground">
-                                        {texts.dashboard.treasury.detail_calendar_label}
-                                      </span>{" "}
-                                      {movement.calendarEventTitle}
-                                    </p>
-                                  ) : null}
-                                  {movement.transferReference ? (
-                                    <p>
-                                      <span className="font-medium text-foreground">
-                                        {texts.dashboard.treasury.detail_transfer_label}
-                                      </span>{" "}
-                                      {movement.transferReference}
-                                    </p>
-                                  ) : null}
-                                  {movement.fxOperationReference ? (
-                                    <p>
-                                      <span className="font-medium text-foreground">
-                                        {texts.dashboard.treasury.detail_fx_label}
-                                      </span>{" "}
-                                      {movement.fxOperationReference}
-                                    </p>
-                                  ) : null}
-                                  {movement.receiptNumber ? (
-                                    <p>
-                                      <span className="font-medium text-foreground">
-                                        {texts.dashboard.treasury.detail_receipt_label}
-                                      </span>{" "}
-                                      {movement.receiptNumber}
-                                    </p>
-                                  ) : null}
-                                </div>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                  {formatMovementDateTime(movement.createdAt)} · {movement.createdByUserName}
+                                </p>
                               </div>
 
                               <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
@@ -237,14 +207,28 @@ export function AccountDetailCard({
                                   {texts.dashboard.treasury.movements_account_label}
                                 </p>
                                 <p className="font-medium text-foreground">{detail.account.name}</p>
-                                <p>{movement.movementDate}</p>
                               </div>
 
                               <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
                                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                                  {texts.dashboard.treasury.movements_created_by_label}
+                                  {texts.dashboard.treasury.movements_detail_label}
                                 </p>
-                                <p>{movement.createdByUserName}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-secondary px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground">
+                                    {texts.dashboard.treasury.movement_types[movement.movementType]}
+                                  </span>
+                                  <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                    {movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
+                                  </span>
+                                </div>
+                                {movement.transferReference ? (
+                                  <p>
+                                    <span className="font-medium text-foreground">
+                                      {texts.dashboard.treasury.detail_transfer_label}
+                                    </span>{" "}
+                                    {getTransferReferenceSuffix(movement.transferReference)}
+                                  </p>
+                                ) : null}
                               </div>
 
                               <div className="mt-4 md:mt-0 md:text-right">

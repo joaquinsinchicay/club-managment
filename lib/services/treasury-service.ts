@@ -792,6 +792,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     return null;
   }
 
+  const clubId = context.activeClub.id;
   const sessionDate = getTodayDate();
   let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
   let sessionStateResolved = true;
@@ -799,35 +800,55 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
 
   try {
     await reconcileStaleOpenDailyCashSessionForActiveClub({
-      activeClub: { id: context.activeClub.id },
+      activeClub: { id: clubId },
       user: { id: context.user.id }
     });
-    session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate);
+    session = await accessRepository.getDailyCashSessionByDate(clubId, sessionDate);
   } catch (error) {
     sessionStateResolved = false;
     console.error("[dashboard-session-state-resolution-failed]", {
-      clubId: context.activeClub.id,
+      clubId,
       sessionDate,
       error
     });
   }
 
   const [accounts, categories, activities, calendarEvents] = await Promise.all([
-    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
-    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
-    accessRepository.listClubActivitiesForClub(context.activeClub.id),
-    accessRepository.listClubCalendarEventsForClub(context.activeClub.id)
+    accessRepository.listTreasuryAccountsForClub(clubId),
+    accessRepository.listTreasuryCategoriesForClub(clubId),
+    accessRepository.listClubActivitiesForClub(clubId),
+    accessRepository.listClubCalendarEventsForClub(clubId)
   ]);
 
   const secretaryAccounts = accounts.filter((account) => account.visibleForSecretaria);
+  let balanceMovementsByAccount = new Map<string, TreasuryMovement[]>();
   let movements: TreasuryMovement[] = [];
 
   try {
-    movements = await accessRepository.listTreasuryMovementsByDateStrict(context.activeClub.id, sessionDate);
+    const historicalMovements = await Promise.all(
+      secretaryAccounts.map(async (account) => [
+        account.id,
+        (await accessRepository.listTreasuryMovementsHistoryByAccount(clubId, account.id)).filter(
+          (movement) => shouldIncludeMovementInRoleBalances(movement, "secretaria")
+        )
+      ] as const)
+    );
+
+    balanceMovementsByAccount = new Map(historicalMovements);
+  } catch (error) {
+    movementDataResolved = false;
+    console.error("[dashboard-balance-data-resolution-failed]", {
+      clubId,
+      error
+    });
+  }
+
+  try {
+    movements = await accessRepository.listTreasuryMovementsByDateStrict(clubId, sessionDate);
   } catch (error) {
     movementDataResolved = false;
     console.error("[dashboard-movement-data-resolution-failed]", {
-      clubId: context.activeClub.id,
+      clubId,
       sessionDate,
       error
     });
@@ -855,7 +876,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     accounts: secretaryAccounts.map((account) => ({
       accountId: account.id,
       name: account.name,
-      balances: buildAccountBalances(account, visibleMovements)
+      balances: buildAccountBalances(account, balanceMovementsByAccount.get(account.id) ?? [])
     })),
     movements: visibleMovements
       .map((movement) => ({

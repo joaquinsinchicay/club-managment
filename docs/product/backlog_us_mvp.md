@@ -895,7 +895,7 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     And tengo rol "Secretaria" en el club activo
     When ingreso al dashboard del club activo
     Then veo una card de "Saldos de cuentas"
-    And veo el listado de cuentas con su saldo acumulado actual
+    And veo el listado de cuentas con su saldo acumulado historico actual
 
   Scenario 02: Usuario sin rol Secretaria no ve la card
     Given estoy autenticado
@@ -908,7 +908,7 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     And tengo rol "Secretaria" en el club activo
     When veo la card de saldos
     Then veo cada cuenta con su nombre
-    And veo el saldo acumulado actualizado del día para cada cuenta
+    And veo el saldo acumulado historico actualizado para cada cuenta
 
   Scenario 04: Visualización con múltiples cuentas
     Given estoy autenticado
