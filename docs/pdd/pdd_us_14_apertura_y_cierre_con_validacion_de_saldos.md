@@ -78,7 +78,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - La apertura solo está disponible si no existe jornada creada para el día actual.
 - El cierre solo está disponible si existe una jornada `open` para el día actual.
 - La UI muestra exclusivamente cuentas con visibilidad `secretaria` del club activo.
-- Cada cuenta visible debe mostrar el saldo esperado actual por moneda habilitada.
+- Cada cuenta visible debe mostrar el saldo esperado acumulado por moneda habilitada, calculado con el historial visible de movimientos de la cuenta hasta la fecha operativa.
 - Todos los saldos declarados son obligatorios al confirmar.
 - Si el saldo declarado difiere del esperado, se genera un movimiento con categoría `Ajuste`.
 - El tipo del movimiento de ajuste será `ingreso` si la diferencia es positiva y `egreso` si es negativa.

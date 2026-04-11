@@ -339,7 +339,11 @@ async function buildAccountBalanceDrafts(
   const movementsByAccount = await Promise.all(
     accounts.map(async (account) => ({
       account,
-      movements: await accessRepository.listTreasuryMovementsByAccountStrict(clubId, account.id, sessionDate)
+      movements: (await accessRepository.listTreasuryMovementsHistoryByAccount(clubId, account.id)).filter(
+        (movement) =>
+          movement.movementDate <= sessionDate &&
+          shouldIncludeMovementInRoleBalances(movement, "secretaria")
+      )
     }))
   );
 

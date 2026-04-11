@@ -816,6 +816,7 @@ Sí
 * no debe existir jornada abierta o ya creada para ese día
 * las cuentas deben pertenecer al club activo
 * las monedas deben ser válidas para la cuenta
+* el `saldo esperado` visible para cada cuenta y moneda debe derivarse del saldo acumulado de la cuenta hasta la fecha operativa
 * si hay diferencia contra saldo esperado, debe registrarse ajuste según regla
 
 **Output**
@@ -858,6 +859,7 @@ Sí
 
 * debe existir jornada abierta del día
 * si existe una jornada `open` de un día anterior en el club activo, el backend debe cerrarla automáticamente antes de validar el cierre manual del día actual
+* el `saldo esperado` visible para cada cuenta y moneda debe derivarse del saldo acumulado de la cuenta hasta la fecha operativa
 * si hay diferencia, debe generarse ajuste
 * luego del cierre, Secretaría no puede editar movimientos del día
 
