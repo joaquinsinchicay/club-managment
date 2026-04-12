@@ -129,7 +129,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ### Reglas
 - El estado de jornada debe verse de forma clara en dashboard.
 - Las acciones disponibles deben cambiar según la jornada.
-- El módulo `Secretaría`, accesible desde su tab del upper bar, debe mantener el badge de estado y las CTAs derivados de una misma resolución confiable de `daily_cash_sessions`.
+- La tab `Secretaría` debe mantener el badge de estado y las CTAs derivados de una misma resolución confiable de `daily_cash_sessions`.
 - El cierre de jornada bloquea nuevas acciones operativas, pero no elimina la visibilidad de saldos ni movimientos ya registrados en el dia actual.
 - Si falla la lectura de `treasury_movements`, el dashboard y los flujos de apertura/cierre no deben asumir saldos `0,00`; deben tratarse como error de infraestructura.
 - La interacción debe ser mobile-first y de baja fricción.
@@ -222,10 +222,10 @@ Do not reference current code files.
 | Mantener una jornada `open` vencida al cambiar de día | Media | Alta | Reconciliar y autocerrar la última jornada vencida antes de resolver la operatoria del día actual. |
 | Doble cierre concurrente de una jornada vencida | Baja | Alta | Ejecutar el autocierre con función transaccional e idempotente que bloquee la fila `open` antes de cerrar. |
 
-## 17. Comportamiento esperado en el módulo Secretaría
+## 17. Comportamiento esperado en la tab Secretaría
 
 - Sin jornada abierta ni cerrada en el día actual: mostrar `Jornada pendiente` y la CTA `Apertura de jornada`.
 - Con jornada `open` en el día actual: mostrar `Jornada abierta` y las CTAs `Cierre de jornada`, `Cargar movimiento` y `Cargar transferencia`.
 - Con jornada `closed` en el día actual: mostrar `Jornada cerrada`, ocultar CTAs y reemplazar la descripción operativa por `La jornada ya fue cerrada. No se encuentra disponible para carga de movimientos.`
 - Con jornada `closed` en el día actual: mantener visibles los saldos y movimientos ya registrados para ese dia en las cards de dashboard.
-- Si la resolución de `daily_cash_sessions` falla, el módulo `Secretaría` no debe inferir `Jornada pendiente` ni exponer CTAs operativas.
+- Si la resolución de `daily_cash_sessions` falla, la tab `Secretaría` no debe inferir `Jornada pendiente` ni exponer CTAs operativas.

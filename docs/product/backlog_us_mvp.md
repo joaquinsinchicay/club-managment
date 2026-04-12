@@ -83,7 +83,7 @@ Feature: US-02 — Avatar con menú de sesión en el header
   Scenario 04: Acceso a configuración del club
     Given estoy autenticado
     And tengo permisos para acceder a la configuración del club activo
-    When selecciono el módulo "Configuración" desde la tab correspondiente del upper bar
+    When selecciono la tab "Configuración" del upper bar
     Then soy redirigido a la página de configuración del club
 
   Scenario 05: Intento de acceso a configuración sin permisos
@@ -125,7 +125,7 @@ Feature: US-03 — Asignación de rol
   Scenario 01: Acceso a configuración del club
     Given estoy autenticado
     And soy admin del club activo
-    When accedo a la configuración del club desde el módulo "Configuración" del upper bar
+    When accedo a la configuración del club desde la tab "Configuración" del upper bar
     Then veo la pantalla de configuración del club activo
 
   Scenario 02: Ver lista de miembros del club activo

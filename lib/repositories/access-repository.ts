@@ -2570,6 +2570,7 @@ async function listRealTreasuryMovementsHistoryByAccounts(
     {
       operation: "list_treasury_movements_history_by_accounts",
       details: { accountIdsCount: accountIds.length },
+      strict: true,
       params: {
         p_account_ids: accountIds
       }

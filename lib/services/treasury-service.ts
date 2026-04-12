@@ -193,6 +193,25 @@ function isMissingStaleSessionAutoCloseRpcError(error: unknown) {
   );
 }
 
+function isMissingBulkMovementHistoryRpcError(error: unknown) {
+  const code = getRepositoryErrorCode(error);
+
+  if (code === "42883" || code === "PGRST202") {
+    return true;
+  }
+
+  if (!isAccessRepositoryInfraError(error) || !error.cause || typeof error.cause !== "object") {
+    return false;
+  }
+
+  const message = String((error.cause as { message?: unknown }).message ?? "").toLowerCase();
+
+  return (
+    message.includes("get_treasury_movements_history_by_accounts_for_current_club") ||
+    (message.includes("function") && message.includes("does not exist"))
+  );
+}
+
 const warnedMissingStaleSessionAutoCloseRpcClubIds = new Set<string>();
 
 async function generateMovementDisplayId(clubId: string, clubName: string, movementDate: string) {
@@ -898,30 +917,64 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
 
   const secretaryAccounts = accounts.filter((account) => account.visibleForSecretaria);
   let historicalMovements: TreasuryMovement[] = [];
+  let visibleMovements: TreasuryMovement[] = [];
+  let shouldUseLegacyMovementFallback = false;
 
   try {
     historicalMovements = (await accessRepository.listTreasuryMovementsHistoryByAccounts(
       clubId,
       secretaryAccounts.map((account) => account.id)
     )).filter((movement) => shouldIncludeMovementInRoleBalances(movement, "secretaria"));
+    visibleMovements = historicalMovements.filter(
+      (movement) => secretaryAccounts.some((account) => account.id === movement.accountId) && movement.movementDate === sessionDate
+    );
   } catch (error) {
-    movementDataResolved = false;
-    console.error("[dashboard-balance-data-resolution-failed]", {
-      clubId,
-      error
-    });
+    if (isMissingBulkMovementHistoryRpcError(error)) {
+      shouldUseLegacyMovementFallback = true;
+    } else {
+      movementDataResolved = false;
+      console.error("[dashboard-balance-data-resolution-failed]", {
+        clubId,
+        error
+      });
+    }
   }
 
   const visibleAccountIds = new Set(secretaryAccounts.map((account) => account.id));
-  const balanceMovementsByAccount = new Map(
-    secretaryAccounts.map((account) => [
-      account.id,
-      historicalMovements.filter((movement) => movement.accountId === account.id)
-    ])
-  );
-  const visibleMovements = historicalMovements.filter(
-    (movement) => visibleAccountIds.has(movement.accountId) && movement.movementDate === sessionDate
-  );
+  let balanceMovementsByAccount = new Map<string, TreasuryMovement[]>();
+
+  if (!shouldUseLegacyMovementFallback) {
+    balanceMovementsByAccount = new Map(
+      secretaryAccounts.map((account) => [
+        account.id,
+        historicalMovements.filter((movement) => movement.accountId === account.id)
+      ])
+    );
+  } else {
+    try {
+      const historicalMovementsByAccount = await Promise.all(
+        secretaryAccounts.map(async (account) => [
+          account.id,
+          (await accessRepository.listTreasuryMovementsHistoryByAccount(clubId, account.id)).filter((movement) =>
+            shouldIncludeMovementInRoleBalances(movement, "secretaria")
+          )
+        ] as const)
+      );
+
+      balanceMovementsByAccount = new Map(historicalMovementsByAccount);
+
+      const sameDayMovements = await accessRepository.listTreasuryMovementsByDateStrict(clubId, sessionDate);
+      visibleMovements = sameDayMovements.filter((movement) => visibleAccountIds.has(movement.accountId));
+    } catch (error) {
+      movementDataResolved = false;
+      console.error("[dashboard-movement-fallback-resolution-failed]", {
+        clubId,
+        sessionDate,
+        error
+      });
+    }
+  }
+
   const users = await accessRepository.findUsersByIds(
     [...new Set(visibleMovements.map((movement) => movement.createdByUserId))]
   );
