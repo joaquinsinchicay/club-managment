@@ -2834,36 +2834,30 @@ async function createRealFxOperation(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
-
-  const { data, error } = await supabase
-    .from("fx_operations")
-    .insert({
-      club_id: input.clubId,
-      source_account_id: input.sourceAccountId,
-      target_account_id: input.targetAccountId,
-      source_amount: input.sourceAmount,
-      target_amount: input.targetAmount
-    })
-    .select("id,club_id,source_account_id,target_account_id,source_amount,target_amount,created_at")
-    .single();
-
-  if (error || !data) {
-    console.error("[fx-operation-write-failure]", {
+  const row = await runClubScopedMutationRpc<FxOperationInsertRow>(
+    "create_fx_operation_for_current_club",
+    input.clubId,
+    client,
+    {
       operation: "create_fx_operation",
-      clubId: input.clubId,
-      sourceAccountId: input.sourceAccountId,
-      targetAccountId: input.targetAccountId,
-      error
-    });
+      details: {
+        sourceAccountId: input.sourceAccountId,
+        targetAccountId: input.targetAccountId
+      },
+      params: {
+        p_source_account_id: input.sourceAccountId,
+        p_target_account_id: input.targetAccountId,
+        p_source_amount: input.sourceAmount,
+        p_target_amount: input.targetAmount
+      }
+    }
+  );
+
+  if (!row) {
     return null;
   }
 
-  return mapFxOperationInsertRow(data, {
+  return mapFxOperationInsertRow(row, {
     sourceCurrencyCode: input.sourceCurrencyCode,
     targetCurrencyCode: input.targetCurrencyCode,
     concept: input.concept
