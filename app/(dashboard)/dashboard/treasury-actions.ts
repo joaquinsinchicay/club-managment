@@ -81,7 +81,14 @@ export async function createTreasuryRoleMovementAction(formData: FormData) {
     amount: String(formData.get("amount") ?? "")
   });
 
-  redirectToTreasuryModule(result.code, result.movementDisplayId);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/treasury");
+
+  return {
+    ok: result.ok,
+    code: result.code,
+    movementDisplayId: result.movementDisplayId
+  } satisfies TreasuryActionResponse;
 }
 
 export async function updateTreasuryRoleMovementAction(formData: FormData) {
@@ -97,7 +104,14 @@ export async function updateTreasuryRoleMovementAction(formData: FormData) {
     amount: String(formData.get("amount") ?? "")
   });
 
-  redirectToTreasuryModule(result.code, result.movementDisplayId);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/treasury");
+
+  return {
+    ok: result.ok,
+    code: result.code,
+    movementDisplayId: result.movementDisplayId
+  } satisfies TreasuryActionResponse;
 }
 
 export async function updateSecretariaMovementAction(formData: FormData) {
@@ -153,5 +167,11 @@ export async function createFxOperationAction(formData: FormData) {
     concept: String(formData.get("concept") ?? "")
   });
 
-  redirectToTreasuryModule(result.code);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/treasury");
+
+  return {
+    ok: result.ok,
+    code: result.code
+  } satisfies TreasuryActionResponse;
 }

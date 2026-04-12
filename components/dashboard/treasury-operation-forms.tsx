@@ -30,6 +30,53 @@ type BaseMovementFormProps = {
   submitAction: (formData: FormData) => Promise<unknown>;
 };
 
+type OperationalFormCopy = {
+  receipt_helper_example: string;
+  receipt_helper_available_from: string;
+  required_suffix: string;
+  date_label: string;
+  account_label: string;
+  account_placeholder: string;
+  movement_type_label: string;
+  movement_type_placeholder: string;
+  category_label: string;
+  category_placeholder: string;
+  activity_label: string;
+  activity_placeholder: string;
+  receipt_label: string;
+  calendar_label: string;
+  calendar_placeholder: string;
+  empty_calendar_events: string;
+  concept_label: string;
+  currency_label: string;
+  currency_placeholder: string;
+  amount_label: string;
+  reset_cta: string;
+  movement_id_label: string;
+  detail_transfer_label: string;
+  detail_fx_label: string;
+  transfer_source_account_label?: string;
+  transfer_source_account_placeholder?: string;
+  transfer_target_account_label?: string;
+  transfer_target_account_placeholder?: string;
+  transfer_target_account_currency_error?: string;
+  transfer_create_cta?: string;
+  transfer_create_loading?: string;
+  fx_source_account_label: string;
+  fx_source_account_placeholder: string;
+  fx_source_currency_label: string;
+  fx_source_currency_placeholder: string;
+  fx_source_amount_label: string;
+  fx_target_account_label: string;
+  fx_target_account_placeholder: string;
+  fx_target_currency_label: string;
+  fx_target_currency_placeholder: string;
+  fx_target_amount_label: string;
+  fx_create_cta: string;
+  fx_create_loading: string;
+  movement_types: Record<string, string>;
+};
+
 const FORM_GRID_CLASSNAME = "grid gap-4 sm:grid-cols-2";
 const FIELD_CLASSNAME = "grid gap-2 text-sm text-foreground";
 const FULL_WIDTH_FIELD_CLASSNAME = "sm:col-span-2";
@@ -67,7 +114,13 @@ function FormField({
   return <label className={cn(FIELD_CLASSNAME, fullWidth && FULL_WIDTH_FIELD_CLASSNAME)}>{children}</label>;
 }
 
-function ReceiptHelper({ receiptFormats }: { receiptFormats: ReceiptFormat[] }) {
+function ReceiptHelper({
+  receiptFormats,
+  copy
+}: {
+  receiptFormats: ReceiptFormat[];
+  copy: OperationalFormCopy;
+}) {
   if (receiptFormats.length === 0) {
     return null;
   }
@@ -75,8 +128,8 @@ function ReceiptHelper({ receiptFormats }: { receiptFormats: ReceiptFormat[] }) 
   return (
     <div className="text-xs leading-5 text-muted-foreground">
       <span>
-        {texts.dashboard.treasury.receipt_helper_example} {receiptFormats[0]?.example ?? DEFAULT_RECEIPT_PATTERN}.{" "}
-        {texts.dashboard.treasury.receipt_helper_available_from} {DEFAULT_RECEIPT_MIN_LABEL}
+        {copy.receipt_helper_example} {receiptFormats[0]?.example ?? DEFAULT_RECEIPT_PATTERN}. {copy.receipt_helper_available_from}{" "}
+        {DEFAULT_RECEIPT_MIN_LABEL}
       </span>
     </div>
   );
@@ -113,8 +166,8 @@ function getDefaultCurrencyCode(account: TreasuryAccount | undefined, currencies
   return availableCurrencyCodes[0] ?? "";
 }
 
-function getRequiredLabel(label: string) {
-  return `${label}${texts.dashboard.treasury.required_suffix}`;
+function getRequiredLabel(label: string, copy: OperationalFormCopy) {
+  return `${label}${copy.required_suffix}`;
 }
 
 function MovementFormFields({
@@ -127,7 +180,8 @@ function MovementFormFields({
   receiptFormats,
   formState,
   onChange,
-  showMovementDateInput = false
+  showMovementDateInput = false,
+  copy = texts.dashboard.treasury
 }: {
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
@@ -139,6 +193,7 @@ function MovementFormFields({
   formState: MovementFormState;
   onChange: (patch: Partial<MovementFormState>) => void;
   showMovementDateInput?: boolean;
+  copy?: OperationalFormCopy;
 }) {
   const availableCurrencies = useMemo(() => {
     const selectedAccount = accounts.find((account) => account.id === formState.accountId);
@@ -154,7 +209,7 @@ function MovementFormFields({
     <>
       {showMovementDateInput ? (
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <span className="font-medium">{copy.date_label}</span>
           <input
             type="date"
             name="movement_date"
@@ -166,7 +221,7 @@ function MovementFormFields({
       ) : null}
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.account_label)}</span>
+        <span className="font-medium">{getRequiredLabel(copy.account_label, copy)}</span>
         <select
           name="account_id"
           value={formState.accountId}
@@ -174,7 +229,7 @@ function MovementFormFields({
           className={CONTROL_CLASSNAME}
         >
           <option value="" disabled>
-            {texts.dashboard.treasury.account_placeholder}
+            {copy.account_placeholder}
           </option>
           {accounts.map((account) => (
             <option key={account.id} value={account.id}>
@@ -185,7 +240,7 @@ function MovementFormFields({
       </FormField>
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.movement_type_label)}</span>
+        <span className="font-medium">{getRequiredLabel(copy.movement_type_label, copy)}</span>
         <select
           name="movement_type"
           value={formState.movementType}
@@ -193,18 +248,18 @@ function MovementFormFields({
           className={CONTROL_CLASSNAME}
         >
           <option value="" disabled>
-            {texts.dashboard.treasury.movement_type_placeholder}
+            {copy.movement_type_placeholder}
           </option>
           {movementTypes.map((movementType) => (
             <option key={movementType} value={movementType}>
-              {texts.dashboard.treasury.movement_types[movementType]}
+              {copy.movement_types[movementType]}
             </option>
           ))}
         </select>
       </FormField>
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.category_label)}</span>
+        <span className="font-medium">{getRequiredLabel(copy.category_label, copy)}</span>
         <select
           name="category_id"
           value={formState.categoryId}
@@ -212,7 +267,7 @@ function MovementFormFields({
           className={CONTROL_CLASSNAME}
         >
           <option value="" disabled>
-            {texts.dashboard.treasury.category_placeholder}
+            {copy.category_placeholder}
           </option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
@@ -224,14 +279,14 @@ function MovementFormFields({
 
       {activities.length > 0 ? (
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
+          <span className="font-medium">{copy.activity_label}</span>
           <select
             name="activity_id"
             value={formState.activityId}
             onChange={(event) => onChange({ activityId: event.target.value })}
             className={CONTROL_CLASSNAME}
           >
-            <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
+            <option value="">{copy.activity_placeholder}</option>
             {activities.map((activity) => (
               <option key={activity.id} value={activity.id}>
                 {activity.name}
@@ -242,7 +297,7 @@ function MovementFormFields({
       ) : null}
 
       <FormField fullWidth>
-        <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
+        <span className="font-medium">{copy.receipt_label}</span>
         <input
           type="text"
           name="receipt_number"
@@ -250,12 +305,12 @@ function MovementFormFields({
           onChange={(event) => onChange({ receiptNumber: event.target.value })}
           className={CONTROL_CLASSNAME}
         />
-        <ReceiptHelper receiptFormats={receiptFormats} />
+        <ReceiptHelper receiptFormats={receiptFormats} copy={copy} />
       </FormField>
 
       {calendarEvents ? (
         <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury.calendar_label}</span>
+          <span className="font-medium">{copy.calendar_label}</span>
           <select
             name="calendar_event_id"
             value={formState.calendarEventId ?? ""}
@@ -265,8 +320,8 @@ function MovementFormFields({
           >
             <option value="">
               {calendarEvents.length > 0
-                ? texts.dashboard.treasury.calendar_placeholder
-                : texts.dashboard.treasury.empty_calendar_events}
+                ? copy.calendar_placeholder
+                : copy.empty_calendar_events}
             </option>
             {calendarEvents.map((event) => (
               <option key={event.id} value={event.id}>
@@ -278,7 +333,7 @@ function MovementFormFields({
       ) : null}
 
       <FormField fullWidth>
-        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.concept_label)}</span>
+        <span className="font-medium">{getRequiredLabel(copy.concept_label, copy)}</span>
         <input
           type="text"
           name="concept"
@@ -289,7 +344,7 @@ function MovementFormFields({
       </FormField>
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.currency_label)}</span>
+        <span className="font-medium">{getRequiredLabel(copy.currency_label, copy)}</span>
         <select
           name="currency_code"
           value={formState.currencyCode}
@@ -298,7 +353,7 @@ function MovementFormFields({
           disabled={availableCurrencies.length === 0}
         >
           <option value="" disabled>
-            {texts.dashboard.treasury.currency_placeholder}
+            {copy.currency_placeholder}
           </option>
           {availableCurrencies.map((currency) => (
             <option key={currency.currencyCode} value={currency.currencyCode}>
@@ -309,7 +364,7 @@ function MovementFormFields({
       </FormField>
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.amount_label)}</span>
+        <span className="font-medium">{getRequiredLabel(copy.amount_label, copy)}</span>
         <input
           type="text"
           name="amount"
@@ -400,10 +455,12 @@ export function SecretariaMovementForm({
   submitLabel,
   pendingLabel,
   submitAction,
-  sessionDate
+  sessionDate,
+  copy = texts.dashboard.treasury
 }: BaseMovementFormProps & {
   calendarEvents: ClubCalendarEvent[];
   sessionDate: string;
+  copy?: OperationalFormCopy;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(buildEmptySecretariaMovementFormState);
 
@@ -431,7 +488,7 @@ export function SecretariaMovementForm({
     >
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <span className="font-medium">{copy.date_label}</span>
           <input
             type="text"
             value={sessionDate}
@@ -449,6 +506,7 @@ export function SecretariaMovementForm({
           receiptFormats={receiptFormats}
           formState={formState}
           onChange={(patch) => setFormState((current) => ({ ...current, ...patch }))}
+          copy={copy}
         />
 
         <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
@@ -462,7 +520,7 @@ export function SecretariaMovementForm({
             type="reset"
             className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
-            {texts.dashboard.treasury.reset_cta}
+            {copy.reset_cta}
           </button>
         </div>
       </PendingFieldset>
@@ -481,10 +539,12 @@ export function SecretariaMovementEditForm({
   submitLabel,
   pendingLabel,
   submitAction,
-  movement
+  movement,
+  copy = texts.dashboard.treasury
 }: BaseMovementFormProps & {
   calendarEvents?: ClubCalendarEvent[];
   movement: TreasuryDashboardMovement;
+  copy?: OperationalFormCopy;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
 
@@ -517,12 +577,12 @@ export function SecretariaMovementEditForm({
 
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.movement_id_label}</span>
+          <span className="font-medium">{copy.movement_id_label}</span>
           <input type="text" value={movement.movementDisplayId} disabled className={DISABLED_CONTROL_CLASSNAME} />
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <span className="font-medium">{copy.date_label}</span>
           <input type="text" value={movement.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
         </FormField>
 
@@ -536,18 +596,19 @@ export function SecretariaMovementEditForm({
           receiptFormats={receiptFormats}
           formState={formState}
           onChange={(patch) => setFormState((current) => ({ ...current, ...patch }))}
+          copy={copy}
         />
 
         {movement.transferReference ? (
           <FormField fullWidth>
-            <span className="font-medium">{texts.dashboard.treasury.detail_transfer_label}</span>
+            <span className="font-medium">{copy.detail_transfer_label}</span>
             <input type="text" value={movement.transferReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
           </FormField>
         ) : null}
 
         {movement.fxOperationReference ? (
           <FormField fullWidth>
-            <span className="font-medium">{texts.dashboard.treasury.detail_fx_label}</span>
+            <span className="font-medium">{copy.detail_fx_label}</span>
             <input type="text" value={movement.fxOperationReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
           </FormField>
         ) : null}
@@ -646,7 +707,9 @@ export function AccountTransferForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label)}</span>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label, texts.dashboard.treasury)}
+          </span>
           <select
             name="source_account_id"
             value={formState.sourceAccountId}
@@ -665,7 +728,9 @@ export function AccountTransferForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label)}</span>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label, texts.dashboard.treasury)}
+          </span>
           <select
             name="target_account_id"
             value={formState.targetAccountId}
@@ -695,7 +760,9 @@ export function AccountTransferForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.currency_label)}</span>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.currency_label, texts.dashboard.treasury)}
+          </span>
           <select
             name="currency_code"
             value={formState.currencyCode}
@@ -715,7 +782,9 @@ export function AccountTransferForm({
         </FormField>
 
         <FormField fullWidth>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.concept_label)}</span>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.concept_label, texts.dashboard.treasury)}
+          </span>
           <input
             type="text"
             name="concept"
@@ -726,7 +795,9 @@ export function AccountTransferForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury.amount_label)}</span>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.amount_label, texts.dashboard.treasury)}
+          </span>
           <input
             type="text"
             name="amount"
@@ -839,6 +910,7 @@ export function TreasuryRoleMovementForm({
           formState={formState}
           onChange={(patch) => setFormState((current) => ({ ...current, ...patch }))}
           showMovementDateInput
+          copy={texts.dashboard.treasury_role}
         />
 
         <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
@@ -852,11 +924,57 @@ export function TreasuryRoleMovementForm({
             type="reset"
             className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
-            {texts.dashboard.treasury.reset_cta}
+            {texts.dashboard.treasury_role.reset_cta}
           </button>
         </div>
       </PendingFieldset>
     </form>
+  );
+}
+
+type FxFormState = {
+  sourceAccountId: string;
+  sourceCurrencyCode: string;
+  sourceAmount: string;
+  targetAccountId: string;
+  targetCurrencyCode: string;
+  targetAmount: string;
+  concept: string;
+};
+
+function buildEmptyFxFormState(): FxFormState {
+  return {
+    sourceAccountId: "",
+    sourceCurrencyCode: "",
+    sourceAmount: "",
+    targetAccountId: "",
+    targetCurrencyCode: "",
+    targetAmount: "",
+    concept: ""
+  };
+}
+
+function isPositiveAmount(value: string) {
+  const normalizedValue = sanitizeAmountInput(value).trim();
+
+  if (!normalizedValue) {
+    return false;
+  }
+
+  const parsedValue = Number(normalizedValue.replace(",", "."));
+
+  return !Number.isNaN(parsedValue) && parsedValue > 0;
+}
+
+function isFxFormValid(formState: FxFormState) {
+  return Boolean(
+    formState.sourceAccountId &&
+      formState.sourceCurrencyCode &&
+      isPositiveAmount(formState.sourceAmount) &&
+      formState.targetAccountId &&
+      formState.targetCurrencyCode &&
+      isPositiveAmount(formState.targetAmount) &&
+      formState.sourceCurrencyCode !== formState.targetCurrencyCode
   );
 }
 
@@ -868,28 +986,114 @@ export function TreasuryRoleFxForm({
 }: {
   accounts: TreasuryAccount[];
   currencies: TreasuryCurrencyConfig[];
-  submitAction: (formData: FormData) => Promise<void>;
+  submitAction: (formData: FormData) => Promise<unknown>;
   sessionDate: string;
 }) {
+  const [formState, setFormState] = useState<FxFormState>(buildEmptyFxFormState);
+
+  const selectedSourceAccount = useMemo(
+    () => accounts.find((account) => account.id === formState.sourceAccountId),
+    [accounts, formState.sourceAccountId]
+  );
+  const selectedTargetAccount = useMemo(
+    () => accounts.find((account) => account.id === formState.targetAccountId),
+    [accounts, formState.targetAccountId]
+  );
+
+  const availableSourceCurrencies = useMemo(() => {
+    if (!selectedSourceAccount) {
+      return [];
+    }
+
+    return currencies.filter((currency) => selectedSourceAccount.currencies.includes(currency.currencyCode));
+  }, [currencies, selectedSourceAccount]);
+
+  const availableTargetCurrencies = useMemo(() => {
+    if (!selectedTargetAccount) {
+      return [];
+    }
+
+    return currencies.filter((currency) => selectedTargetAccount.currencies.includes(currency.currencyCode));
+  }, [currencies, selectedTargetAccount]);
+
+  useEffect(() => {
+    const nextCurrencyCode = getDefaultCurrencyCode(selectedSourceAccount, currencies);
+
+    if (!selectedSourceAccount && formState.sourceCurrencyCode) {
+      setFormState((current) => ({ ...current, sourceCurrencyCode: "" }));
+      return;
+    }
+
+    if (
+      selectedSourceAccount &&
+      nextCurrencyCode &&
+      !selectedSourceAccount.currencies.includes(formState.sourceCurrencyCode)
+    ) {
+      setFormState((current) => ({ ...current, sourceCurrencyCode: nextCurrencyCode }));
+    }
+  }, [currencies, formState.sourceCurrencyCode, selectedSourceAccount]);
+
+  useEffect(() => {
+    const nextCurrencyCode = getDefaultCurrencyCode(selectedTargetAccount, currencies);
+
+    if (!selectedTargetAccount && formState.targetCurrencyCode) {
+      setFormState((current) => ({ ...current, targetCurrencyCode: "" }));
+      return;
+    }
+
+    if (
+      selectedTargetAccount &&
+      nextCurrencyCode &&
+      !selectedTargetAccount.currencies.includes(formState.targetCurrencyCode)
+    ) {
+      setFormState((current) => ({ ...current, targetCurrencyCode: nextCurrencyCode }));
+    }
+  }, [currencies, formState.targetCurrencyCode, selectedTargetAccount]);
+
+  const currenciesMustBeDistinct =
+    formState.sourceCurrencyCode.length > 0 &&
+    formState.targetCurrencyCode.length > 0 &&
+    formState.sourceCurrencyCode === formState.targetCurrencyCode;
+
+  const handleReset = () => setFormState(buildEmptyFxFormState());
+
   return (
-    <form action={submitAction} className="grid gap-4">
+    <form
+      action={async (formData) => {
+        await submitAction(formData);
+      }}
+      className="grid gap-4"
+      onReset={handleReset}
+      onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        if (!isFxFormValid(formState)) {
+          event.preventDefault();
+          return;
+        }
+
+        window.setTimeout(handleReset, 0);
+      }}
+    >
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <span className="font-medium">{texts.dashboard.treasury_role.date_label}</span>
           <input
-            type="date"
-            name="movement_date_preview"
-            defaultValue={sessionDate}
+            type="text"
+            value={sessionDate}
             disabled
             className={DISABLED_CONTROL_CLASSNAME}
           />
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.fx_source_account_label}</span>
-          <select name="source_account_id" defaultValue="" className={CONTROL_CLASSNAME}>
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_source_account_label, texts.dashboard.treasury_role)}</span>
+          <select
+            name="source_account_id"
+            value={formState.sourceAccountId}
+            onChange={(event) => setFormState((current) => ({ ...current, sourceAccountId: event.target.value }))}
+            className={CONTROL_CLASSNAME}
+          >
             <option value="" disabled>
-              {texts.dashboard.treasury.fx_source_account_placeholder}
+              {texts.dashboard.treasury_role.fx_source_account_placeholder}
             </option>
             {accounts.map((account) => (
               <option key={`fx-source-${account.id}`} value={account.id}>
@@ -900,12 +1104,19 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.fx_source_currency_label}</span>
-          <select name="source_currency_code" defaultValue="" className={CONTROL_CLASSNAME}>
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_source_currency_label, texts.dashboard.treasury_role)}</span>
+          <select
+            name="source_currency_code"
+            value={formState.sourceCurrencyCode}
+            onChange={(event) => setFormState((current) => ({ ...current, sourceCurrencyCode: event.target.value }))}
+            disabled={availableSourceCurrencies.length === 0}
+            aria-invalid={currenciesMustBeDistinct ? "true" : undefined}
+            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground", currenciesMustBeDistinct && "border-destructive/25")}
+          >
             <option value="" disabled>
-              {texts.dashboard.treasury.fx_source_currency_placeholder}
+              {texts.dashboard.treasury_role.fx_source_currency_placeholder}
             </option>
-            {currencies.map((currency) => (
+            {availableSourceCurrencies.map((currency) => (
               <option key={`fx-source-currency-${currency.currencyCode}`} value={currency.currencyCode}>
                 {currency.currencyCode}
               </option>
@@ -914,15 +1125,32 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.fx_source_amount_label}</span>
-          <input type="text" name="source_amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_source_amount_label, texts.dashboard.treasury_role)}</span>
+          <input
+            type="text"
+            name="source_amount"
+            inputMode="decimal"
+            value={formState.sourceAmount}
+            onChange={(event) => setFormState((current) => ({ ...current, sourceAmount: sanitizeAmountInput(event.target.value) }))}
+            onKeyDown={(event) => {
+              if (event.key === "-") {
+                event.preventDefault();
+              }
+            }}
+            className={CONTROL_CLASSNAME}
+          />
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.fx_target_account_label}</span>
-          <select name="target_account_id" defaultValue="" className={CONTROL_CLASSNAME}>
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_target_account_label, texts.dashboard.treasury_role)}</span>
+          <select
+            name="target_account_id"
+            value={formState.targetAccountId}
+            onChange={(event) => setFormState((current) => ({ ...current, targetAccountId: event.target.value }))}
+            className={CONTROL_CLASSNAME}
+          >
             <option value="" disabled>
-              {texts.dashboard.treasury.fx_target_account_placeholder}
+              {texts.dashboard.treasury_role.fx_target_account_placeholder}
             </option>
             {accounts.map((account) => (
               <option key={`fx-target-${account.id}`} value={account.id}>
@@ -933,12 +1161,19 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.fx_target_currency_label}</span>
-          <select name="target_currency_code" defaultValue="" className={CONTROL_CLASSNAME}>
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_target_currency_label, texts.dashboard.treasury_role)}</span>
+          <select
+            name="target_currency_code"
+            value={formState.targetCurrencyCode}
+            onChange={(event) => setFormState((current) => ({ ...current, targetCurrencyCode: event.target.value }))}
+            disabled={availableTargetCurrencies.length === 0}
+            aria-invalid={currenciesMustBeDistinct ? "true" : undefined}
+            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground", currenciesMustBeDistinct && "border-destructive/25")}
+          >
             <option value="" disabled>
-              {texts.dashboard.treasury.fx_target_currency_placeholder}
+              {texts.dashboard.treasury_role.fx_target_currency_placeholder}
             </option>
-            {currencies.map((currency) => (
+            {availableTargetCurrencies.map((currency) => (
               <option key={`fx-target-currency-${currency.currencyCode}`} value={currency.currencyCode}>
                 {currency.currencyCode}
               </option>
@@ -947,26 +1182,50 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.fx_target_amount_label}</span>
-          <input type="text" name="target_amount" inputMode="decimal" className={CONTROL_CLASSNAME} />
+          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_target_amount_label, texts.dashboard.treasury_role)}</span>
+          <input
+            type="text"
+            name="target_amount"
+            inputMode="decimal"
+            value={formState.targetAmount}
+            onChange={(event) => setFormState((current) => ({ ...current, targetAmount: sanitizeAmountInput(event.target.value) }))}
+            onKeyDown={(event) => {
+              if (event.key === "-") {
+                event.preventDefault();
+              }
+            }}
+            className={CONTROL_CLASSNAME}
+          />
         </FormField>
 
         <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-          <input type="text" name="concept" className={CONTROL_CLASSNAME} />
+          <span className="font-medium">{texts.dashboard.treasury_role.concept_label}</span>
+          <input
+            type="text"
+            name="concept"
+            value={formState.concept}
+            onChange={(event) => setFormState((current) => ({ ...current, concept: event.target.value }))}
+            className={CONTROL_CLASSNAME}
+          />
+          {currenciesMustBeDistinct ? (
+            <span aria-live="polite" className="text-xs leading-5 text-destructive">
+              {texts.dashboard.treasury_role.fx_distinct_currencies_error}
+            </span>
+          ) : null}
         </FormField>
 
         <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
           <PendingSubmitButton
             idleLabel={texts.dashboard.treasury_role.fx_create_cta}
             pendingLabel={texts.dashboard.treasury_role.fx_create_loading}
+            disabled={!isFxFormValid(formState)}
             className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
           <button
             type="reset"
             className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
-            {texts.dashboard.treasury.reset_cta}
+            {texts.dashboard.treasury_role.reset_cta}
           </button>
         </div>
       </PendingFieldset>

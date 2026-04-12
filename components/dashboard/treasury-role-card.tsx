@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { startTransition, useState } from "react";
 
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import {
@@ -11,6 +12,7 @@ import {
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { formatLocalizedAmount } from "@/lib/amounts";
+import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
   ClubActivity,
   ReceiptFormat,
@@ -32,9 +34,9 @@ type TreasuryRoleCardProps = {
   currencies: TreasuryCurrencyConfig[];
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
-  createTreasuryRoleMovementAction: (formData: FormData) => Promise<void>;
-  updateTreasuryRoleMovementAction: (formData: FormData) => Promise<void>;
-  createFxOperationAction: (formData: FormData) => Promise<void>;
+  createTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  updateTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  createFxOperationAction: (formData: FormData) => Promise<TreasuryActionResponse>;
 };
 
 type TotalBalance = {
@@ -293,15 +295,108 @@ export function TreasuryRoleCard({
   updateTreasuryRoleMovementAction,
   createFxOperationAction
 }: TreasuryRoleCardProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "fx" | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<TreasuryDashboardMovement | null>(null);
+  const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
+  const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
+  const [isFxSubmissionPending, setIsFxSubmissionPending] = useState(false);
   const totalBalances = getTotalBalances(dashboard.accounts);
   const detailHref = dashboard.accounts[0] ? `/dashboard/treasury/accounts/${dashboard.accounts[0].accountId}` : null;
   const canCreateMovement = dashboard.availableActions.includes("create_movement");
   const canCreateFxOperation = dashboard.availableActions.includes("create_fx_operation");
+  const pendingOverlayLabel = isMovementSubmissionPending
+    ? texts.dashboard.treasury_role.create_loading
+    : isMovementUpdatePending
+      ? texts.dashboard.treasury_role.update_loading
+      : isFxSubmissionPending
+        ? texts.dashboard.treasury_role.fx_create_loading
+        : null;
+
+  async function handleCreateTreasuryRoleMovement(formData: FormData) {
+    setIsMovementSubmissionPending(true);
+    setActiveModal(null);
+
+    try {
+      const result = await createTreasuryRoleMovementAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+
+      if (result.movementDisplayId) {
+        nextParams.set("movement_id", result.movementDisplayId);
+      } else {
+        nextParams.delete("movement_id");
+      }
+
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } finally {
+      setIsMovementSubmissionPending(false);
+    }
+  }
+
+  async function handleUpdateTreasuryRoleMovement(formData: FormData) {
+    setIsMovementUpdatePending(true);
+    setActiveModal(null);
+    setSelectedMovement(null);
+
+    try {
+      const result = await updateTreasuryRoleMovementAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } finally {
+      setIsMovementUpdatePending(false);
+    }
+  }
+
+  async function handleCreateFxOperation(formData: FormData) {
+    setIsFxSubmissionPending(true);
+    setActiveModal(null);
+
+    try {
+      const result = await createFxOperationAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } finally {
+      setIsFxSubmissionPending(false);
+    }
+  }
 
   return (
     <>
+      {pendingOverlayLabel ? (
+        <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground">
+          {pendingOverlayLabel}
+        </div>
+      ) : null}
+
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.95fr)]">
         <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
           <div className="space-y-1.5">
@@ -385,7 +480,7 @@ export function TreasuryRoleCard({
               iconKind="consolidation"
               toneClassName="border-slate-200/90 bg-slate-50 text-slate-500"
               href="/dashboard/treasury/consolidation"
-              loadingLabel={texts.dashboard.treasury.navigation_loading}
+              loadingLabel={texts.dashboard.treasury_role.navigation_loading}
               ariaLabel={texts.dashboard.treasury_role.consolidation_cta}
             />
 
@@ -476,6 +571,7 @@ export function TreasuryRoleCard({
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury_role.movement_form_title}
         description={texts.dashboard.treasury_role.movement_form_description}
+        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
       >
         <TreasuryRoleMovementForm
           accounts={accounts}
@@ -484,7 +580,7 @@ export function TreasuryRoleCard({
           currencies={currencies}
           movementTypes={movementTypes}
           receiptFormats={receiptFormats}
-          submitAction={createTreasuryRoleMovementAction}
+          submitAction={handleCreateTreasuryRoleMovement}
           submitLabel={texts.dashboard.treasury_role.create_cta}
           pendingLabel={texts.dashboard.treasury_role.create_loading}
           sessionDate={dashboard.sessionDate}
@@ -499,6 +595,7 @@ export function TreasuryRoleCard({
         }}
         title={texts.dashboard.treasury_role.edit_form_title}
         description={texts.dashboard.treasury_role.edit_form_description}
+        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
       >
         {selectedMovement ? (
           <SecretariaMovementEditForm
@@ -508,10 +605,11 @@ export function TreasuryRoleCard({
             currencies={currencies}
             movementTypes={movementTypes}
             receiptFormats={receiptFormats}
-            submitAction={updateTreasuryRoleMovementAction}
+            submitAction={handleUpdateTreasuryRoleMovement}
             submitLabel={texts.dashboard.treasury_role.update_cta}
             pendingLabel={texts.dashboard.treasury_role.update_loading}
             movement={selectedMovement}
+            copy={texts.dashboard.treasury_role}
           />
         ) : null}
       </Modal>
@@ -521,11 +619,12 @@ export function TreasuryRoleCard({
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury_role.fx_form_title}
         description={texts.dashboard.treasury_role.fx_form_description}
+        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
       >
         <TreasuryRoleFxForm
           accounts={accounts}
           currencies={currencies}
-          submitAction={createFxOperationAction}
+          submitAction={handleCreateFxOperation}
           sessionDate={dashboard.sessionDate}
         />
       </Modal>
