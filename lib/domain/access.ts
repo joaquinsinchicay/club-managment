@@ -277,30 +277,32 @@ export type DashboardTreasuryCard = {
       amount: number;
     }>;
   }>;
-  movements: Array<{
-    movementId: string;
-    movementDisplayId: string;
-    movementDate: string;
-    accountId: string;
-    accountName: string;
-    movementType: TreasuryMovementType;
-    categoryId: string;
-    categoryName: string;
-    activityId: string | null;
-    activityName: string | null;
-    receiptNumber: string | null;
-    calendarEventId: string | null;
-    calendarEventTitle: string | null;
-    transferReference: string | null;
-    fxOperationReference: string | null;
-    concept: string;
-    currencyCode: string;
-    amount: number;
-    createdByUserName: string;
-    createdAt: string;
-    canEdit: boolean;
-  }>;
+  movements: TreasuryDashboardMovement[];
   availableActions: Array<"open_session" | "close_session" | "create_movement">;
+};
+
+export type TreasuryDashboardMovement = {
+  movementId: string;
+  movementDisplayId: string;
+  movementDate: string;
+  accountId: string;
+  accountName: string;
+  movementType: TreasuryMovementType;
+  categoryId: string;
+  categoryName: string;
+  activityId: string | null;
+  activityName: string | null;
+  receiptNumber: string | null;
+  calendarEventId: string | null;
+  calendarEventTitle: string | null;
+  transferReference: string | null;
+  fxOperationReference: string | null;
+  concept: string;
+  currencyCode: string;
+  amount: number;
+  createdByUserName: string;
+  createdAt: string;
+  canEdit: boolean;
 };
 
 export type TreasuryRoleDashboard = {
@@ -313,20 +315,7 @@ export type TreasuryRoleDashboard = {
       amount: number;
     }>;
   }>;
-  movements: Array<{
-    movementId: string;
-    movementDisplayId: string;
-    movementDate: string;
-    accountId: string;
-    accountName: string;
-    movementType: TreasuryMovementType;
-    categoryName: string;
-    concept: string;
-    currencyCode: string;
-    amount: number;
-    createdByUserName: string;
-    createdAt: string;
-  }>;
+  movements: TreasuryDashboardMovement[];
   availableActions: Array<"create_movement" | "create_fx_operation">;
 };
 

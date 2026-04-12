@@ -77,12 +77,64 @@ export function isAccessRepositoryInfraError(error: unknown): error is AccessRep
   return error instanceof AccessRepositoryInfraError;
 }
 
+function getSupabaseErrorCode(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
+}
+
+function getSupabaseErrorMessage(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return "";
+  }
+
+  const message = (error as { message?: unknown }).message;
+  return typeof message === "string" ? message : "";
+}
+
+function isMissingStaleSessionAutoCloseRpcCause(error: unknown) {
+  const code = getSupabaseErrorCode(error);
+
+  if (code === "42883" || code === "PGRST202") {
+    return true;
+  }
+
+  const message = getSupabaseErrorMessage(error).toLowerCase();
+
+  return (
+    message.includes("get_last_open_daily_cash_session_before_date_for_current_club") ||
+    message.includes("auto_close_stale_daily_cash_session_with_balances_for_current_club") ||
+    (message.includes("function") && message.includes("does not exist"))
+  );
+}
+
+function logClubScopedRpcFailure(
+  operation: string,
+  details: Record<string, unknown>,
+  error: unknown,
+  options?: { suppressKnownMissingStaleSessionRpc?: boolean }
+) {
+  if (options?.suppressKnownMissingStaleSessionRpc && isMissingStaleSessionAutoCloseRpcCause(error)) {
+    return;
+  }
+
+  console.error("[club-scoped-rpc-failure]", {
+    operation,
+    ...details,
+    error
+  });
+}
+
 type AccessRepository = {
   getGoogleProfile(profileKey: GoogleProfileKey): GoogleProfile;
   findUserByEmail(email: string, client?: AccessRepositoryClient): Promise<User | null>;
   createUserFromGoogleProfile(profile: GoogleProfile): Promise<User>;
   updateUserFromGoogleProfile(userId: string, profile: GoogleProfile): Promise<User>;
   findUserById(userId: string, client?: AccessRepositoryClient): Promise<User | null>;
+  findUsersByIds(userIds: string[], client?: AccessRepositoryClient): Promise<User[]>;
   listMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   listActiveMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   findClubById(clubId: string, client?: AccessRepositoryClient): Promise<Club | null>;
@@ -268,6 +320,7 @@ type AccessRepository = {
     movementDate: string
   ): Promise<TreasuryMovement[]>;
   listTreasuryMovementsHistoryByAccount(clubId: string, accountId: string): Promise<TreasuryMovement[]>;
+  listTreasuryMovementsHistoryByAccounts(clubId: string, accountIds: string[]): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByDate(clubId: string, movementDate: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByDateStrict(clubId: string, movementDate: string): Promise<TreasuryMovement[]>;
   findTreasuryMovementById(clubId: string, movementId: string): Promise<TreasuryMovement | null>;
@@ -1528,6 +1581,34 @@ async function findRealUserById(userId: string, client?: AccessRepositoryClient)
   return mapUserRow(data);
 }
 
+async function findRealUsersByIds(userIds: string[], client?: AccessRepositoryClient) {
+  if (userIds.length === 0) {
+    return [];
+  }
+
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("id,email,full_name,avatar_url,created_at,updated_at")
+    .in("id", userIds);
+
+  if (error || !data) {
+    return [];
+  }
+
+  const usersById = new Map(data.map((row) => [row.id, mapUserRow(row)]));
+
+  return userIds.flatMap((userId) => {
+    const user = usersById.get(userId);
+    return user ? [user] : [];
+  });
+}
+
 async function listRealMembershipsForUser(userId: string, client?: AccessRepositoryClient) {
   const supabase = createAccessSupabaseClient(client);
 
@@ -1948,12 +2029,15 @@ async function findRealLastOpenDailyCashSessionBeforeDate(
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
-      operation: "get_last_open_daily_cash_session_before_date",
-      clubId,
-      beforeDate,
-      error
-    });
+    logClubScopedRpcFailure(
+      "get_last_open_daily_cash_session_before_date",
+      {
+        clubId,
+        beforeDate
+      },
+      error,
+      { suppressKnownMissingStaleSessionRpc: true }
+    );
     throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "get_last_open_daily_cash_session_before_date", {
       cause: error
     });
@@ -2275,14 +2359,17 @@ async function autoCloseRealStaleDailyCashSessionWithBalances(input: {
   );
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
-      operation: "auto_close_stale_daily_cash_session_with_balances",
-      clubId: input.clubId,
-      beforeDate: input.beforeDate,
-      expectedSessionId: input.expectedSessionId,
-      closedByUserId: input.closedByUserId,
-      error
-    });
+    logClubScopedRpcFailure(
+      "auto_close_stale_daily_cash_session_with_balances",
+      {
+        clubId: input.clubId,
+        beforeDate: input.beforeDate,
+        expectedSessionId: input.expectedSessionId,
+        closedByUserId: input.closedByUserId
+      },
+      error,
+      { suppressKnownMissingStaleSessionRpc: true }
+    );
     throw new AccessRepositoryInfraError("club_scoped_rpc_failed", "auto_close_stale_daily_cash_session_with_balances", {
       cause: error
     });
@@ -2460,6 +2547,32 @@ async function listRealTreasuryMovementsHistoryByAccount(
       details: { accountId },
       params: {
         p_account_id: accountId
+      }
+    }
+  );
+
+  return rows.map(mapTreasuryMovementRow);
+}
+
+async function listRealTreasuryMovementsHistoryByAccounts(
+  clubId: string,
+  accountIds: string[],
+  client?: AccessRepositoryClient
+) {
+  if (accountIds.length === 0) {
+    return [];
+  }
+
+  const rows = await runClubScopedReadRpc<TreasuryMovementRow[]>(
+    "get_treasury_movements_history_by_accounts_for_current_club",
+    clubId,
+    client,
+    {
+      operation: "list_treasury_movements_history_by_accounts",
+      details: { accountIdsCount: accountIds.length },
+      strict: true,
+      params: {
+        p_account_ids: accountIds
       }
     }
   );
@@ -3699,6 +3812,16 @@ export const accessRepository: AccessRepository = {
 
     return getStore().users.get(userId) ?? null;
   },
+  async findUsersByIds(userIds, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return findRealUsersByIds(userIds, client);
+    }
+
+    return userIds.flatMap((userId) => {
+      const user = getStore().users.get(userId);
+      return user ? [user] : [];
+    });
+  },
   async listMembershipsForUser(userId, client) {
     if (shouldUseSupabaseDatabase()) {
       return listRealMembershipsForUser(userId, client);
@@ -4334,6 +4457,17 @@ export const accessRepository: AccessRepository = {
 
     return getStore().treasuryMovements.filter(
       (movement) => movement.clubId === clubId && movement.accountId === accountId
+    );
+  },
+  async listTreasuryMovementsHistoryByAccounts(clubId, accountIds) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealTreasuryMovementsHistoryByAccounts(clubId, accountIds);
+    }
+
+    const allowedAccountIds = new Set(accountIds);
+
+    return getStore().treasuryMovements.filter(
+      (movement) => movement.clubId === clubId && allowedAccountIds.has(movement.accountId)
     );
   },
   async listTreasuryMovementsByDate(clubId, movementDate) {

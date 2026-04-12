@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 
-import { TreasuryRoleFxForm, TreasuryRoleMovementForm } from "@/components/dashboard/treasury-operation-forms";
-import { Modal } from "@/components/ui/modal";
+import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
+import {
+  SecretariaMovementEditForm,
+  TreasuryRoleFxForm,
+  TreasuryRoleMovementForm
+} from "@/components/dashboard/treasury-operation-forms";
+import { Modal, ModalTriggerButton } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import type {
@@ -12,6 +17,7 @@ import type {
   TreasuryAccount,
   TreasuryCategory,
   TreasuryCurrencyConfig,
+  TreasuryDashboardMovement,
   TreasuryMovementType,
   TreasuryRoleDashboard
 } from "@/lib/domain/access";
@@ -27,6 +33,7 @@ type TreasuryRoleCardProps = {
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
   createTreasuryRoleMovementAction: (formData: FormData) => Promise<void>;
+  updateTreasuryRoleMovementAction: (formData: FormData) => Promise<void>;
   createFxOperationAction: (formData: FormData) => Promise<void>;
 };
 
@@ -34,10 +41,6 @@ type TotalBalance = {
   currencyCode: string;
   amount: number;
 };
-
-function getMovementAmountClassName(movementType: TreasuryMovementType) {
-  return movementType === "ingreso" ? "text-success" : "text-destructive";
-}
 
 function getTotalBalances(accounts: TreasuryRoleDashboard["accounts"]): TotalBalance[] {
   const totals = new Map<string, number>();
@@ -64,19 +67,6 @@ function getTotalBalances(accounts: TreasuryRoleDashboard["accounts"]): TotalBal
 
       return left.currencyCode.localeCompare(right.currencyCode);
     });
-}
-
-function formatMovementDateTime(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short"
-  }).format(date);
 }
 
 function ManagementActionIcon({
@@ -147,6 +137,24 @@ function ManagementActionChevron() {
   );
 }
 
+function EditMovementIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={cn("size-4", className)}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
 function ManagementCardHeader() {
   return (
     <div className="flex items-start justify-between gap-4">
@@ -178,17 +186,17 @@ function SummaryBalance({
   prominent?: boolean;
 }) {
   return (
-    <div className={cn("space-y-1", prominent ? "space-y-2" : "space-y-1.5")}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-        {balance.currencyCode}
-      </p>
+    <div>
       <p
         className={cn(
-          "font-semibold tracking-tight text-foreground",
+          "flex flex-wrap items-baseline gap-x-2 gap-y-1 font-semibold tracking-tight text-foreground",
           prominent ? "text-[3.25rem] leading-none sm:text-[3.5rem]" : "text-[2rem] leading-none"
         )}
       >
-        {formatLocalizedAmount(balance.amount)}
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {balance.currencyCode}
+        </span>
+        <span>{formatLocalizedAmount(balance.amount)}</span>
       </p>
     </div>
   );
@@ -282,9 +290,11 @@ export function TreasuryRoleCard({
   movementTypes,
   receiptFormats,
   createTreasuryRoleMovementAction,
+  updateTreasuryRoleMovementAction,
   createFxOperationAction
 }: TreasuryRoleCardProps) {
-  const [activeModal, setActiveModal] = useState<"movement" | "fx" | null>(null);
+  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "fx" | null>(null);
+  const [selectedMovement, setSelectedMovement] = useState<TreasuryDashboardMovement | null>(null);
   const totalBalances = getTotalBalances(dashboard.accounts);
   const detailHref = dashboard.accounts[0] ? `/dashboard/treasury/accounts/${dashboard.accounts[0].accountId}` : null;
   const canCreateMovement = dashboard.availableActions.includes("create_movement");
@@ -334,14 +344,17 @@ export function TreasuryRoleCard({
 
                     <div className="space-y-3">
                       {account.balances.map((balance) => (
-                        <div key={`${account.accountId}-${balance.currencyCode}`} className="space-y-1.5">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        <p
+                          key={`${account.accountId}-${balance.currencyCode}`}
+                          className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[2rem] font-semibold leading-none tracking-tight text-foreground"
+                        >
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                             {balance.currencyCode}
-                          </p>
-                          <p className="text-[2rem] font-semibold leading-none tracking-tight text-foreground">
+                          </span>
+                          <span>
                             {formatLocalizedAmount(balance.amount)}
-                          </p>
-                        </div>
+                          </span>
+                        </p>
                       ))}
                     </div>
                   </article>
@@ -404,70 +417,56 @@ export function TreasuryRoleCard({
       <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
         <div className="space-y-1.5">
           <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
-            {texts.dashboard.treasury_role.recent_movements_title}
+            {texts.dashboard.treasury_role.movements_card_title}
           </h2>
           <p className="text-sm leading-5 text-muted-foreground">
-            {texts.dashboard.treasury_role.recent_movements_description}
+            {texts.dashboard.treasury_role.movements_card_description}
           </p>
         </div>
 
         {dashboard.movements.length === 0 ? (
           <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-            {texts.dashboard.treasury_role.recent_movements_empty}
+            {texts.dashboard.treasury_role.movements_empty}
           </div>
         ) : (
           <div className="mt-5">
-            <div className="hidden rounded-t-[18px] border border-border bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,2fr)_minmax(140px,0.9fr)_minmax(140px,0.9fr)_minmax(120px,0.75fr)] md:gap-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.dashboard.treasury_role.movements_concept_label}
-              </p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.dashboard.treasury_role.movements_amount_label}
-              </p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.dashboard.treasury_role.movements_account_label}
-              </p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.dashboard.treasury_role.movements_actions_label}
-              </p>
-            </div>
-
-            <div className="grid gap-3 md:gap-0">
-              {dashboard.movements.map((movement, index) => (
-                <article
-                  key={movement.movementId}
-                  className={cn(
-                    "rounded-[18px] border border-border bg-card p-4 md:grid md:grid-cols-[minmax(0,2fr)_minmax(140px,0.9fr)_minmax(140px,0.9fr)_minmax(120px,0.75fr)] md:items-center md:gap-4 md:rounded-none md:border-t-0",
-                    index === dashboard.movements.length - 1 && "md:rounded-b-[18px]"
-                  )}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-foreground">{movement.concept}</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                      {formatMovementDateTime(movement.createdAt)} · {texts.dashboard.treasury_role.movements_created_by_label}{" "}
-                      {movement.createdByUserName}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 md:mt-0">
-                    <p className={cn("text-lg font-semibold tracking-tight", getMovementAmountClassName(movement.movementType))}>
-                      {movement.movementType === "egreso" ? "-" : "+"} {movement.currencyCode}{" "}
-                      {formatLocalizedAmount(movement.amount)}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 md:mt-0">
-                    <p className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
-                      {movement.accountName}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 flex justify-start md:mt-0 md:justify-end">
-                    <span className="text-xs font-medium text-muted-foreground">-</span>
-                  </div>
-                </article>
-              ))}
-            </div>
+            <SecretariaMovementList
+              items={dashboard.movements.map((movement) => ({
+                movementId: movement.movementId,
+                movementDisplayId: movement.movementDisplayId,
+                concept: movement.concept,
+                createdAt: movement.createdAt,
+                createdByUserName: movement.createdByUserName,
+                accountName: movement.accountName,
+                movementType: movement.movementType,
+                currencyCode: movement.currencyCode,
+                amount: movement.amount,
+                categoryName: movement.categoryName,
+                activityName: movement.activityName,
+                receiptNumber: movement.receiptNumber,
+                calendarEventTitle: movement.calendarEventTitle,
+                transferReference: movement.transferReference,
+                fxOperationReference: movement.fxOperationReference,
+                action: (
+                  <ModalTriggerButton
+                    onClick={() => {
+                      setSelectedMovement(movement);
+                      setActiveModal("edit_movement");
+                    }}
+                    aria-label={texts.dashboard.treasury_role.edit_movement_cta}
+                    className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
+                  >
+                    <EditMovementIcon />
+                  </ModalTriggerButton>
+                )
+              }))}
+              conceptLabel={texts.dashboard.treasury_role.movements_concept_label}
+              accountLabel={texts.dashboard.treasury_role.movements_account_label}
+              detailLabel={texts.dashboard.treasury_role.movements_detail_label}
+              amountLabel={texts.dashboard.treasury_role.movements_amount_label}
+              actionsLabel={texts.dashboard.treasury_role.movements_actions_label}
+              createdByLabel={texts.dashboard.treasury_role.movements_created_by_label}
+            />
           </div>
         )}
       </section>
@@ -490,6 +489,31 @@ export function TreasuryRoleCard({
           pendingLabel={texts.dashboard.treasury_role.create_loading}
           sessionDate={dashboard.sessionDate}
         />
+      </Modal>
+
+      <Modal
+        open={activeModal === "edit_movement" && selectedMovement !== null}
+        onClose={() => {
+          setActiveModal(null);
+          setSelectedMovement(null);
+        }}
+        title={texts.dashboard.treasury_role.edit_form_title}
+        description={texts.dashboard.treasury_role.edit_form_description}
+      >
+        {selectedMovement ? (
+          <SecretariaMovementEditForm
+            accounts={accounts}
+            categories={categories}
+            activities={activities}
+            currencies={currencies}
+            movementTypes={movementTypes}
+            receiptFormats={receiptFormats}
+            submitAction={updateTreasuryRoleMovementAction}
+            submitLabel={texts.dashboard.treasury_role.update_cta}
+            pendingLabel={texts.dashboard.treasury_role.update_loading}
+            movement={selectedMovement}
+          />
+        ) : null}
       </Modal>
 
       <Modal

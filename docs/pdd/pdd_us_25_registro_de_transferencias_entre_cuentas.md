@@ -59,6 +59,7 @@ Secretaría debe disponer de un formulario específico para registrar una transf
 - Si la cuenta destino no soporta la moneda seleccionada, el formulario debe mostrar error inline en ese campo y bloquear la creación.
 - El importe debe ser mayor a cero.
 - La cuenta origen debe tener saldo disponible suficiente en la moneda seleccionada.
+- La operación nunca puede dejar saldo negativo en la cuenta origen para la moneda seleccionada.
 - La operación genera dos movimientos:
   - egreso en la cuenta origen
   - ingreso en la cuenta destino

@@ -1,13 +1,14 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { startTransition, type ReactNode, useEffect, useMemo, useState } from "react";
 
 import {
   AccountTransferForm,
   SecretariaMovementEditForm,
   SecretariaMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
+import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
@@ -45,19 +46,6 @@ type TotalBalance = {
   currencyCode: string;
   amount: number;
 };
-
-function formatMovementDateTime(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short"
-  }).format(date);
-}
 
 function getActionsCardDescription(sessionStatus: DashboardTreasuryCardData["sessionStatus"]) {
   if (sessionStatus === "unresolved") {
@@ -150,12 +138,31 @@ function SessionActionChevron() {
   );
 }
 
+function EditMovementIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={cn("size-4", className)}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
 type SessionActionRowProps = {
   title: string;
   description: string;
   iconKind: "open" | "movement" | "transfer" | "close";
   toneClassName: string;
   href?: string;
+  prefetch?: boolean;
   loadingLabel?: string;
   onClick?: () => void;
   ariaLabel?: string;
@@ -167,6 +174,7 @@ function SessionActionRow({
   iconKind,
   toneClassName,
   href,
+  prefetch,
   loadingLabel,
   onClick,
   ariaLabel
@@ -205,6 +213,7 @@ function SessionActionRow({
     return (
       <NavigationLinkWithLoader
         href={href}
+        prefetch={prefetch}
         aria-label={ariaLabel ?? title}
         className={sharedClassName}
         loadingLabel={loadingLabel}
@@ -227,10 +236,6 @@ function SessionActionRow({
       {content}
     </button>
   );
-}
-
-function getMovementAmountClassName(movementType: TreasuryMovementType) {
-  return movementType === "ingreso" ? "text-success" : "text-destructive";
 }
 
 function getTotalBalances(accounts: DashboardTreasuryCardData["accounts"]): TotalBalance[] {
@@ -293,17 +298,17 @@ function SummaryBalance({
   prominent?: boolean;
 }) {
   return (
-    <div className={cn("space-y-1", prominent ? "space-y-2" : "space-y-1.5")}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-        {balance.currencyCode}
-      </p>
+    <div>
       <p
         className={cn(
-          "font-semibold tracking-tight text-foreground",
+          "flex flex-wrap items-baseline gap-x-2 gap-y-1 font-semibold tracking-tight text-foreground",
           prominent ? "text-[3.25rem] leading-none sm:text-[3.5rem]" : "text-[2rem] leading-none"
         )}
       >
-        {formatLocalizedAmount(balance.amount)}
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {balance.currencyCode}
+        </span>
+        <span>{formatLocalizedAmount(balance.amount)}</span>
       </p>
     </div>
   );
@@ -327,19 +332,19 @@ export function TreasuryCard({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const canCreateMovement = treasuryCard.availableActions.includes("create_movement");
-  const canCloseSession = treasuryCard.availableActions.includes("close_session");
-  const canOpenSession = treasuryCard.availableActions.includes("open_session");
-  const isSessionStateUnresolved = treasuryCard.sessionStatus === "unresolved";
-  const isMovementDataUnresolved = treasuryCard.movementDataStatus === "unresolved";
+  const [localTreasuryCard, setLocalTreasuryCard] = useState(treasuryCard);
+  const canCreateMovement = localTreasuryCard.availableActions.includes("create_movement");
+  const canCloseSession = localTreasuryCard.availableActions.includes("close_session");
+  const canOpenSession = localTreasuryCard.availableActions.includes("open_session");
+  const isSessionStateUnresolved = localTreasuryCard.sessionStatus === "unresolved";
+  const isMovementDataUnresolved = localTreasuryCard.movementDataStatus === "unresolved";
   const shouldHideMovementsSection =
-    treasuryCard.sessionStatus === "not_started" &&
+    localTreasuryCard.sessionStatus === "not_started" &&
     !isMovementDataUnresolved &&
-    treasuryCard.movements.length === 0;
+    localTreasuryCard.movements.length === 0;
   const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "transfer" | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
-  const [pendingMovementDisplayId, setPendingMovementDisplayId] = useState<string | null>(null);
   const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
   const [pendingTransferMovementDisplayId, setPendingTransferMovementDisplayId] = useState<string | null>(null);
   const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
@@ -356,10 +361,10 @@ export function TreasuryCard({
     amount: number;
   } | null>(null);
 
-  const totalBalances = useMemo(() => getTotalBalances(treasuryCard.accounts), [treasuryCard.accounts]);
+  const totalBalances = useMemo(() => getTotalBalances(localTreasuryCard.accounts), [localTreasuryCard.accounts]);
   const detailHref =
-    !isMovementDataUnresolved && treasuryCard.accounts[0]
-      ? `/dashboard/accounts/${treasuryCard.accounts[0].accountId}`
+    !isMovementDataUnresolved && localTreasuryCard.accounts[0]
+      ? `/dashboard/accounts/${localTreasuryCard.accounts[0].accountId}`
       : null;
   const pendingOverlayLabel = isMovementSubmissionPending
     ? texts.dashboard.treasury.create_loading
@@ -370,18 +375,8 @@ export function TreasuryCard({
         : null;
 
   useEffect(() => {
-    if (!isMovementSubmissionPending) {
-      return;
-    }
-
-    if (
-      pendingMovementDisplayId &&
-      treasuryCard.movements.some((movement) => movement.movementDisplayId === pendingMovementDisplayId)
-    ) {
-      setIsMovementSubmissionPending(false);
-      setPendingMovementDisplayId(null);
-    }
-  }, [isMovementSubmissionPending, pendingMovementDisplayId, treasuryCard.movements]);
+    setLocalTreasuryCard(treasuryCard);
+  }, [treasuryCard]);
 
   useEffect(() => {
     if (!isTransferSubmissionPending) {
@@ -390,19 +385,21 @@ export function TreasuryCard({
 
     if (
       pendingTransferMovementDisplayId &&
-      treasuryCard.movements.some((movement) => movement.movementDisplayId === pendingTransferMovementDisplayId)
+      localTreasuryCard.movements.some((movement) => movement.movementDisplayId === pendingTransferMovementDisplayId)
     ) {
       setIsTransferSubmissionPending(false);
       setPendingTransferMovementDisplayId(null);
     }
-  }, [isTransferSubmissionPending, pendingTransferMovementDisplayId, treasuryCard.movements]);
+  }, [isTransferSubmissionPending, pendingTransferMovementDisplayId, localTreasuryCard.movements]);
 
   useEffect(() => {
     if (!isMovementUpdatePending || !pendingMovementUpdate) {
       return;
     }
 
-    const matchingMovement = treasuryCard.movements.find((movement) => movement.movementId === pendingMovementUpdate.movementId);
+    const matchingMovement = localTreasuryCard.movements.find(
+      (movement) => movement.movementId === pendingMovementUpdate.movementId
+    );
 
     if (
       matchingMovement &&
@@ -419,7 +416,49 @@ export function TreasuryCard({
       setIsMovementUpdatePending(false);
       setPendingMovementUpdate(null);
     }
-  }, [isMovementUpdatePending, pendingMovementUpdate, treasuryCard.movements]);
+  }, [isMovementUpdatePending, pendingMovementUpdate, localTreasuryCard.movements]);
+
+  function applyOptimisticMovementUpdate(result: TreasuryActionResponse) {
+    if (!result.optimisticUpdate) {
+      return;
+    }
+
+    const { optimisticUpdate } = result;
+
+    setLocalTreasuryCard((currentCard) => {
+      const movementAlreadyPresent = currentCard.movements.some(
+        (movement) => movement.movementId === optimisticUpdate.movement.movementId
+      );
+
+      if (movementAlreadyPresent) {
+        return currentCard;
+      }
+
+      return {
+        ...currentCard,
+        accounts: currentCard.accounts.map((account) => {
+          if (account.accountId !== optimisticUpdate.balanceDelta.accountId) {
+            return account;
+          }
+
+          return {
+            ...account,
+            balances: account.balances.map((balance) =>
+              balance.currencyCode === optimisticUpdate.balanceDelta.currencyCode
+                ? {
+                    ...balance,
+                    amount: balance.amount + optimisticUpdate.balanceDelta.amountDelta
+                  }
+                : balance
+            )
+          };
+        }),
+        movements: [optimisticUpdate.movement, ...currentCard.movements].sort((left, right) =>
+          right.createdAt.localeCompare(left.createdAt)
+        )
+      };
+    });
+  }
 
   async function handleCreateTreasuryMovement(formData: FormData) {
     setIsMovementSubmissionPending(true);
@@ -438,16 +477,20 @@ export function TreasuryCard({
       }
 
       if (result.ok) {
-        setPendingMovementDisplayId(result.movementDisplayId ?? null);
+        applyOptimisticMovementUpdate(result);
+        setIsMovementSubmissionPending(false);
       } else {
-        setPendingMovementDisplayId(null);
         setIsMovementSubmissionPending(false);
       }
 
       router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-      router.refresh();
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
     } catch (error) {
-      setPendingMovementDisplayId(null);
       setIsMovementSubmissionPending(false);
       throw error;
     }
@@ -487,7 +530,9 @@ export function TreasuryCard({
       }
 
       router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } catch (error) {
       setPendingMovementUpdate(null);
       setIsMovementUpdatePending(false);
@@ -519,7 +564,9 @@ export function TreasuryCard({
       }
 
       router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } catch (error) {
       setPendingTransferMovementDisplayId(null);
       setIsTransferSubmissionPending(false);
@@ -550,7 +597,7 @@ export function TreasuryCard({
             <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury.balances_unresolved}
             </div>
-          ) : treasuryCard.accounts.length === 0 ? (
+          ) : localTreasuryCard.accounts.length === 0 ? (
             <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury.empty_accounts}
             </div>
@@ -573,7 +620,7 @@ export function TreasuryCard({
               </div>
 
               <div className="grid gap-4 border-t border-border/70 pt-4 sm:grid-cols-2">
-                {treasuryCard.accounts.map((account) => (
+                {localTreasuryCard.accounts.map((account) => (
                   <article key={account.accountId} className="space-y-2">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       {account.name}
@@ -581,14 +628,17 @@ export function TreasuryCard({
 
                     <div className="space-y-3">
                       {account.balances.map((balance) => (
-                        <div key={`${account.accountId}-${balance.currencyCode}`} className="space-y-1.5">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        <p
+                          key={`${account.accountId}-${balance.currencyCode}`}
+                          className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[2rem] font-semibold leading-none tracking-tight text-foreground"
+                        >
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                             {balance.currencyCode}
-                          </p>
-                          <p className="text-[2rem] font-semibold leading-none tracking-tight text-foreground">
+                          </span>
+                          <span>
                             {formatLocalizedAmount(balance.amount)}
-                          </p>
-                        </div>
+                          </span>
+                        </p>
                       ))}
                     </div>
                   </article>
@@ -612,7 +662,7 @@ export function TreasuryCard({
         <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
           <ActionsCardHeader
             title={texts.dashboard.treasury.actions_card_title}
-            description={getActionsCardDescription(treasuryCard.sessionStatus)}
+            description={getActionsCardDescription(localTreasuryCard.sessionStatus)}
           />
 
           <div className="mt-6 grid gap-4">
@@ -623,6 +673,7 @@ export function TreasuryCard({
                 iconKind="open"
                 toneClassName="border-emerald-200/80 bg-emerald-50 text-emerald-600"
                 href="/dashboard/session/open"
+                prefetch={false}
                 loadingLabel={texts.dashboard.treasury.navigation_loading}
                 ariaLabel={texts.dashboard.treasury.open_session_flow_cta}
               />
@@ -657,6 +708,7 @@ export function TreasuryCard({
                 iconKind="close"
                 toneClassName="border-rose-200/80 bg-rose-50 text-rose-500"
                 href="/dashboard/session/close"
+                prefetch={false}
                 loadingLabel={texts.dashboard.treasury.navigation_loading}
                 ariaLabel={texts.dashboard.treasury.close_session_flow_cta}
               />
@@ -680,76 +732,49 @@ export function TreasuryCard({
             <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury.movements_unresolved}
             </div>
-          ) : treasuryCard.movements.length === 0 ? (
+          ) : localTreasuryCard.movements.length === 0 ? (
             <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury.movements_empty}
             </div>
           ) : (
             <div className="mt-5">
-              <div className="hidden rounded-t-[18px] border border-border bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,2fr)_minmax(140px,0.9fr)_minmax(140px,0.9fr)_minmax(120px,0.75fr)] md:gap-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {texts.dashboard.treasury.movements_concept_label}
-                </p>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {texts.dashboard.treasury.movements_amount_label}
-                </p>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {texts.dashboard.treasury.movements_account_label}
-                </p>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {texts.dashboard.treasury.movements_actions_label}
-                </p>
-              </div>
-
-              <div className="grid gap-3 md:gap-0">
-                {treasuryCard.movements.map((movement, index) => (
-                  <article
-                    key={movement.movementId}
-                    className={cn(
-                      "rounded-[18px] border border-border bg-card p-4 md:grid md:grid-cols-[minmax(0,2fr)_minmax(140px,0.9fr)_minmax(140px,0.9fr)_minmax(120px,0.75fr)] md:items-center md:gap-4 md:rounded-none md:border-t-0",
-                      index === 0 && "md:rounded-t-none",
-                      index === treasuryCard.movements.length - 1 && "md:rounded-b-[18px]"
-                    )}
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-foreground">{movement.concept}</p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                        {formatMovementDateTime(movement.createdAt)} · {texts.dashboard.treasury.movements_created_by_label}{" "}
-                        {movement.createdByUserName}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 md:mt-0">
-                      <p className={cn("text-lg font-semibold tracking-tight", getMovementAmountClassName(movement.movementType))}>
-                        {movement.movementType === "egreso" ? "-" : "+"} {movement.currencyCode}{" "}
-                        {formatLocalizedAmount(movement.amount)}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 md:mt-0">
-                      <p className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
-                        {movement.accountName}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 flex justify-start md:mt-0 md:justify-end">
-                      {movement.canEdit ? (
-                        <ModalTriggerButton
-                          onClick={() => {
-                            setSelectedMovement(movement);
-                            setActiveModal("edit_movement");
-                          }}
-                          className="min-h-10 rounded-[18px] border border-border bg-card px-4 py-2 text-foreground hover:bg-secondary"
-                        >
-                          {texts.dashboard.treasury.edit_movement_cta}
-                        </ModalTriggerButton>
-                      ) : (
-                        <span className="text-xs font-medium text-muted-foreground">-</span>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <SecretariaMovementList
+                items={localTreasuryCard.movements.map((movement) => ({
+                  movementId: movement.movementId,
+                  movementDisplayId: movement.movementDisplayId,
+                  concept: movement.concept,
+                  createdAt: movement.createdAt,
+                  createdByUserName: movement.createdByUserName,
+                  accountName: movement.accountName,
+                  movementType: movement.movementType,
+                  currencyCode: movement.currencyCode,
+                  amount: movement.amount,
+                  categoryName: movement.categoryName,
+                  activityName: movement.activityName,
+                  receiptNumber: movement.receiptNumber,
+                  calendarEventTitle: movement.calendarEventTitle,
+                  transferReference: movement.transferReference,
+                  fxOperationReference: movement.fxOperationReference,
+                  action: movement.canEdit ? (
+                    <ModalTriggerButton
+                      onClick={() => {
+                        setSelectedMovement(movement);
+                        setActiveModal("edit_movement");
+                      }}
+                      aria-label={texts.dashboard.treasury.edit_movement_cta}
+                      className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
+                    >
+                      <EditMovementIcon />
+                    </ModalTriggerButton>
+                  ) : undefined
+                }))}
+                conceptLabel={texts.dashboard.treasury.movements_concept_label}
+                accountLabel={texts.dashboard.treasury.movements_account_label}
+                detailLabel={texts.dashboard.treasury.movements_detail_label}
+                amountLabel={texts.dashboard.treasury.movements_amount_label}
+                actionsLabel={texts.dashboard.treasury.movements_actions_label}
+                createdByLabel={texts.dashboard.treasury.movements_created_by_label}
+              />
             </div>
           )}
         </section>
@@ -773,7 +798,7 @@ export function TreasuryCard({
           submitAction={handleCreateTreasuryMovement}
           submitLabel={texts.dashboard.treasury.create_cta}
           pendingLabel={texts.dashboard.treasury.create_loading}
-          sessionDate={treasuryCard.sessionDate}
+          sessionDate={localTreasuryCard.sessionDate}
         />
       </Modal>
 
@@ -815,7 +840,7 @@ export function TreasuryCard({
           targetAccounts={transferTargetAccounts}
           currencies={currencies}
           submitAction={handleCreateAccountTransfer}
-          sessionDate={treasuryCard.sessionDate}
+          sessionDate={localTreasuryCard.sessionDate}
         />
       </Modal>
     </>

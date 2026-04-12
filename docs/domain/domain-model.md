@@ -345,6 +345,7 @@ Reglas:
 
 * El signo del movimiento depende del tipo.
 * Es la única fuente de verdad para saldos.
+* Un egreso operativo no puede dejar saldo negativo en la cuenta y moneda afectadas al momento efectivo del movimiento.
 
 ---
 
@@ -404,6 +405,7 @@ Reglas:
 
 * Genera 2 movimientos.
 * Tipo de cambio implícito.
+* Debe rechazar operaciones cuyo importe origen supere el saldo disponible de la cuenta origen en la moneda origen.
 
 ---
 

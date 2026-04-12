@@ -29,6 +29,7 @@ Un usuario con rol `tesoreria` en el club activo debe poder consultar saldos de 
 - Validaciones server-side de cuenta, tipo, categoría, moneda e importe.
 - Registro del usuario responsable y fecha/hora de creación.
 - Reseteo del formulario luego de crear exitosamente.
+- Feedback de éxito mediante toast dentro del módulo `/dashboard/treasury`, interpolando el ID visible del movimiento creado.
 - Persistencia del movimiento únicamente en el club activo.
 
 ### No incluye
@@ -48,10 +49,12 @@ Un usuario con rol `tesoreria` en el club activo debe poder consultar saldos de 
 - `Fecha` se precarga con la fecha actual, pero Tesorería puede editarla.
 - El importe debe ser mayor a cero.
 - La moneda elegida debe estar habilitada globalmente para el club y también para la cuenta seleccionada.
+- Si el movimiento es `egreso`, la cuenta debe tener saldo disponible suficiente en la moneda seleccionada para la `Fecha` elegida.
 - Si la cuenta es bimonetaria, el movimiento impacta únicamente el saldo de la moneda informada.
 - El movimiento debe registrar `created_at` y `created_by_user_id`.
 - El movimiento creado por Tesorería queda con estado `posted`.
 - La operación afecta solo el club activo y nunca debe tocar cuentas de otros clubes.
+- Tras un alta exitosa, la navegación permanece en `/dashboard/treasury`; no debe volver al overview general de `/dashboard`.
 
 ---
 

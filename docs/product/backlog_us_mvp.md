@@ -819,6 +819,14 @@ Feature: US-11 — Registro de movimientos diarios
     Then veo un mensaje indicando que la moneda es obligatoria
     And el movimiento no se registra
 
+  Scenario 12A: Egreso con saldo insuficiente
+    Given estoy viendo el formulario de registro de movimientos
+    And seleccioné un movimiento de tipo "Egreso"
+    And la cuenta no tiene saldo suficiente en la moneda seleccionada
+    When intento guardar un importe mayor al saldo disponible
+    Then veo un mensaje indicando que la cuenta no tiene saldo suficiente
+    And el movimiento no se registra
+
   Scenario 13: Registro exitoso del movimiento
     Given estoy viendo el formulario de registro de movimientos
     And completé correctamente todos los campos obligatorios visibles
@@ -877,6 +885,23 @@ Feature: US-11 — Registro de movimientos diarios
     Then puedo editar todos los campos operativos del movimiento
     And no puedo editar el ID visible del movimiento
     And no puedo editar la fecha del movimiento
+
+  Scenario 20: Edición rechazada si deja saldo negativo
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And selecciono editar un movimiento visible de la jornada
+    And la edición propuesta deja saldo negativo en la cuenta y moneda afectadas
+    When intento guardar los cambios
+    Then veo un mensaje indicando que la cuenta no tiene saldo suficiente
+    And la edición no se registra
+
+  Scenario 21: Edición sin acción de borrar formulario
+    Given tengo rol "Secretaria" en el club activo
+    And existe una jornada abierta para el día actual
+    And selecciono editar un movimiento visible de la jornada
+    When visualizo el formulario de edición
+    Then no veo la acción "Borrar formulario"
+    And solo dispongo de la acción "Guardar cambios" para confirmar la edición
 ```
 
 ---
@@ -895,7 +920,7 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     And tengo rol "Secretaria" en el club activo
     When ingreso al dashboard del club activo
     Then veo una card de "Saldos de cuentas"
-    And veo el listado de cuentas con su saldo acumulado actual
+    And veo el listado de cuentas con su saldo acumulado historico actual
 
   Scenario 02: Usuario sin rol Secretaria no ve la card
     Given estoy autenticado
@@ -908,7 +933,7 @@ Feature: US-12 — Card de saldos y operación diaria en el dashboard
     And tengo rol "Secretaria" en el club activo
     When veo la card de saldos
     Then veo cada cuenta con su nombre
-    And veo el saldo acumulado actualizado del día para cada cuenta
+    And veo el saldo acumulado historico actualizado para cada cuenta
 
   Scenario 04: Visualización con múltiples cuentas
     Given estoy autenticado
@@ -2377,12 +2402,12 @@ Feature: US-26 — Registro de compra y venta de moneda extranjera
     Then veo un mensaje indicando que ambas cuentas son obligatorias
     And la operación no se registra
 
-  Scenario 07: Cuenta origen y destino deben ser distintas
+  Scenario 07: La misma cuenta puede usarse si las monedas son distintas
     Given estoy viendo el formulario de compra o venta de moneda
     When selecciono la misma cuenta como origen y destino
+    And selecciono monedas distintas y válidas para esa cuenta
     And intento guardar
-    Then veo un mensaje indicando que las cuentas deben ser distintas
-    And la operación no se registra
+    Then la operación puede registrarse si el resto de los datos son válidos
 
   Scenario 08: Moneda origen y moneda destino obligatorias
     Given estoy viendo el formulario de compra o venta de moneda
@@ -2413,6 +2438,13 @@ Feature: US-26 — Registro de compra y venta de moneda extranjera
     Then veo un mensaje indicando que la moneda no es válida para la cuenta seleccionada
     And la operación no se registra
 
+  Scenario 11A: La cuenta origen debe tener saldo suficiente
+    Given estoy viendo el formulario de compra o venta de moneda
+    And la cuenta origen no tiene saldo suficiente en la moneda origen seleccionada
+    When intento registrar una operación por un importe origen mayor al saldo disponible
+    Then veo un mensaje indicando que la cuenta no tiene saldo suficiente
+    And la operación no se registra
+
   Scenario 12: Registro exitoso de compra o venta de moneda
     Given estoy viendo el formulario de compra o venta de moneda
     And completé correctamente todos los campos obligatorios
@@ -2422,6 +2454,18 @@ Feature: US-26 — Registro de compra y venta de moneda extranjera
     And genera automáticamente un movimiento de ingreso en la cuenta destino por el importe destino
     And ambos movimientos quedan asociados a la misma operación
     And ambos movimientos quedan asociados a la jornada abierta actual
+    And veo un mensaje de confirmación
+
+  Scenario 12b: Registro exitoso dentro de una misma cuenta bimonetaria
+    Given estoy viendo el formulario de compra o venta de moneda
+    And seleccioné la misma cuenta bimonetaria como origen y destino
+    And seleccioné monedas distintas y válidas para esa cuenta
+    And completé correctamente todos los campos obligatorios
+    When selecciono "Crear"
+    Then el sistema registra una operación de cambio de moneda en el club activo
+    And genera automáticamente un movimiento de egreso y un movimiento de ingreso sobre la misma cuenta
+    And cada movimiento impacta únicamente la moneda correspondiente
+    And ambos movimientos quedan asociados a la misma operación
     And veo un mensaje de confirmación
 
   Scenario 13: La operación registra tipo de cambio implícito
@@ -2618,6 +2662,16 @@ Feature: US-27 — Registro de movimientos de Tesorería en cuentas propias
     Then veo un mensaje indicando que la moneda no es válida para la cuenta seleccionada
     And el movimiento no se registra
 
+  Scenario 11A: Egreso con saldo insuficiente a la fecha elegida
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And seleccioné una cuenta
+    And seleccioné una fecha
+    And seleccioné un movimiento de tipo "Egreso"
+    And la cuenta no tiene saldo suficiente en la moneda seleccionada para esa fecha
+    When intento guardar un importe mayor al saldo disponible
+    Then veo un mensaje indicando que la cuenta no tiene saldo suficiente
+    And el movimiento no se registra
+
   Scenario 12: Registro exitoso en cuenta bimonetaria
     Given estoy viendo el formulario de registro de movimientos de Tesorería
     And seleccioné una cuenta bimonetaria
@@ -2753,6 +2807,16 @@ Feature: US-27 — Registro de movimientos de Tesorería en cuentas propias
     When selecciono una moneda no habilitada para esa cuenta
     And intento guardar
     Then veo un mensaje indicando que la moneda no es válida para la cuenta seleccionada
+    And el movimiento no se registra
+
+  Scenario 11A: Egreso con saldo insuficiente a la fecha elegida
+    Given estoy viendo el formulario de registro de movimientos de Tesorería
+    And seleccioné una cuenta
+    And seleccioné una fecha
+    And seleccioné un movimiento de tipo "Egreso"
+    And la cuenta no tiene saldo suficiente en la moneda seleccionada para esa fecha
+    When intento guardar un importe mayor al saldo disponible
+    Then veo un mensaje indicando que la cuenta no tiene saldo suficiente
     And el movimiento no se registra
 
   Scenario 12: Registro exitoso en cuenta bimonetaria

@@ -21,7 +21,7 @@ El dashboard actual concentra la operatoria diaria de Secretaría. Cuando un usu
 
 ## 3. Objetivo funcional
 
-El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol `tesoreria`, usando la misma estructura visual base de Secretaría pero sin estado de jornada ni acciones de apertura/cierre, con listado de cuentas visibles, saldos por moneda, acceso al detalle y formulario inline de movimientos.
+El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol `tesoreria`, usando la misma estructura visual base de Secretaría pero sin estado de jornada ni acciones de apertura/cierre, con listado de cuentas visibles, saldos por moneda, acceso al detalle, formulario inline de movimientos y edición directa de movimientos visibles.
 
 ---
 
@@ -34,6 +34,8 @@ El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol
 - Estado vacío cuando no existen cuentas visibles para Tesorería.
 - Navegación al detalle de cuenta desde el dashboard.
 - Formulario inline para registrar movimientos de Tesorería.
+- Listado de `Ultimos movimientos` con misma UX base de Secretaría.
+- Edición de movimientos visibles desde el listado del dashboard.
 
 ### No incluye
 - Apertura o cierre de jornada.
@@ -64,6 +66,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 | No hay cuentas visibles | Ve un estado vacío controlado. |
 | Selecciona ver detalle | Accede al detalle de la cuenta dentro del contexto del club activo. |
 | Registra un movimiento | El sistema crea el movimiento en el club activo sin exigir jornada diaria. |
+| Edita un movimiento visible | El sistema actualiza el movimiento dentro del club activo y refresca el dashboard. |
 | Usuario sin rol Tesorería entra al dashboard | No ve la card de Tesorería. |
 
 ---
@@ -77,6 +80,9 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - El estado vacío no oculta la pantalla; muestra la card con mensaje claro.
 - La card no muestra estado de jornada ni CTAs de apertura/cierre.
 - Tesorería puede registrar movimientos sin requerir `daily_cash_session_id`.
+- La tabla de movimientos debe usar el mismo patrón UX/UI base que Secretaría, incluyendo columna de detalle y acción de edición visible.
+- El listado del dashboard debe titularse `Ultimos movimientos`.
+- Tesorería puede editar movimientos visibles de su dashboard mientras pertenezcan al club activo y sigan en estado operativo editable.
 - El detalle por cuenta reutiliza la lógica de consulta del día, pero sin exponer CTAs de operatoria de Secretaría.
 
 ---
@@ -86,8 +92,8 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 1. Un usuario con rol `tesoreria` entra a `/dashboard`.
 2. El sistema valida sesión, club activo y rol habilitado.
 3. El backend resuelve las cuentas visibles para Tesorería y calcula sus saldos por moneda.
-4. La UI renderiza la card con el listado de cuentas y el formulario inline.
-5. El usuario puede entrar al detalle de una cuenta o registrar un movimiento.
+4. La UI renderiza la card con el listado de cuentas, el formulario inline y el bloque `Ultimos movimientos`.
+5. El usuario puede entrar al detalle de una cuenta, registrar un movimiento o editar un movimiento visible.
 
 ---
 
@@ -115,7 +121,8 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - La vista debe ser mobile-first.
 - Debe sentirse coherente con la card de Secretaría, evitando una UX puente.
 - Debe mostrar saldos de forma escaneable por cuenta y moneda.
-- Debe ofrecer acceso al detalle y formulario inline en la misma pantalla.
+- Debe ofrecer acceso al detalle, formulario inline y edición de movimientos en la misma pantalla.
+- El bloque de movimientos debe reutilizar la densidad informativa de Secretaría para `Concepto`, `Cuenta`, `Detalle del movimiento`, `Monto` y `Acciones`.
 - No debe haber textos hardcodeados.
 
 ---
@@ -141,6 +148,14 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 | body | `dashboard.treasury_role.movement_form_description` | Descripción del formulario inline. |
 | action | `dashboard.treasury_role.create_cta` | Crear movimiento de Tesorería. |
 | status | `dashboard.treasury_role.create_loading` | Estado visible durante la creación. |
+| title | `dashboard.treasury_role.movements_card_title` | Título del bloque de últimos movimientos. |
+| body | `dashboard.treasury_role.movements_card_description` | Descripción del bloque de últimos movimientos. |
+| label | `dashboard.treasury_role.movements_empty` | Estado vacío del listado. |
+| action | `dashboard.treasury_role.edit_movement_cta` | Acción para editar un movimiento visible. |
+| title | `dashboard.treasury_role.edit_form_title` | Título del modal de edición. |
+| body | `dashboard.treasury_role.edit_form_description` | Descripción del modal de edición. |
+| action | `dashboard.treasury_role.update_cta` | Confirmar edición del movimiento. |
+| status | `dashboard.treasury_role.update_loading` | Estado visible durante la edición. |
 | action | `dashboard.treasury_role.back_to_dashboard_cta` | Vuelta al dashboard desde el detalle. |
 
 ---
@@ -152,6 +167,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - `treasury_account_currencies`: READ indirecto para monedas habilitadas por cuenta.
 - `treasury_movements`: READ para calcular saldos del día por cuenta y moneda.
 - `treasury_movements`: INSERT para registrar movimientos de Tesorería sin jornada.
+- `treasury_movements`: UPDATE para editar movimientos visibles de Tesorería desde el dashboard.
 - La lectura y escritura de `treasury_movements` en base remota debe resolverse mediante RPCs club-scoped que seteen `app.current_club_id` y respeten RLS del club activo.
 
 Do not reference current code files.
@@ -163,6 +179,7 @@ Do not reference current code files.
 - La lectura y escritura deben limitarse al club activo.
 - No deben mostrarse cuentas sin visibilidad para Tesorería.
 - No debe permitir acceso a cuentas de otros clubes manipulando ids.
+- No debe permitir editar movimientos fuera del club activo ni movimientos no visibles para Tesorería.
 - El acceso al detalle debe validarse server-side contra las cuentas visibles del rol.
 
 ---
@@ -179,6 +196,6 @@ Do not reference current code files.
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
-| Reutilizar reglas de jornada de Secretaría en Tesorería | Media | Alta | Separar servicios y acciones de creación de movimientos. |
+| Reutilizar reglas de jornada de Secretaría en Tesorería | Media | Alta | Separar servicios y acciones de creación/edición de movimientos. |
 | Mostrar cuentas no visibles para Tesorería | Media | Alta | Filtrar por visibilidad del rol en el backend. |
 | Mezclar ambas variantes del dashboard para usuarios multirol | Media | Media | Renderizar una sola variante con prioridad definida. |

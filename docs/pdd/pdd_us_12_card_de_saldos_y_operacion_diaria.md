@@ -21,7 +21,7 @@ Luego de abrir la jornada y registrar movimientos, Secretaría necesita una vist
 
 ## 3. Objetivo funcional
 
-El dashboard debe mostrar una card de saldos únicamente para usuarios con rol `secretaria` en el club activo. La card debe reflejar cuentas visibles, saldo acumulado del día, estado de jornada y las acciones operativas permitidas según el estado actual.
+El dashboard debe mostrar una card de saldos únicamente para usuarios con rol `secretaria` en el club activo. La card debe reflejar cuentas visibles, saldo acumulado histórico por cuenta, estado de jornada y las acciones operativas permitidas según el estado actual.
 
 ---
 
@@ -30,7 +30,7 @@ El dashboard debe mostrar una card de saldos únicamente para usuarios con rol `
 ### Incluye
 - Card de saldos exclusiva para Secretaría.
 - Listado de cuentas visibles para el rol.
-- Saldos acumulados por cuenta y moneda.
+- Saldos acumulados históricos por cuenta y moneda.
 - Estado de jornada del día.
 - Acciones para abrir/cerrar jornada y abrir modales de registro según corresponda.
 - Estado bloqueado de pantalla mientras se resuelve el alta de movimiento iniciada desde el modal de la card.
@@ -77,7 +77,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Esta historia no cubre accesos ni cards del modulo propio de `tesoreria`.
 - La card usa únicamente datos del club activo.
 - Las acciones visibles dependen del estado de la jornada.
-- Los saldos se calculan a partir de movimientos del día de las cuentas con visibilidad `secretaria`.
+- Los saldos de la card se calculan a partir del historial completo visible de movimientos de las cuentas con visibilidad `secretaria`.
 - Cada cuenta visible muestra sus saldos por todas las monedas habilitadas.
 - Si no hay cuentas, la card sigue siendo visible pero en estado vacío.
 
@@ -86,7 +86,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ## 9. Flujo principal
 
 1. Secretaría ingresa al dashboard del club activo.
-2. El sistema obtiene cuentas visibles, jornada del día y movimientos del día.
+2. El sistema obtiene cuentas visibles, jornada del día, saldo acumulado histórico por cuenta y movimientos del día.
 3. La UI renderiza la card con saldos y estado operativo.
 4. La experiencia se organiza en una card de saldos, una card de acciones y una card de movimientos del dia.
 5. La card habilita las acciones permitidas según exista o no jornada abierta.
@@ -117,7 +117,9 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - Debe mostrar saldos de forma clara y escaneable.
 - Debe ser mobile-first.
 - El estado de jornada debe entenderse de un vistazo.
-- El estado operativo se resuelve desde `daily_cash_sessions`, pero los saldos y los ultimos movimientos del bloque se derivan de `treasury_movements` del `session_date` del club activo.
+- El estado operativo se resuelve desde `daily_cash_sessions`.
+- Los saldos de la card se derivan del historial visible de `treasury_movements` del club activo para cada cuenta.
+- Los ultimos movimientos del bloque se derivan de `treasury_movements` del `session_date` del club activo.
 - La card de `Gestión de jornada` no puede mostrar un badge y una matriz de CTAs que se contradigan entre sí.
 - Si el alta de movimiento de Secretaría se inicia desde el modal de esta card, la misma card es responsable de activar el bloqueo de pantalla y evitar interacción hasta que la mutación termine.
 - Si la jornada ya fue cerrada, la card de acciones debe reemplazar su descripción operativa por un mensaje explícito indicando que la carga de movimientos ya no está disponible.
@@ -157,7 +159,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | body | `dashboard.treasury.actions_card_unresolved_description` | Mensaje seguro cuando no se puede resolver el estado diario. |
 | title | `dashboard.treasury.movements_card_title` | Titulo de la card de movimientos del dia. |
 | body | `dashboard.treasury.movements_card_description` | Descripcion del listado de movimientos del dia. |
-| label | `dashboard.treasury.balances_unresolved` | Mensaje seguro cuando no se pueden resolver los saldos del dia. |
+| label | `dashboard.treasury.balances_unresolved` | Mensaje seguro cuando no se pueden resolver los saldos acumulados. |
 | label | `dashboard.treasury.movements_empty` | Estado vacio del listado del dia. |
 | label | `dashboard.treasury.movements_unresolved` | Mensaje seguro cuando no se puede resolver la jornada del dia. |
 
@@ -168,8 +170,9 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 ### Entidades afectadas
 - `daily_cash_sessions`: READ para estado de jornada.
 - `treasury_accounts`: READ para cuentas visibles en la card.
-- `treasury_movements`: READ para cálculo de saldos del día.
-- Los saldos y el listado de `Ultimos movimientos` deben leerse por `session_date` del club activo, no depender exclusivamente de la relacion `dailyCashSessionId`.
+- `treasury_movements`: READ para cálculo de saldos acumulados y para el listado diario de movimientos.
+- Los saldos deben leerse desde el historial visible completo de `treasury_movements` del club activo por cuenta.
+- El listado de `Ultimos movimientos` debe leerse por `session_date` del club activo, no depender exclusivamente de la relacion `dailyCashSessionId`.
 - El estado de jornada depende de RPCs club-scoped de jornada diaria disponibles en la base remota activa.
 - La lectura de `treasury_movements` del dashboard depende de RPCs club-scoped de movimientos desplegadas en la base remota activa; un fallo de infraestructura debe resolverse como estado degradado, no como empty state real.
 - La resolución del estado diario debe ejecutarse con `app.current_club_id` seteado server-side para respetar RLS del club activo.
@@ -207,6 +210,6 @@ Do not reference current code files.
 - `not_started`: badge `Jornada pendiente` y solo CTA `Apertura de jornada`
 - `open`: badge `Jornada abierta` y CTAs `Cierre de jornada`, `Cargar movimiento` y `Cargar transferencia`
 - `closed`: badge `Jornada cerrada`, sin CTAs y con mensaje de jornada cerrada
-- `closed` mantiene visibles los saldos y los movimientos del `session_date` mientras existan registros para el club activo
+- `closed` mantiene visibles los saldos acumulados y los movimientos del `session_date` mientras existan registros para el club activo
 - `unresolved`: sin badge de jornada ni CTAs operativas, con copy seguro que no infiera ausencia de jornada; este estado aplica cuando la infraestructura de lectura falla, no cuando no existen filas
 - Si la jornada está resuelta pero falla la lectura de `treasury_movements`, la card debe conservar el badge/CTAs derivados de `daily_cash_sessions` y mostrar estados degradados específicos para saldos y movimientos

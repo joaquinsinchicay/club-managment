@@ -722,16 +722,16 @@ This contract depends on the club-scoped daily cash session RPCs being deployed 
 
 This contract also depends on the club-scoped treasury movement RPCs being deployed in the active database.
 
-`accounts[].balances` must reflect the sum of visible `treasury_movements` for the active club and `session_date`.
+`accounts[].balances` must reflect the cumulative historical sum of visible `treasury_movements` for each visible account in the active club.
 
 `movements[]` must list the visible `treasury_movements` of the active club and `session_date`, ordered from newest to oldest by `created_at`.
 
-The dashboard uses `daily_cash_sessions` only to resolve `session_status` and available actions. A movement that belongs to the active club, matches `session_date`, and is visible for Secretaría must still contribute to balances and appear in `movements[]` even if `dailyCashSessionId` is null or does not drive the read path.
+The dashboard uses `daily_cash_sessions` only to resolve `session_status` and available actions. Historical visible movements of each account contribute to `accounts[].balances`, while only movements that belong to the active club, match `session_date`, and are visible for Secretaría must appear in `movements[]` even if `dailyCashSessionId` is null or does not drive the read path.
 
 `movement_data_status` can be:
 
-* `resolved` when the dashboard could read `treasury_movements` for the active club and `session_date`
-* `unresolved` when the dashboard could not read `treasury_movements` reliably; in that case the UI must not infer balances `0,00`, empty movements, or account detail availability from that failure
+* `resolved` when the dashboard could read the historical visible `treasury_movements` needed for `accounts[].balances` and the `session_date` movements needed for `movements[]`
+* `unresolved` when the dashboard could not read those `treasury_movements` reliably; in that case the UI must not infer balances `0,00`, empty movements, or account detail availability from that failure
 
 `session_status` can be:
 
@@ -777,6 +777,31 @@ Sí
       ]
     }
   ],
+  "movements": [
+    {
+      "movement_id": "uuid",
+      "movement_display_id": "PJ-MOV-2026-9465",
+      "movement_date": "2026-04-02",
+      "account_id": "uuid",
+      "account_name": "Caja dolares",
+      "movement_type": "ingreso",
+      "category_id": "uuid",
+      "category_name": "Cobranza",
+      "activity_id": "uuid",
+      "activity_name": "Futbol",
+      "receipt_number": "PAY-SOC-26205",
+      "calendar_event_id": null,
+      "calendar_event_title": null,
+      "transfer_reference": null,
+      "fx_operation_reference": null,
+      "concept": "Pago cuota abril",
+      "currency_code": "USD",
+      "amount": 950.00,
+      "created_by_user_name": "Nombre Apellido",
+      "created_at": "2026-04-02T14:22:00.000Z",
+      "can_edit": true
+    }
+  ],
   "available_actions": [
     "create_movement",
     "create_fx_operation"
@@ -816,6 +841,7 @@ Sí
 * no debe existir jornada abierta o ya creada para ese día
 * las cuentas deben pertenecer al club activo
 * las monedas deben ser válidas para la cuenta
+* el `saldo esperado` visible para cada cuenta y moneda debe derivarse del saldo acumulado de la cuenta hasta la fecha operativa
 * si hay diferencia contra saldo esperado, debe registrarse ajuste según regla
 
 **Output**
@@ -858,6 +884,7 @@ Sí
 
 * debe existir jornada abierta del día
 * si existe una jornada `open` de un día anterior en el club activo, el backend debe cerrarla automáticamente antes de validar el cierre manual del día actual
+* el `saldo esperado` visible para cada cuenta y moneda debe derivarse del saldo acumulado de la cuenta hasta la fecha operativa
 * si hay diferencia, debe generarse ajuste
 * luego del cierre, Secretaría no puede editar movimientos del día
 
@@ -938,6 +965,8 @@ Sí
 * currency_code válida para la cuenta
 * receipt_number debe cumplir `^PAY-SOC-[0-9]{5}$` y ser `>= PAY-SOC-10556` cuando se informa
 * amount > 0
+* si `movement_type = egreso`, la cuenta debe tener saldo disponible suficiente en la moneda seleccionada
+* para `tesoreria`, el saldo disponible se valida contra el acumulado hasta `movement_date`
 * `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
 * si el rol es `secretaria`, debe existir jornada abierta
 * si el rol es `secretaria`, `movement_date` debe ser la fecha del día y no editable por contrato
@@ -1001,6 +1030,61 @@ Sí
 * currency_code válida para la cuenta
 * `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
 * amount > 0
+* si el resultado editado es un `egreso`, la cuenta debe conservar saldo disponible suficiente en la moneda seleccionada
+* `movement_date` no es editable por contrato
+* no se permite editar referencias técnicas derivadas
+* la operación debe auditarse
+
+**Output**
+
+```json
+{
+  "movement_id": "uuid",
+  "updated": true
+}
+```
+
+---
+
+### 6.5C Update treasury role movement
+
+**Purpose**
+Editar un movimiento visible de Tesorería desde el dashboard del módulo.
+
+**Auth required**
+Sí
+
+**Allowed roles**
+`tesoreria`
+
+**Input**
+
+```json
+{
+  "movement_id": "uuid",
+  "account_id": "uuid",
+  "movement_type": "ingreso",
+  "category_id": "uuid",
+  "activity_id": "uuid",
+  "receipt_number": "PAY-SOC-26205",
+  "concept": "Pago cuota abril",
+  "currency_code": "ARS",
+  "amount": 25000
+}
+```
+
+**Validations**
+
+* el movimiento debe pertenecer al club activo
+* el movimiento debe ser visible para `tesoreria`
+* el movimiento debe encontrarse en estado `posted`
+* cuenta válida del club activo y visible para `tesoreria`
+* categoría válida y visible para `tesoreria`
+* movement_type habilitado en el club
+* currency_code válida para la cuenta
+* `activity_id` y `receipt_number` son opcionales
+* amount > 0
+* si el resultado editado es un `egreso`, la cuenta debe conservar saldo disponible suficiente en la moneda seleccionada
 * `movement_date` no es editable por contrato
 * no se permite editar referencias técnicas derivadas
 * la operación debe auditarse
@@ -1152,6 +1236,7 @@ Sí
 * cuentas válidas
 * monedas distintas
 * importes > 0
+* la cuenta origen debe tener saldo disponible suficiente en la moneda origen
 
 **Output**
 

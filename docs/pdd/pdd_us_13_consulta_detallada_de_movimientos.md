@@ -120,6 +120,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 - Debe mostrar movimientos y saldos de forma fácil de escanear en mobile.
 - Debe mostrar encabezados de fecha para separar visualmente el historial.
 - Debe mostrar controles de paginación simples cuando el historial supere 10 movimientos.
+- El historial debe poder organizarse en columnas de `Concepto`, `Cuenta`, `Detalle del movimiento` y `Monto` cuando la densidad de información lo requiera.
 - No debe haber textos hardcodeados.
 
 ---
@@ -141,6 +142,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` o `tesoreria` en 
 | body | `dashboard.treasury.detail_description` | Descripción de la vista. |
 | label | `dashboard.treasury.detail_account_label` | Cuenta seleccionada. |
 | action | `dashboard.treasury.account_switch_label` | Selector o grupo de cambio de cuenta. |
+| label | `dashboard.treasury.movements_detail_label` | Encabezado de la columna de detalle del movimiento en el historial. |
 | action | `dashboard.treasury.back_to_dashboard_cta` | CTA de regreso al dashboard. |
 | label | `dashboard.treasury.detail_empty_movements` | Estado vacío sin movimientos. |
 | action | `dashboard.treasury.detail_pagination_previous_cta` | Navega a la página anterior del historial. |

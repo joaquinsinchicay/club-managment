@@ -9,6 +9,8 @@ import {
   createFxOperation,
   createTreasuryMovement,
   createTreasuryRoleMovement,
+  type TreasuryMovementOptimisticUpdate,
+  updateTreasuryRoleMovement,
   updateSecretariaMovementInOpenSession,
   openDailyCashSession
 } from "@/lib/services/treasury-service";
@@ -17,27 +19,29 @@ export type TreasuryActionResponse = {
   ok: boolean;
   code: string;
   movementDisplayId?: string;
+  optimisticUpdate?: TreasuryMovementOptimisticUpdate;
 };
 
-function redirectToDashboard(code: string, movementDisplayId?: string) {
+function redirectToTreasuryModule(code: string, movementDisplayId?: string) {
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/treasury");
   const params = new URLSearchParams({ feedback: code });
 
   if (movementDisplayId) {
     params.set("movement_id", movementDisplayId);
   }
 
-  redirect(`/dashboard?${params.toString()}`);
+  redirect(`/dashboard/treasury?${params.toString()}`);
 }
 
 export async function openDailyCashSessionAction() {
   const result = await openDailyCashSession();
-  redirectToDashboard(result.code, result.movementDisplayId);
+  redirectToTreasuryModule(result.code, result.movementDisplayId);
 }
 
 export async function closeDailyCashSessionAction() {
   const result = await closeDailyCashSession();
-  redirectToDashboard(result.code, result.movementDisplayId);
+  redirectToTreasuryModule(result.code, result.movementDisplayId);
 }
 
 export async function createTreasuryMovementAction(formData: FormData) {
@@ -54,11 +58,13 @@ export async function createTreasuryMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/secretaria");
 
   return {
     ok: result.ok,
     code: result.code,
-    movementDisplayId: result.movementDisplayId
+    movementDisplayId: result.movementDisplayId,
+    optimisticUpdate: result.optimisticUpdate
   } satisfies TreasuryActionResponse;
 }
 
@@ -75,7 +81,23 @@ export async function createTreasuryRoleMovementAction(formData: FormData) {
     amount: String(formData.get("amount") ?? "")
   });
 
-  redirectToDashboard(result.code);
+  redirectToTreasuryModule(result.code, result.movementDisplayId);
+}
+
+export async function updateTreasuryRoleMovementAction(formData: FormData) {
+  const result = await updateTreasuryRoleMovement({
+    movementId: String(formData.get("movement_id") ?? ""),
+    accountId: String(formData.get("account_id") ?? ""),
+    movementType: String(formData.get("movement_type") ?? ""),
+    categoryId: String(formData.get("category_id") ?? ""),
+    activityId: String(formData.get("activity_id") ?? ""),
+    receiptNumber: String(formData.get("receipt_number") ?? ""),
+    concept: String(formData.get("concept") ?? ""),
+    currencyCode: String(formData.get("currency_code") ?? ""),
+    amount: String(formData.get("amount") ?? "")
+  });
+
+  redirectToTreasuryModule(result.code, result.movementDisplayId);
 }
 
 export async function updateSecretariaMovementAction(formData: FormData) {
@@ -93,6 +115,7 @@ export async function updateSecretariaMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/secretaria");
 
   return {
     ok: result.ok,
@@ -110,6 +133,7 @@ export async function createAccountTransferAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/secretaria");
 
   return {
     ok: result.ok,
@@ -129,5 +153,5 @@ export async function createFxOperationAction(formData: FormData) {
     concept: String(formData.get("concept") ?? "")
   });
 
-  redirectToDashboard(result.code);
+  redirectToTreasuryModule(result.code);
 }

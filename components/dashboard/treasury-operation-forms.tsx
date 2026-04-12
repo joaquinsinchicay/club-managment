@@ -7,11 +7,11 @@ import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-fo
 import type {
   ClubActivity,
   ClubCalendarEvent,
-  DashboardTreasuryCard,
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
   TreasuryCurrencyConfig,
+  TreasuryDashboardMovement,
   TreasuryMovementType
 } from "@/lib/domain/access";
 import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
@@ -353,9 +353,7 @@ function buildEmptySecretariaMovementFormState(): MovementFormState {
   };
 }
 
-function buildEditMovementFormState(
-  movement: DashboardTreasuryCard["movements"][number]
-): MovementFormState {
+function buildEditMovementFormState(movement: TreasuryDashboardMovement): MovementFormState {
   return {
     movementDate: movement.movementDate,
     accountId: movement.accountId,
@@ -485,8 +483,8 @@ export function SecretariaMovementEditForm({
   submitAction,
   movement
 }: BaseMovementFormProps & {
-  calendarEvents: ClubCalendarEvent[];
-  movement: DashboardTreasuryCard["movements"][number];
+  calendarEvents?: ClubCalendarEvent[];
+  movement: TreasuryDashboardMovement;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
 
@@ -514,7 +512,6 @@ export function SecretariaMovementEditForm({
         await submitAction(formData);
       }}
       className="grid gap-4"
-      onReset={() => setFormState(buildEditMovementFormState(movement))}
     >
       <input type="hidden" name="movement_id" value={movement.movementId} />
 
@@ -555,19 +552,13 @@ export function SecretariaMovementEditForm({
           </FormField>
         ) : null}
 
-        <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <PendingSubmitButton
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
             disabled={!isMovementFormValid(formState)}
             className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
-          <button
-            type="reset"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {texts.dashboard.treasury.reset_cta}
-          </button>
         </div>
       </PendingFieldset>
     </form>
@@ -640,10 +631,7 @@ export function AccountTransferForm({
       onSubmit={(event: FormEvent<HTMLFormElement>) => {
         if (!isTransferFormValid(formState, targetAccountCurrencyError)) {
           event.preventDefault();
-          return;
         }
-
-        window.setTimeout(handleReset, 0);
       }}
     >
       <PendingFieldset className={FORM_GRID_CLASSNAME}>

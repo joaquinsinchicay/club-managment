@@ -113,12 +113,14 @@ Roles disponibles:
 
   * requiere jornada abierta
   * fecha no editable (día actual)
+  * un egreso no puede superar el saldo disponible de la cuenta en la moneda seleccionada
   * estado inicial: `pending_consolidation`
 
 * Tesoreria:
 
   * no requiere jornada
   * puede definir fecha
+  * un egreso no puede superar el saldo disponible acumulado de la cuenta en la fecha elegida y moneda seleccionada
   * estado inicial: `posted` o equivalente
 
 * Admin:
@@ -132,6 +134,7 @@ Roles disponibles:
   * no puede editar `movement_date`
   * no puede editar el identificador visible del movimiento
   * puede editar solo campos operativos del movimiento
+  * no puede editar un movimiento de forma que deje saldo negativo en la cuenta y moneda afectadas
   * debe auditarse
 * Tesoreria:
   * mantiene la corrección auditada durante consolidación
@@ -170,6 +173,7 @@ Roles disponibles:
 ### Reglas
 
 * No requiere jornada abierta
+* La cuenta origen debe tener saldo disponible suficiente en la moneda origen
 * Genera dos movimientos
 * Debe ser transaccional
 
