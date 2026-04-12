@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { startTransition, type ReactNode, useEffect, useMemo, useState } from "react";
 
 import {
   AccountTransferForm,
@@ -332,19 +332,19 @@ export function TreasuryCard({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const canCreateMovement = treasuryCard.availableActions.includes("create_movement");
-  const canCloseSession = treasuryCard.availableActions.includes("close_session");
-  const canOpenSession = treasuryCard.availableActions.includes("open_session");
-  const isSessionStateUnresolved = treasuryCard.sessionStatus === "unresolved";
-  const isMovementDataUnresolved = treasuryCard.movementDataStatus === "unresolved";
+  const [localTreasuryCard, setLocalTreasuryCard] = useState(treasuryCard);
+  const canCreateMovement = localTreasuryCard.availableActions.includes("create_movement");
+  const canCloseSession = localTreasuryCard.availableActions.includes("close_session");
+  const canOpenSession = localTreasuryCard.availableActions.includes("open_session");
+  const isSessionStateUnresolved = localTreasuryCard.sessionStatus === "unresolved";
+  const isMovementDataUnresolved = localTreasuryCard.movementDataStatus === "unresolved";
   const shouldHideMovementsSection =
-    treasuryCard.sessionStatus === "not_started" &&
+    localTreasuryCard.sessionStatus === "not_started" &&
     !isMovementDataUnresolved &&
-    treasuryCard.movements.length === 0;
+    localTreasuryCard.movements.length === 0;
   const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "transfer" | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
-  const [pendingMovementDisplayId, setPendingMovementDisplayId] = useState<string | null>(null);
   const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
   const [pendingTransferMovementDisplayId, setPendingTransferMovementDisplayId] = useState<string | null>(null);
   const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
@@ -361,10 +361,10 @@ export function TreasuryCard({
     amount: number;
   } | null>(null);
 
-  const totalBalances = useMemo(() => getTotalBalances(treasuryCard.accounts), [treasuryCard.accounts]);
+  const totalBalances = useMemo(() => getTotalBalances(localTreasuryCard.accounts), [localTreasuryCard.accounts]);
   const detailHref =
-    !isMovementDataUnresolved && treasuryCard.accounts[0]
-      ? `/dashboard/accounts/${treasuryCard.accounts[0].accountId}`
+    !isMovementDataUnresolved && localTreasuryCard.accounts[0]
+      ? `/dashboard/accounts/${localTreasuryCard.accounts[0].accountId}`
       : null;
   const pendingOverlayLabel = isMovementSubmissionPending
     ? texts.dashboard.treasury.create_loading
@@ -375,18 +375,8 @@ export function TreasuryCard({
         : null;
 
   useEffect(() => {
-    if (!isMovementSubmissionPending) {
-      return;
-    }
-
-    if (
-      pendingMovementDisplayId &&
-      treasuryCard.movements.some((movement) => movement.movementDisplayId === pendingMovementDisplayId)
-    ) {
-      setIsMovementSubmissionPending(false);
-      setPendingMovementDisplayId(null);
-    }
-  }, [isMovementSubmissionPending, pendingMovementDisplayId, treasuryCard.movements]);
+    setLocalTreasuryCard(treasuryCard);
+  }, [treasuryCard]);
 
   useEffect(() => {
     if (!isTransferSubmissionPending) {
@@ -395,19 +385,21 @@ export function TreasuryCard({
 
     if (
       pendingTransferMovementDisplayId &&
-      treasuryCard.movements.some((movement) => movement.movementDisplayId === pendingTransferMovementDisplayId)
+      localTreasuryCard.movements.some((movement) => movement.movementDisplayId === pendingTransferMovementDisplayId)
     ) {
       setIsTransferSubmissionPending(false);
       setPendingTransferMovementDisplayId(null);
     }
-  }, [isTransferSubmissionPending, pendingTransferMovementDisplayId, treasuryCard.movements]);
+  }, [isTransferSubmissionPending, pendingTransferMovementDisplayId, localTreasuryCard.movements]);
 
   useEffect(() => {
     if (!isMovementUpdatePending || !pendingMovementUpdate) {
       return;
     }
 
-    const matchingMovement = treasuryCard.movements.find((movement) => movement.movementId === pendingMovementUpdate.movementId);
+    const matchingMovement = localTreasuryCard.movements.find(
+      (movement) => movement.movementId === pendingMovementUpdate.movementId
+    );
 
     if (
       matchingMovement &&
@@ -424,7 +416,49 @@ export function TreasuryCard({
       setIsMovementUpdatePending(false);
       setPendingMovementUpdate(null);
     }
-  }, [isMovementUpdatePending, pendingMovementUpdate, treasuryCard.movements]);
+  }, [isMovementUpdatePending, pendingMovementUpdate, localTreasuryCard.movements]);
+
+  function applyOptimisticMovementUpdate(result: TreasuryActionResponse) {
+    if (!result.optimisticUpdate) {
+      return;
+    }
+
+    const { optimisticUpdate } = result;
+
+    setLocalTreasuryCard((currentCard) => {
+      const movementAlreadyPresent = currentCard.movements.some(
+        (movement) => movement.movementId === optimisticUpdate.movement.movementId
+      );
+
+      if (movementAlreadyPresent) {
+        return currentCard;
+      }
+
+      return {
+        ...currentCard,
+        accounts: currentCard.accounts.map((account) => {
+          if (account.accountId !== optimisticUpdate.balanceDelta.accountId) {
+            return account;
+          }
+
+          return {
+            ...account,
+            balances: account.balances.map((balance) =>
+              balance.currencyCode === optimisticUpdate.balanceDelta.currencyCode
+                ? {
+                    ...balance,
+                    amount: balance.amount + optimisticUpdate.balanceDelta.amountDelta
+                  }
+                : balance
+            )
+          };
+        }),
+        movements: [optimisticUpdate.movement, ...currentCard.movements].sort((left, right) =>
+          right.createdAt.localeCompare(left.createdAt)
+        )
+      };
+    });
+  }
 
   async function handleCreateTreasuryMovement(formData: FormData) {
     setIsMovementSubmissionPending(true);
@@ -443,16 +477,20 @@ export function TreasuryCard({
       }
 
       if (result.ok) {
-        setPendingMovementDisplayId(result.movementDisplayId ?? null);
+        applyOptimisticMovementUpdate(result);
+        setIsMovementSubmissionPending(false);
       } else {
-        setPendingMovementDisplayId(null);
         setIsMovementSubmissionPending(false);
       }
 
       router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-      router.refresh();
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
     } catch (error) {
-      setPendingMovementDisplayId(null);
       setIsMovementSubmissionPending(false);
       throw error;
     }
@@ -492,7 +530,9 @@ export function TreasuryCard({
       }
 
       router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } catch (error) {
       setPendingMovementUpdate(null);
       setIsMovementUpdatePending(false);
@@ -524,7 +564,9 @@ export function TreasuryCard({
       }
 
       router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } catch (error) {
       setPendingTransferMovementDisplayId(null);
       setIsTransferSubmissionPending(false);
@@ -555,7 +597,7 @@ export function TreasuryCard({
             <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury.balances_unresolved}
             </div>
-          ) : treasuryCard.accounts.length === 0 ? (
+          ) : localTreasuryCard.accounts.length === 0 ? (
             <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury.empty_accounts}
             </div>
@@ -578,7 +620,7 @@ export function TreasuryCard({
               </div>
 
               <div className="grid gap-4 border-t border-border/70 pt-4 sm:grid-cols-2">
-                {treasuryCard.accounts.map((account) => (
+                {localTreasuryCard.accounts.map((account) => (
                   <article key={account.accountId} className="space-y-2">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       {account.name}
@@ -617,7 +659,7 @@ export function TreasuryCard({
         <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
           <ActionsCardHeader
             title={texts.dashboard.treasury.actions_card_title}
-            description={getActionsCardDescription(treasuryCard.sessionStatus)}
+            description={getActionsCardDescription(localTreasuryCard.sessionStatus)}
           />
 
           <div className="mt-6 grid gap-4">
@@ -687,14 +729,14 @@ export function TreasuryCard({
             <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury.movements_unresolved}
             </div>
-          ) : treasuryCard.movements.length === 0 ? (
+          ) : localTreasuryCard.movements.length === 0 ? (
             <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury.movements_empty}
             </div>
           ) : (
             <div className="mt-5">
               <SecretariaMovementList
-                items={treasuryCard.movements.map((movement) => ({
+                items={localTreasuryCard.movements.map((movement) => ({
                   movementId: movement.movementId,
                   movementDisplayId: movement.movementDisplayId,
                   concept: movement.concept,
@@ -753,7 +795,7 @@ export function TreasuryCard({
           submitAction={handleCreateTreasuryMovement}
           submitLabel={texts.dashboard.treasury.create_cta}
           pendingLabel={texts.dashboard.treasury.create_loading}
-          sessionDate={treasuryCard.sessionDate}
+          sessionDate={localTreasuryCard.sessionDate}
         />
       </Modal>
 
@@ -795,7 +837,7 @@ export function TreasuryCard({
           targetAccounts={transferTargetAccounts}
           currencies={currencies}
           submitAction={handleCreateAccountTransfer}
-          sessionDate={treasuryCard.sessionDate}
+          sessionDate={localTreasuryCard.sessionDate}
         />
       </Modal>
     </>

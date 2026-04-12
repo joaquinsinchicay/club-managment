@@ -12,13 +12,15 @@ import type {
   ReceiptFormat,
   SessionBalanceDraft,
   TreasuryAccount,
+  TreasuryCategory,
   TreasuryRoleDashboard,
   TreasuryCurrencyConfig,
   TreasuryMovementType,
   TreasuryAccountDetail,
   TreasuryConsolidationDashboard,
   TreasuryMovement,
-  TreasuryMovementStatus
+  TreasuryMovementStatus,
+  User
 } from "@/lib/domain/access";
 import { getDefaultReceiptFormats, isDefaultReceiptNumberValid } from "@/lib/receipt-formats";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
@@ -83,6 +85,19 @@ export type TreasuryActionResult = {
   ok: boolean;
   code: TreasuryActionCode;
   movementDisplayId?: string;
+};
+
+export type TreasuryMovementOptimisticUpdate = {
+  movement: DashboardTreasuryCard["movements"][number];
+  balanceDelta: {
+    accountId: string;
+    currencyCode: string;
+    amountDelta: number;
+  };
+};
+
+export type TreasuryActionResultWithOptimisticUpdate = TreasuryActionResult & {
+  optimisticUpdate?: TreasuryMovementOptimisticUpdate;
 };
 
 type SessionAdjustmentEntry = {
@@ -317,6 +332,42 @@ function buildAccountBalances(
       .filter((movement) => movement.accountId === account.id && movement.currencyCode === currencyCode)
       .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0)
   }));
+}
+
+function buildDashboardMovementView(input: {
+  movement: TreasuryMovement;
+  accountsById: Map<string, TreasuryAccount>;
+  categoriesById: Map<string, TreasuryCategory>;
+  activitiesById: Map<string, ClubActivity>;
+  calendarEventsById: Map<string, ClubCalendarEvent>;
+  usersById: Map<string, User>;
+  canEdit: boolean;
+}): DashboardTreasuryCard["movements"][number] {
+  const { movement, accountsById, categoriesById, activitiesById, calendarEventsById, usersById, canEdit } = input;
+
+  return {
+    movementId: movement.id,
+    movementDisplayId: movement.displayId,
+    movementDate: movement.movementDate,
+    accountId: movement.accountId,
+    accountName: accountsById.get(movement.accountId)?.name ?? "",
+    movementType: movement.movementType,
+    categoryId: movement.categoryId,
+    categoryName: categoriesById.get(movement.categoryId)?.name ?? texts.dashboard.treasury.detail_uncategorized_category,
+    activityId: movement.activityId ?? null,
+    activityName: movement.activityId ? activitiesById.get(movement.activityId)?.name ?? null : null,
+    receiptNumber: movement.receiptNumber ?? null,
+    calendarEventId: movement.calendarEventId ?? null,
+    calendarEventTitle: movement.calendarEventId ? calendarEventsById.get(movement.calendarEventId)?.title ?? null : null,
+    transferReference: movement.transferGroupId ?? null,
+    fxOperationReference: movement.fxOperationGroupId ?? null,
+    concept: movement.concept,
+    currencyCode: movement.currencyCode,
+    amount: movement.amount,
+    createdByUserName: usersById.get(movement.createdByUserId)?.fullName ?? "",
+    createdAt: movement.createdAt,
+    canEdit
+  };
 }
 
 async function getConfiguredTreasuryCurrencies(clubId: string): Promise<TreasuryCurrencyConfig[]> {
@@ -846,20 +897,13 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   ]);
 
   const secretaryAccounts = accounts.filter((account) => account.visibleForSecretaria);
-  let balanceMovementsByAccount = new Map<string, TreasuryMovement[]>();
-  let movements: TreasuryMovement[] = [];
+  let historicalMovements: TreasuryMovement[] = [];
 
   try {
-    const historicalMovements = await Promise.all(
-      secretaryAccounts.map(async (account) => [
-        account.id,
-        (await accessRepository.listTreasuryMovementsHistoryByAccount(clubId, account.id)).filter(
-          (movement) => shouldIncludeMovementInRoleBalances(movement, "secretaria")
-        )
-      ] as const)
-    );
-
-    balanceMovementsByAccount = new Map(historicalMovements);
+    historicalMovements = (await accessRepository.listTreasuryMovementsHistoryByAccounts(
+      clubId,
+      secretaryAccounts.map((account) => account.id)
+    )).filter((movement) => shouldIncludeMovementInRoleBalances(movement, "secretaria"));
   } catch (error) {
     movementDataResolved = false;
     console.error("[dashboard-balance-data-resolution-failed]", {
@@ -868,26 +912,20 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     });
   }
 
-  try {
-    movements = await accessRepository.listTreasuryMovementsByDateStrict(clubId, sessionDate);
-  } catch (error) {
-    movementDataResolved = false;
-    console.error("[dashboard-movement-data-resolution-failed]", {
-      clubId,
-      sessionDate,
-      error
-    });
-  }
-
   const visibleAccountIds = new Set(secretaryAccounts.map((account) => account.id));
-  const visibleMovements = movements.filter((movement) => visibleAccountIds.has(movement.accountId));
-  const users = await Promise.all(
-    [...new Set(visibleMovements.map((movement) => movement.createdByUserId))].map(async (userId) => [
-      userId,
-      await accessRepository.findUserById(userId)
-    ] as const)
+  const balanceMovementsByAccount = new Map(
+    secretaryAccounts.map((account) => [
+      account.id,
+      historicalMovements.filter((movement) => movement.accountId === account.id)
+    ])
   );
-  const usersById = new Map(users);
+  const visibleMovements = historicalMovements.filter(
+    (movement) => visibleAccountIds.has(movement.accountId) && movement.movementDate === sessionDate
+  );
+  const users = await accessRepository.findUsersByIds(
+    [...new Set(visibleMovements.map((movement) => movement.createdByUserId))]
+  );
+  const usersById = new Map(users.map((user) => [user.id, user]));
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
   const accountsById = new Map(secretaryAccounts.map((account) => [account.id, account]));
   const activitiesById = new Map(activities.map((activity) => [activity.id, activity]));
@@ -904,31 +942,17 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
       balances: buildAccountBalances(account, balanceMovementsByAccount.get(account.id) ?? [])
     })),
     movements: visibleMovements
-      .map((movement) => ({
-        movementId: movement.id,
-        movementDisplayId: movement.displayId,
-        movementDate: movement.movementDate,
-        accountId: movement.accountId,
-        accountName: accountsById.get(movement.accountId)?.name ?? "",
-        movementType: movement.movementType,
-        categoryId: movement.categoryId,
-        categoryName: categoriesById.get(movement.categoryId)?.name ?? texts.dashboard.treasury.detail_uncategorized_category,
-        activityId: movement.activityId ?? null,
-        activityName: movement.activityId ? activitiesById.get(movement.activityId)?.name ?? null : null,
-        receiptNumber: movement.receiptNumber ?? null,
-        calendarEventId: movement.calendarEventId ?? null,
-        calendarEventTitle: movement.calendarEventId
-          ? calendarEventsById.get(movement.calendarEventId)?.title ?? null
-          : null,
-        transferReference: movement.transferGroupId ?? null,
-        fxOperationReference: movement.fxOperationGroupId ?? null,
-        concept: movement.concept,
-        currencyCode: movement.currencyCode,
-        amount: movement.amount,
-        createdByUserName: usersById.get(movement.createdByUserId)?.fullName ?? "",
-        createdAt: movement.createdAt,
-        canEdit: session?.status === "open"
-      }))
+      .map((movement) =>
+        buildDashboardMovementView({
+          movement,
+          accountsById,
+          categoriesById,
+          activitiesById,
+          calendarEventsById,
+          usersById,
+          canEdit: session?.status === "open"
+        })
+      )
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
     availableActions:
       !sessionStateResolved
@@ -966,13 +990,10 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
     accessRepository.listTreasuryMovementsByDate(clubId, sessionDate)
   ]);
   const visibleAccountIds = new Set(accounts.map((account) => account.id));
-  const users = await Promise.all(
-    [...new Set(roleMovements.map((movement) => movement.createdByUserId))].map(async (userId) => [
-      userId,
-      await accessRepository.findUserById(userId)
-    ] as const)
+  const users = await accessRepository.findUsersByIds(
+    [...new Set(roleMovements.map((movement) => movement.createdByUserId))]
   );
-  const usersById = new Map(users);
+  const usersById = new Map(users.map((user) => [user.id, user]));
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
   const accountsById = new Map(accounts.map((account) => [account.id, account]));
 
@@ -1047,7 +1068,7 @@ export async function createTreasuryMovement(input: {
   concept: string;
   currencyCode: string;
   amount: string;
-}): Promise<TreasuryActionResult> {
+}): Promise<TreasuryActionResultWithOptimisticUpdate> {
   const context = await getSecretariaSession();
 
   if (!context?.activeClub) {
@@ -1229,7 +1250,33 @@ export async function createTreasuryMovement(input: {
     return { ok: false, code: "movement_create_failed" };
   }
 
-  return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
+  const optimisticUsersById = new Map([[context.user.id, context.user]]);
+  const optimisticAccountsById = new Map(accounts.map((entry) => [entry.id, entry]));
+  const optimisticCategoriesById = new Map(categories.map((entry) => [entry.id, entry]));
+  const optimisticActivitiesById = new Map(activities.map((entry) => [entry.id, entry]));
+  const optimisticCalendarEventsById = new Map(calendarEvents.map((entry) => [entry.id, entry]));
+
+  return {
+    ok: true,
+    code: "movement_created",
+    movementDisplayId: created.displayId,
+    optimisticUpdate: {
+      movement: buildDashboardMovementView({
+        movement: created,
+        accountsById: optimisticAccountsById,
+        categoriesById: optimisticCategoriesById,
+        activitiesById: optimisticActivitiesById,
+        calendarEventsById: optimisticCalendarEventsById,
+        usersById: optimisticUsersById,
+        canEdit: true
+      }),
+      balanceDelta: {
+        accountId: created.accountId,
+        currencyCode: created.currencyCode,
+        amountDelta: buildMovementSignedAmount(created.movementType, created.amount)
+      }
+    }
+  };
 }
 
 export async function updateSecretariaMovementInOpenSession(input: {

@@ -88,6 +88,7 @@ Do not move club switching into the avatar menu.
 ### 4.1 Main modules
 
 Upper bar navigation is module-based.
+Each visible tab in the upper bar is the UI representation of a first-level module. In product and technical documentation, `modulo` is the functional concept and `tab` is only the visual affordance used to access that module.
 
 Current top-level modules:
 

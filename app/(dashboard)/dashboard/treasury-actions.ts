@@ -9,6 +9,7 @@ import {
   createFxOperation,
   createTreasuryMovement,
   createTreasuryRoleMovement,
+  type TreasuryMovementOptimisticUpdate,
   updateSecretariaMovementInOpenSession,
   openDailyCashSession
 } from "@/lib/services/treasury-service";
@@ -17,6 +18,7 @@ export type TreasuryActionResponse = {
   ok: boolean;
   code: string;
   movementDisplayId?: string;
+  optimisticUpdate?: TreasuryMovementOptimisticUpdate;
 };
 
 function redirectToTreasuryModule(code: string, movementDisplayId?: string) {
@@ -55,11 +57,13 @@ export async function createTreasuryMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/secretaria");
 
   return {
     ok: result.ok,
     code: result.code,
-    movementDisplayId: result.movementDisplayId
+    movementDisplayId: result.movementDisplayId,
+    optimisticUpdate: result.optimisticUpdate
   } satisfies TreasuryActionResponse;
 }
 
@@ -94,6 +98,7 @@ export async function updateSecretariaMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/secretaria");
 
   return {
     ok: result.ok,
@@ -111,6 +116,7 @@ export async function createAccountTransferAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/secretaria");
 
   return {
     ok: result.ok,

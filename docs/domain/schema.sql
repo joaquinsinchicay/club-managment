@@ -326,6 +326,10 @@ create index idx_movements_club on treasury_movements(club_id);
 create index idx_movements_account on treasury_movements(account_id);
 create index idx_movements_session on treasury_movements(daily_cash_session_id);
 create index idx_movements_status on treasury_movements(status);
+create index idx_movements_club_account_created_at on treasury_movements(club_id, account_id, created_at desc);
+create index idx_movements_club_date_created_at on treasury_movements(club_id, movement_date, created_at desc);
+create index idx_movements_club_date on treasury_movements(club_id, movement_date);
+create index idx_movements_club_display_id on treasury_movements(club_id, display_id);
 
 create index idx_memberships_user on memberships(user_id);
 create index idx_memberships_club on memberships(club_id);

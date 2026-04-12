@@ -134,6 +134,7 @@ type AccessRepository = {
   createUserFromGoogleProfile(profile: GoogleProfile): Promise<User>;
   updateUserFromGoogleProfile(userId: string, profile: GoogleProfile): Promise<User>;
   findUserById(userId: string, client?: AccessRepositoryClient): Promise<User | null>;
+  findUsersByIds(userIds: string[], client?: AccessRepositoryClient): Promise<User[]>;
   listMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   listActiveMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   findClubById(clubId: string, client?: AccessRepositoryClient): Promise<Club | null>;
@@ -319,6 +320,7 @@ type AccessRepository = {
     movementDate: string
   ): Promise<TreasuryMovement[]>;
   listTreasuryMovementsHistoryByAccount(clubId: string, accountId: string): Promise<TreasuryMovement[]>;
+  listTreasuryMovementsHistoryByAccounts(clubId: string, accountIds: string[]): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByDate(clubId: string, movementDate: string): Promise<TreasuryMovement[]>;
   listTreasuryMovementsByDateStrict(clubId: string, movementDate: string): Promise<TreasuryMovement[]>;
   findTreasuryMovementById(clubId: string, movementId: string): Promise<TreasuryMovement | null>;
@@ -1579,6 +1581,34 @@ async function findRealUserById(userId: string, client?: AccessRepositoryClient)
   return mapUserRow(data);
 }
 
+async function findRealUsersByIds(userIds: string[], client?: AccessRepositoryClient) {
+  if (userIds.length === 0) {
+    return [];
+  }
+
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("id,email,full_name,avatar_url,created_at,updated_at")
+    .in("id", userIds);
+
+  if (error || !data) {
+    return [];
+  }
+
+  const usersById = new Map(data.map((row) => [row.id, mapUserRow(row)]));
+
+  return userIds.flatMap((userId) => {
+    const user = usersById.get(userId);
+    return user ? [user] : [];
+  });
+}
+
 async function listRealMembershipsForUser(userId: string, client?: AccessRepositoryClient) {
   const supabase = createAccessSupabaseClient(client);
 
@@ -2517,6 +2547,31 @@ async function listRealTreasuryMovementsHistoryByAccount(
       details: { accountId },
       params: {
         p_account_id: accountId
+      }
+    }
+  );
+
+  return rows.map(mapTreasuryMovementRow);
+}
+
+async function listRealTreasuryMovementsHistoryByAccounts(
+  clubId: string,
+  accountIds: string[],
+  client?: AccessRepositoryClient
+) {
+  if (accountIds.length === 0) {
+    return [];
+  }
+
+  const rows = await runClubScopedReadRpc<TreasuryMovementRow[]>(
+    "get_treasury_movements_history_by_accounts_for_current_club",
+    clubId,
+    client,
+    {
+      operation: "list_treasury_movements_history_by_accounts",
+      details: { accountIdsCount: accountIds.length },
+      params: {
+        p_account_ids: accountIds
       }
     }
   );
@@ -3756,6 +3811,16 @@ export const accessRepository: AccessRepository = {
 
     return getStore().users.get(userId) ?? null;
   },
+  async findUsersByIds(userIds, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return findRealUsersByIds(userIds, client);
+    }
+
+    return userIds.flatMap((userId) => {
+      const user = getStore().users.get(userId);
+      return user ? [user] : [];
+    });
+  },
   async listMembershipsForUser(userId, client) {
     if (shouldUseSupabaseDatabase()) {
       return listRealMembershipsForUser(userId, client);
@@ -4391,6 +4456,17 @@ export const accessRepository: AccessRepository = {
 
     return getStore().treasuryMovements.filter(
       (movement) => movement.clubId === clubId && movement.accountId === accountId
+    );
+  },
+  async listTreasuryMovementsHistoryByAccounts(clubId, accountIds) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealTreasuryMovementsHistoryByAccounts(clubId, accountIds);
+    }
+
+    const allowedAccountIds = new Set(accountIds);
+
+    return getStore().treasuryMovements.filter(
+      (movement) => movement.clubId === clubId && allowedAccountIds.has(movement.accountId)
     );
   },
   async listTreasuryMovementsByDate(clubId, movementDate) {
