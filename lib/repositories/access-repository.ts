@@ -395,7 +395,7 @@ type AccessRepository = {
     originSource: TreasuryMovementOriginSource;
     accountId: string;
     movementType: TreasuryMovementType;
-    categoryId: string;
+    categoryId: string | null;
     concept: string;
     currencyCode: string;
     amount: number;
@@ -2694,7 +2694,7 @@ async function createRealTreasuryMovement(
     originSource: TreasuryMovementOriginSource;
     accountId: string;
     movementType: TreasuryMovementType;
-    categoryId: string;
+    categoryId: string | null;
     concept: string;
     currencyCode: string;
     amount: number;
@@ -2724,7 +2724,7 @@ async function createRealTreasuryMovement(
         p_origin_source: input.originSource,
         p_account_id: input.accountId,
         p_movement_type: input.movementType,
-        p_category_id: input.categoryId,
+        p_category_id: normalizeNullableUuidParam(input.categoryId),
         p_concept: input.concept,
         p_currency_code: input.currencyCode,
         p_amount: input.amount,
@@ -4694,7 +4694,7 @@ export const accessRepository: AccessRepository = {
       dailyCashSessionId: input.dailyCashSessionId,
       accountId: input.accountId,
       movementType: input.movementType,
-      categoryId: input.categoryId,
+      categoryId: input.categoryId ?? "",
       concept: input.concept,
       currencyCode: input.currencyCode,
       amount: input.amount,
