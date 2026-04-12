@@ -1214,7 +1214,7 @@ Registrar compra o venta de moneda entre cuentas de distinta moneda.
 Sí
 
 **Allowed roles**
-`secretaria`
+`tesoreria`
 
 **Input**
 
@@ -1232,7 +1232,7 @@ Sí
 
 **Validations**
 
-* jornada abierta
+* no requiere jornada abierta
 * cuentas válidas
 * monedas distintas
 * importes > 0

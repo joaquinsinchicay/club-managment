@@ -815,6 +815,7 @@ with check (
 
 drop policy if exists "Members can view fx operations" on fx_operations;
 drop policy if exists "Secretaria can insert fx operations in current club" on fx_operations;
+drop policy if exists "Tesoreria can insert fx operations in current club" on fx_operations;
 
 create policy "Members can view fx operations"
 on fx_operations
@@ -825,13 +826,13 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Secretaria can insert fx operations in current club"
+create policy "Tesoreria can insert fx operations in current club"
 on fx_operations
 for insert
 to authenticated
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('secretaria'))
+  and (select current_user_has_role('tesoreria'))
   and exists (
     select 1
     from treasury_accounts source_account

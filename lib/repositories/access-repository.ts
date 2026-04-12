@@ -50,6 +50,16 @@ type AccountTransferMutationResult = {
   targetMovementDisplayId: string;
 };
 
+type FxOperationInsertRow = {
+  id: string;
+  club_id: string;
+  source_account_id: string;
+  target_account_id: string;
+  source_amount: number | string;
+  target_amount: number | string;
+  created_at: string | null;
+};
+
 export class AccessRepositoryInfraError extends Error {
   code: "treasury_admin_config_missing" | "treasury_settings_write_failed" | "club_scoped_rpc_failed";
   operation: string;
@@ -1459,6 +1469,28 @@ function mapAccountTransferMutationRow(row: AccountTransferMutationRow): Account
   };
 }
 
+function mapFxOperationInsertRow(
+  row: FxOperationInsertRow,
+  input: {
+    sourceCurrencyCode: string;
+    targetCurrencyCode: string;
+    concept: string;
+  }
+): FxOperation {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    sourceAccountId: row.source_account_id,
+    targetAccountId: row.target_account_id,
+    sourceCurrencyCode: input.sourceCurrencyCode,
+    targetCurrencyCode: input.targetCurrencyCode,
+    sourceAmount: Number(row.source_amount),
+    targetAmount: Number(row.target_amount),
+    concept: input.concept,
+    createdAt: row.created_at ?? now()
+  };
+}
+
 function alignAccountCurrenciesWithClubSelection(
   currentCurrencies: string[],
   allowedCurrencies: TreasuryCurrencyCode[],
@@ -2787,6 +2819,55 @@ async function createRealAccountTransfer(
   );
 
   return row ? mapAccountTransferMutationRow(row) : null;
+}
+
+async function createRealFxOperation(
+  input: {
+    clubId: string;
+    sourceAccountId: string;
+    targetAccountId: string;
+    sourceCurrencyCode: string;
+    targetCurrencyCode: string;
+    sourceAmount: number;
+    targetAmount: number;
+    concept: string;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("fx_operations")
+    .insert({
+      club_id: input.clubId,
+      source_account_id: input.sourceAccountId,
+      target_account_id: input.targetAccountId,
+      source_amount: input.sourceAmount,
+      target_amount: input.targetAmount
+    })
+    .select("id,club_id,source_account_id,target_account_id,source_amount,target_amount,created_at")
+    .single();
+
+  if (error || !data) {
+    console.error("[fx-operation-write-failure]", {
+      operation: "create_fx_operation",
+      clubId: input.clubId,
+      sourceAccountId: input.sourceAccountId,
+      targetAccountId: input.targetAccountId,
+      error
+    });
+    return null;
+  }
+
+  return mapFxOperationInsertRow(data, {
+    sourceCurrencyCode: input.sourceCurrencyCode,
+    targetCurrencyCode: input.targetCurrencyCode,
+    concept: input.concept
+  });
 }
 
 async function countRealTreasuryMovementsByClubAndYear(
@@ -4666,6 +4747,10 @@ export const accessRepository: AccessRepository = {
     };
   },
   async createFxOperation(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealFxOperation(input);
+    }
+
     const operation: FxOperation = {
       id: `fx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
