@@ -777,6 +777,31 @@ Sí
       ]
     }
   ],
+  "movements": [
+    {
+      "movement_id": "uuid",
+      "movement_display_id": "PJ-MOV-2026-9465",
+      "movement_date": "2026-04-02",
+      "account_id": "uuid",
+      "account_name": "Caja dolares",
+      "movement_type": "ingreso",
+      "category_id": "uuid",
+      "category_name": "Cobranza",
+      "activity_id": "uuid",
+      "activity_name": "Futbol",
+      "receipt_number": "PAY-SOC-26205",
+      "calendar_event_id": null,
+      "calendar_event_title": null,
+      "transfer_reference": null,
+      "fx_operation_reference": null,
+      "concept": "Pago cuota abril",
+      "currency_code": "USD",
+      "amount": 950.00,
+      "created_by_user_name": "Nombre Apellido",
+      "created_at": "2026-04-02T14:22:00.000Z",
+      "can_edit": true
+    }
+  ],
   "available_actions": [
     "create_movement",
     "create_fx_operation"
@@ -1004,6 +1029,60 @@ Sí
 * movement_type habilitado en el club
 * currency_code válida para la cuenta
 * `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
+* amount > 0
+* si el resultado editado es un `egreso`, la cuenta debe conservar saldo disponible suficiente en la moneda seleccionada
+* `movement_date` no es editable por contrato
+* no se permite editar referencias técnicas derivadas
+* la operación debe auditarse
+
+**Output**
+
+```json
+{
+  "movement_id": "uuid",
+  "updated": true
+}
+```
+
+---
+
+### 6.5C Update treasury role movement
+
+**Purpose**
+Editar un movimiento visible de Tesorería desde el dashboard del módulo.
+
+**Auth required**
+Sí
+
+**Allowed roles**
+`tesoreria`
+
+**Input**
+
+```json
+{
+  "movement_id": "uuid",
+  "account_id": "uuid",
+  "movement_type": "ingreso",
+  "category_id": "uuid",
+  "activity_id": "uuid",
+  "receipt_number": "PAY-SOC-26205",
+  "concept": "Pago cuota abril",
+  "currency_code": "ARS",
+  "amount": 25000
+}
+```
+
+**Validations**
+
+* el movimiento debe pertenecer al club activo
+* el movimiento debe ser visible para `tesoreria`
+* el movimiento debe encontrarse en estado `posted`
+* cuenta válida del club activo y visible para `tesoreria`
+* categoría válida y visible para `tesoreria`
+* movement_type habilitado en el club
+* currency_code válida para la cuenta
+* `activity_id` y `receipt_number` son opcionales
 * amount > 0
 * si el resultado editado es un `egreso`, la cuenta debe conservar saldo disponible suficiente en la moneda seleccionada
 * `movement_date` no es editable por contrato

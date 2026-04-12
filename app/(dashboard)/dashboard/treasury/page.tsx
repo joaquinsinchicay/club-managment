@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 
 import {
   createFxOperationAction,
-  createTreasuryRoleMovementAction
+  createTreasuryRoleMovementAction,
+  updateTreasuryRoleMovementAction
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
@@ -69,6 +70,7 @@ export default async function TreasuryDashboardPage() {
         movementTypes={movementTypes}
         receiptFormats={receiptFormats}
         createTreasuryRoleMovementAction={createTreasuryRoleMovementAction}
+        updateTreasuryRoleMovementAction={updateTreasuryRoleMovementAction}
         createFxOperationAction={createFxOperationAction}
       />
     </main>

@@ -1038,8 +1038,10 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
     }))
   );
 
-  const [categories, roleMovements] = await Promise.all([
+  const [categories, activities, calendarEvents, roleMovements] = await Promise.all([
     accessRepository.listTreasuryCategoriesForClub(clubId),
+    accessRepository.listClubActivitiesForClub(clubId),
+    accessRepository.listClubCalendarEventsForClub(clubId),
     accessRepository.listTreasuryMovementsByDate(clubId, sessionDate)
   ]);
   const visibleAccountIds = new Set(accounts.map((account) => account.id));
@@ -1049,6 +1051,8 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
   const usersById = new Map(users.map((user) => [user.id, user]));
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
   const accountsById = new Map(accounts.map((account) => [account.id, account]));
+  const activitiesById = new Map(activities.map((activity) => [activity.id, activity]));
+  const calendarEventsById = new Map(calendarEvents.map((event) => [event.id, event]));
 
   return {
     sessionDate,
@@ -1059,21 +1063,17 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
     })),
     movements: roleMovements
       .filter((movement) => movement.status === "posted" && visibleAccountIds.has(movement.accountId))
-      .map((movement) => ({
-        movementId: movement.id,
-        movementDisplayId: movement.displayId,
-        movementDate: movement.movementDate,
-        accountId: movement.accountId,
-        accountName: accountsById.get(movement.accountId)?.name ?? "",
-        movementType: movement.movementType,
-        categoryName:
-          categoriesById.get(movement.categoryId)?.name ?? texts.dashboard.treasury.detail_uncategorized_category,
-        concept: movement.concept,
-        currencyCode: movement.currencyCode,
-        amount: movement.amount,
-        createdByUserName: usersById.get(movement.createdByUserId)?.fullName ?? "",
-        createdAt: movement.createdAt
-      }))
+      .map((movement) =>
+        buildDashboardMovementView({
+          movement,
+          accountsById,
+          categoriesById,
+          activitiesById,
+          calendarEventsById,
+          usersById,
+          canEdit: true
+        })
+      )
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
     availableActions: ["create_movement", "create_fx_operation"]
   };
@@ -1948,6 +1948,165 @@ export async function createTreasuryRoleMovement(input: {
   }
 
   return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
+}
+
+export async function updateTreasuryRoleMovement(input: {
+  movementId: string;
+  accountId: string;
+  movementType: string;
+  categoryId: string;
+  activityId: string;
+  receiptNumber: string;
+  concept: string;
+  currencyCode: string;
+  amount: string;
+}): Promise<TreasuryActionResult> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  const clubId = context.activeClub.id;
+  const movement = await accessRepository.findTreasuryMovementById(clubId, input.movementId);
+
+  if (!movement || movement.clubId !== clubId || movement.status !== "posted") {
+    return { ok: false, code: "movement_not_editable" };
+  }
+
+  if (!input.accountId) {
+    return { ok: false, code: "account_required" };
+  }
+
+  if (!input.movementType) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  if (!input.categoryId) {
+    return { ok: false, code: "category_required" };
+  }
+
+  if (!input.concept.trim()) {
+    return { ok: false, code: "concept_required" };
+  }
+
+  if (!input.currencyCode) {
+    return { ok: false, code: "currency_required" };
+  }
+
+  if (!input.amount) {
+    return { ok: false, code: "amount_required" };
+  }
+
+  const parsedAmount = parseLocalizedAmount(input.amount);
+
+  if (parsedAmount === null || parsedAmount <= 0) {
+    return { ok: false, code: "amount_must_be_positive" };
+  }
+
+  if (input.movementType !== "ingreso" && input.movementType !== "egreso") {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const [accounts, categories, activities, configuredCurrencies, configuredMovementTypes] = await Promise.all([
+    accessRepository.listTreasuryAccountsForClub(clubId),
+    accessRepository.listTreasuryCategoriesForClub(clubId),
+    accessRepository.listClubActivitiesForClub(clubId),
+    getConfiguredTreasuryCurrencies(clubId),
+    getConfiguredMovementTypes(clubId)
+  ]);
+
+  if (
+    !configuredMovementTypes.some(
+      (movementType) => movementType.movementType === input.movementType && movementType.isEnabled
+    )
+  ) {
+    return { ok: false, code: "movement_type_required" };
+  }
+
+  const account = accounts.find((entry) => entry.id === input.accountId && entry.visibleForTesoreria);
+
+  if (!account) {
+    return { ok: false, code: "invalid_account" };
+  }
+
+  const category = categories.find((entry) => entry.id === input.categoryId && entry.visibleForTesoreria);
+
+  if (!category) {
+    return { ok: false, code: "invalid_category" };
+  }
+
+  if (!configuredCurrencies.some((currency) => currency.currencyCode === input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  if (!account.currencies.includes(input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  if (input.movementType === "egreso") {
+    const availableBalance = await getAvailableBalanceForAccountCurrency({
+      clubId,
+      accountId: account.id,
+      currencyCode: input.currencyCode,
+      effectiveDate: movement.movementDate,
+      excludeMovementId: movement.id
+    });
+
+    if (parsedAmount > availableBalance) {
+      return { ok: false, code: "insufficient_funds" };
+    }
+  }
+
+  const activity =
+    input.activityId.trim().length > 0
+      ? activities.find((entry) => entry.id === input.activityId && entry.visibleForTesoreria) ?? null
+      : null;
+
+  if (input.activityId.trim().length > 0 && !activity) {
+    return { ok: false, code: "invalid_activity" };
+  }
+
+  const receiptNumber = input.receiptNumber.trim();
+  const activeReceiptFormats = getDefaultReceiptFormats(clubId);
+
+  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
+    const isValidReceipt = activeReceiptFormats.some((format) =>
+      validateReceiptNumberAgainstFormat(receiptNumber, format)
+    );
+
+    if (!isValidReceipt) {
+      return { ok: false, code: "invalid_receipt_format" };
+    }
+  }
+
+  const beforeSnapshot = serializeMovementSnapshot(movement);
+  const updatedMovement = await accessRepository.updateTreasuryMovement({
+    movementId: movement.id,
+    clubId,
+    accountId: account.id,
+    movementType: input.movementType,
+    categoryId: category.id,
+    activityId: activity?.id ?? null,
+    receiptNumber: receiptNumber || null,
+    concept: input.concept.trim(),
+    currencyCode: input.currencyCode,
+    amount: parsedAmount
+  });
+
+  if (!updatedMovement) {
+    return { ok: false, code: "movement_update_failed" };
+  }
+
+  await accessRepository.createMovementAuditLog({
+    movementId: updatedMovement.id,
+    actionType: "edited",
+    payloadBefore: beforeSnapshot,
+    payloadAfter: serializeMovementSnapshot(updatedMovement),
+    performedByUserId: context.user.id
+  });
+
+  return { ok: true, code: "movement_updated" };
 }
 
 async function buildMovementUserName(userId: string) {

@@ -7,11 +7,11 @@ import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-fo
 import type {
   ClubActivity,
   ClubCalendarEvent,
-  DashboardTreasuryCard,
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
   TreasuryCurrencyConfig,
+  TreasuryDashboardMovement,
   TreasuryMovementType
 } from "@/lib/domain/access";
 import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
@@ -353,9 +353,7 @@ function buildEmptySecretariaMovementFormState(): MovementFormState {
   };
 }
 
-function buildEditMovementFormState(
-  movement: DashboardTreasuryCard["movements"][number]
-): MovementFormState {
+function buildEditMovementFormState(movement: TreasuryDashboardMovement): MovementFormState {
   return {
     movementDate: movement.movementDate,
     accountId: movement.accountId,
@@ -485,8 +483,8 @@ export function SecretariaMovementEditForm({
   submitAction,
   movement
 }: BaseMovementFormProps & {
-  calendarEvents: ClubCalendarEvent[];
-  movement: DashboardTreasuryCard["movements"][number];
+  calendarEvents?: ClubCalendarEvent[];
+  movement: TreasuryDashboardMovement;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
 
