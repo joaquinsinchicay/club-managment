@@ -162,17 +162,17 @@ function SummaryBalance({
   prominent?: boolean;
 }) {
   return (
-    <div className={cn("space-y-1", prominent ? "space-y-2" : "space-y-1.5")}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-        {balance.currencyCode}
-      </p>
+    <div>
       <p
         className={cn(
-          "font-semibold tracking-tight text-foreground",
+          "flex flex-wrap items-baseline gap-x-2 gap-y-1 font-semibold tracking-tight text-foreground",
           prominent ? "text-[3.25rem] leading-none sm:text-[3.5rem]" : "text-[2rem] leading-none"
         )}
       >
-        {formatLocalizedAmount(balance.amount)}
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {balance.currencyCode}
+        </span>
+        <span>{formatLocalizedAmount(balance.amount)}</span>
       </p>
     </div>
   );
@@ -318,14 +318,17 @@ export function TreasuryRoleCard({
 
                     <div className="space-y-3">
                       {account.balances.map((balance) => (
-                        <div key={`${account.accountId}-${balance.currencyCode}`} className="space-y-1.5">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        <p
+                          key={`${account.accountId}-${balance.currencyCode}`}
+                          className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[2rem] font-semibold leading-none tracking-tight text-foreground"
+                        >
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                             {balance.currencyCode}
-                          </p>
-                          <p className="text-[2rem] font-semibold leading-none tracking-tight text-foreground">
+                          </span>
+                          <span>
                             {formatLocalizedAmount(balance.amount)}
-                          </p>
-                        </div>
+                          </span>
+                        </p>
                       ))}
                     </div>
                   </article>
