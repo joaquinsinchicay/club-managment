@@ -1422,6 +1422,26 @@ type TreasuryMovementRow = {
   created_at: string | null;
 };
 
+type DailyConsolidationBatchRow = {
+  id: string;
+  club_id: string;
+  consolidation_date: string;
+  status: DailyConsolidationBatch["status"] | null;
+  executed_at: string | null;
+  executed_by_user_id: string | null;
+  error_message: string | null;
+};
+
+type MovementAuditLogRow = {
+  id: string;
+  movement_id: string;
+  action_type: MovementAuditLog["actionType"];
+  payload_before: Record<string, unknown> | null;
+  payload_after: Record<string, unknown> | null;
+  performed_by_user_id: string;
+  performed_at: string | null;
+};
+
 function mapTreasuryMovementRow(row: TreasuryMovementRow): TreasuryMovement {
   return {
     id: row.id,
@@ -1444,6 +1464,30 @@ function mapTreasuryMovementRow(row: TreasuryMovementRow): TreasuryMovement {
     createdByUserId: row.created_by_user_id,
     status: row.status ?? "pending_consolidation",
     createdAt: row.created_at ?? now()
+  };
+}
+
+function mapDailyConsolidationBatchRow(row: DailyConsolidationBatchRow): DailyConsolidationBatch {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    consolidationDate: row.consolidation_date,
+    status: row.status ?? "pending",
+    executedAt: row.executed_at,
+    executedByUserId: row.executed_by_user_id,
+    errorMessage: row.error_message
+  };
+}
+
+function mapMovementAuditLogRow(row: MovementAuditLogRow): MovementAuditLog {
+  return {
+    id: row.id,
+    movementId: row.movement_id,
+    actionType: row.action_type,
+    payloadBefore: row.payload_before,
+    payloadAfter: row.payload_after,
+    performedByUserId: row.performed_by_user_id,
+    performedAt: row.performed_at ?? now()
   };
 }
 
@@ -2773,6 +2817,200 @@ async function updateRealTreasuryMovement(
     : ((data as TreasuryMovementRow | null) ?? null);
 
   return row ? mapTreasuryMovementRow(row) : null;
+}
+
+async function getRealDailyConsolidationBatchByDate(
+  clubId: string,
+  consolidationDate: string,
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("daily_consolidation_batches")
+    .select("id,club_id,consolidation_date,status,executed_at,executed_by_user_id,error_message")
+    .eq("club_id", clubId)
+    .eq("consolidation_date", consolidationDate)
+    .maybeSingle();
+
+  if (error || !data) {
+    if (error) {
+      console.error("[daily-consolidation-batch-read-failure]", {
+        operation: "get_daily_consolidation_batch_by_date",
+        clubId,
+        consolidationDate,
+        error
+      });
+    }
+
+    return null;
+  }
+
+  return mapDailyConsolidationBatchRow(data as DailyConsolidationBatchRow);
+}
+
+async function createRealDailyConsolidationBatch(
+  input: {
+    clubId: string;
+    consolidationDate: string;
+    status: DailyConsolidationBatch["status"];
+    executedByUserId: string;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("daily_consolidation_batches")
+    .insert({
+      club_id: input.clubId,
+      consolidation_date: input.consolidationDate,
+      status: input.status,
+      executed_by_user_id: input.executedByUserId
+    })
+    .select("id,club_id,consolidation_date,status,executed_at,executed_by_user_id,error_message")
+    .single();
+
+  if (error || !data) {
+    if (error) {
+      console.error("[daily-consolidation-batch-write-failure]", {
+        operation: "create_daily_consolidation_batch",
+        clubId: input.clubId,
+        consolidationDate: input.consolidationDate,
+        error
+      });
+    }
+
+    return null;
+  }
+
+  return mapDailyConsolidationBatchRow(data as DailyConsolidationBatchRow);
+}
+
+async function updateRealDailyConsolidationBatch(
+  input: {
+    batchId: string;
+    status: DailyConsolidationBatch["status"];
+    errorMessage?: string | null;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("daily_consolidation_batches")
+    .update({
+      status: input.status,
+      error_message: input.errorMessage ?? null,
+      ...(input.status === "completed" || input.status === "failed"
+        ? { executed_at: now() }
+        : {})
+    })
+    .eq("id", input.batchId)
+    .select("id,club_id,consolidation_date,status,executed_at,executed_by_user_id,error_message")
+    .single();
+
+  if (error || !data) {
+    if (error) {
+      console.error("[daily-consolidation-batch-write-failure]", {
+        operation: "update_daily_consolidation_batch",
+        batchId: input.batchId,
+        status: input.status,
+        error
+      });
+    }
+
+    return null;
+  }
+
+  return mapDailyConsolidationBatchRow(data as DailyConsolidationBatchRow);
+}
+
+async function listRealMovementAuditLogsByMovementId(
+  movementId: string,
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("movement_audit_logs")
+    .select("id,movement_id,action_type,payload_before,payload_after,performed_by_user_id,performed_at")
+    .eq("movement_id", movementId)
+    .order("performed_at", { ascending: true });
+
+  if (error || !data) {
+    if (error) {
+      console.error("[movement-audit-log-read-failure]", {
+        operation: "list_movement_audit_logs_by_movement_id",
+        movementId,
+        error
+      });
+    }
+
+    return [];
+  }
+
+  return data.map((row) => mapMovementAuditLogRow(row as MovementAuditLogRow));
+}
+
+async function createRealMovementAuditLog(
+  input: {
+    movementId: string;
+    actionType: MovementAuditLog["actionType"];
+    payloadBefore: Record<string, unknown> | null;
+    payloadAfter: Record<string, unknown> | null;
+    performedByUserId: string;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("movement_audit_logs")
+    .insert({
+      movement_id: input.movementId,
+      action_type: input.actionType,
+      payload_before: input.payloadBefore,
+      payload_after: input.payloadAfter,
+      performed_by_user_id: input.performedByUserId
+    })
+    .select("id,movement_id,action_type,payload_before,payload_after,performed_by_user_id,performed_at")
+    .single();
+
+  if (error || !data) {
+    if (error) {
+      console.error("[movement-audit-log-write-failure]", {
+        operation: "create_movement_audit_log",
+        movementId: input.movementId,
+        actionType: input.actionType,
+        error
+      });
+    }
+
+    return null;
+  }
+
+  return mapMovementAuditLogRow(data as MovementAuditLogRow);
 }
 
 async function createRealTreasuryMovement(
@@ -4660,6 +4898,10 @@ export const accessRepository: AccessRepository = {
     return movement;
   },
   async getDailyConsolidationBatchByDate(clubId, consolidationDate) {
+    if (shouldUseSupabaseDatabase()) {
+      return getRealDailyConsolidationBatchByDate(clubId, consolidationDate);
+    }
+
     return (
       getStore().dailyConsolidationBatches.find(
         (batch) => batch.clubId === clubId && batch.consolidationDate === consolidationDate
@@ -4667,6 +4909,10 @@ export const accessRepository: AccessRepository = {
     );
   },
   async createDailyConsolidationBatch(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealDailyConsolidationBatch(input);
+    }
+
     const batch: DailyConsolidationBatch = {
       id: `consolidation-batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
@@ -4681,6 +4927,10 @@ export const accessRepository: AccessRepository = {
     return batch;
   },
   async updateDailyConsolidationBatch(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return updateRealDailyConsolidationBatch(input);
+    }
+
     const batch = getStore().dailyConsolidationBatches.find((entry) => entry.id === input.batchId);
 
     if (!batch) {
@@ -4711,9 +4961,17 @@ export const accessRepository: AccessRepository = {
     return integration;
   },
   async listMovementAuditLogsByMovementId(movementId) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealMovementAuditLogsByMovementId(movementId);
+    }
+
     return getStore().movementAuditLogs.filter((entry) => entry.movementId === movementId);
   },
   async createMovementAuditLog(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealMovementAuditLog(input);
+    }
+
     const log: MovementAuditLog = {
       id: `movement-audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       movementId: input.movementId,
