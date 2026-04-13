@@ -376,6 +376,7 @@ export type ConsolidationMovement = {
   receiptNumber: string | null;
   calendarEventId: string | null;
   calendarEventTitle: string | null;
+  transferReference: string | null;
   concept: string;
   currencyCode: string;
   amount: number;

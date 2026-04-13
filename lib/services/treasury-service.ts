@@ -2259,6 +2259,7 @@ async function buildConsolidationMovement(
     receiptNumber: movement.receiptNumber ?? null,
     calendarEventId: movement.calendarEventId ?? null,
     calendarEventTitle,
+    transferReference: movement.transferGroupId ?? null,
     concept: movement.concept,
     currencyCode: movement.currencyCode,
     amount: movement.amount,

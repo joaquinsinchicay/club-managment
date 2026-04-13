@@ -108,7 +108,10 @@ function MovementList({
         </div>
       ) : (
         <div className="overflow-hidden rounded-[20px] border border-border bg-card">
-          <div className="hidden bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,1.7fr)_minmax(180px,0.9fr)_minmax(240px,1fr)_minmax(170px,0.8fr)_88px] md:items-center md:gap-4">
+          <div className="hidden bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(140px,0.8fr)_minmax(0,1.5fr)_minmax(160px,0.85fr)_minmax(240px,1fr)_minmax(170px,0.8fr)_88px] md:items-center md:gap-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {texts.dashboard.consolidation.status_label}
+            </p>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {texts.dashboard.consolidation.concept_label}
             </p>
@@ -140,20 +143,31 @@ function MovementList({
                   onKeyDown={(event) => handleRowKeyDown(event, movement.movementId)}
                   aria-pressed={isSelected}
                   className={cn(
-                    "relative rounded-[18px] border border-border bg-card p-4 shadow-soft transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(170px,0.8fr)_88px] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none",
+                    "relative rounded-[18px] border border-border bg-card p-4 shadow-soft transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 md:grid md:grid-cols-[minmax(140px,0.8fr)_minmax(0,1.5fr)_minmax(160px,0.85fr)_minmax(240px,1fr)_minmax(170px,0.8fr)_88px] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none",
                     isSelected && "border-foreground/25 bg-secondary/10 ring-1 ring-foreground/10",
                     index === movements.length - 1 && "md:rounded-b-[20px]"
                   )}
                 >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "absolute inset-y-4 left-0 w-1 rounded-full transition",
-                      isSelected ? "bg-foreground" : "bg-transparent"
-                    )}
-                  />
+                  <div className="grid gap-2 text-sm text-muted-foreground md:mt-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
+                      {texts.dashboard.consolidation.status_label}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <StatusBadge
+                        label={
+                          movement.status === "integrated"
+                            ? texts.dashboard.consolidation.status_integrated
+                            : texts.dashboard.consolidation.status_pending
+                        }
+                        tone={movement.status === "integrated" ? "neutral" : "warning"}
+                      />
+                      {!movement.isValid ? (
+                        <StatusBadge label={texts.dashboard.consolidation.status_invalid} tone="danger" />
+                      ) : null}
+                    </div>
+                  </div>
 
-                  <div className="min-w-0 space-y-2 pl-2">
+                  <div className="min-w-0 space-y-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                       {movement.movementDisplayId}
                     </p>
@@ -178,7 +192,6 @@ function MovementList({
                       {texts.dashboard.consolidation.account_label}
                     </p>
                     <p className="font-medium text-foreground">{movement.accountName}</p>
-                    <p>{texts.dashboard.treasury.movement_types[movement.movementType]}</p>
                   </div>
 
                   <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
@@ -189,16 +202,15 @@ function MovementList({
                       <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
                       </span>
-                      <StatusBadge
-                        label={
-                          movement.status === "integrated"
-                            ? texts.dashboard.consolidation.status_integrated
-                            : texts.dashboard.consolidation.status_pending
-                        }
-                        tone={movement.status === "integrated" ? "neutral" : "warning"}
-                      />
-                      {!movement.isValid ? (
-                        <StatusBadge label={texts.dashboard.consolidation.status_invalid} tone="danger" />
+                      {movement.activityName ? (
+                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {movement.activityName}
+                        </span>
+                      ) : null}
+                      {movement.transferReference ? (
+                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {texts.dashboard.consolidation.transfer_id_label} {movement.transferReference}
+                        </span>
                       ) : null}
                       {movement.possibleMatch ? (
                         <StatusBadge
@@ -207,9 +219,6 @@ function MovementList({
                         />
                       ) : null}
                     </div>
-                    <p>
-                      {movement.movementDate} · {texts.dashboard.treasury.movement_types[movement.movementType]}
-                    </p>
                   </div>
 
                   <div className="mt-4 md:mt-0 md:text-right">
