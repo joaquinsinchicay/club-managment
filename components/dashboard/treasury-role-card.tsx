@@ -11,6 +11,7 @@ import {
 } from "@/components/dashboard/treasury-operation-forms";
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
+import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
@@ -391,11 +392,7 @@ export function TreasuryRoleCard({
 
   return (
     <>
-      {pendingOverlayLabel ? (
-        <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground">
-          {pendingOverlayLabel}
-        </div>
-      ) : null}
+      <BlockingStatusOverlay open={pendingOverlayLabel !== null} label={pendingOverlayLabel ?? ""} />
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.95fr)]">
         <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">

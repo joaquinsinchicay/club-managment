@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import { BlockingOverlay } from "@/components/ui/overlay";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import { formatMembershipRoles, MEMBERSHIP_ROLES } from "@/lib/domain/membership-roles";
 import { texts } from "@/lib/texts";
@@ -242,7 +243,11 @@ export function ClubMembersManager({
       </div>
 
       {selectedMember ? (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-foreground/45 px-4">
+        <BlockingOverlay
+          open
+          className="z-30 bg-foreground/45"
+          contentClassName="items-center justify-center px-4"
+        >
           <div
             role="dialog"
             aria-modal="true"
@@ -293,7 +298,7 @@ export function ClubMembersManager({
               </form>
             </div>
           </div>
-        </div>
+        </BlockingOverlay>
       ) : null}
     </>
   );
