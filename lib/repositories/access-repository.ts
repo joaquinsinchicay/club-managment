@@ -340,7 +340,7 @@ type AccessRepository = {
     movementDate?: string;
     accountId: string;
     movementType: TreasuryMovementType;
-    categoryId: string;
+    categoryId?: string | null;
     concept: string;
     currencyCode: string;
     amount: number;
@@ -2680,7 +2680,7 @@ async function updateRealTreasuryMovement(
     movementDate?: string;
     accountId: string;
     movementType: TreasuryMovementType;
-    categoryId: string;
+    categoryId?: string | null;
     concept: string;
     currencyCode: string;
     amount: number;
@@ -2704,7 +2704,7 @@ async function updateRealTreasuryMovement(
         p_account_id: input.accountId,
         p_movement_date: input.movementDate ?? null,
         p_movement_type: input.movementType,
-        p_category_id: input.categoryId,
+        p_category_id: normalizeNullableUuidParam(input.categoryId),
         p_concept: input.concept,
         p_currency_code: input.currencyCode,
         p_amount: input.amount,
@@ -4590,7 +4590,7 @@ export const accessRepository: AccessRepository = {
     movement.movementDate = input.movementDate ?? movement.movementDate;
     movement.accountId = input.accountId;
     movement.movementType = input.movementType;
-    movement.categoryId = input.categoryId;
+    movement.categoryId = input.categoryId ?? "";
     movement.concept = input.concept;
     movement.currencyCode = input.currencyCode;
     movement.amount = input.amount;

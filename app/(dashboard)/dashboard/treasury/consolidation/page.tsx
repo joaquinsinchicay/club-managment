@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import {
   executeDailyConsolidationAction,
   integrateMatchingMovementAction,
-  updateMovementBeforeConsolidationAction
+  updateMovementBeforeConsolidationAction,
+  updateTransferBeforeConsolidationAction
 } from "@/app/(dashboard)/dashboard/treasury/actions";
 import { TreasuryConsolidationCard } from "@/components/dashboard/treasury-consolidation-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
@@ -56,11 +57,9 @@ export default async function TreasuryConsolidationPage({
     dashboard.integratedMovements[0] ??
     null;
 
-  const [auditEntries, accounts, categories, activities, calendarEvents, currencies, movementTypes, receiptFormats] = await Promise.all([
+  const [auditEntries, allAccounts, categories, activities, calendarEvents, currencies, movementTypes, receiptFormats] = await Promise.all([
     selectedMovement ? getMovementAuditEntries(selectedMovement.movementId) : Promise.resolve([]),
-    accessRepository.listTreasuryAccountsForClub(context.activeClub.id).then((entries) =>
-      entries.filter((account) => account.visibleForTesoreria)
-    ),
+    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((entries) =>
       entries.filter((category) => category.visibleForTesoreria)
     ),
@@ -76,7 +75,9 @@ export default async function TreasuryConsolidationPage({
       dashboard={dashboard}
       selectedMovement={selectedMovement}
       selectedAuditEntries={auditEntries}
-      accounts={accounts}
+      accounts={allAccounts.filter((account) => account.visibleForTesoreria)}
+      transferSourceAccounts={allAccounts.filter((account) => account.visibleForSecretaria)}
+      transferTargetAccounts={allAccounts.filter((account) => !account.visibleForSecretaria && account.visibleForTesoreria)}
       categories={categories}
       activities={activities}
       calendarEvents={calendarEvents}
@@ -84,6 +85,7 @@ export default async function TreasuryConsolidationPage({
       movementTypes={movementTypes}
       receiptFormats={receiptFormats}
       updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
+      updateTransferBeforeConsolidationAction={updateTransferBeforeConsolidationAction}
       integrateMatchingMovementAction={integrateMatchingMovementAction}
       executeDailyConsolidationAction={executeDailyConsolidationAction}
     />

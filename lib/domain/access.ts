@@ -388,6 +388,17 @@ export type ConsolidationMovement = {
   possibleMatch: ConsolidationMatch | null;
 };
 
+export type ConsolidationTransferEdit = {
+  movementId: string;
+  transferReference: string;
+  movementDate: string;
+  sourceAccountId: string;
+  targetAccountId: string;
+  currencyCode: string;
+  concept: string;
+  amount: number;
+};
+
 export type ConsolidationAuditEntry = {
   id: string;
   actionType: "original" | "edited" | "integrated" | "consolidated";

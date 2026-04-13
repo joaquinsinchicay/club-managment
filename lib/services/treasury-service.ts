@@ -2168,7 +2168,7 @@ async function getConsolidationValidationIssues(
     issues.push("invalid_account");
   }
 
-  if (!category || !category.visibleForTesoreria) {
+  if (!movement.transferGroupId && (!category || !category.visibleForTesoreria)) {
     issues.push("invalid_category");
   }
 
@@ -2520,6 +2520,168 @@ export async function updateMovementBeforeConsolidation(input: {
     actionType: "edited",
     payloadBefore: beforeSnapshot,
     payloadAfter: serializeMovementSnapshot(updatedMovement),
+    performedByUserId: context.user.id
+  });
+
+  return { ok: true, code: "movement_updated" };
+}
+
+export async function updateTransferBeforeConsolidation(input: {
+  movementId: string;
+  sourceAccountId: string;
+  targetAccountId: string;
+  currencyCode: string;
+  concept: string;
+  amount: string;
+}): Promise<TreasuryActionResult> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return { ok: false, code: "forbidden" };
+  }
+
+  const clubId = context.activeClub.id;
+  const movement = await accessRepository.findTreasuryMovementById(clubId, input.movementId);
+
+  if (!movement || movement.clubId !== clubId || movement.status !== "pending_consolidation" || !movement.transferGroupId) {
+    return { ok: false, code: "movement_not_found" };
+  }
+
+  if (!input.sourceAccountId) {
+    return { ok: false, code: "source_account_required" };
+  }
+
+  if (!input.targetAccountId) {
+    return { ok: false, code: "target_account_required" };
+  }
+
+  if (input.sourceAccountId === input.targetAccountId) {
+    return { ok: false, code: "accounts_must_be_distinct" };
+  }
+
+  if (!input.currencyCode) {
+    return { ok: false, code: "currency_required" };
+  }
+
+  if (!input.amount) {
+    return { ok: false, code: "amount_required" };
+  }
+
+  const parsedAmount = parseLocalizedAmount(input.amount);
+
+  if (parsedAmount === null || parsedAmount <= 0) {
+    return { ok: false, code: "amount_must_be_positive" };
+  }
+
+  const concept = input.concept.trim() || texts.dashboard.treasury.transfer_default_concept;
+  const relatedMovements = (await accessRepository.listTreasuryMovementsByDate(clubId, movement.movementDate)).filter(
+    (entry) => entry.transferGroupId === movement.transferGroupId
+  );
+  const sourceMovement =
+    relatedMovements.find((entry) => entry.movementType === "egreso") ?? null;
+  const targetMovement =
+    relatedMovements.find((entry) => entry.movementType === "ingreso") ?? null;
+
+  if (
+    !sourceMovement ||
+    !targetMovement ||
+    sourceMovement.status !== "pending_consolidation" ||
+    targetMovement.status !== "pending_consolidation"
+  ) {
+    return { ok: false, code: "invalid_transfer" };
+  }
+
+  const allAccounts = await accessRepository.listTreasuryAccountsForClub(clubId);
+  const sourceAccount = getAccountsVisibleForRole(allAccounts, "secretaria").find(
+    (account) => account.id === input.sourceAccountId
+  );
+  const targetAccount = getTransferTargetAccountsForSecretaria(allAccounts).find(
+    (account) => account.id === input.targetAccountId
+  );
+
+  if (!sourceAccount || !targetAccount) {
+    return { ok: false, code: "invalid_transfer" };
+  }
+
+  if (
+    !sourceAccount.currencies.includes(input.currencyCode) ||
+    !targetAccount.currencies.includes(input.currencyCode)
+  ) {
+    return { ok: false, code: "invalid_transfer" };
+  }
+
+  const configuredCurrencies = await getConfiguredTreasuryCurrencies(clubId);
+
+  if (!configuredCurrencies.some((currency) => currency.currencyCode === input.currencyCode)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+
+  const availableBalance = await getAvailableBalanceForAccountCurrency({
+    clubId,
+    accountId: sourceAccount.id,
+    currencyCode: input.currencyCode,
+    effectiveDate: sourceMovement.movementDate,
+    excludeMovementId: sourceMovement.id
+  });
+
+  if (parsedAmount > availableBalance) {
+    return { ok: false, code: "insufficient_funds" };
+  }
+
+  const sourceBeforeSnapshot = serializeMovementSnapshot(sourceMovement);
+  const targetBeforeSnapshot = serializeMovementSnapshot(targetMovement);
+
+  const updatedSourceMovement = await accessRepository.updateTreasuryMovement({
+    movementId: sourceMovement.id,
+    clubId,
+    movementDate: sourceMovement.movementDate,
+    accountId: sourceAccount.id,
+    movementType: "egreso",
+    categoryId: sourceMovement.categoryId || null,
+    activityId: null,
+    receiptNumber: null,
+    calendarEventId: null,
+    concept,
+    currencyCode: input.currencyCode,
+    amount: parsedAmount
+  });
+
+  if (!updatedSourceMovement) {
+    return { ok: false, code: "movement_update_failed" };
+  }
+
+  const updatedTargetMovement = await accessRepository.updateTreasuryMovement({
+    movementId: targetMovement.id,
+    clubId,
+    movementDate: targetMovement.movementDate,
+    accountId: targetAccount.id,
+    movementType: "ingreso",
+    categoryId: targetMovement.categoryId || null,
+    activityId: null,
+    receiptNumber: null,
+    calendarEventId: null,
+    concept,
+    currencyCode: input.currencyCode,
+    amount: parsedAmount
+  });
+
+  if (!updatedTargetMovement) {
+    return { ok: false, code: "movement_update_failed" };
+  }
+
+  await accessRepository.createMovementAuditLog({
+    movementId: updatedSourceMovement.id,
+    actionType: "edited",
+    payloadBefore: sourceBeforeSnapshot,
+    payloadAfter: serializeMovementSnapshot(updatedSourceMovement),
+    performedByUserId: context.user.id
+  });
+
+  await accessRepository.createMovementAuditLog({
+    movementId: updatedTargetMovement.id,
+    actionType: "edited",
+    payloadBefore: targetBeforeSnapshot,
+    payloadAfter: serializeMovementSnapshot(updatedTargetMovement),
     performedByUserId: context.user.id
   });
 

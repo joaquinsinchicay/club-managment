@@ -380,6 +380,8 @@
       "edit_cta": "Editar movimiento",
       "edit_title": "Editar movimiento de consolidacion",
       "edit_description": "Actualiza la imputacion del movimiento pendiente antes de consolidar la fecha.",
+      "edit_transfer_title": "Editar transferencia de consolidacion",
+      "edit_transfer_description": "Actualiza la transferencia pendiente antes de consolidar la fecha.",
       "edit_form": {
         "movement_id_label": "ID movimiento",
         "date_label": "Fecha",

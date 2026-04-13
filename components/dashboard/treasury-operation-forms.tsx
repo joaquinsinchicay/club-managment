@@ -7,6 +7,7 @@ import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-fo
 import type {
   ClubActivity,
   ClubCalendarEvent,
+  ConsolidationTransferEdit,
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
@@ -449,6 +450,16 @@ function buildEmptyTransferFormState(): TransferFormState {
   };
 }
 
+function buildEditTransferFormState(transfer: ConsolidationTransferEdit): TransferFormState {
+  return {
+    sourceAccountId: transfer.sourceAccountId,
+    targetAccountId: transfer.targetAccountId,
+    currencyCode: transfer.currencyCode,
+    concept: transfer.concept,
+    amount: formatLocalizedAmount(transfer.amount)
+  };
+}
+
 function isTransferFormValid(formState: TransferFormState, targetAccountCurrencyError: string | null) {
   return Boolean(
     formState.sourceAccountId &&
@@ -857,6 +868,216 @@ export function AccountTransferForm({
           >
             {texts.dashboard.treasury.reset_cta}
           </button>
+        </div>
+      </PendingFieldset>
+    </form>
+  );
+}
+
+export function ConsolidationTransferEditForm({
+  sourceAccounts,
+  targetAccounts,
+  currencies,
+  submitAction,
+  submitLabel,
+  pendingLabel,
+  transfer,
+  extraHiddenFields
+}: {
+  sourceAccounts: TreasuryAccount[];
+  targetAccounts: TreasuryAccount[];
+  currencies: TreasuryCurrencyConfig[];
+  submitAction: (formData: FormData) => Promise<unknown>;
+  submitLabel: string;
+  pendingLabel: string;
+  transfer: ConsolidationTransferEdit;
+  extraHiddenFields?: ReactNode;
+}) {
+  const [formState, setFormState] = useState<TransferFormState>(() => buildEditTransferFormState(transfer));
+
+  useEffect(() => {
+    setFormState(buildEditTransferFormState(transfer));
+  }, [transfer]);
+
+  const selectedSourceAccount = useMemo(
+    () => sourceAccounts.find((account) => account.id === formState.sourceAccountId),
+    [formState.sourceAccountId, sourceAccounts]
+  );
+  const selectedTargetAccount = useMemo(
+    () => targetAccounts.find((account) => account.id === formState.targetAccountId),
+    [formState.targetAccountId, targetAccounts]
+  );
+  const availableCurrencies = useMemo(() => {
+    if (!selectedSourceAccount) {
+      return [];
+    }
+
+    return currencies.filter((currency) => selectedSourceAccount.currencies.includes(currency.currencyCode));
+  }, [currencies, selectedSourceAccount]);
+  const targetAccountCurrencyError =
+    selectedTargetAccount &&
+    formState.currencyCode &&
+    !selectedTargetAccount.currencies.includes(formState.currencyCode)
+      ? texts.dashboard.treasury.transfer_target_account_currency_error
+      : null;
+
+  useEffect(() => {
+    const nextCurrencyCode = getDefaultCurrencyCode(selectedSourceAccount, currencies);
+
+    if (!selectedSourceAccount && formState.currencyCode) {
+      setFormState((current) => ({ ...current, currencyCode: "" }));
+      return;
+    }
+
+    if (
+      selectedSourceAccount &&
+      nextCurrencyCode &&
+      !selectedSourceAccount.currencies.includes(formState.currencyCode)
+    ) {
+      setFormState((current) => ({ ...current, currencyCode: nextCurrencyCode }));
+    }
+  }, [currencies, formState.currencyCode, selectedSourceAccount]);
+
+  return (
+    <form
+      action={async (formData) => {
+        await submitAction(formData);
+      }}
+      className="grid gap-4"
+      onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        if (!isTransferFormValid(formState, targetAccountCurrencyError)) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <input type="hidden" name="movement_id" value={transfer.movementId} />
+      {extraHiddenFields}
+
+      <PendingFieldset className={FORM_GRID_CLASSNAME}>
+        <FormField>
+          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <input type="text" value={transfer.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
+        </FormField>
+
+        <FormField fullWidth>
+          <span className="font-medium">{texts.dashboard.treasury.detail_transfer_label}</span>
+          <input type="text" value={transfer.transferReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
+        </FormField>
+
+        <FormField>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label, texts.dashboard.treasury)}
+          </span>
+          <select
+            name="source_account_id"
+            value={formState.sourceAccountId}
+            onChange={(event) => setFormState((current) => ({ ...current, sourceAccountId: event.target.value }))}
+            className={CONTROL_CLASSNAME}
+          >
+            <option value="" disabled>
+              {texts.dashboard.treasury.transfer_source_account_placeholder}
+            </option>
+            {sourceAccounts.map((account) => (
+              <option key={`edit-source-${account.id}`} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label, texts.dashboard.treasury)}
+          </span>
+          <select
+            name="target_account_id"
+            value={formState.targetAccountId}
+            onChange={(event) => setFormState((current) => ({ ...current, targetAccountId: event.target.value }))}
+            aria-describedby={targetAccountCurrencyError ? "edit-transfer-target-account-error" : undefined}
+            aria-invalid={targetAccountCurrencyError ? "true" : undefined}
+            className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
+          >
+            <option value="" disabled>
+              {texts.dashboard.treasury.transfer_target_account_placeholder}
+            </option>
+            {targetAccounts.map((account) => (
+              <option key={`edit-target-${account.id}`} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+          {targetAccountCurrencyError ? (
+            <span
+              id="edit-transfer-target-account-error"
+              aria-live="polite"
+              className="text-xs leading-5 text-destructive"
+            >
+              {targetAccountCurrencyError}
+            </span>
+          ) : null}
+        </FormField>
+
+        <FormField>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.currency_label, texts.dashboard.treasury)}
+          </span>
+          <select
+            name="currency_code"
+            value={formState.currencyCode}
+            onChange={(event) => setFormState((current) => ({ ...current, currencyCode: event.target.value }))}
+            disabled={availableCurrencies.length === 0}
+            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground")}
+          >
+            <option value="" disabled>
+              {texts.dashboard.treasury.currency_placeholder}
+            </option>
+            {availableCurrencies.map((currency) => (
+              <option key={`edit-transfer-currency-${currency.currencyCode}`} value={currency.currencyCode}>
+                {currency.currencyCode}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField fullWidth>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.concept_label, texts.dashboard.treasury)}
+          </span>
+          <input
+            type="text"
+            name="concept"
+            value={formState.concept}
+            onChange={(event) => setFormState((current) => ({ ...current, concept: event.target.value }))}
+            className={CONTROL_CLASSNAME}
+          />
+        </FormField>
+
+        <FormField>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.amount_label, texts.dashboard.treasury)}
+          </span>
+          <input
+            type="text"
+            name="amount"
+            inputMode="decimal"
+            value={formState.amount}
+            onChange={(event) => setFormState((current) => ({ ...current, amount: sanitizeAmountInput(event.target.value) }))}
+            onKeyDown={(event) => {
+              if (event.key === "-") {
+                event.preventDefault();
+              }
+            }}
+            className={CONTROL_CLASSNAME}
+          />
+        </FormField>
+
+        <div className="sm:col-span-2">
+          <PendingSubmitButton
+            idleLabel={submitLabel}
+            pendingLabel={pendingLabel}
+            disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
+            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+          />
         </div>
       </PendingFieldset>
     </form>

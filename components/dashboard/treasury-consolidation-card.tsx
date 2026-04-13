@@ -3,7 +3,10 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { SecretariaMovementEditForm } from "@/components/dashboard/treasury-operation-forms";
+import {
+  ConsolidationTransferEditForm,
+  SecretariaMovementEditForm
+} from "@/components/dashboard/treasury-operation-forms";
 import { Modal } from "@/components/ui/modal";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
@@ -14,6 +17,7 @@ import type {
   ClubCalendarEvent,
   ConsolidationAuditEntry,
   ConsolidationMovement,
+  ConsolidationTransferEdit,
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
@@ -29,6 +33,8 @@ type TreasuryConsolidationCardProps = {
   selectedMovement: ConsolidationMovement | null;
   selectedAuditEntries: ConsolidationAuditEntry[];
   accounts: TreasuryAccount[];
+  transferSourceAccounts: TreasuryAccount[];
+  transferTargetAccounts: TreasuryAccount[];
   categories: TreasuryCategory[];
   activities: ClubActivity[];
   calendarEvents: ClubCalendarEvent[];
@@ -36,6 +42,7 @@ type TreasuryConsolidationCardProps = {
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
   updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
+  updateTransferBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   integrateMatchingMovementAction: (formData: FormData) => Promise<void>;
   executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
 };
@@ -73,6 +80,34 @@ function formatMovementDateTime(value: string) {
 
 function getTransferReferenceSuffix(value: string) {
   return value.slice(-6);
+}
+
+function buildEditableTransfer(
+  movement: ConsolidationMovement,
+  movements: ConsolidationMovement[]
+): ConsolidationTransferEdit | null {
+  if (!movement.transferReference) {
+    return null;
+  }
+
+  const relatedMovements = movements.filter((entry) => entry.transferReference === movement.transferReference);
+  const sourceMovement = relatedMovements.find((entry) => entry.movementType === "egreso") ?? null;
+  const targetMovement = relatedMovements.find((entry) => entry.movementType === "ingreso") ?? null;
+
+  if (!sourceMovement || !targetMovement) {
+    return null;
+  }
+
+  return {
+    movementId: movement.movementId,
+    transferReference: movement.transferReference,
+    movementDate: movement.movementDate,
+    sourceAccountId: sourceMovement.accountId,
+    targetAccountId: targetMovement.accountId,
+    currencyCode: sourceMovement.currencyCode,
+    concept: sourceMovement.concept,
+    amount: sourceMovement.amount
+  };
 }
 
 function MovementList({
@@ -203,9 +238,11 @@ function MovementList({
                       {texts.dashboard.consolidation.detail_label}
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        {movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
-                      </span>
+                      {movement.categoryName || !movement.transferReference ? (
+                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
+                        </span>
+                      ) : null}
                       {movement.activityName ? (
                         <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           {movement.activityName}
@@ -280,6 +317,8 @@ export function TreasuryConsolidationCard({
   selectedMovement,
   selectedAuditEntries,
   accounts,
+  transferSourceAccounts,
+  transferTargetAccounts,
   categories,
   activities,
   calendarEvents,
@@ -287,6 +326,7 @@ export function TreasuryConsolidationCard({
   movementTypes,
   receiptFormats,
   updateMovementBeforeConsolidationAction,
+  updateTransferBeforeConsolidationAction,
   integrateMatchingMovementAction,
   executeDailyConsolidationAction
 }: TreasuryConsolidationCardProps) {
@@ -295,6 +335,7 @@ export function TreasuryConsolidationCard({
   const searchParams = useSearchParams();
   const [selectedDate, setSelectedDate] = useState(dashboard.consolidationDate);
   const [editingMovement, setEditingMovement] = useState<ConsolidationMovement | null>(null);
+  const [editingTransfer, setEditingTransfer] = useState<ConsolidationTransferEdit | null>(null);
   const [isEditSubmissionPending, setIsEditSubmissionPending] = useState(false);
   const [isDateNavigationPending, startDateNavigationTransition] = useTransition();
 
@@ -318,6 +359,30 @@ export function TreasuryConsolidationCard({
 
     setEditingMovement(editableMovement);
   }, [dashboard.pendingMovements, editingMovement]);
+
+  useEffect(() => {
+    if (!editingTransfer) {
+      return;
+    }
+
+    const editableMovement = dashboard.pendingMovements.find(
+      (movement) => movement.movementId === editingTransfer.movementId
+    );
+
+    if (!editableMovement) {
+      setEditingTransfer(null);
+      return;
+    }
+
+    const nextTransfer = buildEditableTransfer(editableMovement, [...dashboard.pendingMovements, ...dashboard.integratedMovements]);
+
+    if (!nextTransfer) {
+      setEditingTransfer(null);
+      return;
+    }
+
+    setEditingTransfer(nextTransfer);
+  }, [dashboard.pendingMovements, dashboard.integratedMovements, editingTransfer]);
 
   function handleLoadDateSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -351,6 +416,16 @@ export function TreasuryConsolidationCard({
 
     try {
       await updateMovementBeforeConsolidationAction(formData);
+    } finally {
+      setIsEditSubmissionPending(false);
+    }
+  }
+
+  async function handleUpdateTransferBeforeConsolidation(formData: FormData) {
+    setIsEditSubmissionPending(true);
+
+    try {
+      await updateTransferBeforeConsolidationAction(formData);
     } finally {
       setIsEditSubmissionPending(false);
     }
@@ -472,7 +547,18 @@ export function TreasuryConsolidationCard({
                 movements={allMovements}
                 selectedMovementId={selectedMovement?.movementId}
                 onSelectMovement={handleSelectMovement}
-                onEditMovement={(movement) => setEditingMovement(movement)}
+                onEditMovement={(movement) => {
+                  const editableTransfer = buildEditableTransfer(movement, allMovements);
+
+                  if (editableTransfer) {
+                    setEditingMovement(null);
+                    setEditingTransfer(editableTransfer);
+                    return;
+                  }
+
+                  setEditingTransfer(null);
+                  setEditingMovement(movement);
+                }}
               />
 
               {selectedMovement ? (
@@ -583,13 +669,35 @@ export function TreasuryConsolidationCard({
       ) : null}
 
       <Modal
-        open={editingMovement !== null}
-        onClose={() => setEditingMovement(null)}
-        title={texts.dashboard.consolidation.edit_title}
-        description={texts.dashboard.consolidation.edit_description}
+        open={editingMovement !== null || editingTransfer !== null}
+        onClose={() => {
+          setEditingMovement(null);
+          setEditingTransfer(null);
+        }}
+        title={
+          editingTransfer
+            ? texts.dashboard.consolidation.edit_transfer_title
+            : texts.dashboard.consolidation.edit_title
+        }
+        description={
+          editingTransfer
+            ? texts.dashboard.consolidation.edit_transfer_description
+            : texts.dashboard.consolidation.edit_description
+        }
         closeDisabled={isEditSubmissionPending}
       >
-        {editingMovement ? (
+        {editingTransfer ? (
+          <ConsolidationTransferEditForm
+            sourceAccounts={transferSourceAccounts}
+            targetAccounts={transferTargetAccounts}
+            currencies={currencies}
+            submitAction={handleUpdateTransferBeforeConsolidation}
+            submitLabel={texts.dashboard.consolidation.save_changes_cta}
+            pendingLabel={texts.dashboard.consolidation.save_changes_loading}
+            transfer={editingTransfer}
+            extraHiddenFields={<input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />}
+          />
+        ) : editingMovement ? (
           <SecretariaMovementEditForm
             accounts={accounts}
             categories={categories}
