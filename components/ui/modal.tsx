@@ -46,6 +46,9 @@ export function Modal({
           "w-full max-w-3xl rounded-[28px] border border-border bg-card p-5 shadow-soft sm:p-6",
           panelClassName
         )}
+        onClick={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
@@ -60,7 +63,10 @@ export function Modal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClose();
+            }}
             disabled={closeDisabled}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
             aria-label={texts.app.modal_close_cta}
