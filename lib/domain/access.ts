@@ -371,6 +371,11 @@ export type ConsolidationMovement = {
   movementType: TreasuryMovementType;
   categoryId: string;
   categoryName: string;
+  activityId: string | null;
+  activityName: string | null;
+  receiptNumber: string | null;
+  calendarEventId: string | null;
+  calendarEventTitle: string | null;
   concept: string;
   currencyCode: string;
   amount: number;

@@ -10,7 +10,10 @@ import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateTesoreria } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import {
+  getActiveActivitiesForTesoreria,
+  getActiveReceiptFormatsForTesoreria,
   getActiveTreasuryCurrenciesForTesoreria,
+  getEnabledCalendarEventsForTesoreria,
   getMovementAuditEntries,
   getTreasuryConsolidationDashboard
 } from "@/lib/services/treasury-service";
@@ -52,7 +55,7 @@ export default async function TreasuryConsolidationPage({
     dashboard.integratedMovements[0] ??
     null;
 
-  const [auditEntries, accounts, categories, currencies] = await Promise.all([
+  const [auditEntries, accounts, categories, activities, calendarEvents, currencies, receiptFormats] = await Promise.all([
     selectedMovement ? getMovementAuditEntries(selectedMovement.movementId) : Promise.resolve([]),
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id).then((entries) =>
       entries.filter((account) => account.visibleForTesoreria)
@@ -60,7 +63,10 @@ export default async function TreasuryConsolidationPage({
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((entries) =>
       entries.filter((category) => category.visibleForTesoreria)
     ),
-    getActiveTreasuryCurrenciesForTesoreria()
+    getActiveActivitiesForTesoreria(),
+    getEnabledCalendarEventsForTesoreria(),
+    getActiveTreasuryCurrenciesForTesoreria(),
+    getActiveReceiptFormatsForTesoreria()
   ]);
 
   return (
@@ -70,7 +76,10 @@ export default async function TreasuryConsolidationPage({
       selectedAuditEntries={auditEntries}
       accounts={accounts}
       categories={categories}
+      activities={activities}
+      calendarEvents={calendarEvents}
       currencies={currencies}
+      receiptFormats={receiptFormats}
       updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
       integrateMatchingMovementAction={integrateMatchingMovementAction}
       executeDailyConsolidationAction={executeDailyConsolidationAction}

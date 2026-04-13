@@ -1317,6 +1317,9 @@ Sí
   "account_id": "uuid",
   "movement_type": "ingreso",
   "category_id": "uuid",
+  "activity_id": "uuid-opcional",
+  "receipt_number": "PAY-SOC-26205",
+  "calendar_event_id": "uuid-opcional",
   "concept": "Pago cuota abril",
   "currency_code": "ARS",
   "amount": 25000
@@ -1328,6 +1331,7 @@ Sí
 * el movimiento debe pertenecer al club activo
 * el movimiento debe estar pendiente de consolidación
 * `movement_date` es obligatorio y debe ser una fecha válida
+* `activity_id`, `receipt_number` y `calendar_event_id` son opcionales pero deben ser válidos si se informan
 * si el movimiento es `egreso`, el saldo disponible se valida usando la fecha editada
 * la operación debe auditarse
 

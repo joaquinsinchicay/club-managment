@@ -9,8 +9,11 @@ import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/p
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import type {
+  ClubActivity,
+  ClubCalendarEvent,
   ConsolidationAuditEntry,
   ConsolidationMovement,
+  ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
   TreasuryConsolidationDashboard,
@@ -25,7 +28,10 @@ type TreasuryConsolidationCardProps = {
   selectedAuditEntries: ConsolidationAuditEntry[];
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
+  activities: ClubActivity[];
+  calendarEvents: ClubCalendarEvent[];
   currencies: TreasuryCurrencyConfig[];
+  receiptFormats: ReceiptFormat[];
   updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   integrateMatchingMovementAction: (formData: FormData) => Promise<void>;
   executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
@@ -66,14 +72,20 @@ function ConsolidationMovementEditForm({
   movement,
   accounts,
   categories,
+  activities,
+  calendarEvents,
   currencies,
+  receiptFormats,
   consolidationDate,
   submitAction
 }: {
   movement: ConsolidationMovement;
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
+  activities: ClubActivity[];
+  calendarEvents: ClubCalendarEvent[];
   currencies: TreasuryCurrencyConfig[];
+  receiptFormats: ReceiptFormat[];
   consolidationDate: string;
   submitAction: (formData: FormData) => Promise<void>;
 }) {
@@ -166,6 +178,64 @@ function ConsolidationMovementEditForm({
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {activities.length > 0 ? (
+          <label className="grid gap-2 text-sm text-foreground">
+            <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
+            <select
+              name="activity_id"
+              defaultValue={movement.activityId ?? ""}
+              className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+            >
+              <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
+              {activities.map((activity) => (
+                <option key={activity.id} value={activity.id}>
+                  {activity.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
+          <input
+            type="text"
+            name="receipt_number"
+            defaultValue={movement.receiptNumber ?? ""}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+          {receiptFormats.length > 0 ? (
+            <span className="text-xs text-muted-foreground">
+              {texts.dashboard.treasury.receipt_helper_example}{" "}
+              {receiptFormats[0]?.example ?? ""}.
+            </span>
+          ) : null}
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground sm:col-span-2">
+          <span className="font-medium">{texts.dashboard.treasury.calendar_label}</span>
+          <select
+            name="calendar_event_id"
+            defaultValue={movement.calendarEventId ?? ""}
+            disabled={calendarEvents.length === 0}
+            className={cn(
+              "min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground",
+              "disabled:text-muted-foreground"
+            )}
+          >
+            <option value="">
+              {calendarEvents.length > 0
+                ? texts.dashboard.treasury.calendar_placeholder
+                : texts.dashboard.treasury.empty_calendar_events}
+            </option>
+            {calendarEvents.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.title}
               </option>
             ))}
           </select>
@@ -414,7 +484,10 @@ export function TreasuryConsolidationCard({
   selectedAuditEntries,
   accounts,
   categories,
+  activities,
+  calendarEvents,
   currencies,
+  receiptFormats,
   updateMovementBeforeConsolidationAction,
   integrateMatchingMovementAction,
   executeDailyConsolidationAction
@@ -597,6 +670,21 @@ export function TreasuryConsolidationCard({
                         {selectedMovement.categoryName} ·{" "}
                         {texts.dashboard.treasury.movement_types[selectedMovement.movementType]}
                       </p>
+                      {selectedMovement.activityName ? (
+                        <p>
+                          {texts.dashboard.treasury.detail_activity_label} {selectedMovement.activityName}
+                        </p>
+                      ) : null}
+                      {selectedMovement.receiptNumber ? (
+                        <p>
+                          {texts.dashboard.treasury.detail_receipt_label} {selectedMovement.receiptNumber}
+                        </p>
+                      ) : null}
+                      {selectedMovement.calendarEventTitle ? (
+                        <p>
+                          {texts.dashboard.treasury.detail_calendar_label} {selectedMovement.calendarEventTitle}
+                        </p>
+                      ) : null}
                       <p>{selectedMovement.createdByUserName}</p>
                       <p className="text-base font-semibold text-foreground">
                         {selectedMovement.currencyCode} {formatLocalizedAmount(selectedMovement.amount)}
@@ -740,7 +828,10 @@ export function TreasuryConsolidationCard({
             movement={editingMovement}
             accounts={accounts}
             categories={categories}
+            activities={activities}
+            calendarEvents={calendarEvents}
             currencies={currencies}
+            receiptFormats={receiptFormats}
             consolidationDate={dashboard.consolidationDate}
             submitAction={updateMovementBeforeConsolidationAction}
           />

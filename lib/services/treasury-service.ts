@@ -2197,15 +2197,23 @@ async function buildConsolidationMovement(
   postedMovements: TreasuryMovement[],
   integratedMovementIds: Set<string>
 ): Promise<ConsolidationMovement> {
-  const [accounts, categories, createdByUserName, validationIssues] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents, createdByUserName, validationIssues] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(clubId),
     accessRepository.listTreasuryCategoriesForClub(clubId),
+    accessRepository.listClubActivitiesForClub(clubId),
+    accessRepository.listClubCalendarEventsForClub(clubId),
     buildMovementUserName(movement.createdByUserId),
     getConsolidationValidationIssues(movement, clubId)
   ]);
 
   const accountName = accounts.find((entry) => entry.id === movement.accountId)?.name ?? movement.accountId;
   const categoryName = categories.find((entry) => entry.id === movement.categoryId)?.name ?? movement.categoryId;
+  const activityName = movement.activityId
+    ? activities.find((entry) => entry.id === movement.activityId)?.name ?? null
+    : null;
+  const calendarEventTitle = movement.calendarEventId
+    ? calendarEvents.find((entry) => entry.id === movement.calendarEventId)?.title ?? null
+    : null;
   const possibleMatchMovement =
     movement.status === "pending_consolidation"
       ? postedMovements.find(
@@ -2246,6 +2254,11 @@ async function buildConsolidationMovement(
     movementType: movement.movementType,
     categoryId: movement.categoryId,
     categoryName,
+    activityId: movement.activityId ?? null,
+    activityName,
+    receiptNumber: movement.receiptNumber ?? null,
+    calendarEventId: movement.calendarEventId ?? null,
+    calendarEventTitle,
     concept: movement.concept,
     currencyCode: movement.currencyCode,
     amount: movement.amount,
@@ -2346,6 +2359,9 @@ export async function updateMovementBeforeConsolidation(input: {
   accountId: string;
   movementType: string;
   categoryId: string;
+  activityId: string;
+  receiptNumber: string;
+  calendarEventId: string;
   concept: string;
   currencyCode: string;
   amount: string;
@@ -2406,9 +2422,11 @@ export async function updateMovementBeforeConsolidation(input: {
     return { ok: false, code: "movement_type_required" };
   }
 
-  const [accounts, categories, configuredCurrencies] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents, configuredCurrencies] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(clubId),
     accessRepository.listTreasuryCategoriesForClub(clubId),
+    accessRepository.listClubActivitiesForClub(clubId),
+    accessRepository.listClubCalendarEventsForClub(clubId),
     getConfiguredTreasuryCurrencies(clubId)
   ]);
 
@@ -2429,6 +2447,37 @@ export async function updateMovementBeforeConsolidation(input: {
 
   if (!account.currencies.includes(input.currencyCode)) {
     return { ok: false, code: "invalid_currency" };
+  }
+
+  const activity =
+    input.activityId.trim().length > 0
+      ? activities.find((entry) => entry.id === input.activityId && entry.visibleForTesoreria) ?? null
+      : null;
+
+  if (input.activityId.trim().length > 0 && !activity) {
+    return { ok: false, code: "invalid_activity" };
+  }
+
+  const receiptNumber = input.receiptNumber.trim();
+  const activeReceiptFormats = getDefaultReceiptFormats(clubId);
+
+  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
+    const isValidReceipt = activeReceiptFormats.some((format) =>
+      validateReceiptNumberAgainstFormat(receiptNumber, format)
+    );
+
+    if (!isValidReceipt) {
+      return { ok: false, code: "invalid_receipt_format" };
+    }
+  }
+
+  const calendarEvent =
+    input.calendarEventId.trim().length > 0
+      ? calendarEvents.find((entry) => entry.id === input.calendarEventId && entry.isEnabledForTreasury) ?? null
+      : null;
+
+  if (input.calendarEventId.trim().length > 0 && !calendarEvent) {
+    return { ok: false, code: "invalid_calendar_event" };
   }
 
   if (input.movementType === "egreso") {
@@ -2453,6 +2502,9 @@ export async function updateMovementBeforeConsolidation(input: {
     accountId: account.id,
     movementType: input.movementType,
     categoryId: category.id,
+    activityId: activity?.id ?? null,
+    receiptNumber: receiptNumber || null,
+    calendarEventId: calendarEvent?.id ?? null,
     concept: input.concept.trim(),
     currencyCode: input.currencyCode,
     amount: parsedAmount
