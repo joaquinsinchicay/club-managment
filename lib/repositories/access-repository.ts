@@ -374,6 +374,7 @@ type AccessRepository = {
     executedByUserId: string;
   }): Promise<DailyConsolidationBatch | null>;
   updateDailyConsolidationBatch(input: {
+    clubId?: string;
     batchId: string;
     status: DailyConsolidationBatch["status"];
     errorMessage?: string | null;
@@ -383,8 +384,9 @@ type AccessRepository = {
     secretariaMovementId: string;
     tesoreriaMovementId: string;
   }): Promise<MovementIntegration | null>;
-  listMovementAuditLogsByMovementId(movementId: string): Promise<MovementAuditLog[]>;
+  listMovementAuditLogsByMovementId(input: { clubId: string; movementId: string }): Promise<MovementAuditLog[]>;
   createMovementAuditLog(input: {
+    clubId: string;
     movementId: string;
     actionType: MovementAuditLog["actionType"];
     payloadBefore: Record<string, unknown> | null;
@@ -2824,33 +2826,20 @@ async function getRealDailyConsolidationBatchByDate(
   consolidationDate: string,
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
-
-  const { data, error } = await supabase
-    .from("daily_consolidation_batches")
-    .select("id,club_id,consolidation_date,status,executed_at,executed_by_user_id,error_message")
-    .eq("club_id", clubId)
-    .eq("consolidation_date", consolidationDate)
-    .maybeSingle();
-
-  if (error || !data) {
-    if (error) {
-      console.error("[daily-consolidation-batch-read-failure]", {
-        operation: "get_daily_consolidation_batch_by_date",
-        clubId,
-        consolidationDate,
-        error
-      });
+  const rows = await runClubScopedReadRpc<DailyConsolidationBatchRow[]>(
+    "get_daily_consolidation_batch_by_date_for_current_club",
+    clubId,
+    client,
+    {
+      operation: "get_daily_consolidation_batch_by_date",
+      details: { consolidationDate },
+      params: {
+        p_consolidation_date: consolidationDate
+      }
     }
+  );
 
-    return null;
-  }
-
-  return mapDailyConsolidationBatchRow(data as DailyConsolidationBatchRow);
+  return rows[0] ? mapDailyConsolidationBatchRow(rows[0]) : null;
 }
 
 async function createRealDailyConsolidationBatch(
@@ -2862,41 +2851,27 @@ async function createRealDailyConsolidationBatch(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
-
-  const { data, error } = await supabase
-    .from("daily_consolidation_batches")
-    .insert({
-      club_id: input.clubId,
-      consolidation_date: input.consolidationDate,
-      status: input.status,
-      executed_by_user_id: input.executedByUserId
-    })
-    .select("id,club_id,consolidation_date,status,executed_at,executed_by_user_id,error_message")
-    .single();
-
-  if (error || !data) {
-    if (error) {
-      console.error("[daily-consolidation-batch-write-failure]", {
-        operation: "create_daily_consolidation_batch",
-        clubId: input.clubId,
-        consolidationDate: input.consolidationDate,
-        error
-      });
+  const row = await runClubScopedMutationRpc<DailyConsolidationBatchRow>(
+    "create_daily_consolidation_batch_for_current_club",
+    input.clubId,
+    client,
+    {
+      operation: "create_daily_consolidation_batch",
+      details: { consolidationDate: input.consolidationDate },
+      params: {
+        p_consolidation_date: input.consolidationDate,
+        p_status: input.status,
+        p_executed_by_user_id: input.executedByUserId
+      }
     }
+  );
 
-    return null;
-  }
-
-  return mapDailyConsolidationBatchRow(data as DailyConsolidationBatchRow);
+  return row ? mapDailyConsolidationBatchRow(row) : null;
 }
 
 async function updateRealDailyConsolidationBatch(
   input: {
+    clubId?: string;
     batchId: string;
     status: DailyConsolidationBatch["status"];
     errorMessage?: string | null;
@@ -2909,68 +2884,62 @@ async function updateRealDailyConsolidationBatch(
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("daily_consolidation_batches")
-    .update({
+  const clubId = input.clubId?.trim();
+
+  if (!clubId) {
+    console.error("[daily-consolidation-batch-write-failure]", {
+      operation: "update_daily_consolidation_batch",
+      batchId: input.batchId,
       status: input.status,
-      error_message: input.errorMessage ?? null,
-      ...(input.status === "completed" || input.status === "failed"
-        ? { executed_at: now() }
-        : {})
-    })
-    .eq("id", input.batchId)
-    .select("id,club_id,consolidation_date,status,executed_at,executed_by_user_id,error_message")
-    .single();
-
-  if (error || !data) {
-    if (error) {
-      console.error("[daily-consolidation-batch-write-failure]", {
-        operation: "update_daily_consolidation_batch",
-        batchId: input.batchId,
-        status: input.status,
-        error
-      });
-    }
-
+      error: "missing_club_id"
+    });
     return null;
   }
 
-  return mapDailyConsolidationBatchRow(data as DailyConsolidationBatchRow);
+  const row = await runClubScopedMutationRpc<DailyConsolidationBatchRow>(
+    "update_daily_consolidation_batch_for_current_club",
+    clubId,
+    client,
+    {
+      operation: "update_daily_consolidation_batch",
+      details: { batchId: input.batchId, status: input.status },
+      params: {
+        p_batch_id: input.batchId,
+        p_status: input.status,
+        p_error_message: input.errorMessage ?? null
+      }
+    }
+  );
+
+  return row ? mapDailyConsolidationBatchRow(row) : null;
 }
 
 async function listRealMovementAuditLogsByMovementId(
-  movementId: string,
+  input: {
+    clubId: string;
+    movementId: string;
+  },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("movement_audit_logs")
-    .select("id,movement_id,action_type,payload_before,payload_after,performed_by_user_id,performed_at")
-    .eq("movement_id", movementId)
-    .order("performed_at", { ascending: true });
-
-  if (error || !data) {
-    if (error) {
-      console.error("[movement-audit-log-read-failure]", {
-        operation: "list_movement_audit_logs_by_movement_id",
-        movementId,
-        error
-      });
+  const rows = await runClubScopedReadRpc<MovementAuditLogRow[]>(
+    "get_movement_audit_logs_by_movement_id_for_current_club",
+    input.clubId,
+    client,
+    {
+      operation: "list_movement_audit_logs_by_movement_id",
+      details: { movementId: input.movementId },
+      params: {
+        p_movement_id: input.movementId
+      }
     }
+  );
 
-    return [];
-  }
-
-  return data.map((row) => mapMovementAuditLogRow(row as MovementAuditLogRow));
+  return rows.map((row) => mapMovementAuditLogRow(row));
 }
 
 async function createRealMovementAuditLog(
   input: {
+    clubId: string;
     movementId: string;
     actionType: MovementAuditLog["actionType"];
     payloadBefore: Record<string, unknown> | null;
@@ -2979,38 +2948,24 @@ async function createRealMovementAuditLog(
   },
   client?: AccessRepositoryClient
 ) {
-  const supabase = createAccessSupabaseClient(client);
-
-  if (!supabase) {
-    return null;
-  }
-
-  const { data, error } = await supabase
-    .from("movement_audit_logs")
-    .insert({
-      movement_id: input.movementId,
-      action_type: input.actionType,
-      payload_before: input.payloadBefore,
-      payload_after: input.payloadAfter,
-      performed_by_user_id: input.performedByUserId
-    })
-    .select("id,movement_id,action_type,payload_before,payload_after,performed_by_user_id,performed_at")
-    .single();
-
-  if (error || !data) {
-    if (error) {
-      console.error("[movement-audit-log-write-failure]", {
-        operation: "create_movement_audit_log",
-        movementId: input.movementId,
-        actionType: input.actionType,
-        error
-      });
+  const row = await runClubScopedMutationRpc<MovementAuditLogRow>(
+    "create_movement_audit_log_for_current_club",
+    input.clubId,
+    client,
+    {
+      operation: "create_movement_audit_log",
+      details: { movementId: input.movementId, actionType: input.actionType },
+      params: {
+        p_movement_id: input.movementId,
+        p_action_type: input.actionType,
+        p_payload_before: input.payloadBefore,
+        p_payload_after: input.payloadAfter,
+        p_performed_by_user_id: input.performedByUserId
+      }
     }
+  );
 
-    return null;
-  }
-
-  return mapMovementAuditLogRow(data as MovementAuditLogRow);
+  return row ? mapMovementAuditLogRow(row) : null;
 }
 
 async function createRealTreasuryMovement(
@@ -4960,12 +4915,12 @@ export const accessRepository: AccessRepository = {
     getStore().movementIntegrations.push(integration);
     return integration;
   },
-  async listMovementAuditLogsByMovementId(movementId) {
+  async listMovementAuditLogsByMovementId(input) {
     if (shouldUseSupabaseDatabase()) {
-      return listRealMovementAuditLogsByMovementId(movementId);
+      return listRealMovementAuditLogsByMovementId(input);
     }
 
-    return getStore().movementAuditLogs.filter((entry) => entry.movementId === movementId);
+    return getStore().movementAuditLogs.filter((entry) => entry.movementId === input.movementId);
   },
   async createMovementAuditLog(input) {
     if (shouldUseSupabaseDatabase()) {

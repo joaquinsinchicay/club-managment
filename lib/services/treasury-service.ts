@@ -1548,6 +1548,7 @@ export async function updateSecretariaMovementInOpenSession(input: {
   }
 
   await accessRepository.createMovementAuditLog({
+    clubId: context.activeClub.id,
     movementId: updatedMovement.id,
     actionType: "edited",
     payloadBefore: beforeSnapshot,
@@ -2147,6 +2148,7 @@ export async function updateTreasuryRoleMovement(input: {
   }
 
   await accessRepository.createMovementAuditLog({
+    clubId,
     movementId: updatedMovement.id,
     actionType: "edited",
     payloadBefore: beforeSnapshot,
@@ -2339,7 +2341,10 @@ export async function getMovementAuditEntries(
 
   const [createdByUserName, logs] = await Promise.all([
     buildMovementUserName(movement.createdByUserId),
-    accessRepository.listMovementAuditLogsByMovementId(movementId)
+    accessRepository.listMovementAuditLogsByMovementId({
+      clubId: context.activeClub.id,
+      movementId
+    })
   ]);
 
   const mappedLogs = await Promise.all(
@@ -2528,6 +2533,7 @@ export async function updateMovementBeforeConsolidation(input: {
   }
 
   await accessRepository.createMovementAuditLog({
+    clubId,
     movementId: updatedMovement.id,
     actionType: "edited",
     payloadBefore: beforeSnapshot,
@@ -2682,6 +2688,7 @@ export async function updateTransferBeforeConsolidation(input: {
   }
 
   await accessRepository.createMovementAuditLog({
+    clubId,
     movementId: updatedSourceMovement.id,
     actionType: "edited",
     payloadBefore: sourceBeforeSnapshot,
@@ -2690,6 +2697,7 @@ export async function updateTransferBeforeConsolidation(input: {
   });
 
   await accessRepository.createMovementAuditLog({
+    clubId,
     movementId: updatedTargetMovement.id,
     actionType: "edited",
     payloadBefore: targetBeforeSnapshot,
@@ -2772,6 +2780,7 @@ export async function integrateMatchingMovement(input: {
   }
 
   await accessRepository.createMovementAuditLog({
+    clubId,
     movementId: updatedMovement.id,
     actionType: "integrated",
     payloadBefore: beforeSnapshot,
@@ -2873,6 +2882,7 @@ export async function executeDailyConsolidation(
       }
 
       await accessRepository.createMovementAuditLog({
+        clubId,
         movementId: updatedMovement.id,
         actionType: "consolidated",
         payloadBefore: beforeSnapshot,
@@ -2885,6 +2895,7 @@ export async function executeDailyConsolidation(
     }
 
     await accessRepository.updateDailyConsolidationBatch({
+      clubId,
       batchId: batch.id,
       status: "completed"
     });
@@ -2901,6 +2912,7 @@ export async function executeDailyConsolidation(
     );
 
     await accessRepository.updateDailyConsolidationBatch({
+      clubId,
       batchId: batch.id,
       status: "failed",
       errorMessage: error instanceof Error ? error.message : "unknown_error"

@@ -155,6 +155,11 @@ Antes de asumir que un dashboard operativo esta realmente vacio en el entorno re
 * `get_treasury_movements_by_date_for_current_club`
 * `get_treasury_movements_by_account_and_date_for_current_club`
 * `get_club_calendar_events_for_current_club`
+* `get_daily_consolidation_batch_by_date_for_current_club`
+* `create_daily_consolidation_batch_for_current_club`
+* `update_daily_consolidation_batch_for_current_club`
+* `get_movement_audit_logs_by_movement_id_for_current_club`
+* `create_movement_audit_log_for_current_club`
 
 Si alguna falta o falla, la aplicacion debe tratarlo como error de infraestructura y no como ausencia real de movimientos o saldos.
 
