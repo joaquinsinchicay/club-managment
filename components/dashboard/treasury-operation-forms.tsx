@@ -836,6 +836,7 @@ export function TreasuryRoleMovementForm({
   accounts,
   categories,
   activities,
+  calendarEvents,
   currencies,
   movementTypes,
   receiptFormats,
@@ -843,7 +844,7 @@ export function TreasuryRoleMovementForm({
   pendingLabel,
   submitAction,
   sessionDate
-}: BaseMovementFormProps & { sessionDate: string }) {
+}: BaseMovementFormProps & { calendarEvents: ClubCalendarEvent[]; sessionDate: string }) {
   const [formState, setFormState] = useState<MovementFormState>({
     movementDate: sessionDate,
     accountId: "",
@@ -851,6 +852,7 @@ export function TreasuryRoleMovementForm({
     categoryId: "",
     activityId: "",
     receiptNumber: "",
+    calendarEventId: "",
     concept: "",
     currencyCode: "",
     amount: ""
@@ -878,6 +880,7 @@ export function TreasuryRoleMovementForm({
       categoryId: "",
       activityId: "",
       receiptNumber: "",
+      calendarEventId: "",
       concept: "",
       currencyCode: "",
       amount: ""
@@ -904,6 +907,7 @@ export function TreasuryRoleMovementForm({
           accounts={accounts}
           categories={categories}
           activities={activities}
+          calendarEvents={calendarEvents}
           currencies={currencies}
           movementTypes={movementTypes}
           receiptFormats={receiptFormats}

@@ -1803,6 +1803,7 @@ export async function createTreasuryRoleMovement(input: {
   categoryId: string;
   activityId: string;
   receiptNumber: string;
+  calendarEventId: string;
   concept: string;
   currencyCode: string;
   amount: string;
@@ -1848,10 +1849,11 @@ export async function createTreasuryRoleMovement(input: {
     return { ok: false, code: "movement_type_required" };
   }
 
-  const [accounts, categories, activities, configuredCurrencies, configuredMovementTypes] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents, configuredCurrencies, configuredMovementTypes] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
     accessRepository.listClubActivitiesForClub(context.activeClub.id),
+    accessRepository.listClubCalendarEventsForClub(context.activeClub.id),
     getConfiguredTreasuryCurrencies(context.activeClub.id),
     getConfiguredMovementTypes(context.activeClub.id)
   ]);
@@ -1924,6 +1926,15 @@ export async function createTreasuryRoleMovement(input: {
     }
   }
 
+  const calendarEvent =
+    input.calendarEventId.trim().length > 0
+      ? calendarEvents.find((entry) => entry.id === input.calendarEventId && entry.isEnabledForTreasury) ?? null
+      : null;
+
+  if (input.calendarEventId.trim().length > 0 && !calendarEvent) {
+    return { ok: false, code: "invalid_calendar_event" };
+  }
+
   const created = await accessRepository.createTreasuryMovement({
     displayId: await generateMovementDisplayId(context.activeClub.id, context.activeClub.name, movementDate),
     clubId: context.activeClub.id,
@@ -1938,6 +1949,7 @@ export async function createTreasuryRoleMovement(input: {
     amount: parsedAmount,
     activityId: activity?.id ?? null,
     receiptNumber: receiptNumber || null,
+    calendarEventId: calendarEvent?.id ?? null,
     movementDate,
     createdByUserId: context.user.id,
     status: "posted"
@@ -1957,6 +1969,7 @@ export async function updateTreasuryRoleMovement(input: {
   categoryId: string;
   activityId: string;
   receiptNumber: string;
+  calendarEventId: string;
   concept: string;
   currencyCode: string;
   amount: string;
@@ -2008,10 +2021,11 @@ export async function updateTreasuryRoleMovement(input: {
     return { ok: false, code: "movement_type_required" };
   }
 
-  const [accounts, categories, activities, configuredCurrencies, configuredMovementTypes] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents, configuredCurrencies, configuredMovementTypes] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(clubId),
     accessRepository.listTreasuryCategoriesForClub(clubId),
     accessRepository.listClubActivitiesForClub(clubId),
+    accessRepository.listClubCalendarEventsForClub(clubId),
     getConfiguredTreasuryCurrencies(clubId),
     getConfiguredMovementTypes(clubId)
   ]);
@@ -2080,6 +2094,15 @@ export async function updateTreasuryRoleMovement(input: {
     }
   }
 
+  const calendarEvent =
+    input.calendarEventId.trim().length > 0
+      ? calendarEvents.find((entry) => entry.id === input.calendarEventId && entry.isEnabledForTreasury) ?? null
+      : null;
+
+  if (input.calendarEventId.trim().length > 0 && !calendarEvent) {
+    return { ok: false, code: "invalid_calendar_event" };
+  }
+
   const beforeSnapshot = serializeMovementSnapshot(movement);
   const updatedMovement = await accessRepository.updateTreasuryMovement({
     movementId: movement.id,
@@ -2089,6 +2112,7 @@ export async function updateTreasuryRoleMovement(input: {
     categoryId: category.id,
     activityId: activity?.id ?? null,
     receiptNumber: receiptNumber || null,
+    calendarEventId: calendarEvent?.id ?? null,
     concept: input.concept.trim(),
     currencyCode: input.currencyCode,
     amount: parsedAmount
@@ -2633,6 +2657,17 @@ export async function getActiveActivitiesForTesoreria(): Promise<ClubActivity[]>
 
   const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
   return activities.filter((activity) => activity.visibleForTesoreria);
+}
+
+export async function getEnabledCalendarEventsForTesoreria(): Promise<ClubCalendarEvent[]> {
+  const context = await getTesoreriaSession();
+
+  if (!context?.activeClub) {
+    return [];
+  }
+
+  const events = await accessRepository.listClubCalendarEventsForClub(context.activeClub.id);
+  return events.filter((event) => event.isEnabledForTreasury);
 }
 
 export async function getActiveTreasuryCurrenciesForSecretaria(): Promise<TreasuryCurrencyConfig[]> {

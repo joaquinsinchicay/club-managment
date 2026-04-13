@@ -16,6 +16,7 @@ import { formatLocalizedAmount } from "@/lib/amounts";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
   ClubActivity,
+  ClubCalendarEvent,
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
@@ -32,6 +33,7 @@ type TreasuryRoleCardProps = {
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
   activities: ClubActivity[];
+  calendarEvents: ClubCalendarEvent[];
   currencies: TreasuryCurrencyConfig[];
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
@@ -289,6 +291,7 @@ export function TreasuryRoleCard({
   accounts,
   categories,
   activities,
+  calendarEvents,
   currencies,
   movementTypes,
   receiptFormats,
@@ -574,6 +577,7 @@ export function TreasuryRoleCard({
           accounts={accounts}
           categories={categories}
           activities={activities}
+          calendarEvents={calendarEvents}
           currencies={currencies}
           movementTypes={movementTypes}
           receiptFormats={receiptFormats}
@@ -599,6 +603,7 @@ export function TreasuryRoleCard({
             accounts={accounts}
             categories={categories}
             activities={activities}
+            calendarEvents={calendarEvents}
             currencies={currencies}
             movementTypes={movementTypes}
             receiptFormats={receiptFormats}
