@@ -454,59 +454,6 @@ export function TreasuryConsolidationCard({
 
               {selectedMovement ? (
                 <>
-                  <section className="rounded-xl border border-border bg-card p-4">
-                    <div className="space-y-2">
-                      <h2 className="text-lg font-semibold text-foreground">
-                        {texts.dashboard.consolidation.detail_title}
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        {texts.dashboard.consolidation.detail_description}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
-                      <p>
-                        {selectedMovement.movementDate} · {selectedMovement.accountName}
-                      </p>
-                      <p>
-                        {selectedMovement.categoryName} ·{" "}
-                        {texts.dashboard.treasury.movement_types[selectedMovement.movementType]}
-                      </p>
-                      {selectedMovement.activityName ? (
-                        <p>
-                          {texts.dashboard.treasury.detail_activity_label} {selectedMovement.activityName}
-                        </p>
-                      ) : null}
-                      {selectedMovement.receiptNumber ? (
-                        <p>
-                          {texts.dashboard.treasury.detail_receipt_label} {selectedMovement.receiptNumber}
-                        </p>
-                      ) : null}
-                      {selectedMovement.calendarEventTitle ? (
-                        <p>
-                          {texts.dashboard.treasury.detail_calendar_label} {selectedMovement.calendarEventTitle}
-                        </p>
-                      ) : null}
-                      <p>{selectedMovement.createdByUserName}</p>
-                      <p className="text-base font-semibold text-foreground">
-                        {selectedMovement.currencyCode} {formatLocalizedAmount(selectedMovement.amount)}
-                      </p>
-                    </div>
-
-                    {!selectedMovement.isValid ? (
-                      <div className="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
-                        <p className="font-semibold">{texts.dashboard.consolidation.invalid_title}</p>
-                        <ul className="mt-2 list-disc space-y-1 pl-5">
-                          {selectedMovement.validationIssues.map((issue) => (
-                            <li key={issue}>
-                              {texts.dashboard.feedback[issue as keyof typeof texts.dashboard.feedback] ?? issue}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </section>
-
                   {selectedMovement.possibleMatch ? (
                     <section className="rounded-xl border border-border bg-card p-4">
                       <div className="space-y-2">
