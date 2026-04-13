@@ -77,6 +77,31 @@ function ConsolidationMovementEditForm({
   consolidationDate: string;
   submitAction: (formData: FormData) => Promise<void>;
 }) {
+  const [selectedAccountId, setSelectedAccountId] = useState(movement.accountId);
+  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState(movement.currencyCode);
+
+  useEffect(() => {
+    setSelectedAccountId(movement.accountId);
+    setSelectedCurrencyCode(movement.currencyCode);
+  }, [movement]);
+
+  const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
+  const availableCurrencies = selectedAccount
+    ? currencies.filter((currency) => selectedAccount.currencies.includes(currency.currencyCode))
+    : currencies;
+
+  useEffect(() => {
+    if (availableCurrencies.length === 0) {
+      return;
+    }
+
+    if (availableCurrencies.some((currency) => currency.currencyCode === selectedCurrencyCode)) {
+      return;
+    }
+
+    setSelectedCurrencyCode(availableCurrencies[0]?.currencyCode ?? "");
+  }, [availableCurrencies, selectedCurrencyCode]);
+
   return (
     <form action={submitAction} className="grid gap-4">
       <input type="hidden" name="consolidation_date" value={consolidationDate} />
@@ -84,10 +109,31 @@ function ConsolidationMovementEditForm({
 
       <PendingFieldset className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.dashboard.treasury.movement_id_label}</span>
+          <input
+            type="text"
+            value={movement.movementDisplayId}
+            disabled
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <input
+            type="date"
+            name="movement_date"
+            defaultValue={movement.movementDate}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
           <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
           <select
             name="account_id"
-            defaultValue={movement.accountId}
+            value={selectedAccountId}
+            onChange={(event) => setSelectedAccountId(event.target.value)}
             className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
           >
             {accounts.map((account) => (
@@ -139,10 +185,11 @@ function ConsolidationMovementEditForm({
           <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
           <select
             name="currency_code"
-            defaultValue={movement.currencyCode}
+            value={selectedCurrencyCode}
+            onChange={(event) => setSelectedCurrencyCode(event.target.value)}
             className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
           >
-            {currencies.map((currency) => (
+            {availableCurrencies.map((currency) => (
               <option key={currency.currencyCode} value={currency.currencyCode}>
                 {currency.currencyCode}
               </option>

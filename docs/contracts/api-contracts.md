@@ -1313,6 +1313,7 @@ Sí
 ```json
 {
   "movement_id": "uuid",
+  "movement_date": "2026-04-01",
   "account_id": "uuid",
   "movement_type": "ingreso",
   "category_id": "uuid",
@@ -1326,6 +1327,8 @@ Sí
 
 * el movimiento debe pertenecer al club activo
 * el movimiento debe estar pendiente de consolidación
+* `movement_date` es obligatorio y debe ser una fecha válida
+* si el movimiento es `egreso`, el saldo disponible se valida usando la fecha editada
 * la operación debe auditarse
 
 **Output**

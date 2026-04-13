@@ -34,6 +34,7 @@ export async function updateMovementBeforeConsolidationAction(formData: FormData
 
   const result = await updateMovementBeforeConsolidation({
     movementId,
+    movementDate: String(formData.get("movement_date") ?? ""),
     accountId: String(formData.get("account_id") ?? ""),
     movementType: String(formData.get("movement_type") ?? ""),
     categoryId: String(formData.get("category_id") ?? ""),

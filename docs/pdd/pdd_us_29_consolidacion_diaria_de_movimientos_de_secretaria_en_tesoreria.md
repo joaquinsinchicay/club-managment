@@ -26,7 +26,7 @@ Tesorería debe contar con una vista de consolidación diaria accesible por fech
 - Fecha por defecto igual al día anterior, editable manualmente.
 - Listado de movimientos `pending_consolidation` del club activo para la fecha elegida.
 - Detección de coincidencias con movimientos `posted` de Tesorería por cuenta, moneda e importe.
-- Edición previa de cuenta, tipo, categoría, concepto, moneda e importe.
+- Edición previa de fecha, cuenta, tipo, categoría, concepto, moneda e importe.
 - Integración de coincidencias sin doble impacto contable.
 - Consolidación diaria con batch explícito.
 - Historial auditable con carga original, correcciones, integración y consolidación.

@@ -69,6 +69,8 @@ type TreasuryActionCode =
   | "invalid_fx_operation"
   | "movement_not_found"
   | "movement_not_editable"
+  | "movement_date_required"
+  | "invalid_movement_date"
   | "invalid_match"
   | "consolidation_date_required"
   | "consolidation_already_completed"
@@ -136,6 +138,16 @@ function getRelativeDate(date: string, deltaDays: number) {
   const next = new Date(`${date}T00:00:00.000Z`);
   next.setUTCDate(next.getUTCDate() + deltaDays);
   return next.toISOString().slice(0, 10);
+}
+
+function isValidOperationalDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 function buildClubInitials(clubName: string) {
@@ -2330,6 +2342,7 @@ export async function getMovementAuditEntries(
 
 export async function updateMovementBeforeConsolidation(input: {
   movementId: string;
+  movementDate: string;
   accountId: string;
   movementType: string;
   categoryId: string;
@@ -2354,6 +2367,10 @@ export async function updateMovementBeforeConsolidation(input: {
     return { ok: false, code: "account_required" };
   }
 
+  if (!input.movementDate.trim()) {
+    return { ok: false, code: "movement_date_required" };
+  }
+
   if (!input.movementType) {
     return { ok: false, code: "movement_type_required" };
   }
@@ -2374,10 +2391,15 @@ export async function updateMovementBeforeConsolidation(input: {
     return { ok: false, code: "amount_required" };
   }
 
+  const movementDate = input.movementDate.trim();
   const parsedAmount = parseLocalizedAmount(input.amount);
 
   if (parsedAmount === null || parsedAmount <= 0) {
     return { ok: false, code: "amount_must_be_positive" };
+  }
+
+  if (!isValidOperationalDate(movementDate)) {
+    return { ok: false, code: "invalid_movement_date" };
   }
 
   if (input.movementType !== "ingreso" && input.movementType !== "egreso") {
@@ -2409,10 +2431,25 @@ export async function updateMovementBeforeConsolidation(input: {
     return { ok: false, code: "invalid_currency" };
   }
 
+  if (input.movementType === "egreso") {
+    const availableBalance = await getAvailableBalanceForAccountCurrency({
+      clubId,
+      accountId: account.id,
+      currencyCode: input.currencyCode,
+      effectiveDate: movementDate,
+      excludeMovementId: movement.id
+    });
+
+    if (parsedAmount > availableBalance) {
+      return { ok: false, code: "insufficient_funds" };
+    }
+  }
+
   const beforeSnapshot = serializeMovementSnapshot(movement);
   const updatedMovement = await accessRepository.updateTreasuryMovement({
     movementId: movement.id,
     clubId,
+    movementDate,
     accountId: account.id,
     movementType: input.movementType,
     categoryId: category.id,

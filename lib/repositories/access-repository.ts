@@ -337,6 +337,7 @@ type AccessRepository = {
   updateTreasuryMovement(input: {
     movementId: string;
     clubId: string;
+    movementDate?: string;
     accountId: string;
     movementType: TreasuryMovementType;
     categoryId: string;
@@ -2676,6 +2677,7 @@ async function updateRealTreasuryMovement(
   input: {
     movementId: string;
     clubId: string;
+    movementDate?: string;
     accountId: string;
     movementType: TreasuryMovementType;
     categoryId: string;
@@ -2700,6 +2702,7 @@ async function updateRealTreasuryMovement(
       params: {
         p_movement_id: input.movementId,
         p_account_id: input.accountId,
+        p_movement_date: input.movementDate ?? null,
         p_movement_type: input.movementType,
         p_category_id: input.categoryId,
         p_concept: input.concept,
@@ -4584,6 +4587,7 @@ export const accessRepository: AccessRepository = {
       return null;
     }
 
+    movement.movementDate = input.movementDate ?? movement.movementDate;
     movement.accountId = input.accountId;
     movement.movementType = input.movementType;
     movement.categoryId = input.categoryId;
