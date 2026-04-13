@@ -435,6 +435,8 @@
       "execute_description": "Confirma la consolidacion solo cuando todos los pendientes esten validos o ya integrados.",
       "execute_cta": "Consolidar dia",
       "execute_loading": "Consolidando...",
+      "footer_total_label": "Total del dia",
+      "footer_execute_cta": "Consolidar",
       "back_to_treasury_cta": "Volver a Tesoreria",
       "select_movement": "Selecciona un movimiento del listado para ver su detalle, coincidencias y auditoria.",
       "audit_actions": {

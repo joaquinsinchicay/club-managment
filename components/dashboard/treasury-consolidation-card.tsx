@@ -359,9 +359,15 @@ export function TreasuryConsolidationCard({
   const hasMovements = allMovements.length > 0;
   const selectedAuditHeaderEntry =
     selectedAuditEntries.find((entry) => entry.actionType === "original") ?? selectedAuditEntries[0] ?? null;
+  const consolidationTotals = dashboard.pendingMovements.reduce<Map<string, number>>((totals, movement) => {
+    const signedAmount = movement.movementType === "egreso" ? -movement.amount : movement.amount;
+    totals.set(movement.currencyCode, (totals.get(movement.currencyCode) ?? 0) + signedAmount);
+    return totals;
+  }, new Map());
+  const consolidationTotalsList = Array.from(consolidationTotals.entries());
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 pb-28 sm:py-8 sm:pb-32">
       <PageContentHeader
         eyebrow={texts.dashboard.consolidation.eyebrow}
         title={texts.dashboard.consolidation.title}
@@ -528,28 +534,46 @@ export function TreasuryConsolidationCard({
                 </div>
               )}
 
-              <form action={executeDailyConsolidationAction} className="rounded-xl border border-border bg-card p-4">
-                <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
-                <div className="space-y-2">
-                  <h2 className="text-lg font-semibold text-foreground">
-                    {texts.dashboard.consolidation.execute_title}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {texts.dashboard.consolidation.execute_description}
-                  </p>
-                </div>
-                <div className="mt-4">
-                  <PendingSubmitButton
-                    idleLabel={texts.dashboard.consolidation.execute_cta}
-                    pendingLabel={texts.dashboard.consolidation.execute_loading}
-                    className="min-h-11 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                  />
-                </div>
-              </form>
             </div>
           ) : null}
         </div>
       </section>
+
+      {hasMovements ? (
+        <form
+          action={executeDailyConsolidationAction}
+          className="sticky bottom-4 z-20 rounded-[20px] border border-border bg-card/95 p-4 shadow-soft backdrop-blur sm:p-5"
+        >
+          <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {texts.dashboard.consolidation.footer_total_label}
+              </p>
+              <div className="flex flex-col gap-1">
+                {consolidationTotalsList.length > 0 ? (
+                  consolidationTotalsList.map(([currencyCode, amount]) => (
+                    <p key={currencyCode} className="text-2xl font-semibold tracking-tight text-foreground">
+                      {amount < 0 ? "-" : ""}
+                      {currencyCode} {formatLocalizedAmount(Math.abs(amount))}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-2xl font-semibold tracking-tight text-foreground">
+                    0,00
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <PendingSubmitButton
+              idleLabel={texts.dashboard.consolidation.footer_execute_cta}
+              pendingLabel={texts.dashboard.consolidation.execute_loading}
+              className="min-h-11 rounded-xl bg-foreground px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:min-w-52"
+            />
+          </div>
+        </form>
+      ) : null}
 
       <Modal
         open={editingMovement !== null}
