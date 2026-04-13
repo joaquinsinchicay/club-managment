@@ -224,6 +224,18 @@ function isMissingBulkMovementHistoryRpcError(error: unknown) {
   );
 }
 
+function logTreasuryServiceFailure(
+  operation: string,
+  details: Record<string, unknown>,
+  error?: unknown
+) {
+  console.error("[treasury-service-failure]", {
+    operation,
+    ...details,
+    ...(error === undefined ? {} : { error })
+  });
+}
+
 const warnedMissingStaleSessionAutoCloseRpcClubIds = new Set<string>();
 
 async function generateMovementDisplayId(clubId: string, clubName: string, movementDate: string) {
@@ -2826,6 +2838,10 @@ export async function executeDailyConsolidation(
     }));
 
   if (!batch) {
+    logTreasuryServiceFailure("create_daily_consolidation_batch", {
+      clubId,
+      consolidationDate: selectedDate
+    });
     return { ok: false, code: "unknown_error" };
   }
 
@@ -2846,6 +2862,13 @@ export async function executeDailyConsolidation(
       });
 
       if (!updatedMovement) {
+        logTreasuryServiceFailure("update_treasury_movement_during_consolidation", {
+          clubId,
+          consolidationDate: selectedDate,
+          batchId: batch.id,
+          movementId: movement.id,
+          accountId: movement.accountId
+        });
         throw new Error("consolidation_update_failed");
       }
 
@@ -2866,6 +2889,17 @@ export async function executeDailyConsolidation(
       status: "completed"
     });
   } catch (error) {
+    logTreasuryServiceFailure(
+      "execute_daily_consolidation",
+      {
+        clubId,
+        consolidationDate: selectedDate,
+        batchId: batch.id,
+        pendingMovementCount: pendingMovements.length
+      },
+      error
+    );
+
     await accessRepository.updateDailyConsolidationBatch({
       batchId: batch.id,
       status: "failed",

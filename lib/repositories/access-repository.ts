@@ -105,6 +105,22 @@ function getSupabaseErrorMessage(error: unknown) {
   return typeof message === "string" ? message : "";
 }
 
+function isLegacyUpdateTreasuryMovementRpcCause(error: unknown) {
+  const code = getSupabaseErrorCode(error);
+  const message = getSupabaseErrorMessage(error).toLowerCase();
+
+  if ((code === "42883" || code === "PGRST202") && message.includes("update_treasury_movement_for_current_club")) {
+    return true;
+  }
+
+  return (
+    message.includes("update_treasury_movement_for_current_club") &&
+    (message.includes("p_movement_date") ||
+      message.includes("function") && message.includes("does not exist") ||
+      message.includes("could not find the function"))
+  );
+}
+
 function isMissingStaleSessionAutoCloseRpcCause(error: unknown) {
   const code = getSupabaseErrorCode(error);
 
@@ -2692,30 +2708,69 @@ async function updateRealTreasuryMovement(
   },
   client?: AccessRepositoryClient
 ) {
-  const row = await runClubScopedMutationRpc<TreasuryMovementRow>(
-    "update_treasury_movement_for_current_club",
-    input.clubId,
-    client,
-    {
-      operation: "update_treasury_movement",
-      details: { movementId: input.movementId, accountId: input.accountId },
-      params: {
-        p_movement_id: input.movementId,
-        p_account_id: input.accountId,
-        p_movement_date: input.movementDate ?? null,
-        p_movement_type: input.movementType,
-        p_category_id: normalizeNullableUuidParam(input.categoryId),
-        p_concept: input.concept,
-        p_currency_code: input.currencyCode,
-        p_amount: input.amount,
-        p_activity_id: normalizeNullableUuidParam(input.activityId),
-        p_receipt_number: input.receiptNumber ?? null,
-        p_calendar_event_id: normalizeNullableUuidParam(input.calendarEventId),
-        p_status: input.status ?? null,
-        p_consolidation_batch_id: normalizeNullableUuidParam(input.consolidationBatchId)
-      }
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const operation = "update_treasury_movement";
+  const details = { movementId: input.movementId, accountId: input.accountId };
+  const baseParams = {
+    p_club_id: input.clubId,
+    p_movement_id: input.movementId,
+    p_account_id: input.accountId,
+    p_movement_type: input.movementType,
+    p_category_id: normalizeNullableUuidParam(input.categoryId),
+    p_concept: input.concept,
+    p_currency_code: input.currencyCode,
+    p_amount: input.amount,
+    p_activity_id: normalizeNullableUuidParam(input.activityId),
+    p_receipt_number: input.receiptNumber ?? null,
+    p_calendar_event_id: normalizeNullableUuidParam(input.calendarEventId),
+    p_status: input.status ?? null,
+    p_consolidation_batch_id: normalizeNullableUuidParam(input.consolidationBatchId)
+  };
+
+  const { data, error } = await supabase.rpc("update_treasury_movement_for_current_club", {
+    ...baseParams,
+    p_movement_date: input.movementDate ?? null
+  });
+
+  if (error && isLegacyUpdateTreasuryMovementRpcCause(error)) {
+    console.warn("[club-scoped-rpc-fallback]", {
+      operation,
+      clubId: input.clubId,
+      ...details,
+      fallback: "retry_without_movement_date",
+      error
+    });
+
+    const { data: legacyData, error: legacyError } = await supabase.rpc(
+      "update_treasury_movement_for_current_club",
+      baseParams
+    );
+
+    if (legacyError) {
+      logClubScopedRpcFailure(operation, { clubId: input.clubId, ...details, fallback: "legacy_signature" }, legacyError);
+      return null;
     }
-  );
+
+    const legacyRow = Array.isArray(legacyData)
+      ? ((legacyData[0] as TreasuryMovementRow | undefined) ?? null)
+      : ((legacyData as TreasuryMovementRow | null) ?? null);
+
+    return legacyRow ? mapTreasuryMovementRow(legacyRow) : null;
+  }
+
+  if (error) {
+    logClubScopedRpcFailure(operation, { clubId: input.clubId, ...details }, error);
+    return null;
+  }
+
+  const row = Array.isArray(data)
+    ? ((data[0] as TreasuryMovementRow | undefined) ?? null)
+    : ((data as TreasuryMovementRow | null) ?? null);
 
   return row ? mapTreasuryMovementRow(row) : null;
 }
