@@ -11,11 +11,9 @@ import type { ClubMember, PendingClubInvitation, TreasurySettings } from "@/lib/
 
 type ClubSettingsCardProps = {
   context: SessionContext;
-  canManageMembers: boolean;
-  canManageTreasury: boolean;
   members: ClubMember[];
   pendingInvitations: PendingClubInvitation[];
-  treasurySettings: TreasurySettings | null;
+  treasurySettings: TreasurySettings;
   inviteUserAction: (formData: FormData) => Promise<void>;
   approveMembershipAction: (formData: FormData) => Promise<void>;
   updateMembershipRolesAction: (formData: FormData) => Promise<void>;
@@ -39,8 +37,6 @@ function SectionIntro({ title, description }: { title: string; description: stri
 
 export function ClubSettingsCard({
   context,
-  canManageMembers,
-  canManageTreasury,
   members,
   pendingInvitations,
   treasurySettings,
@@ -115,37 +111,33 @@ export function ClubSettingsCard({
       </section>
 
       <section className="space-y-8 rounded-[20px] border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
-          {canManageMembers ? (
-            <section className="space-y-6">
-              <SectionIntro
-                title={texts.settings.club.members.section_title}
-                description={texts.settings.club.members.section_description}
-              />
+        <section className="space-y-6">
+          <SectionIntro
+            title={texts.settings.club.members.section_title}
+            description={texts.settings.club.members.section_description}
+          />
 
-              <ClubInvitationManager inviteUserAction={inviteUserAction} />
+          <ClubInvitationManager inviteUserAction={inviteUserAction} />
 
-              <ClubMembersManager
-                members={members}
-                pendingInvitations={pendingInvitations}
-                currentUserId={context.user.id}
-                approveMembershipAction={approveMembershipAction}
-                updateMembershipRoleAction={updateMembershipRolesAction}
-                removeMembershipAction={removeMembershipAction}
-              />
-            </section>
-          ) : null}
+          <ClubMembersManager
+            members={members}
+            pendingInvitations={pendingInvitations}
+            currentUserId={context.user.id}
+            approveMembershipAction={approveMembershipAction}
+            updateMembershipRoleAction={updateMembershipRolesAction}
+            removeMembershipAction={removeMembershipAction}
+          />
+        </section>
 
-          {canManageTreasury && treasurySettings ? (
-            <ClubTreasurySettingsManager
-              treasurySettings={treasurySettings}
-              createTreasuryAccountAction={createTreasuryAccountAction}
-              updateTreasuryAccountAction={updateTreasuryAccountAction}
-              createTreasuryCategoryAction={createTreasuryCategoryAction}
-              updateTreasuryCategoryAction={updateTreasuryCategoryAction}
-              createClubActivityAction={createClubActivityAction}
-              updateClubActivityAction={updateClubActivityAction}
-            />
-          ) : null}
+        <ClubTreasurySettingsManager
+          treasurySettings={treasurySettings}
+          createTreasuryAccountAction={createTreasuryAccountAction}
+          updateTreasuryAccountAction={updateTreasuryAccountAction}
+          createTreasuryCategoryAction={createTreasuryCategoryAction}
+          updateTreasuryCategoryAction={updateTreasuryCategoryAction}
+          createClubActivityAction={createClubActivityAction}
+          updateClubActivityAction={updateClubActivityAction}
+        />
       </section>
     </main>
   );

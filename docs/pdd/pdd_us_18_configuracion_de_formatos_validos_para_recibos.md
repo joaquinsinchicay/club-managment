@@ -21,14 +21,14 @@ La versión anterior de la historia permitía administrar formatos libres desde 
 
 ## 3. Objetivo funcional
 
-Un usuario `admin` debe poder visualizar en la solapa `Tesorería` la configuración fija del recibo del sistema de socios, mientras que Secretaría debe ver ayuda contextual con el formato válido y el rango disponible al cargar movimientos.
+Un usuario `admin` debe poder visualizar dentro de `Configuración del club` la configuración fija del recibo del sistema de socios, mientras que Secretaría debe ver ayuda contextual con el formato válido y el rango disponible al cargar movimientos.
 
 ---
 
 ## 4. Alcance
 
 ### Incluye
-- Sección read-only de recibos en la solapa `Tesorería`.
+- Sección read-only de recibos dentro de la sección de Tesorería de `Configuración del club`.
 - Visualización de `Nombre del sistema de socios`, `Ejemplo`, `Patrón` y `Próximo recibo`.
 - Helper visible para Secretaría en formularios de movimientos.
 - Validación server-side del campo `Recibo` contra el formato fijo predefinido.
@@ -85,7 +85,7 @@ Usuario autenticado con membership `activo` y rol `admin` para visualizar la int
 ## 9. Flujo principal
 
 1. Un admin entra a `Configuración del club`.
-2. Abre la solapa `Tesorería`.
+2. Abre la sección de Tesorería dentro de `Configuración del club`.
 3. Visualiza la integración de recibos en un bloque read-only.
 4. Secretaría o Tesorería abren el formulario de movimientos.
 5. El sistema muestra el formato válido, un ejemplo y el texto `Disponibles desde PAY-SOC-10556`.

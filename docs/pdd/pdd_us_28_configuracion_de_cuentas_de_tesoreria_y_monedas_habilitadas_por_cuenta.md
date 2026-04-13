@@ -85,7 +85,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 ## 9. Flujo principal
 
 1. Un admin entra a `Configuración del club`.
-2. Abre la solapa `Tesorería`.
+2. Abre la sección de Tesorería dentro de `Configuración del club`.
 3. Visualiza el listado de cuentas del club.
 4. Crea o edita una cuenta indicando nombre, tipo, visibilidad, emoji seleccionado desde un listado simple del sistema y monedas habilitadas.
 5. El sistema valida y persiste la configuración.

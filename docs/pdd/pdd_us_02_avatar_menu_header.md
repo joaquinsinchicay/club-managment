@@ -209,7 +209,7 @@ Usuario autenticado con una sesión Supabase activa y una membership asociada al
 
 - auth: Supabase Auth con sesión activa y operación de sign out.
 - domain entities: `users`, `memberships`, `clubs`, `user_club_preferences`.
-- permissions: matriz de permisos donde `admin` y `tesoreria` pueden navegar a configuración según la lógica vigente.
+- permissions: matriz de permisos donde solo `admin` puede navegar a configuración.
 - other US if relevant: US-01 para login y resolución inicial de sesión; US-03 para contenido funcional de configuración del club; US-04/US-05 para consistencia del club activo y redirecciones post-auth.
 
 ---

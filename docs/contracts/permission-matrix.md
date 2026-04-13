@@ -60,16 +60,16 @@ Roles disponibles:
 
 | Acción                         | Admin | Secretaria | Tesoreria |
 | ------------------------------ | ----- | ---------- | --------- |
-| Ver configuración              | ❌     | ❌          | ✅         |
-| Crear cuenta                   | ❌     | ❌          | ✅         |
-| Editar cuenta                  | ❌     | ❌          | ✅         |
-| Crear categoría                | ❌     | ❌          | ✅         |
-| Editar categoría               | ❌     | ❌          | ✅         |
-| Crear actividad                | ❌     | ❌          | ✅         |
-| Editar actividad               | ❌     | ❌          | ✅         |
+| Ver configuración              | ✅     | ❌          | ❌         |
+| Crear cuenta                   | ✅     | ❌          | ❌         |
+| Editar cuenta                  | ✅     | ❌          | ❌         |
+| Crear categoría                | ✅     | ❌          | ❌         |
+| Editar categoría               | ✅     | ❌          | ❌         |
+| Crear actividad                | ✅     | ❌          | ❌         |
+| Editar actividad               | ✅     | ❌          | ❌         |
 | Eliminar actividad             | ❌     | ❌          | ❌         |
-| Configurar monedas             | ❌     | ❌          | ✅         |
-| Configurar formatos de recibo  | ❌     | ❌          | ✅         |
+| Configurar monedas             | ✅     | ❌          | ❌         |
+| Configurar formatos de recibo  | ✅     | ❌          | ❌         |
 
 ### Reglas
 
@@ -215,7 +215,8 @@ Roles disponibles:
 
 * Gestión administrativa del club
 * Miembros e invitaciones
-* Sin acceso implícito a Tesorería
+* Configuración del club y de tesorería
+* Sin acceso implícito a operatoria diaria de Tesorería
 
 ---
 
@@ -235,6 +236,7 @@ Roles disponibles:
 * Consolidación
 * Operaciones FX
 * Auditoría
+* No navega el módulo Configuración salvo que también tenga rol `admin`
 
 ---
 
