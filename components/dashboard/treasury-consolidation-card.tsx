@@ -71,6 +71,10 @@ function formatMovementDateTime(value: string) {
   }).format(date);
 }
 
+function getTransferReferenceSuffix(value: string) {
+  return value.slice(-6);
+}
+
 function MovementList({
   title,
   emptyLabel,
@@ -207,11 +211,6 @@ function MovementList({
                           {movement.activityName}
                         </span>
                       ) : null}
-                      {movement.transferReference ? (
-                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.dashboard.consolidation.transfer_id_label} {movement.transferReference}
-                        </span>
-                      ) : null}
                       {movement.possibleMatch ? (
                         <StatusBadge
                           label={texts.dashboard.consolidation.status_possible_match}
@@ -219,6 +218,14 @@ function MovementList({
                         />
                       ) : null}
                     </div>
+                    {movement.transferReference ? (
+                      <p>
+                        <span className="font-medium text-foreground">
+                          {texts.dashboard.treasury.detail_transfer_label}
+                        </span>{" "}
+                        {getTransferReferenceSuffix(movement.transferReference)}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="mt-4 md:mt-0 md:text-right">
