@@ -11,7 +11,6 @@ import type {
   TreasuryAccount,
   TreasuryCategory,
   TreasuryCurrencyConfig,
-  TreasuryDashboardMovement,
   TreasuryMovementType
 } from "@/lib/domain/access";
 import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
@@ -102,6 +101,23 @@ type TransferFormState = {
   currencyCode: string;
   concept: string;
   amount: string;
+};
+
+type EditableMovement = {
+  movementId: string;
+  movementDisplayId: string;
+  movementDate: string;
+  accountId: string;
+  movementType: TreasuryMovementType;
+  categoryId: string;
+  activityId: string | null;
+  receiptNumber: string | null;
+  calendarEventId: string | null;
+  transferReference?: string | null;
+  fxOperationReference?: string | null;
+  concept: string;
+  currencyCode: string;
+  amount: number;
 };
 
 function FormField({
@@ -408,7 +424,7 @@ function buildEmptySecretariaMovementFormState(): MovementFormState {
   };
 }
 
-function buildEditMovementFormState(movement: TreasuryDashboardMovement): MovementFormState {
+function buildEditMovementFormState(movement: EditableMovement): MovementFormState {
   return {
     movementDate: movement.movementDate,
     accountId: movement.accountId,
@@ -540,11 +556,15 @@ export function SecretariaMovementEditForm({
   pendingLabel,
   submitAction,
   movement,
-  copy = texts.dashboard.treasury
+  copy = texts.dashboard.treasury,
+  extraHiddenFields,
+  editableMovementDate = false
 }: BaseMovementFormProps & {
   calendarEvents?: ClubCalendarEvent[];
-  movement: TreasuryDashboardMovement;
+  movement: EditableMovement;
   copy?: OperationalFormCopy;
+  extraHiddenFields?: ReactNode;
+  editableMovementDate?: boolean;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
 
@@ -574,6 +594,7 @@ export function SecretariaMovementEditForm({
       className="grid gap-4"
     >
       <input type="hidden" name="movement_id" value={movement.movementId} />
+      {extraHiddenFields}
 
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
@@ -583,7 +604,17 @@ export function SecretariaMovementEditForm({
 
         <FormField>
           <span className="font-medium">{copy.date_label}</span>
-          <input type="text" value={movement.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
+          {editableMovementDate ? (
+            <input
+              type="date"
+              name="movement_date"
+              value={formState.movementDate ?? ""}
+              onChange={(event) => setFormState((current) => ({ ...current, movementDate: event.target.value }))}
+              className={CONTROL_CLASSNAME}
+            />
+          ) : (
+            <input type="text" value={movement.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
+          )}
         </FormField>
 
         <MovementFormFields

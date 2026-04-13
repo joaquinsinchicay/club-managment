@@ -3,6 +3,7 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { SecretariaMovementEditForm } from "@/components/dashboard/treasury-operation-forms";
 import { Modal } from "@/components/ui/modal";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
@@ -17,7 +18,8 @@ import type {
   TreasuryAccount,
   TreasuryCategory,
   TreasuryConsolidationDashboard,
-  TreasuryCurrencyConfig
+  TreasuryCurrencyConfig,
+  TreasuryMovementType
 } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
@@ -31,6 +33,7 @@ type TreasuryConsolidationCardProps = {
   activities: ClubActivity[];
   calendarEvents: ClubCalendarEvent[];
   currencies: TreasuryCurrencyConfig[];
+  movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
   updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   integrateMatchingMovementAction: (formData: FormData) => Promise<void>;
@@ -66,228 +69,6 @@ function formatMovementDateTime(value: string) {
     dateStyle: "short",
     timeStyle: "short"
   }).format(date);
-}
-
-function ConsolidationMovementEditForm({
-  movement,
-  accounts,
-  categories,
-  activities,
-  calendarEvents,
-  currencies,
-  receiptFormats,
-  consolidationDate,
-  submitAction
-}: {
-  movement: ConsolidationMovement;
-  accounts: TreasuryAccount[];
-  categories: TreasuryCategory[];
-  activities: ClubActivity[];
-  calendarEvents: ClubCalendarEvent[];
-  currencies: TreasuryCurrencyConfig[];
-  receiptFormats: ReceiptFormat[];
-  consolidationDate: string;
-  submitAction: (formData: FormData) => Promise<void>;
-}) {
-  const [selectedAccountId, setSelectedAccountId] = useState(movement.accountId);
-  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState(movement.currencyCode);
-
-  useEffect(() => {
-    setSelectedAccountId(movement.accountId);
-    setSelectedCurrencyCode(movement.currencyCode);
-  }, [movement]);
-
-  const selectedAccount = accounts.find((account) => account.id === selectedAccountId);
-  const availableCurrencies = selectedAccount
-    ? currencies.filter((currency) => selectedAccount.currencies.includes(currency.currencyCode))
-    : currencies;
-
-  useEffect(() => {
-    if (availableCurrencies.length === 0) {
-      return;
-    }
-
-    if (availableCurrencies.some((currency) => currency.currencyCode === selectedCurrencyCode)) {
-      return;
-    }
-
-    setSelectedCurrencyCode(availableCurrencies[0]?.currencyCode ?? "");
-  }, [availableCurrencies, selectedCurrencyCode]);
-
-  return (
-    <form action={submitAction} className="grid gap-4">
-      <input type="hidden" name="consolidation_date" value={consolidationDate} />
-      <input type="hidden" name="movement_id" value={movement.movementId} />
-
-      <PendingFieldset className="grid gap-4 sm:grid-cols-2">
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.dashboard.treasury.movement_id_label}</span>
-          <input
-            type="text"
-            value={movement.movementDisplayId}
-            disabled
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
-          <input
-            type="date"
-            name="movement_date"
-            defaultValue={movement.movementDate}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
-          <select
-            name="account_id"
-            value={selectedAccountId}
-            onChange={(event) => setSelectedAccountId(event.target.value)}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.dashboard.treasury.movement_type_label}</span>
-          <select
-            name="movement_type"
-            defaultValue={movement.movementType}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            <option value="ingreso">{texts.dashboard.treasury.movement_types.ingreso}</option>
-            <option value="egreso">{texts.dashboard.treasury.movement_types.egreso}</option>
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground sm:col-span-2">
-          <span className="font-medium">{texts.dashboard.treasury.category_label}</span>
-          <select
-            name="category_id"
-            defaultValue={movement.categoryId}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {activities.length > 0 ? (
-          <label className="grid gap-2 text-sm text-foreground">
-            <span className="font-medium">{texts.dashboard.treasury.activity_label}</span>
-            <select
-              name="activity_id"
-              defaultValue={movement.activityId ?? ""}
-              className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-            >
-              <option value="">{texts.dashboard.treasury.activity_placeholder}</option>
-              {activities.map((activity) => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.dashboard.treasury.receipt_label}</span>
-          <input
-            type="text"
-            name="receipt_number"
-            defaultValue={movement.receiptNumber ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-          {receiptFormats.length > 0 ? (
-            <span className="text-xs text-muted-foreground">
-              {texts.dashboard.treasury.receipt_helper_example}{" "}
-              {receiptFormats[0]?.example ?? ""}.
-            </span>
-          ) : null}
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground sm:col-span-2">
-          <span className="font-medium">{texts.dashboard.treasury.calendar_label}</span>
-          <select
-            name="calendar_event_id"
-            defaultValue={movement.calendarEventId ?? ""}
-            disabled={calendarEvents.length === 0}
-            className={cn(
-              "min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground",
-              "disabled:text-muted-foreground"
-            )}
-          >
-            <option value="">
-              {calendarEvents.length > 0
-                ? texts.dashboard.treasury.calendar_placeholder
-                : texts.dashboard.treasury.empty_calendar_events}
-            </option>
-            {calendarEvents.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.title}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground sm:col-span-2">
-          <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-          <input
-            type="text"
-            name="concept"
-            defaultValue={movement.concept}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-          <select
-            name="currency_code"
-            value={selectedCurrencyCode}
-            onChange={(event) => setSelectedCurrencyCode(event.target.value)}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
-            {availableCurrencies.map((currency) => (
-              <option key={currency.currencyCode} value={currency.currencyCode}>
-                {currency.currencyCode}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-          <input
-            type="text"
-            name="amount"
-            inputMode="decimal"
-            defaultValue={formatLocalizedAmount(movement.amount)}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
-
-        <div className="sm:col-span-2">
-          <PendingSubmitButton
-            idleLabel={texts.dashboard.consolidation.save_changes_cta}
-            pendingLabel={texts.dashboard.consolidation.save_changes_loading}
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-          />
-        </div>
-      </PendingFieldset>
-    </form>
-  );
 }
 
 function MovementList({
@@ -487,6 +268,7 @@ export function TreasuryConsolidationCard({
   activities,
   calendarEvents,
   currencies,
+  movementTypes,
   receiptFormats,
   updateMovementBeforeConsolidationAction,
   integrateMatchingMovementAction,
@@ -497,6 +279,7 @@ export function TreasuryConsolidationCard({
   const searchParams = useSearchParams();
   const [selectedDate, setSelectedDate] = useState(dashboard.consolidationDate);
   const [editingMovement, setEditingMovement] = useState<ConsolidationMovement | null>(null);
+  const [isEditSubmissionPending, setIsEditSubmissionPending] = useState(false);
   const [isDateNavigationPending, startDateNavigationTransition] = useTransition();
 
   useEffect(() => {
@@ -545,6 +328,16 @@ export function TreasuryConsolidationCard({
     nextParams.set("movement", movementId);
     nextParams.delete("feedback");
     router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+  }
+
+  async function handleUpdateMovementBeforeConsolidation(formData: FormData) {
+    setIsEditSubmissionPending(true);
+
+    try {
+      await updateMovementBeforeConsolidationAction(formData);
+    } finally {
+      setIsEditSubmissionPending(false);
+    }
   }
 
   const allMovements = [...dashboard.pendingMovements, ...dashboard.integratedMovements].sort((left, right) => {
@@ -822,18 +615,24 @@ export function TreasuryConsolidationCard({
         onClose={() => setEditingMovement(null)}
         title={texts.dashboard.consolidation.edit_title}
         description={texts.dashboard.consolidation.edit_description}
+        closeDisabled={isEditSubmissionPending}
       >
         {editingMovement ? (
-          <ConsolidationMovementEditForm
-            movement={editingMovement}
+          <SecretariaMovementEditForm
             accounts={accounts}
             categories={categories}
             activities={activities}
             calendarEvents={calendarEvents}
             currencies={currencies}
+            movementTypes={movementTypes}
             receiptFormats={receiptFormats}
-            consolidationDate={dashboard.consolidationDate}
-            submitAction={updateMovementBeforeConsolidationAction}
+            submitAction={handleUpdateMovementBeforeConsolidation}
+            submitLabel={texts.dashboard.consolidation.save_changes_cta}
+            pendingLabel={texts.dashboard.consolidation.save_changes_loading}
+            movement={editingMovement}
+            copy={texts.dashboard.consolidation.edit_form}
+            editableMovementDate
+            extraHiddenFields={<input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />}
           />
         ) : null}
       </Modal>

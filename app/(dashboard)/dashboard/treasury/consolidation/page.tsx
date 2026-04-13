@@ -14,6 +14,7 @@ import {
   getActiveReceiptFormatsForTesoreria,
   getActiveTreasuryCurrenciesForTesoreria,
   getEnabledCalendarEventsForTesoreria,
+  getEnabledMovementTypesForTesoreria,
   getMovementAuditEntries,
   getTreasuryConsolidationDashboard
 } from "@/lib/services/treasury-service";
@@ -55,7 +56,7 @@ export default async function TreasuryConsolidationPage({
     dashboard.integratedMovements[0] ??
     null;
 
-  const [auditEntries, accounts, categories, activities, calendarEvents, currencies, receiptFormats] = await Promise.all([
+  const [auditEntries, accounts, categories, activities, calendarEvents, currencies, movementTypes, receiptFormats] = await Promise.all([
     selectedMovement ? getMovementAuditEntries(selectedMovement.movementId) : Promise.resolve([]),
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id).then((entries) =>
       entries.filter((account) => account.visibleForTesoreria)
@@ -66,6 +67,7 @@ export default async function TreasuryConsolidationPage({
     getActiveActivitiesForTesoreria(),
     getEnabledCalendarEventsForTesoreria(),
     getActiveTreasuryCurrenciesForTesoreria(),
+    getEnabledMovementTypesForTesoreria(),
     getActiveReceiptFormatsForTesoreria()
   ]);
 
@@ -79,6 +81,7 @@ export default async function TreasuryConsolidationPage({
       activities={activities}
       calendarEvents={calendarEvents}
       currencies={currencies}
+      movementTypes={movementTypes}
       receiptFormats={receiptFormats}
       updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
       integrateMatchingMovementAction={integrateMatchingMovementAction}
