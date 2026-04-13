@@ -78,6 +78,31 @@ function formatMovementDateTime(value: string) {
   }).format(date);
 }
 
+function formatAuditDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "long"
+  }).format(date);
+}
+
+function formatAuditTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
 function getTransferReferenceSuffix(value: string) {
   return value.slice(-6);
 }
@@ -441,6 +466,9 @@ export function TreasuryConsolidationCard({
   const hasMovements = allMovements.length > 0;
   const selectedAuditHeaderEntry =
     selectedAuditEntries.find((entry) => entry.actionType === "original") ?? selectedAuditEntries[0] ?? null;
+  const selectedAuditHeaderTime = selectedAuditHeaderEntry
+    ? formatAuditTime(selectedAuditHeaderEntry.performedAt)
+    : null;
   const consolidationTotals = dashboard.pendingMovements.reduce<Map<string, number>>((totals, movement) => {
     const signedAmount = movement.movementType === "egreso" ? -movement.amount : movement.amount;
     totals.set(movement.currencyCode, (totals.get(movement.currencyCode) ?? 0) + signedAmount);
@@ -503,7 +531,16 @@ export function TreasuryConsolidationCard({
                     </p>
                     <p className="text-sm text-muted-foreground">{selectedAuditHeaderEntry.performedByUserName}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">{selectedAuditHeaderEntry.performedAt}</p>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <span className="rounded-full border border-border bg-secondary/35 px-3 py-1 text-xs font-semibold text-foreground">
+                      {formatAuditDate(selectedAuditHeaderEntry.performedAt)}
+                    </span>
+                    {selectedAuditHeaderTime ? (
+                      <span className="rounded-full border border-border/80 bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+                        {selectedAuditHeaderTime}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ) : null}
