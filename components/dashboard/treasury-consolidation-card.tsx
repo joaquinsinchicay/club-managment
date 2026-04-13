@@ -357,6 +357,8 @@ export function TreasuryConsolidationCard({
     return right.createdAt.localeCompare(left.createdAt);
   });
   const hasMovements = allMovements.length > 0;
+  const selectedAuditHeaderEntry =
+    selectedAuditEntries.find((entry) => entry.actionType === "original") ?? selectedAuditEntries[0] ?? null;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
@@ -402,13 +404,21 @@ export function TreasuryConsolidationCard({
                   )}
                 </button>
               </PendingFieldset>
-              <span aria-live="polite" className="text-xs text-muted-foreground">
-                {texts.dashboard.consolidation.load_helper}
-              </span>
-              <p className="text-xs text-muted-foreground">
-                {texts.dashboard.consolidation.default_date_hint} {dashboard.defaultDate}
-              </p>
             </form>
+
+            {selectedMovement && selectedAuditHeaderEntry ? (
+              <div className="mt-4 rounded-xl border border-border bg-card p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      {texts.dashboard.consolidation.audit_actions[selectedAuditHeaderEntry.actionType]}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{selectedAuditHeaderEntry.performedByUserName}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{selectedAuditHeaderEntry.performedAt}</p>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {dashboard.batch ? (
@@ -511,31 +521,6 @@ export function TreasuryConsolidationCard({
                       ) : null}
                     </section>
                   ) : null}
-
-                  <section className="rounded-xl border border-border bg-card p-4">
-                    <div className="space-y-2">
-                      <h2 className="text-lg font-semibold text-foreground">
-                        {texts.dashboard.consolidation.audit_title}
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        {texts.dashboard.consolidation.audit_description}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 grid gap-3">
-                      {selectedAuditEntries.map((entry) => (
-                        <article key={entry.id} className="rounded-xl border border-border bg-secondary/30 p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-foreground">
-                              {texts.dashboard.consolidation.audit_actions[entry.actionType]}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{entry.performedAt}</p>
-                          </div>
-                          <p className="mt-1 text-sm text-muted-foreground">{entry.performedByUserName}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
                 </>
               ) : (
                 <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
