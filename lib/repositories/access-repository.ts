@@ -105,6 +105,39 @@ function getSupabaseErrorMessage(error: unknown) {
   return typeof message === "string" ? message : "";
 }
 
+const KNOWN_CLUB_SCOPED_RPC_NAMES = [
+  "update_treasury_movement_for_current_club",
+  "get_last_open_daily_cash_session_before_date_for_current_club",
+  "auto_close_stale_daily_cash_session_with_balances_for_current_club",
+  "get_daily_consolidation_batch_by_date_for_current_club",
+  "create_daily_consolidation_batch_for_current_club",
+  "update_daily_consolidation_batch_for_current_club",
+  "get_movement_audit_logs_by_movement_id_for_current_club",
+  "create_movement_audit_log_for_current_club"
+] as const;
+
+function getMissingClubScopedRpcName(error: unknown, rpcName?: string) {
+  const code = getSupabaseErrorCode(error);
+  const message = getSupabaseErrorMessage(error).toLowerCase();
+
+  if (
+    code !== "42883" &&
+    code !== "PGRST202" &&
+    !message.includes("does not exist") &&
+    !message.includes("could not find the function")
+  ) {
+    return null;
+  }
+
+  if (rpcName && message.includes(rpcName.toLowerCase())) {
+    return rpcName;
+  }
+
+  return (
+    KNOWN_CLUB_SCOPED_RPC_NAMES.find((knownRpcName) => message.includes(knownRpcName.toLowerCase())) ?? null
+  );
+}
+
 function isLegacyUpdateTreasuryMovementRpcCause(error: unknown) {
   const code = getSupabaseErrorCode(error);
   const message = getSupabaseErrorMessage(error).toLowerCase();
@@ -150,6 +183,8 @@ function logClubScopedRpcFailure(
   console.error("[club-scoped-rpc-failure]", {
     operation,
     ...details,
+    errorCode: getSupabaseErrorCode(error),
+    missingRpcName: getMissingClubScopedRpcName(error),
     error
   });
 }
@@ -2833,6 +2868,7 @@ async function getRealDailyConsolidationBatchByDate(
     {
       operation: "get_daily_consolidation_batch_by_date",
       details: { consolidationDate },
+      strict: true,
       params: {
         p_consolidation_date: consolidationDate
       }
@@ -2858,6 +2894,7 @@ async function createRealDailyConsolidationBatch(
     {
       operation: "create_daily_consolidation_batch",
       details: { consolidationDate: input.consolidationDate },
+      strict: true,
       params: {
         p_consolidation_date: input.consolidationDate,
         p_status: input.status,
@@ -2903,6 +2940,7 @@ async function updateRealDailyConsolidationBatch(
     {
       operation: "update_daily_consolidation_batch",
       details: { batchId: input.batchId, status: input.status },
+      strict: true,
       params: {
         p_batch_id: input.batchId,
         p_status: input.status,
@@ -2928,6 +2966,7 @@ async function listRealMovementAuditLogsByMovementId(
     {
       operation: "list_movement_audit_logs_by_movement_id",
       details: { movementId: input.movementId },
+      strict: true,
       params: {
         p_movement_id: input.movementId
       }
@@ -2955,6 +2994,7 @@ async function createRealMovementAuditLog(
     {
       operation: "create_movement_audit_log",
       details: { movementId: input.movementId, actionType: input.actionType },
+      strict: true,
       params: {
         p_movement_id: input.movementId,
         p_action_type: input.actionType,
@@ -3165,7 +3205,15 @@ async function runClubScopedReadRpc<T>(
 
   if (error || !data) {
     if (!options?.suppressLog) {
-      logTreasurySettingsReadFailure(options?.operation ?? rpcName, { clubId, ...(options?.details ?? {}) }, error);
+      console.error("[club-scoped-rpc-read-failure]", {
+        operation: options?.operation ?? rpcName,
+        rpcName,
+        clubId,
+        ...(options?.details ?? {}),
+        errorCode: getSupabaseErrorCode(error),
+        missingRpcName: getMissingClubScopedRpcName(error, rpcName),
+        error
+      });
     }
 
     if (options?.strict) {
@@ -3189,11 +3237,16 @@ async function runClubScopedMutationRpc<T>(
     details?: Record<string, unknown>;
     params?: Record<string, unknown>;
     expectResult?: boolean;
+    strict?: boolean;
   }
 ): Promise<T | null> {
   const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
+    if (options?.strict) {
+      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", options?.operation ?? rpcName);
+    }
+
     return null;
   }
 
@@ -3203,12 +3256,14 @@ async function runClubScopedMutationRpc<T>(
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
-      operation: options?.operation ?? rpcName,
-      clubId,
-      ...(options?.details ?? {}),
-      error
-    });
+    logClubScopedRpcFailure(options?.operation ?? rpcName, { clubId, rpcName, ...(options?.details ?? {}) }, error);
+
+    if (options?.strict) {
+      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", options?.operation ?? rpcName, {
+        cause: error
+      });
+    }
+
     return null;
   }
 

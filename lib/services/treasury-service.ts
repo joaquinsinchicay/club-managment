@@ -81,6 +81,7 @@ type TreasuryActionCode =
   | "declared_balance_required"
   | "declared_balance_invalid"
   | "adjustment_category_missing"
+  | "infrastructure_incomplete"
   | "unknown_error";
 
 export type TreasuryActionResult = {
@@ -168,6 +169,71 @@ function getRepositoryErrorCode(error: unknown) {
 
   const code = (error.cause as { code?: unknown }).code;
   return typeof code === "string" ? code : null;
+}
+
+function getRepositoryErrorMessage(error: unknown) {
+  if (!isAccessRepositoryInfraError(error) || !error.cause || typeof error.cause !== "object") {
+    return "";
+  }
+
+  const message = (error.cause as { message?: unknown }).message;
+  return typeof message === "string" ? message : "";
+}
+
+const KNOWN_CONSOLIDATION_INFRA_RPC_NAMES = [
+  "get_daily_consolidation_batch_by_date_for_current_club",
+  "create_daily_consolidation_batch_for_current_club",
+  "update_daily_consolidation_batch_for_current_club",
+  "get_movement_audit_logs_by_movement_id_for_current_club",
+  "create_movement_audit_log_for_current_club",
+  "update_treasury_movement_for_current_club"
+] as const;
+
+function getMissingConsolidationRpcName(error: unknown) {
+  const message = getRepositoryErrorMessage(error).toLowerCase();
+
+  return (
+    KNOWN_CONSOLIDATION_INFRA_RPC_NAMES.find((rpcName) => message.includes(rpcName.toLowerCase())) ?? null
+  );
+}
+
+function isMissingConsolidationInfrastructureError(error: unknown) {
+  const code = getRepositoryErrorCode(error);
+  const message = getRepositoryErrorMessage(error).toLowerCase();
+
+  if (!isAccessRepositoryInfraError(error) || error.code !== "club_scoped_rpc_failed") {
+    return false;
+  }
+
+  return (
+    code === "42883" ||
+    code === "PGRST202" ||
+    KNOWN_CONSOLIDATION_INFRA_RPC_NAMES.some((rpcName) => message.includes(rpcName.toLowerCase())) ||
+    message.includes("does not exist") ||
+    message.includes("could not find the function")
+  );
+}
+
+function resolveConsolidationInfrastructureFailure(
+  operation: string,
+  details: Record<string, unknown>,
+  error: unknown
+): TreasuryActionResult | null {
+  if (!isMissingConsolidationInfrastructureError(error)) {
+    return null;
+  }
+
+  console.error("[treasury-consolidation-infrastructure-missing]", {
+    operation,
+    ...details,
+    repositoryOperation: isAccessRepositoryInfraError(error) ? error.operation : null,
+    repositoryCode: isAccessRepositoryInfraError(error) ? error.code : null,
+    errorCode: getRepositoryErrorCode(error),
+    missingRpcName: getMissingConsolidationRpcName(error),
+    error
+  });
+
+  return { ok: false, code: "infrastructure_incomplete" };
 }
 
 function isSessionAlreadyExistsRepositoryError(error: unknown) {
@@ -2297,11 +2363,21 @@ export async function getTreasuryConsolidationDashboard(
 
   const clubId = context.activeClub.id;
   const selectedDate = consolidationDate?.trim() || getDefaultConsolidationDate();
-  const [movements, batch, integrations] = await Promise.all([
+  const [movements, integrations] = await Promise.all([
     accessRepository.listTreasuryMovementsByDate(clubId, selectedDate),
-    accessRepository.getDailyConsolidationBatchByDate(clubId, selectedDate),
     accessRepository.listMovementIntegrations()
   ]);
+  let batch: TreasuryConsolidationDashboard["batch"] = null;
+
+  try {
+    batch = await accessRepository.getDailyConsolidationBatchByDate(clubId, selectedDate);
+  } catch (error) {
+    resolveConsolidationInfrastructureFailure(
+      "get_treasury_consolidation_dashboard_batch",
+      { clubId, consolidationDate: selectedDate },
+      error
+    );
+  }
 
   const integratedMovementIds = new Set(integrations.map((entry) => entry.tesoreriaMovementId));
   const postedMovements = movements.filter((movement) => movement.status === "posted");
@@ -2339,13 +2415,21 @@ export async function getMovementAuditEntries(
     return [];
   }
 
-  const [createdByUserName, logs] = await Promise.all([
-    buildMovementUserName(movement.createdByUserId),
-    accessRepository.listMovementAuditLogsByMovementId({
+  const createdByUserName = await buildMovementUserName(movement.createdByUserId);
+  let logs: Awaited<ReturnType<typeof accessRepository.listMovementAuditLogsByMovementId>> = [];
+
+  try {
+    logs = await accessRepository.listMovementAuditLogsByMovementId({
       clubId: context.activeClub.id,
       movementId
-    })
-  ]);
+    });
+  } catch (error) {
+    resolveConsolidationInfrastructureFailure(
+      "get_movement_audit_entries",
+      { clubId: context.activeClub.id, movementId },
+      error
+    );
+  }
 
   const mappedLogs = await Promise.all(
     logs.map(async (log) => ({
@@ -2810,10 +2894,19 @@ export async function executeDailyConsolidation(
     return { ok: false, code: "consolidation_date_required" };
   }
 
-  const existingBatch = await accessRepository.getDailyConsolidationBatchByDate(
-    clubId,
-    selectedDate
-  );
+  let existingBatch: Awaited<ReturnType<typeof accessRepository.getDailyConsolidationBatchByDate>>;
+
+  try {
+    existingBatch = await accessRepository.getDailyConsolidationBatchByDate(clubId, selectedDate);
+  } catch (error) {
+    return (
+      resolveConsolidationInfrastructureFailure(
+        "get_daily_consolidation_batch_by_date",
+        { clubId, consolidationDate: selectedDate },
+        error
+      ) ?? { ok: false, code: "unknown_error" }
+    );
+  }
 
   if (existingBatch?.status === "completed") {
     return { ok: false, code: "consolidation_already_completed" };
@@ -2837,14 +2930,26 @@ export async function executeDailyConsolidation(
     return { ok: false, code: "consolidation_has_invalid_movements" };
   }
 
-  const batch =
-    existingBatch ??
-    (await accessRepository.createDailyConsolidationBatch({
-      clubId,
-      consolidationDate: selectedDate,
-      status: "pending",
-      executedByUserId: context.user.id
-    }));
+  let batch = existingBatch;
+
+  if (!batch) {
+    try {
+      batch = await accessRepository.createDailyConsolidationBatch({
+        clubId,
+        consolidationDate: selectedDate,
+        status: "pending",
+        executedByUserId: context.user.id
+      });
+    } catch (error) {
+      return (
+        resolveConsolidationInfrastructureFailure(
+          "create_daily_consolidation_batch",
+          { clubId, consolidationDate: selectedDate },
+          error
+        ) ?? { ok: false, code: "unknown_error" }
+      );
+    }
+  }
 
   if (!batch) {
     logTreasuryServiceFailure("create_daily_consolidation_batch", {
@@ -2881,24 +2986,53 @@ export async function executeDailyConsolidation(
         throw new Error("consolidation_update_failed");
       }
 
-      await accessRepository.createMovementAuditLog({
-        clubId,
-        movementId: updatedMovement.id,
-        actionType: "consolidated",
-        payloadBefore: beforeSnapshot,
-        payloadAfter: {
-          ...serializeMovementSnapshot(updatedMovement),
-          consolidationBatchId: batch.id
-        },
-        performedByUserId: context.user.id
-      });
+      try {
+        await accessRepository.createMovementAuditLog({
+          clubId,
+          movementId: updatedMovement.id,
+          actionType: "consolidated",
+          payloadBefore: beforeSnapshot,
+          payloadAfter: {
+            ...serializeMovementSnapshot(updatedMovement),
+            consolidationBatchId: batch.id
+          },
+          performedByUserId: context.user.id
+        });
+      } catch (error) {
+        const infrastructureFailure = resolveConsolidationInfrastructureFailure(
+          "create_movement_audit_log",
+          {
+            clubId,
+            consolidationDate: selectedDate,
+            batchId: batch.id,
+            movementId: updatedMovement.id
+          },
+          error
+        );
+
+        if (infrastructureFailure) {
+          return infrastructureFailure;
+        }
+
+        throw error;
+      }
     }
 
-    await accessRepository.updateDailyConsolidationBatch({
-      clubId,
-      batchId: batch.id,
-      status: "completed"
-    });
+    try {
+      await accessRepository.updateDailyConsolidationBatch({
+        clubId,
+        batchId: batch.id,
+        status: "completed"
+      });
+    } catch (error) {
+      return (
+        resolveConsolidationInfrastructureFailure(
+          "update_daily_consolidation_batch_completed",
+          { clubId, consolidationDate: selectedDate, batchId: batch.id },
+          error
+        ) ?? { ok: false, code: "unknown_error" }
+      );
+    }
   } catch (error) {
     logTreasuryServiceFailure(
       "execute_daily_consolidation",
@@ -2911,14 +3045,32 @@ export async function executeDailyConsolidation(
       error
     );
 
-    await accessRepository.updateDailyConsolidationBatch({
-      clubId,
-      batchId: batch.id,
-      status: "failed",
-      errorMessage: error instanceof Error ? error.message : "unknown_error"
-    });
+    const infrastructureFailure = resolveConsolidationInfrastructureFailure(
+      "execute_daily_consolidation",
+      {
+        clubId,
+        consolidationDate: selectedDate,
+        batchId: batch.id
+      },
+      error
+    );
 
-    return { ok: false, code: "unknown_error" };
+    try {
+      await accessRepository.updateDailyConsolidationBatch({
+        clubId,
+        batchId: batch.id,
+        status: "failed",
+        errorMessage: error instanceof Error ? error.message : "unknown_error"
+      });
+    } catch (updateError) {
+      resolveConsolidationInfrastructureFailure(
+        "update_daily_consolidation_batch_failed",
+        { clubId, consolidationDate: selectedDate, batchId: batch.id },
+        updateError
+      );
+    }
+
+    return infrastructureFailure ?? { ok: false, code: "unknown_error" };
   }
 
   return { ok: true, code: "consolidation_completed" };

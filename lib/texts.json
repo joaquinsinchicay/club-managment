@@ -120,6 +120,7 @@
       "declared_balance_required": "Debes completar el saldo declarado de todas las cuentas.",
       "declared_balance_invalid": "Todos los saldos declarados deben ser importes validos.",
       "adjustment_category_missing": "No encontramos la categoria Ajuste para registrar diferencias.",
+      "infrastructure_incomplete": "No pudimos completar la accion porque la base remota no tiene todas las migraciones aplicadas. Actualiza Supabase y vuelve a intentarlo.",
       "unknown_error": "No pudimos completar la accion. Vuelve a intentarlo."
     },
     "club_selector": {

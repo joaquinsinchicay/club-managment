@@ -163,6 +163,8 @@ Antes de asumir que un dashboard operativo esta realmente vacio en el entorno re
 
 Si alguna falta o falla, la aplicacion debe tratarlo como error de infraestructura y no como ausencia real de movimientos o saldos.
 
+Los previews de Vercel no aplican estas migraciones automaticamente. Cada vez que se agregan RPCs o cambios de esquema para un flujo operativo, hay que ejecutar `supabase db push` o un pipeline equivalente sobre la base remota antes de validar el preview.
+
 ## 5.4 Excepción preselección de club
 
 Durante la resolución post-login todavía puede no existir `active_club_id`.
