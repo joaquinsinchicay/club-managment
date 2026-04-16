@@ -8,6 +8,7 @@ import {
   SecretariaMovementEditForm
 } from "@/components/dashboard/treasury-operation-forms";
 import { Modal } from "@/components/ui/modal";
+import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -363,6 +364,7 @@ export function TreasuryConsolidationCard({
   const [editingTransfer, setEditingTransfer] = useState<ConsolidationTransferEdit | null>(null);
   const [isEditSubmissionPending, setIsEditSubmissionPending] = useState(false);
   const [isDateNavigationPending, startDateNavigationTransition] = useTransition();
+  const pendingOverlayLabel = isEditSubmissionPending ? texts.dashboard.consolidation.save_changes_loading : null;
 
   useEffect(() => {
     setSelectedDate(dashboard.consolidationDate);
@@ -438,6 +440,8 @@ export function TreasuryConsolidationCard({
 
   async function handleUpdateMovementBeforeConsolidation(formData: FormData) {
     setIsEditSubmissionPending(true);
+    setEditingMovement(null);
+    setEditingTransfer(null);
 
     try {
       await updateMovementBeforeConsolidationAction(formData);
@@ -448,6 +452,8 @@ export function TreasuryConsolidationCard({
 
   async function handleUpdateTransferBeforeConsolidation(formData: FormData) {
     setIsEditSubmissionPending(true);
+    setEditingMovement(null);
+    setEditingTransfer(null);
 
     try {
       await updateTransferBeforeConsolidationAction(formData);
@@ -478,6 +484,8 @@ export function TreasuryConsolidationCard({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 pb-28 sm:py-8 sm:pb-32">
+      <BlockingStatusOverlay open={pendingOverlayLabel !== null} label={pendingOverlayLabel ?? ""} />
+
       <PageContentHeader
         eyebrow={texts.dashboard.consolidation.eyebrow}
         title={texts.dashboard.consolidation.title}

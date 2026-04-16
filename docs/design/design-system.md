@@ -449,6 +449,8 @@ Mandatory rules:
 * use `PageContentHeader` for detail and secondary screens
 * use `StatusBadge` for operational states
 * keep post-action feedback in toast
+* dashboard mutation modals must close immediately on submit, then use a blocking overlay during refresh, and finish with toast feedback
+* settings inline editors may stay mounted until `feedback` resolves the close/reset state
 * keep role visibility derived from authorization utilities
 * keep all UI text in `lib/texts.json`
 
