@@ -777,29 +777,40 @@ Sí
       ]
     }
   ],
-  "movements": [
+  "movement_groups": [
     {
-      "movement_id": "uuid",
-      "movement_display_id": "PJ-MOV-2026-9465",
       "movement_date": "2026-04-02",
-      "account_id": "uuid",
-      "account_name": "Caja dolares",
-      "movement_type": "ingreso",
-      "category_id": "uuid",
-      "category_name": "Cobranza",
-      "activity_id": "uuid",
-      "activity_name": "Futbol",
-      "receipt_number": "PAY-SOC-26205",
-      "calendar_event_id": null,
-      "calendar_event_title": null,
-      "transfer_reference": null,
-      "fx_operation_reference": null,
-      "concept": "Pago cuota abril",
-      "currency_code": "USD",
-      "amount": 950.00,
-      "created_by_user_name": "Nombre Apellido",
-      "created_at": "2026-04-02T14:22:00.000Z",
-      "can_edit": true
+      "accounts": [
+        {
+          "account_id": "uuid",
+          "account_name": "Caja dolares",
+          "movements": [
+            {
+              "movement_id": "uuid",
+              "movement_display_id": "PJ-MOV-2026-9465",
+              "movement_date": "2026-04-02",
+              "account_id": "uuid",
+              "account_name": "Caja dolares",
+              "movement_type": "ingreso",
+              "category_id": "uuid",
+              "category_name": "Cobranza",
+              "activity_id": "uuid",
+              "activity_name": "Futbol",
+              "receipt_number": "PAY-SOC-26205",
+              "calendar_event_id": null,
+              "calendar_event_title": null,
+              "transfer_reference": null,
+              "fx_operation_reference": null,
+              "concept": "Pago cuota abril",
+              "currency_code": "USD",
+              "amount": 950.00,
+              "created_by_user_name": "Nombre Apellido",
+              "created_at": "2026-04-02T14:22:00.000Z",
+              "can_edit": true
+            }
+          ]
+        }
+      ]
     }
   ],
   "available_actions": [
@@ -812,9 +823,11 @@ Sí
 **Notes**
 
 * `accounts[].balances` debe reflejar la suma historica acumulada de los movimientos visibles para Tesoreria en cada cuenta visible del club activo
-* para Tesoreria impactan saldo los movimientos con estado `posted` y `consolidated`
-* no impactan saldo los movimientos con estado `pending_consolidation`, `integrated` o `cancelled`
-* `movements[]` sigue listando solo los movimientos visibles del `session_date`, ordenados de mas reciente a mas antiguo por `created_at`
+* `movement_groups[]` usa `movement_date` y cubre hoy y los 4 dias operativos anteriores
+* para Tesoreria impactan saldo y listado los movimientos con estado `posted` y `consolidated`
+* no impactan saldo ni listado los movimientos con estado `pending_consolidation`, `integrated` o `cancelled`
+* `movement_groups[]` debe entregarse agrupado por fecha descendente y luego por cuenta en orden alfabetico ascendente
+* dentro de cada cuenta, `movements[]` se ordena de mas reciente a mas antiguo por `created_at`
 
 ---
 

@@ -13,6 +13,7 @@ import type {
   SessionBalanceDraft,
   TreasuryAccount,
   TreasuryCategory,
+  TreasuryDashboardMovement,
   TreasuryRoleDashboard,
   TreasuryCurrencyConfig,
   TreasuryMovementType,
@@ -495,6 +496,10 @@ function buildDashboardMovementView(input: {
     createdAt: movement.createdAt,
     canEdit
   };
+}
+
+function isMovementWithinOperationalWindow(movementDate: string, startDate: string, endDate: string) {
+  return movementDate >= startDate && movementDate <= endDate;
 }
 
 async function getConfiguredTreasuryCurrencies(clubId: string): Promise<TreasuryCurrencyConfig[]> {
@@ -1135,7 +1140,9 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
 
   const clubId = context.activeClub.id;
   const sessionDate = getTodayDate();
+  const movementWindowStartDate = getRelativeDate(sessionDate, -4);
   const accounts = getAccountsVisibleForRole(await accessRepository.listTreasuryAccountsForClub(clubId), "tesoreria");
+  const visibleAccountIds = new Set(accounts.map((account) => account.id));
 
   const movementsByAccount = await Promise.all(
     accounts.map(async (account) => ({
@@ -1150,17 +1157,59 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
     accessRepository.listTreasuryCategoriesForClub(clubId),
     accessRepository.listClubActivitiesForClub(clubId),
     accessRepository.listClubCalendarEventsForClub(clubId),
-    accessRepository.listTreasuryMovementsByDate(clubId, sessionDate)
+    accessRepository.listTreasuryMovementsHistoryByAccounts(clubId, accounts.map((account) => account.id))
   ]);
-  const visibleAccountIds = new Set(accounts.map((account) => account.id));
+  const visibleRoleMovements = roleMovements
+    .filter((movement) => visibleAccountIds.has(movement.accountId))
+    .filter((movement) => shouldIncludeMovementInRoleBalances(movement, "tesoreria"))
+    .filter((movement) =>
+      isMovementWithinOperationalWindow(movement.movementDate, movementWindowStartDate, sessionDate)
+    );
   const users = await accessRepository.findUsersByIds(
-    [...new Set(roleMovements.map((movement) => movement.createdByUserId))]
+    [...new Set(visibleRoleMovements.map((movement) => movement.createdByUserId))]
   );
   const usersById = new Map(users.map((user) => [user.id, user]));
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
   const accountsById = new Map(accounts.map((account) => [account.id, account]));
   const activitiesById = new Map(activities.map((activity) => [activity.id, activity]));
   const calendarEventsById = new Map(calendarEvents.map((event) => [event.id, event]));
+  const dashboardMovements = visibleRoleMovements
+    .map((movement) =>
+      buildDashboardMovementView({
+        movement,
+        accountsById,
+        categoriesById,
+        activitiesById,
+        calendarEventsById,
+        usersById,
+        canEdit: movement.status === "posted"
+      })
+    )
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  type DashboardMovementGroupEntries = Map<string, TreasuryDashboardMovement[]>;
+  const movementGroups = Array.from(
+    dashboardMovements.reduce((groups, movement) => {
+      const dateGroup = groups.get(movement.movementDate) ?? new Map<string, TreasuryDashboardMovement[]>();
+      const accountGroup = dateGroup.get(movement.accountId) ?? [];
+
+      accountGroup.push(movement);
+      dateGroup.set(movement.accountId, accountGroup);
+      groups.set(movement.movementDate, dateGroup);
+
+      return groups;
+    }, new Map<string, DashboardMovementGroupEntries>()).entries()
+  )
+    .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate))
+    .map(([movementDate, accountGroups]) => ({
+      movementDate,
+      accounts: Array.from(accountGroups.entries())
+        .map(([accountId, movements]) => ({
+          accountId,
+          accountName: accountsById.get(accountId)?.name ?? "",
+          movements: [...movements].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        }))
+        .sort((left, right) => left.accountName.localeCompare(right.accountName))
+    }));
 
   return {
     sessionDate,
@@ -1169,20 +1218,7 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       name: account.name,
       balances: buildAccountBalances(account, movements)
     })),
-    movements: roleMovements
-      .filter((movement) => movement.status === "posted" && visibleAccountIds.has(movement.accountId))
-      .map((movement) =>
-        buildDashboardMovementView({
-          movement,
-          accountsById,
-          categoriesById,
-          activitiesById,
-          calendarEventsById,
-          usersById,
-          canEdit: true
-        })
-      )
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
+    movementGroups,
     availableActions: ["create_movement", "create_fx_operation"]
   };
 }

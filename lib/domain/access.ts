@@ -305,6 +305,17 @@ export type TreasuryDashboardMovement = {
   canEdit: boolean;
 };
 
+export type TreasuryRoleDashboardMovementAccountGroup = {
+  accountId: string;
+  accountName: string;
+  movements: TreasuryDashboardMovement[];
+};
+
+export type TreasuryRoleDashboardMovementDateGroup = {
+  movementDate: string;
+  accounts: TreasuryRoleDashboardMovementAccountGroup[];
+};
+
 export type TreasuryRoleDashboard = {
   sessionDate: string;
   accounts: Array<{
@@ -315,7 +326,7 @@ export type TreasuryRoleDashboard = {
       amount: number;
     }>;
   }>;
-  movements: TreasuryDashboardMovement[];
+  movementGroups: TreasuryRoleDashboardMovementDateGroup[];
   availableActions: Array<"create_movement" | "create_fx_operation">;
 };
 

@@ -159,7 +159,11 @@ export default async function DashboardPage() {
                     {texts.dashboard.overview.recent_movements_label}
                   </p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-                    {treasuryRoleDashboard.movements.length}
+                    {treasuryRoleDashboard.movementGroups.reduce(
+                      (total, group) =>
+                        total + group.accounts.reduce((accountTotal, account) => accountTotal + account.movements.length, 0),
+                      0
+                    )}
                   </p>
                 </div>
               </div>

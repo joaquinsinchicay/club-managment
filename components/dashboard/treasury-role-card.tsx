@@ -23,6 +23,7 @@ import type {
   TreasuryCurrencyConfig,
   TreasuryDashboardMovement,
   TreasuryMovementType,
+  TreasuryRoleDashboardMovementDateGroup,
   TreasuryRoleDashboard
 } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
@@ -203,6 +204,92 @@ function SummaryBalance({
         </span>
         <span>{formatLocalizedAmount(balance.amount)}</span>
       </p>
+    </div>
+  );
+}
+
+function formatMovementGroupDate(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "long"
+  }).format(date);
+}
+
+function TreasuryRoleMovementGroups({
+  groups,
+  onEditMovement
+}: {
+  groups: TreasuryRoleDashboardMovementDateGroup[];
+  onEditMovement: (movement: TreasuryDashboardMovement) => void;
+}) {
+  return (
+    <div className="grid gap-4">
+      {groups.map((group) => (
+        <section key={group.movementDate} className="space-y-3">
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {texts.dashboard.treasury_role.date_label}
+            </p>
+            <p className="mt-1 text-base font-semibold text-foreground">
+              {formatMovementGroupDate(group.movementDate)}
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            {group.accounts.map((accountGroup) => (
+              <section key={`${group.movementDate}-${accountGroup.accountId}`} className="space-y-3">
+                <div className="rounded-xl border border-border bg-card px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    {texts.dashboard.treasury_role.movements_account_label}
+                  </p>
+                  <p className="mt-1 text-base font-semibold text-foreground">{accountGroup.accountName}</p>
+                </div>
+
+                <SecretariaMovementList
+                  items={accountGroup.movements.map((movement) => ({
+                    movementId: movement.movementId,
+                    movementDisplayId: movement.movementDisplayId,
+                    concept: movement.concept,
+                    createdAt: movement.createdAt,
+                    createdByUserName: movement.createdByUserName,
+                    accountName: movement.accountName,
+                    movementType: movement.movementType,
+                    currencyCode: movement.currencyCode,
+                    amount: movement.amount,
+                    categoryName: movement.categoryName,
+                    activityName: movement.activityName,
+                    receiptNumber: movement.receiptNumber,
+                    calendarEventTitle: movement.calendarEventTitle,
+                    transferReference: movement.transferReference,
+                    fxOperationReference: movement.fxOperationReference,
+                    action:
+                      movement.canEdit ? (
+                        <ModalTriggerButton
+                          onClick={() => onEditMovement(movement)}
+                          aria-label={texts.dashboard.treasury_role.edit_movement_cta}
+                          className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
+                        >
+                          <EditMovementIcon />
+                        </ModalTriggerButton>
+                      ) : undefined
+                  }))}
+                  conceptLabel={texts.dashboard.treasury_role.movements_concept_label}
+                  accountLabel={texts.dashboard.treasury_role.movements_account_label}
+                  detailLabel={texts.dashboard.treasury_role.movements_detail_label}
+                  amountLabel={texts.dashboard.treasury_role.movements_amount_label}
+                  actionsLabel={texts.dashboard.treasury_role.movements_actions_label}
+                  createdByLabel={texts.dashboard.treasury_role.movements_created_by_label}
+                />
+              </section>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
@@ -519,48 +606,18 @@ export function TreasuryRoleCard({
           </p>
         </div>
 
-        {dashboard.movements.length === 0 ? (
+        {dashboard.movementGroups.length === 0 ? (
           <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
             {texts.dashboard.treasury_role.movements_empty}
           </div>
         ) : (
           <div className="mt-5">
-            <SecretariaMovementList
-              items={dashboard.movements.map((movement) => ({
-                movementId: movement.movementId,
-                movementDisplayId: movement.movementDisplayId,
-                concept: movement.concept,
-                createdAt: movement.createdAt,
-                createdByUserName: movement.createdByUserName,
-                accountName: movement.accountName,
-                movementType: movement.movementType,
-                currencyCode: movement.currencyCode,
-                amount: movement.amount,
-                categoryName: movement.categoryName,
-                activityName: movement.activityName,
-                receiptNumber: movement.receiptNumber,
-                calendarEventTitle: movement.calendarEventTitle,
-                transferReference: movement.transferReference,
-                fxOperationReference: movement.fxOperationReference,
-                action: (
-                  <ModalTriggerButton
-                    onClick={() => {
-                      setSelectedMovement(movement);
-                      setActiveModal("edit_movement");
-                    }}
-                    aria-label={texts.dashboard.treasury_role.edit_movement_cta}
-                    className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
-                  >
-                    <EditMovementIcon />
-                  </ModalTriggerButton>
-                )
-              }))}
-              conceptLabel={texts.dashboard.treasury_role.movements_concept_label}
-              accountLabel={texts.dashboard.treasury_role.movements_account_label}
-              detailLabel={texts.dashboard.treasury_role.movements_detail_label}
-              amountLabel={texts.dashboard.treasury_role.movements_amount_label}
-              actionsLabel={texts.dashboard.treasury_role.movements_actions_label}
-              createdByLabel={texts.dashboard.treasury_role.movements_created_by_label}
+            <TreasuryRoleMovementGroups
+              groups={dashboard.movementGroups}
+              onEditMovement={(movement) => {
+                setSelectedMovement(movement);
+                setActiveModal("edit_movement");
+              }}
             />
           </div>
         )}
