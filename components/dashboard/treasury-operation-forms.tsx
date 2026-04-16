@@ -2,7 +2,12 @@
 
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 
-import { formatLocalizedAmount } from "@/lib/amounts";
+import {
+  formatLocalizedAmount,
+  formatLocalizedAmountInputOnBlur,
+  formatLocalizedAmountInputOnFocus,
+  sanitizeLocalizedAmountInput
+} from "@/lib/amounts";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
@@ -153,14 +158,15 @@ function ReceiptHelper({
 }
 
 function sanitizeAmountInput(value: string) {
-  const normalizedValue = value.replace(/[^\d,]/g, "");
-  const [integerPart, ...decimalParts] = normalizedValue.split(",");
+  return sanitizeLocalizedAmountInput(value);
+}
 
-  if (decimalParts.length === 0) {
-    return integerPart;
-  }
+function normalizeAmountInputOnBlur(value: string) {
+  return formatLocalizedAmountInputOnBlur(value);
+}
 
-  return `${integerPart},${decimalParts.join("")}`;
+function normalizeAmountInputOnFocus(value: string) {
+  return formatLocalizedAmountInputOnFocus(value);
 }
 
 function getDefaultCurrencyCode(account: TreasuryAccount | undefined, currencies: TreasuryCurrencyConfig[]) {
@@ -388,6 +394,8 @@ function MovementFormFields({
           inputMode="decimal"
           value={formState.amount}
           onChange={(event) => onChange({ amount: sanitizeAmountInput(event.target.value) })}
+          onBlur={(event) => onChange({ amount: normalizeAmountInputOnBlur(event.target.value) })}
+          onFocus={(event) => onChange({ amount: normalizeAmountInputOnFocus(event.target.value) })}
           onKeyDown={(event) => {
             if (event.key === "-") {
               event.preventDefault();
@@ -846,6 +854,10 @@ export function AccountTransferForm({
             inputMode="decimal"
             value={formState.amount}
             onChange={(event) => setFormState((current) => ({ ...current, amount: sanitizeAmountInput(event.target.value) }))}
+            onBlur={(event) => setFormState((current) => ({ ...current, amount: normalizeAmountInputOnBlur(event.target.value) }))}
+            onFocus={(event) =>
+              setFormState((current) => ({ ...current, amount: normalizeAmountInputOnFocus(event.target.value) }))
+            }
             onKeyDown={(event) => {
               if (event.key === "-") {
                 event.preventDefault();
@@ -1062,6 +1074,10 @@ export function ConsolidationTransferEditForm({
             inputMode="decimal"
             value={formState.amount}
             onChange={(event) => setFormState((current) => ({ ...current, amount: sanitizeAmountInput(event.target.value) }))}
+            onBlur={(event) => setFormState((current) => ({ ...current, amount: normalizeAmountInputOnBlur(event.target.value) }))}
+            onFocus={(event) =>
+              setFormState((current) => ({ ...current, amount: normalizeAmountInputOnFocus(event.target.value) }))
+            }
             onKeyDown={(event) => {
               if (event.key === "-") {
                 event.preventDefault();
@@ -1388,6 +1404,12 @@ export function TreasuryRoleFxForm({
             inputMode="decimal"
             value={formState.sourceAmount}
             onChange={(event) => setFormState((current) => ({ ...current, sourceAmount: sanitizeAmountInput(event.target.value) }))}
+            onBlur={(event) =>
+              setFormState((current) => ({ ...current, sourceAmount: normalizeAmountInputOnBlur(event.target.value) }))
+            }
+            onFocus={(event) =>
+              setFormState((current) => ({ ...current, sourceAmount: normalizeAmountInputOnFocus(event.target.value) }))
+            }
             onKeyDown={(event) => {
               if (event.key === "-") {
                 event.preventDefault();
@@ -1445,6 +1467,12 @@ export function TreasuryRoleFxForm({
             inputMode="decimal"
             value={formState.targetAmount}
             onChange={(event) => setFormState((current) => ({ ...current, targetAmount: sanitizeAmountInput(event.target.value) }))}
+            onBlur={(event) =>
+              setFormState((current) => ({ ...current, targetAmount: normalizeAmountInputOnBlur(event.target.value) }))
+            }
+            onFocus={(event) =>
+              setFormState((current) => ({ ...current, targetAmount: normalizeAmountInputOnFocus(event.target.value) }))
+            }
             onKeyDown={(event) => {
               if (event.key === "-") {
                 event.preventDefault();
