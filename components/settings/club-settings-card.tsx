@@ -28,8 +28,8 @@ type ClubSettingsCardProps = {
 
 function SectionIntro({ title, description }: { title: string; description: string }) {
   return (
-    <div className="space-y-1.5">
-      <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{title}</h2>
+    <div className="space-y-2">
+      <h2 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
       <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
     </div>
   );
@@ -58,7 +58,7 @@ export function ClubSettingsCard({
       .join(" + ") ?? "";
 
   return (
-    <main className="mx-auto flex w-full max-w-[88rem] flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
       <PageContentHeader
         eyebrow={texts.settings.club.eyebrow}
         title={texts.settings.club.title}
@@ -67,29 +67,26 @@ export function ClubSettingsCard({
         backLabel={texts.settings.club.back_to_dashboard_cta}
       />
 
-      <section className="rounded-[20px] border border-border/70 bg-card p-4 sm:p-5">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1.85fr)] xl:grid-cols-[minmax(0,1.15fr)_minmax(0,2.2fr)]">
-          <div className="space-y-2">
+      <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <div className="space-y-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
               {texts.settings.club.club_summary_title}
             </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                {activeClubName}
-              </p>
-              <StatusBadge label={texts.settings.club.club_summary_status_value} tone="success" />
-            </div>
-            <p className="max-w-xl text-sm leading-6 text-muted-foreground">
+            <p className="text-2xl font-semibold tracking-tight text-foreground">{activeClubName}</p>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
               {texts.settings.club.club_summary_description}
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-border bg-secondary/35 px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {texts.settings.club.club_summary_status_label}
               </p>
-              <p className="mt-2 text-sm font-semibold text-foreground">{activeClubName}</p>
+              <div className="mt-2">
+                <StatusBadge label={texts.settings.club.club_summary_status_value} tone="success" />
+              </div>
             </div>
 
             <div className="rounded-xl border border-border bg-secondary/35 px-4 py-3">
@@ -101,7 +98,7 @@ export function ClubSettingsCard({
               </p>
             </div>
 
-            <div className="rounded-xl border border-dashed border-border bg-secondary/20 px-4 py-3 sm:col-span-2 xl:col-span-1">
+            <div className="rounded-xl border border-dashed border-border bg-secondary/20 px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {texts.settings.club.club_summary_future_fields_label}
               </p>
@@ -113,8 +110,8 @@ export function ClubSettingsCard({
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(380px,0.85fr)] xl:items-start">
-        <section className="space-y-5 rounded-[24px] border border-border/70 bg-card p-5 sm:p-6">
+      <section className="space-y-8 rounded-[20px] border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
+        <section className="space-y-6">
           <SectionIntro
             title={texts.settings.club.members.section_title}
             description={texts.settings.club.members.section_description}
@@ -132,23 +129,16 @@ export function ClubSettingsCard({
           />
         </section>
 
-        <section className="space-y-5 rounded-[24px] border border-border/70 bg-card p-5 sm:p-6">
-          <SectionIntro
-            title={texts.settings.club.treasury.section_title}
-            description={texts.settings.club.treasury.section_description}
-          />
-
-          <ClubTreasurySettingsManager
-            treasurySettings={treasurySettings}
-            createTreasuryAccountAction={createTreasuryAccountAction}
-            updateTreasuryAccountAction={updateTreasuryAccountAction}
-            createTreasuryCategoryAction={createTreasuryCategoryAction}
-            updateTreasuryCategoryAction={updateTreasuryCategoryAction}
-            createClubActivityAction={createClubActivityAction}
-            updateClubActivityAction={updateClubActivityAction}
-          />
-        </section>
-      </div>
+        <ClubTreasurySettingsManager
+          treasurySettings={treasurySettings}
+          createTreasuryAccountAction={createTreasuryAccountAction}
+          updateTreasuryAccountAction={updateTreasuryAccountAction}
+          createTreasuryCategoryAction={createTreasuryCategoryAction}
+          updateTreasuryCategoryAction={updateTreasuryCategoryAction}
+          createClubActivityAction={createClubActivityAction}
+          updateClubActivityAction={updateClubActivityAction}
+        />
+      </section>
     </main>
   );
 }
