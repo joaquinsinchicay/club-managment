@@ -189,6 +189,15 @@ const KNOWN_CONSOLIDATION_INFRA_RPC_NAMES = [
   "update_treasury_movement_for_current_club"
 ] as const;
 
+const KNOWN_CONSOLIDATION_INFRA_OPERATIONS = [
+  "get_daily_consolidation_batch_by_date",
+  "create_daily_consolidation_batch",
+  "update_daily_consolidation_batch",
+  "list_movement_audit_logs_by_movement_id",
+  "create_movement_audit_log",
+  "update_treasury_movement"
+] as const;
+
 function getMissingConsolidationRpcName(error: unknown) {
   const message = getRepositoryErrorMessage(error).toLowerCase();
 
@@ -197,7 +206,7 @@ function getMissingConsolidationRpcName(error: unknown) {
   );
 }
 
-function isMissingConsolidationInfrastructureError(error: unknown) {
+function isConsolidationInfrastructureError(error: unknown) {
   const code = getRepositoryErrorCode(error);
   const message = getRepositoryErrorMessage(error).toLowerCase();
 
@@ -207,8 +216,14 @@ function isMissingConsolidationInfrastructureError(error: unknown) {
 
   return (
     code === "42883" ||
+    code === "42804" ||
     code === "PGRST202" ||
+    KNOWN_CONSOLIDATION_INFRA_OPERATIONS.includes(
+      error.operation as (typeof KNOWN_CONSOLIDATION_INFRA_OPERATIONS)[number]
+    ) ||
     KNOWN_CONSOLIDATION_INFRA_RPC_NAMES.some((rpcName) => message.includes(rpcName.toLowerCase())) ||
+    message.includes("structure of query does not match function result type") ||
+    message.includes("returned type timestamp without time zone") ||
     message.includes("does not exist") ||
     message.includes("could not find the function")
   );
@@ -219,11 +234,11 @@ function resolveConsolidationInfrastructureFailure(
   details: Record<string, unknown>,
   error: unknown
 ): TreasuryActionResult | null {
-  if (!isMissingConsolidationInfrastructureError(error)) {
+  if (!isConsolidationInfrastructureError(error)) {
     return null;
   }
 
-  console.error("[treasury-consolidation-infrastructure-missing]", {
+  console.error("[treasury-consolidation-infrastructure-failure]", {
     operation,
     ...details,
     repositoryOperation: isAccessRepositoryInfraError(error) ? error.operation : null,
@@ -1595,32 +1610,43 @@ export async function updateSecretariaMovementInOpenSession(input: {
   }
 
   const beforeSnapshot = serializeMovementSnapshot(movement);
-  const updatedMovement = await accessRepository.updateTreasuryMovement({
-    movementId: movement.id,
-    clubId: context.activeClub.id,
-    accountId: account.id,
-    movementType: input.movementType,
-    categoryId: category.id,
-    activityId: activity?.id ?? null,
-    receiptNumber: receiptNumber || null,
-    calendarEventId: calendarEvent?.id ?? null,
-    concept: input.concept.trim(),
-    currencyCode: input.currencyCode,
-    amount: parsedAmount
-  });
 
-  if (!updatedMovement) {
-    return { ok: false, code: "movement_update_failed" };
+  try {
+    const updatedMovement = await accessRepository.updateTreasuryMovement({
+      movementId: movement.id,
+      clubId: context.activeClub.id,
+      accountId: account.id,
+      movementType: input.movementType,
+      categoryId: category.id,
+      activityId: activity?.id ?? null,
+      receiptNumber: receiptNumber || null,
+      calendarEventId: calendarEvent?.id ?? null,
+      concept: input.concept.trim(),
+      currencyCode: input.currencyCode,
+      amount: parsedAmount
+    });
+
+    if (!updatedMovement) {
+      return { ok: false, code: "movement_update_failed" };
+    }
+
+    await accessRepository.createMovementAuditLog({
+      clubId: context.activeClub.id,
+      movementId: updatedMovement.id,
+      actionType: "edited",
+      payloadBefore: beforeSnapshot,
+      payloadAfter: serializeMovementSnapshot(updatedMovement),
+      performedByUserId: context.user.id
+    });
+  } catch (error) {
+    return (
+      resolveConsolidationInfrastructureFailure(
+        "update_treasury_movement",
+        { clubId: context.activeClub.id, movementId: movement.id, accountId: account.id },
+        error
+      ) ?? { ok: false, code: "unknown_error" }
+    );
   }
-
-  await accessRepository.createMovementAuditLog({
-    clubId: context.activeClub.id,
-    movementId: updatedMovement.id,
-    actionType: "edited",
-    payloadBefore: beforeSnapshot,
-    payloadAfter: serializeMovementSnapshot(updatedMovement),
-    performedByUserId: context.user.id
-  });
 
   return { ok: true, code: "movement_updated" };
 }
@@ -2195,32 +2221,43 @@ export async function updateTreasuryRoleMovement(input: {
   }
 
   const beforeSnapshot = serializeMovementSnapshot(movement);
-  const updatedMovement = await accessRepository.updateTreasuryMovement({
-    movementId: movement.id,
-    clubId,
-    accountId: account.id,
-    movementType: input.movementType,
-    categoryId: category.id,
-    activityId: activity?.id ?? null,
-    receiptNumber: receiptNumber || null,
-    calendarEventId: calendarEvent?.id ?? null,
-    concept: input.concept.trim(),
-    currencyCode: input.currencyCode,
-    amount: parsedAmount
-  });
 
-  if (!updatedMovement) {
-    return { ok: false, code: "movement_update_failed" };
+  try {
+    const updatedMovement = await accessRepository.updateTreasuryMovement({
+      movementId: movement.id,
+      clubId,
+      accountId: account.id,
+      movementType: input.movementType,
+      categoryId: category.id,
+      activityId: activity?.id ?? null,
+      receiptNumber: receiptNumber || null,
+      calendarEventId: calendarEvent?.id ?? null,
+      concept: input.concept.trim(),
+      currencyCode: input.currencyCode,
+      amount: parsedAmount
+    });
+
+    if (!updatedMovement) {
+      return { ok: false, code: "movement_update_failed" };
+    }
+
+    await accessRepository.createMovementAuditLog({
+      clubId,
+      movementId: updatedMovement.id,
+      actionType: "edited",
+      payloadBefore: beforeSnapshot,
+      payloadAfter: serializeMovementSnapshot(updatedMovement),
+      performedByUserId: context.user.id
+    });
+  } catch (error) {
+    return (
+      resolveConsolidationInfrastructureFailure(
+        "update_treasury_movement",
+        { clubId, movementId: movement.id, accountId: account.id },
+        error
+      ) ?? { ok: false, code: "unknown_error" }
+    );
   }
-
-  await accessRepository.createMovementAuditLog({
-    clubId,
-    movementId: updatedMovement.id,
-    actionType: "edited",
-    payloadBefore: beforeSnapshot,
-    payloadAfter: serializeMovementSnapshot(updatedMovement),
-    performedByUserId: context.user.id
-  });
 
   return { ok: true, code: "movement_updated" };
 }
@@ -2597,33 +2634,44 @@ export async function updateMovementBeforeConsolidation(input: {
   }
 
   const beforeSnapshot = serializeMovementSnapshot(movement);
-  const updatedMovement = await accessRepository.updateTreasuryMovement({
-    movementId: movement.id,
-    clubId,
-    movementDate,
-    accountId: account.id,
-    movementType: input.movementType,
-    categoryId: category.id,
-    activityId: activity?.id ?? null,
-    receiptNumber: receiptNumber || null,
-    calendarEventId: calendarEvent?.id ?? null,
-    concept: input.concept.trim(),
-    currencyCode: input.currencyCode,
-    amount: parsedAmount
-  });
 
-  if (!updatedMovement) {
-    return { ok: false, code: "movement_update_failed" };
+  try {
+    const updatedMovement = await accessRepository.updateTreasuryMovement({
+      movementId: movement.id,
+      clubId,
+      movementDate,
+      accountId: account.id,
+      movementType: input.movementType,
+      categoryId: category.id,
+      activityId: activity?.id ?? null,
+      receiptNumber: receiptNumber || null,
+      calendarEventId: calendarEvent?.id ?? null,
+      concept: input.concept.trim(),
+      currencyCode: input.currencyCode,
+      amount: parsedAmount
+    });
+
+    if (!updatedMovement) {
+      return { ok: false, code: "movement_update_failed" };
+    }
+
+    await accessRepository.createMovementAuditLog({
+      clubId,
+      movementId: updatedMovement.id,
+      actionType: "edited",
+      payloadBefore: beforeSnapshot,
+      payloadAfter: serializeMovementSnapshot(updatedMovement),
+      performedByUserId: context.user.id
+    });
+  } catch (error) {
+    return (
+      resolveConsolidationInfrastructureFailure(
+        "update_treasury_movement",
+        { clubId, movementId: movement.id, accountId: account.id, movementDate },
+        error
+      ) ?? { ok: false, code: "unknown_error" }
+    );
   }
-
-  await accessRepository.createMovementAuditLog({
-    clubId,
-    movementId: updatedMovement.id,
-    actionType: "edited",
-    payloadBefore: beforeSnapshot,
-    payloadAfter: serializeMovementSnapshot(updatedMovement),
-    performedByUserId: context.user.id
-  });
 
   return { ok: true, code: "movement_updated" };
 }
@@ -2733,61 +2781,77 @@ export async function updateTransferBeforeConsolidation(input: {
   const sourceBeforeSnapshot = serializeMovementSnapshot(sourceMovement);
   const targetBeforeSnapshot = serializeMovementSnapshot(targetMovement);
 
-  const updatedSourceMovement = await accessRepository.updateTreasuryMovement({
-    movementId: sourceMovement.id,
-    clubId,
-    movementDate: sourceMovement.movementDate,
-    accountId: sourceAccount.id,
-    movementType: "egreso",
-    categoryId: sourceMovement.categoryId || null,
-    activityId: null,
-    receiptNumber: null,
-    calendarEventId: null,
-    concept,
-    currencyCode: input.currencyCode,
-    amount: parsedAmount
-  });
+  try {
+    const updatedSourceMovement = await accessRepository.updateTreasuryMovement({
+      movementId: sourceMovement.id,
+      clubId,
+      movementDate: sourceMovement.movementDate,
+      accountId: sourceAccount.id,
+      movementType: "egreso",
+      categoryId: sourceMovement.categoryId || null,
+      activityId: null,
+      receiptNumber: null,
+      calendarEventId: null,
+      concept,
+      currencyCode: input.currencyCode,
+      amount: parsedAmount
+    });
 
-  if (!updatedSourceMovement) {
-    return { ok: false, code: "movement_update_failed" };
+    if (!updatedSourceMovement) {
+      return { ok: false, code: "movement_update_failed" };
+    }
+
+    const updatedTargetMovement = await accessRepository.updateTreasuryMovement({
+      movementId: targetMovement.id,
+      clubId,
+      movementDate: targetMovement.movementDate,
+      accountId: targetAccount.id,
+      movementType: "ingreso",
+      categoryId: targetMovement.categoryId || null,
+      activityId: null,
+      receiptNumber: null,
+      calendarEventId: null,
+      concept,
+      currencyCode: input.currencyCode,
+      amount: parsedAmount
+    });
+
+    if (!updatedTargetMovement) {
+      return { ok: false, code: "movement_update_failed" };
+    }
+
+    await accessRepository.createMovementAuditLog({
+      clubId,
+      movementId: updatedSourceMovement.id,
+      actionType: "edited",
+      payloadBefore: sourceBeforeSnapshot,
+      payloadAfter: serializeMovementSnapshot(updatedSourceMovement),
+      performedByUserId: context.user.id
+    });
+
+    await accessRepository.createMovementAuditLog({
+      clubId,
+      movementId: updatedTargetMovement.id,
+      actionType: "edited",
+      payloadBefore: targetBeforeSnapshot,
+      payloadAfter: serializeMovementSnapshot(updatedTargetMovement),
+      performedByUserId: context.user.id
+    });
+  } catch (error) {
+    return (
+      resolveConsolidationInfrastructureFailure(
+        "update_treasury_movement",
+        {
+          clubId,
+          sourceMovementId: sourceMovement.id,
+          targetMovementId: targetMovement.id,
+          sourceAccountId: sourceAccount.id,
+          targetAccountId: targetAccount.id
+        },
+        error
+      ) ?? { ok: false, code: "unknown_error" }
+    );
   }
-
-  const updatedTargetMovement = await accessRepository.updateTreasuryMovement({
-    movementId: targetMovement.id,
-    clubId,
-    movementDate: targetMovement.movementDate,
-    accountId: targetAccount.id,
-    movementType: "ingreso",
-    categoryId: targetMovement.categoryId || null,
-    activityId: null,
-    receiptNumber: null,
-    calendarEventId: null,
-    concept,
-    currencyCode: input.currencyCode,
-    amount: parsedAmount
-  });
-
-  if (!updatedTargetMovement) {
-    return { ok: false, code: "movement_update_failed" };
-  }
-
-  await accessRepository.createMovementAuditLog({
-    clubId,
-    movementId: updatedSourceMovement.id,
-    actionType: "edited",
-    payloadBefore: sourceBeforeSnapshot,
-    payloadAfter: serializeMovementSnapshot(updatedSourceMovement),
-    performedByUserId: context.user.id
-  });
-
-  await accessRepository.createMovementAuditLog({
-    clubId,
-    movementId: updatedTargetMovement.id,
-    actionType: "edited",
-    payloadBefore: targetBeforeSnapshot,
-    payloadAfter: serializeMovementSnapshot(updatedTargetMovement),
-    performedByUserId: context.user.id
-  });
 
   return { ok: true, code: "movement_updated" };
 }
@@ -2847,33 +2911,47 @@ export async function integrateMatchingMovement(input: {
     return { ok: false, code: "unknown_error" };
   }
 
-  const updatedMovement = await accessRepository.updateTreasuryMovement({
-    movementId: secretariaMovement.id,
-    clubId,
-    accountId: secretariaMovement.accountId,
-    movementType: secretariaMovement.movementType,
-    categoryId: secretariaMovement.categoryId,
-    concept: secretariaMovement.concept,
-    currencyCode: secretariaMovement.currencyCode,
-    amount: secretariaMovement.amount,
-    status: "integrated"
-  });
+  try {
+    const updatedMovement = await accessRepository.updateTreasuryMovement({
+      movementId: secretariaMovement.id,
+      clubId,
+      accountId: secretariaMovement.accountId,
+      movementType: secretariaMovement.movementType,
+      categoryId: secretariaMovement.categoryId,
+      concept: secretariaMovement.concept,
+      currencyCode: secretariaMovement.currencyCode,
+      amount: secretariaMovement.amount,
+      status: "integrated"
+    });
 
-  if (!updatedMovement) {
-    return { ok: false, code: "unknown_error" };
+    if (!updatedMovement) {
+      return { ok: false, code: "unknown_error" };
+    }
+
+    await accessRepository.createMovementAuditLog({
+      clubId,
+      movementId: updatedMovement.id,
+      actionType: "integrated",
+      payloadBefore: beforeSnapshot,
+      payloadAfter: {
+        ...serializeMovementSnapshot(updatedMovement),
+        tesoreriaMovementId: tesoreriaMovement.id
+      },
+      performedByUserId: context.user.id
+    });
+  } catch (error) {
+    return (
+      resolveConsolidationInfrastructureFailure(
+        "integrate_matching_movement",
+        {
+          clubId,
+          secretariaMovementId: secretariaMovement.id,
+          tesoreriaMovementId: tesoreriaMovement.id
+        },
+        error
+      ) ?? { ok: false, code: "unknown_error" }
+    );
   }
-
-  await accessRepository.createMovementAuditLog({
-    clubId,
-    movementId: updatedMovement.id,
-    actionType: "integrated",
-    payloadBefore: beforeSnapshot,
-    payloadAfter: {
-      ...serializeMovementSnapshot(updatedMovement),
-      tesoreriaMovementId: tesoreriaMovement.id
-    },
-    performedByUserId: context.user.id
-  });
 
   return { ok: true, code: "movement_integrated" };
 }

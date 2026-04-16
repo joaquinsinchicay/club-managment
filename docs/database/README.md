@@ -165,6 +165,37 @@ Si alguna falta o falla, la aplicacion debe tratarlo como error de infraestructu
 
 Los previews de Vercel no aplican estas migraciones automaticamente. Cada vez que se agregan RPCs o cambios de esquema para un flujo operativo, hay que ejecutar `supabase db push` o un pipeline equivalente sobre la base remota antes de validar el preview.
 
+### Inventario y deprecaciones de RPCs de tesoreria/consolidacion
+
+RPCs activas con consumidor vigente en el repo:
+
+* `get_treasury_movements_by_date_for_current_club`
+* `get_treasury_movements_by_account_and_date_for_current_club`
+* `get_treasury_movements_history_by_account_for_current_club`
+* `get_treasury_movement_by_id_for_current_club`
+* `create_treasury_movement_for_current_club`
+* `update_treasury_movement_for_current_club` con firma que incluye `p_movement_date`
+* `get_daily_consolidation_batch_by_date_for_current_club`
+* `create_daily_consolidation_batch_for_current_club`
+* `update_daily_consolidation_batch_for_current_club`
+* `get_movement_audit_logs_by_movement_id_for_current_club`
+* `create_movement_audit_log_for_current_club`
+
+RPCs deprecadas:
+
+* `update_treasury_movement_for_current_club` sin `p_movement_date`
+
+Reglas para la overload deprecada:
+
+* se mantiene solo por compatibilidad temporal con entornos remotos que todavia reintenten sin `p_movement_date`
+* no debe ser invocada por nuevos consumidores del repo
+* su retiro requiere eliminar el fallback en `access-repository` y validar que todas las bases remotas ya tengan la firma nueva
+
+Regla de tipos para estas RPCs:
+
+* cuando una RPC declara `created_at`, `executed_at` o `performed_at` como `timestamptz`, debe castear explicitamente columnas `timestamp` en el `returning` o `select`
+* no confiar en coerciones implicitas porque generan drift remoto y errores `42804`
+
 ## 5.4 Excepción preselección de club
 
 Durante la resolución post-login todavía puede no existir `active_club_id`.

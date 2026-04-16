@@ -2834,7 +2834,9 @@ async function updateRealTreasuryMovement(
 
     if (legacyError) {
       logClubScopedRpcFailure(operation, { clubId: input.clubId, ...details, fallback: "legacy_signature" }, legacyError);
-      return null;
+      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", operation, {
+        cause: legacyError
+      });
     }
 
     const legacyRow = Array.isArray(legacyData)
@@ -2846,7 +2848,9 @@ async function updateRealTreasuryMovement(
 
   if (error) {
     logClubScopedRpcFailure(operation, { clubId: input.clubId, ...details }, error);
-    return null;
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", operation, {
+      cause: error
+    });
   }
 
   const row = Array.isArray(data)
