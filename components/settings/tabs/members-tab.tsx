@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Modal } from "@/components/ui/modal";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
@@ -61,10 +62,23 @@ export function MembersTab({
   updateMembershipRoleAction,
   removeMembershipAction
 }: MembersTabProps) {
+  const searchParams = useSearchParams();
+  const feedbackCode = searchParams.get("feedback");
+
   const [search, setSearch] = useState("");
   const [isInviting, setIsInviting] = useState(false);
   const [editingMember, setEditingMember] = useState<ClubMember | null>(null);
   const [removingMembershipId, setRemovingMembershipId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (feedbackCode === "membership_roles_updated" || feedbackCode === "membership_approved") {
+      setEditingMember(null);
+      setIsInviting(false);
+    }
+    if (feedbackCode === "membership_removed" || feedbackCode === "self_removed") {
+      setRemovingMembershipId(null);
+    }
+  }, [feedbackCode]);
 
   const removingMember = useMemo(
     () => members.find((m) => m.membershipId === removingMembershipId) ?? null,
@@ -188,11 +202,37 @@ export function MembersTab({
                         />
                       </div>
                     </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      {member.status !== "pendiente_aprobacion" ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingMember(member)}
+                          aria-label={texts.settings.club.members.update_roles_cta}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        onClick={() => setRemovingMembershipId(member.membershipId)}
+                        aria-label={isCurrentUser ? texts.settings.club.members.leave_club_cta : texts.settings.club.members.remove_cta}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-destructive/25 bg-destructive/10 text-destructive transition hover:bg-destructive/15"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="mt-5 flex items-center gap-2">
-                    {member.status === "pendiente_aprobacion" ? (
-                      <form action={approveMembershipAction} className="flex-1">
+                  {member.status === "pendiente_aprobacion" ? (
+                    <div className="mt-4">
+                      <form action={approveMembershipAction}>
                         <input type="hidden" name="membership_id" value={member.membershipId} />
                         <input type="hidden" name="role" value={member.roles[0] ?? "secretaria"} />
                         <PendingFieldset className="contents">
@@ -203,30 +243,8 @@ export function MembersTab({
                           />
                         </PendingFieldset>
                       </form>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setEditingMember(member)}
-                        aria-label={texts.settings.club.members.update_roles_cta}
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => setRemovingMembershipId(member.membershipId)}
-                      aria-label={isCurrentUser ? texts.settings.club.members.leave_club_cta : texts.settings.club.members.remove_cta}
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-destructive/25 bg-destructive/10 text-destructive transition hover:bg-destructive/15"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
+                    </div>
+                  ) : null}
                 </article>
               );
             })}

@@ -81,7 +81,7 @@ export async function createTreasuryAccountAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "cuentas");
 }
 
 export async function updateTreasuryAccountAction(formData: FormData) {
@@ -94,7 +94,7 @@ export async function updateTreasuryAccountAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "cuentas");
 }
 
 export async function createTreasuryCategoryAction(formData: FormData) {
@@ -104,7 +104,7 @@ export async function createTreasuryCategoryAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "categorias");
 }
 
 export async function updateTreasuryCategoryAction(formData: FormData) {
@@ -115,7 +115,7 @@ export async function updateTreasuryCategoryAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "categorias");
 }
 
 export async function createClubActivityAction(formData: FormData) {
@@ -125,7 +125,7 @@ export async function createClubActivityAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "actividades");
 }
 
 export async function updateClubActivityAction(formData: FormData) {
@@ -136,7 +136,7 @@ export async function updateClubActivityAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "actividades");
 }
 
 export async function updateCalendarEventTreasuryAvailabilityAction(formData: FormData) {
