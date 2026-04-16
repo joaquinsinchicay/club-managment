@@ -85,7 +85,7 @@ function ClubActivityForm({
   defaultActivity
 }: ClubActivityFormProps) {
   return (
-    <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
+    <form action={action} className="grid gap-4 rounded-[20px] border border-border bg-secondary/40 p-4">
       <PendingFieldset className="grid gap-4">
         {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 
@@ -200,7 +200,7 @@ function TreasuryAccountForm({
         event.preventDefault();
         setCurrenciesTouched(true);
       }}
-      className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4"
+      className="grid gap-4 rounded-[20px] border border-border bg-secondary/40 p-4"
     >
       <PendingFieldset className="grid gap-4">
         {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
@@ -334,7 +334,7 @@ function TreasuryCategoryForm({
   const isSystemCategory = defaultCategory ? isSystemTreasuryCategoryName(defaultCategory.name) : false;
 
   return (
-    <form action={action} className="grid gap-4 rounded-[24px] border border-border bg-secondary/40 p-4">
+    <form action={action} className="grid gap-4 rounded-[20px] border border-border bg-secondary/40 p-4">
       <PendingFieldset className="grid gap-4">
         {defaultCategory ? <input type="hidden" name="category_id" value={defaultCategory.id} /> : null}
         {isSystemCategory ? (
@@ -417,6 +417,7 @@ type SettingsSectionShellProps = {
   description: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
 };
 
 function SettingsSectionShell({
@@ -424,11 +425,12 @@ function SettingsSectionShell({
   title,
   description,
   action,
-  children
+  children,
+  className
 }: SettingsSectionShellProps) {
   return (
-    <section className="rounded-[28px] border border-border/70 bg-card p-5 shadow-soft sm:p-6">
-      <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-start sm:justify-between">
+    <section className={className}>
+      <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           {eyebrow ? (
             <div className="inline-flex w-fit rounded-full border border-border/70 bg-secondary/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -436,13 +438,13 @@ function SettingsSectionShell({
             </div>
           ) : null}
           <div className="space-y-1">
-            <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
-            <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
+            <h3 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">{title}</h3>
+            <p className="max-w-3xl text-sm leading-5 text-muted-foreground">{description}</p>
           </div>
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="mt-4">{children}</div>
     </section>
   );
 }
@@ -493,8 +495,9 @@ export function ClubTreasurySettingsManager({
   }, [feedbackCode]);
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
       <SettingsSectionShell
+        className="rounded-[22px] border border-border/70 bg-card p-4 sm:p-5 xl:col-span-2"
         title={texts.settings.club.treasury.accounts_title}
         description={texts.settings.club.treasury.accounts_description}
         action={
@@ -523,43 +526,39 @@ export function ClubTreasurySettingsManager({
         ) : null}
 
         {treasurySettings.accounts.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
+          <div className="rounded-[20px] border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
             {texts.settings.club.treasury.empty_accounts}
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {treasurySettings.accounts.map((account) => (
-              <article
-                key={account.id}
-                className="rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/10 text-xl">
-                        {account.emoji ?? texts.settings.club.treasury.default_account_emoji}
-                      </div>
-                      <div>
-                        <p className="truncate text-base font-semibold text-foreground">{account.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {getAccountTypeLabel(account.accountType)}
-                        </p>
-                      </div>
+              <article key={account.id} className="rounded-[20px] border border-border/70 bg-secondary/10 p-4">
+                <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)_auto] lg:items-center">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/10 text-xl">
+                      {account.emoji ?? texts.settings.club.treasury.default_account_emoji}
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_visibility_label}
-                        </span>
-                        <span className="font-medium">{getAccountVisibilityLabel(account)}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_currencies_label}
-                        </span>
-                        <span className="font-medium">{account.currencies.join(" · ")}</span>
-                      </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground sm:text-base">
+                        {account.name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{getAccountTypeLabel(account.accountType)}</p>
                     </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-2.5 py-1.5 text-foreground">
+                      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        {texts.settings.club.treasury.account_visibility_label}
+                      </span>
+                      <span className="font-medium">{getAccountVisibilityLabel(account)}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-2.5 py-1.5 text-foreground">
+                      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        {texts.settings.club.treasury.account_currencies_label}
+                      </span>
+                      <span className="font-medium">{account.currencies.join(" · ")}</span>
+                    </span>
                   </div>
 
                   <button
@@ -591,35 +590,38 @@ export function ClubTreasurySettingsManager({
       </SettingsSectionShell>
 
       <SettingsSectionShell
+        className="rounded-[22px] border border-border/70 bg-card p-4 sm:p-5"
         eyebrow={texts.settings.club.treasury.movement_type_selection_label}
         title={texts.settings.club.treasury.movement_types_title}
         description={texts.settings.club.treasury.movement_types_description}
       >
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid gap-3">
           {TREASURY_MOVEMENT_TYPE_OPTIONS.map((movementType) => {
             const isIncome = movementType === "ingreso";
 
             return (
               <article
                 key={movementType}
-                className={`rounded-[24px] border p-5 ${
+                className={`rounded-[20px] border p-4 ${
                   isIncome ? "border-success/25 bg-success/5" : "border-destructive/20 bg-destructive/5"
                 }`}
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-card text-2xl">
-                  {isIncome ? "↗" : "↘"}
-                </div>
-                <div className="mt-5 space-y-1">
-                  <p
-                    className={`text-3xl font-semibold tracking-tight ${
-                      isIncome ? "text-success" : "text-destructive"
-                    }`}
-                  >
-                    {getMovementTypeLabel(movementType)}
-                  </p>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    {texts.settings.club.treasury.movement_type_impacts[movementType]}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-xl">
+                    {isIncome ? "↗" : "↘"}
+                  </div>
+                  <div className="space-y-1">
+                    <p
+                      className={`text-lg font-semibold tracking-tight ${
+                        isIncome ? "text-success" : "text-destructive"
+                      }`}
+                    >
+                      {getMovementTypeLabel(movementType)}
+                    </p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      {texts.settings.club.treasury.movement_type_impacts[movementType]}
+                    </p>
+                  </div>
                 </div>
               </article>
             );
@@ -628,6 +630,7 @@ export function ClubTreasurySettingsManager({
       </SettingsSectionShell>
 
       <SettingsSectionShell
+        className="rounded-[22px] border border-border/70 bg-card p-4 sm:p-5"
         title={texts.settings.club.treasury.categories_title}
         description={texts.settings.club.treasury.categories_description}
         action={
@@ -655,45 +658,37 @@ export function ClubTreasurySettingsManager({
         ) : null}
 
         {treasurySettings.categories.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
+          <div className="rounded-[20px] border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
             {texts.settings.club.treasury.empty_categories}
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {treasurySettings.categories.map((category) => (
-              <article
-                key={category.id}
-                className="rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/10 text-xl">
-                        {category.emoji ?? texts.settings.club.treasury.default_category_emoji}
-                      </div>
-                      <div>
-                        <p className="truncate text-base font-semibold text-foreground">{category.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {getRoleVisibilityLabel(
-                            category.visibleForSecretaria,
-                            category.visibleForTesoreria
-                          )}
-                        </p>
-                      </div>
+              <article key={category.id} className="rounded-[20px] border border-border/70 bg-secondary/10 p-4">
+                <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)_auto] lg:items-center">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/10 text-xl">
+                      {category.emoji ?? texts.settings.club.treasury.default_category_emoji}
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_visibility_label}
-                        </span>
-                        <span className="font-medium">
-                          {getRoleVisibilityLabel(
-                            category.visibleForSecretaria,
-                            category.visibleForTesoreria
-                          )}
-                        </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground sm:text-base">
+                        {category.name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {getRoleVisibilityLabel(category.visibleForSecretaria, category.visibleForTesoreria)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-2.5 py-1.5 text-foreground">
+                      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        {texts.settings.club.treasury.account_visibility_label}
                       </span>
-                    </div>
+                      <span className="font-medium">
+                        {getRoleVisibilityLabel(category.visibleForSecretaria, category.visibleForTesoreria)}
+                      </span>
+                    </span>
                   </div>
 
                   <button
@@ -724,6 +719,7 @@ export function ClubTreasurySettingsManager({
       </SettingsSectionShell>
 
       <SettingsSectionShell
+        className="rounded-[22px] border border-border/70 bg-card p-4 sm:p-5"
         title={texts.settings.club.treasury.activities_title}
         description={texts.settings.club.treasury.activities_description}
         action={
@@ -751,45 +747,37 @@ export function ClubTreasurySettingsManager({
         ) : null}
 
         {treasurySettings.activities.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
+          <div className="rounded-[20px] border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
             {texts.settings.club.treasury.empty_activities}
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {treasurySettings.activities.map((activity) => (
-              <article
-                key={activity.id}
-                className="rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/10 text-xl">
-                        {activity.emoji ?? texts.settings.club.treasury.default_activity_emoji}
-                      </div>
-                      <div>
-                        <p className="truncate text-base font-semibold text-foreground">{activity.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {getRoleVisibilityLabel(
-                            activity.visibleForSecretaria,
-                            activity.visibleForTesoreria
-                          )}
-                        </p>
-                      </div>
+              <article key={activity.id} className="rounded-[20px] border border-border/70 bg-secondary/10 p-4">
+                <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)_auto] lg:items-center">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/10 text-xl">
+                      {activity.emoji ?? texts.settings.club.treasury.default_activity_emoji}
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_visibility_label}
-                        </span>
-                        <span className="font-medium">
-                          {getRoleVisibilityLabel(
-                            activity.visibleForSecretaria,
-                            activity.visibleForTesoreria
-                          )}
-                        </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground sm:text-base">
+                        {activity.name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {getRoleVisibilityLabel(activity.visibleForSecretaria, activity.visibleForTesoreria)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-2.5 py-1.5 text-foreground">
+                      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        {texts.settings.club.treasury.account_visibility_label}
                       </span>
-                    </div>
+                      <span className="font-medium">
+                        {getRoleVisibilityLabel(activity.visibleForSecretaria, activity.visibleForTesoreria)}
+                      </span>
+                    </span>
                   </div>
 
                   <button
@@ -820,10 +808,11 @@ export function ClubTreasurySettingsManager({
       </SettingsSectionShell>
 
       <SettingsSectionShell
+        className="rounded-[22px] border border-border/70 bg-card p-4 sm:p-5"
         title={texts.settings.club.treasury.receipt_formats_title}
         description={texts.settings.club.treasury.receipt_formats_description}
       >
-        <div className="grid gap-4 rounded-[24px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5">
+        <div className="grid gap-3 rounded-[20px] border border-border/70 bg-secondary/10 p-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2 text-sm text-foreground">
               <span className="font-medium">{texts.settings.club.treasury.receipt_name_label}</span>
