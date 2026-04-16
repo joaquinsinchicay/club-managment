@@ -268,8 +268,8 @@
     },
     "treasury_role": {
       "title": "Saldos de cuentas",
-      "description": "Consulta saldos y registra movimientos de Tesoreria en el club activo.",
-      "balances_total_label": "Total consolidado",
+      "description": "Consulta saldos acumulados y registra movimientos de Tesoreria en el club activo.",
+      "balances_total_label": "Total acumulado",
       "detail_accounts_cta": "Ver detalle de cuentas",
       "actions_card_eyebrow": "Gestion de Tesoreria",
       "actions_card_title": "Gestion de Tesoreria",

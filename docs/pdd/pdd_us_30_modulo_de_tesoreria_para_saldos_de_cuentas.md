@@ -30,7 +30,7 @@ El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol
 ### Incluye
 - Card operativa de Tesorería dentro de `/dashboard`.
 - Listado de cuentas visibles para Tesorería en el club activo.
-- Visualización de saldos por moneda para cada cuenta.
+- Visualización de saldos acumulados por moneda para cada cuenta.
 - Estado vacío cuando no existen cuentas visibles para Tesorería.
 - Navegación al detalle de cuenta desde el dashboard.
 - Formulario inline para registrar movimientos de Tesorería.
@@ -76,7 +76,10 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - Solo `tesoreria` puede ver esta card dentro de `/dashboard`.
 - Si el usuario también tiene `secretaria`, el dashboard prioriza la variante de Secretaría.
 - La card usa únicamente cuentas con `visible_for_tesoreria = true`.
-- Cada cuenta visible muestra sus saldos por todas las monedas habilitadas.
+- Cada cuenta visible muestra sus saldos acumulados por todas las monedas habilitadas.
+- El saldo visible de Tesorería se calcula con el historial acumulado de movimientos elegibles de la cuenta.
+- Para Tesorería impactan saldo los movimientos con estado `posted` y `consolidated`.
+- Para Tesorería no impactan saldo los movimientos con estado `pending_consolidation`, `integrated` ni `cancelled`.
 - El estado vacío no oculta la pantalla; muestra la card con mensaje claro.
 - La card no muestra estado de jornada ni CTAs de apertura/cierre.
 - Tesorería puede registrar movimientos sin requerir `daily_cash_session_id`.
@@ -91,7 +94,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 1. Un usuario con rol `tesoreria` entra a `/dashboard`.
 2. El sistema valida sesión, club activo y rol habilitado.
-3. El backend resuelve las cuentas visibles para Tesorería y calcula sus saldos por moneda.
+3. El backend resuelve las cuentas visibles para Tesorería y calcula sus saldos acumulados por moneda.
 4. La UI renderiza la card con el listado de cuentas, el formulario inline y el bloque `Ultimos movimientos`.
 5. El usuario puede entrar al detalle de una cuenta, registrar un movimiento o editar un movimiento visible.
 
@@ -120,7 +123,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 ### Reglas
 - La vista debe ser mobile-first.
 - Debe sentirse coherente con la card de Secretaría, evitando una UX puente.
-- Debe mostrar saldos de forma escaneable por cuenta y moneda.
+- Debe mostrar saldos acumulados de forma escaneable por cuenta y moneda.
 - Debe ofrecer acceso al detalle, formulario inline y edición de movimientos en la misma pantalla.
 - El bloque de movimientos debe reutilizar la densidad informativa de Secretaría para `Concepto`, `Cuenta`, `Detalle del movimiento`, `Monto` y `Acciones`.
 - No debe haber textos hardcodeados.
@@ -165,7 +168,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 ### Entidades afectadas
 - `treasury_accounts`: READ para resolver cuentas visibles a Tesorería.
 - `treasury_account_currencies`: READ indirecto para monedas habilitadas por cuenta.
-- `treasury_movements`: READ para calcular saldos del día por cuenta y moneda.
+- `treasury_movements`: READ para calcular saldos acumulados por cuenta y moneda.
 - `treasury_movements`: INSERT para registrar movimientos de Tesorería sin jornada.
 - `treasury_movements`: UPDATE para editar movimientos visibles de Tesorería desde el dashboard.
 - La lectura y escritura de `treasury_movements` en base remota debe resolverse mediante RPCs club-scoped que seteen `app.current_club_id` y respeten RLS del club activo.

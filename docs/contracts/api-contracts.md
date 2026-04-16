@@ -809,6 +809,13 @@ Sí
 }
 ```
 
+**Notes**
+
+* `accounts[].balances` debe reflejar la suma historica acumulada de los movimientos visibles para Tesoreria en cada cuenta visible del club activo
+* para Tesoreria impactan saldo los movimientos con estado `posted` y `consolidated`
+* no impactan saldo los movimientos con estado `pending_consolidation`, `integrated` o `cancelled`
+* `movements[]` sigue listando solo los movimientos visibles del `session_date`, ordenados de mas reciente a mas antiguo por `created_at`
+
 ---
 
 ### 6.2 Open daily cash session

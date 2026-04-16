@@ -382,10 +382,12 @@ async function getAvailableBalanceForAccountCurrency(input: {
   currencyCode: string;
   effectiveDate?: string;
   excludeMovementId?: string;
+  role?: TreasuryVisibilityRole;
 }) {
   const movements = await accessRepository.listTreasuryMovementsHistoryByAccount(input.clubId, input.accountId);
 
   return movements
+    .filter((movement) => shouldIncludeMovementInRoleBalances(movement, input.role ?? "secretaria"))
     .filter((movement) => movement.currencyCode === input.currencyCode)
     .filter((movement) => !input.effectiveDate || movement.movementDate <= input.effectiveDate)
     .filter((movement) => !input.excludeMovementId || movement.id !== input.excludeMovementId)
@@ -396,10 +398,11 @@ function shouldIncludeMovementInRoleBalances(
   movement: Pick<TreasuryMovement, "status">,
   role: TreasuryVisibilityRole
 ) {
-  return (
-    role === "secretaria" ||
-    (movement.status !== "pending_consolidation" && movement.status !== "integrated")
-  );
+  if (role === "secretaria") {
+    return true;
+  }
+
+  return movement.status === "posted" || movement.status === "consolidated";
 }
 
 function serializeMovementSnapshot(movement: TreasuryMovement) {
@@ -1137,7 +1140,7 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
   const movementsByAccount = await Promise.all(
     accounts.map(async (account) => ({
       account,
-      movements: (await accessRepository.listTreasuryMovementsByAccount(clubId, account.id, sessionDate)).filter(
+      movements: (await accessRepository.listTreasuryMovementsHistoryByAccount(clubId, account.id)).filter(
         (movement) => shouldIncludeMovementInRoleBalances(movement, "tesoreria")
       )
     }))
@@ -1843,7 +1846,8 @@ export async function createFxOperation(input: {
     clubId: context.activeClub.id,
     accountId: sourceAccount.id,
     currencyCode: input.sourceCurrencyCode,
-    effectiveDate: getTodayDate()
+    effectiveDate: getTodayDate(),
+    role: "tesoreria"
   });
 
   if (parsedSourceAmount > availableBalance) {
@@ -2013,7 +2017,8 @@ export async function createTreasuryRoleMovement(input: {
       clubId: context.activeClub.id,
       accountId: account.id,
       currencyCode: input.currencyCode,
-      effectiveDate: movementDate
+      effectiveDate: movementDate,
+      role: "tesoreria"
     });
 
     if (parsedAmount > availableBalance) {
@@ -2181,7 +2186,8 @@ export async function updateTreasuryRoleMovement(input: {
       accountId: account.id,
       currencyCode: input.currencyCode,
       effectiveDate: movement.movementDate,
-      excludeMovementId: movement.id
+      excludeMovementId: movement.id,
+      role: "tesoreria"
     });
 
     if (parsedAmount > availableBalance) {
@@ -2625,7 +2631,8 @@ export async function updateMovementBeforeConsolidation(input: {
       accountId: account.id,
       currencyCode: input.currencyCode,
       effectiveDate: movementDate,
-      excludeMovementId: movement.id
+      excludeMovementId: movement.id,
+      role: "tesoreria"
     });
 
     if (parsedAmount > availableBalance) {
@@ -2771,7 +2778,8 @@ export async function updateTransferBeforeConsolidation(input: {
     accountId: sourceAccount.id,
     currencyCode: input.currencyCode,
     effectiveDate: sourceMovement.movementDate,
-    excludeMovementId: sourceMovement.id
+    excludeMovementId: sourceMovement.id,
+    role: "tesoreria"
   });
 
   if (parsedAmount > availableBalance) {
