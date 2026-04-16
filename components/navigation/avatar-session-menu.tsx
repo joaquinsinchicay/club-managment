@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { BlockingOverlay } from "@/components/ui/overlay";
 import { Spinner } from "@/components/ui/pending-form";
 import { texts } from "@/lib/texts";
 
@@ -116,9 +117,10 @@ export function AvatarSessionMenu({
       ) : null}
 
       {isConfirmingSignOut ? (
-        <div
-          className="fixed inset-0 z-30 flex items-center justify-center bg-foreground/40 px-4"
-          role="presentation"
+        <BlockingOverlay
+          open
+          className="z-30 bg-foreground/40"
+          contentClassName="items-center justify-center px-4"
         >
           <div
             role="dialog"
@@ -163,7 +165,7 @@ export function AvatarSessionMenu({
               </Link>
             </div>
           </div>
-        </div>
+        </BlockingOverlay>
       ) : null}
     </div>
   );

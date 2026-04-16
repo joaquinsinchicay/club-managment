@@ -7,21 +7,21 @@
 | Campo | Valor |
 |---|---|
 | Epic | E03 · Tesorería |
-| User Story | Como Tesoreria del club, quiero configurar las cuentas y categorías de tesorería del club activo, para definir los parámetros que utilizará Secretaria en la operatoria diaria. |
+| User Story | Como Admin del club, quiero configurar las cuentas y categorías de tesorería del club activo, para definir los parámetros que utilizará Secretaria en la operatoria diaria. |
 | Prioridad | Alta |
-| Objetivo de negocio | Permitir que cada club defina su base operativa de cuentas y categorías antes de la carga diaria de movimientos, manteniendo aislamiento por club y administración solo por rol `tesoreria`. |
+| Objetivo de negocio | Permitir que cada club defina su base operativa de cuentas y categorías antes de la carga diaria de movimientos, manteniendo aislamiento por club y administración solo por rol `admin`. |
 
 ---
 
 ## 2. Problema a resolver
 
-La operatoria diaria de Secretaría ya puede registrar movimientos, pero todavía depende de una configuración financiera fija. Tesorería necesita crear y editar cuentas y categorías del club activo para adaptar la tesorería a su operación real.
+La operatoria diaria de Secretaría ya puede registrar movimientos, pero todavía depende de una configuración financiera fija. Admin necesita crear y editar cuentas y categorías del club activo para adaptar la tesorería a su operación real.
 
 ---
 
 ## 3. Objetivo funcional
 
-Desde `Configuración del club`, un usuario `tesoreria` debe visualizar las cards de configuración operativa del club y administrar cuentas y categorías del club activo, pudiendo listarlas, crearlas y editarlas con sus atributos operativos mínimos.
+Desde `Configuración del club`, un usuario `admin` debe visualizar las cards de configuración operativa del club y administrar cuentas y categorías del club activo, pudiendo listarlas, crearlas y editarlas con sus atributos operativos mínimos.
 
 ---
 
@@ -49,14 +49,14 @@ Desde `Configuración del club`, un usuario `tesoreria` debe visualizar las card
 
 ## 5. Actor principal
 
-Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
+Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 
 ---
 
 ## 6. Precondiciones
 
 - El club activo está resuelto.
-- El usuario actual tiene permisos de tesorería del club activo.
+- El usuario actual tiene permisos de administración del club activo.
 - `Configuración del club` ya existe como entrada de navegación.
 
 ---
@@ -65,17 +65,17 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 | Escenario | Resultado esperado |
 |---|---|
-| Tesorería entra a configuración | Ve las cards de configuración operativa del club. |
-| Tesorería crea una cuenta válida | La cuenta queda registrada en el club activo. |
-| Tesorería edita una cuenta existente | La cuenta queda actualizada solo en el club activo. |
-| Tesorería crea una categoría válida | La categoría queda registrada en el club activo. |
-| Tesorería edita una categoría existente | La categoría queda actualizada solo en el club activo. |
+| Admin entra a configuración | Ve las cards de configuración operativa del club. |
+| Admin crea una cuenta válida | La cuenta queda registrada en el club activo. |
+| Admin edita una cuenta existente | La cuenta queda actualizada solo en el club activo. |
+| Admin crea una categoría válida | La categoría queda registrada en el club activo. |
+| Admin edita una categoría existente | La categoría queda actualizada solo en el club activo. |
 
 ---
 
 ## 8. Reglas de negocio
 
-- Solo `tesoreria` puede acceder y mutar esta configuración.
+- Solo `admin` puede acceder y mutar esta configuración.
 - Toda configuración aplica exclusivamente al club activo.
 - Las cuentas creadas en esta historia quedan orientadas a la operatoria de `secretaria`.
 - La definición explícita de monedas por cuenta queda superseded por US-28.
@@ -95,35 +95,35 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 ## 9. Flujo principal
 
-1. Un usuario de Tesorería entra a `Configuración del club`.
+1. Un usuario Admin entra a `Configuración del club`.
 2. La UI muestra la vista unificada de `Configuración del club`.
 3. El sistema muestra las cards de cuentas y categorías del club activo.
-4. Tesorería crea o edita cuentas y categorías; para categorías del sistema solo ajusta visibilidad por rol.
+4. Admin crea o edita cuentas y categorías; para categorías del sistema solo ajusta visibilidad por rol.
 5. El sistema valida, persiste y vuelve a mostrar la configuración actualizada con feedback.
 
 ---
 
 ## 10. Flujos alternativos
 
-### A. Usuario sin Tesorería
+### A. Usuario sin Admin
 
-1. Un usuario sin rol `tesoreria` intenta acceder a la configuración de tesorería.
+1. Un usuario sin rol `admin` intenta acceder a la configuración de tesorería.
 2. El sistema mantiene el bloqueo de la pantalla.
 
 ### B. Nombre faltante o tipo faltante
 
-1. Tesorería intenta guardar una cuenta o categoría incompleta.
+1. Admin intenta guardar una cuenta o categoría incompleta.
 2. El sistema rechaza la acción y devuelve feedback específico.
 
 ### C. Categoría sin visibilidad
 
-1. Tesorería crea o edita una categoría sin seleccionar ningún rol en `Visibilidad`.
+1. Admin crea o edita una categoría sin seleccionar ningún rol en `Visibilidad`.
 2. El sistema permite guardar la categoría.
 3. La configuración queda marcada como oculta y no aparece en formularios operativos.
 
 ### D. Duplicado
 
-1. Tesorería intenta crear o editar con un nombre ya usado por otra entidad del mismo club.
+1. Admin intenta crear o editar con un nombre ya usado por otra entidad del mismo club.
 2. El sistema bloquea la operación y devuelve feedback.
 
 ---
@@ -135,8 +135,8 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 ### Reglas
 - La configuración debe mantenerse dentro de `settings/club`.
-- Las cards de tesorería deben ser visibles dentro de la pantalla solo para usuarios con rol `tesoreria`.
-- Un usuario con ambos roles puede ver en una sola pantalla tanto la administración de miembros como las cards de tesorería.
+- Las cards de tesorería deben ser visibles dentro de la pantalla solo para usuarios con rol `admin`.
+- Un usuario `admin` ve en una sola pantalla tanto la administración de miembros como las cards de tesorería.
 - La pantalla puede incluir bloques informativos read-only de catálogos fijos del sistema, sin convertirlos en configuraciones editables.
 - Al crear o editar cuentas/categorías, el CTA debe entrar en loading de inmediato y el formulario debe quedar bloqueado hasta resolver.
 - El campo `Visibilidad` de categorías debe usar el mismo patrón UI que el de cuentas, con selección por rol para `Secretaria` y `Tesoreria`.
@@ -197,7 +197,7 @@ Do not reference current code files.
 ## 14. Seguridad
 
 - La lectura y mutación deben limitarse al club activo.
-- Solo `tesoreria` puede operar sobre esta configuración.
+- Solo `admin` puede operar sobre esta configuración.
 - No debe ser posible editar una cuenta o categoría de otro club por manipulación de ids.
 
 ---
@@ -206,7 +206,7 @@ Do not reference current code files.
 
 - contracts: `Get treasury settings`, `Create treasury account`, `Update treasury account`, `Create treasury category`, `Update treasury category`.
 - domain entities: `treasury_accounts`, `treasury_account_currencies`, `treasury_categories`.
-- permissions: matriz donde solo `tesoreria` crea y edita cuentas/categorías.
+- permissions: matriz donde solo `admin` crea y edita cuentas/categorías.
 - other US if relevant: US-11 para que Secretaría consuma categorías y cuentas; US-12/13/14 para operación diaria sobre la configuración creada.
 
 ---

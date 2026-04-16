@@ -50,6 +50,16 @@ type AccountTransferMutationResult = {
   targetMovementDisplayId: string;
 };
 
+type FxOperationInsertRow = {
+  id: string;
+  club_id: string;
+  source_account_id: string;
+  target_account_id: string;
+  source_amount: number | string;
+  target_amount: number | string;
+  created_at: string | null;
+};
+
 export class AccessRepositoryInfraError extends Error {
   code: "treasury_admin_config_missing" | "treasury_settings_write_failed" | "club_scoped_rpc_failed";
   operation: string;
@@ -95,6 +105,55 @@ function getSupabaseErrorMessage(error: unknown) {
   return typeof message === "string" ? message : "";
 }
 
+const KNOWN_CLUB_SCOPED_RPC_NAMES = [
+  "update_treasury_movement_for_current_club",
+  "get_last_open_daily_cash_session_before_date_for_current_club",
+  "auto_close_stale_daily_cash_session_with_balances_for_current_club",
+  "get_daily_consolidation_batch_by_date_for_current_club",
+  "create_daily_consolidation_batch_for_current_club",
+  "update_daily_consolidation_batch_for_current_club",
+  "get_movement_audit_logs_by_movement_id_for_current_club",
+  "create_movement_audit_log_for_current_club"
+] as const;
+
+function getMissingClubScopedRpcName(error: unknown, rpcName?: string) {
+  const code = getSupabaseErrorCode(error);
+  const message = getSupabaseErrorMessage(error).toLowerCase();
+
+  if (
+    code !== "42883" &&
+    code !== "PGRST202" &&
+    !message.includes("does not exist") &&
+    !message.includes("could not find the function")
+  ) {
+    return null;
+  }
+
+  if (rpcName && message.includes(rpcName.toLowerCase())) {
+    return rpcName;
+  }
+
+  return (
+    KNOWN_CLUB_SCOPED_RPC_NAMES.find((knownRpcName) => message.includes(knownRpcName.toLowerCase())) ?? null
+  );
+}
+
+function isLegacyUpdateTreasuryMovementRpcCause(error: unknown) {
+  const code = getSupabaseErrorCode(error);
+  const message = getSupabaseErrorMessage(error).toLowerCase();
+
+  if ((code === "42883" || code === "PGRST202") && message.includes("update_treasury_movement_for_current_club")) {
+    return true;
+  }
+
+  return (
+    message.includes("update_treasury_movement_for_current_club") &&
+    (message.includes("p_movement_date") ||
+      message.includes("function") && message.includes("does not exist") ||
+      message.includes("could not find the function"))
+  );
+}
+
 function isMissingStaleSessionAutoCloseRpcCause(error: unknown) {
   const code = getSupabaseErrorCode(error);
 
@@ -124,6 +183,8 @@ function logClubScopedRpcFailure(
   console.error("[club-scoped-rpc-failure]", {
     operation,
     ...details,
+    errorCode: getSupabaseErrorCode(error),
+    missingRpcName: getMissingClubScopedRpcName(error),
     error
   });
 }
@@ -327,9 +388,10 @@ type AccessRepository = {
   updateTreasuryMovement(input: {
     movementId: string;
     clubId: string;
+    movementDate?: string;
     accountId: string;
     movementType: TreasuryMovementType;
-    categoryId: string;
+    categoryId?: string | null;
     concept: string;
     currencyCode: string;
     amount: number;
@@ -347,6 +409,7 @@ type AccessRepository = {
     executedByUserId: string;
   }): Promise<DailyConsolidationBatch | null>;
   updateDailyConsolidationBatch(input: {
+    clubId?: string;
     batchId: string;
     status: DailyConsolidationBatch["status"];
     errorMessage?: string | null;
@@ -356,8 +419,9 @@ type AccessRepository = {
     secretariaMovementId: string;
     tesoreriaMovementId: string;
   }): Promise<MovementIntegration | null>;
-  listMovementAuditLogsByMovementId(movementId: string): Promise<MovementAuditLog[]>;
+  listMovementAuditLogsByMovementId(input: { clubId: string; movementId: string }): Promise<MovementAuditLog[]>;
   createMovementAuditLog(input: {
+    clubId: string;
     movementId: string;
     actionType: MovementAuditLog["actionType"];
     payloadBefore: Record<string, unknown> | null;
@@ -395,7 +459,7 @@ type AccessRepository = {
     originSource: TreasuryMovementOriginSource;
     accountId: string;
     movementType: TreasuryMovementType;
-    categoryId: string;
+    categoryId: string | null;
     concept: string;
     currencyCode: string;
     amount: number;
@@ -1395,6 +1459,26 @@ type TreasuryMovementRow = {
   created_at: string | null;
 };
 
+type DailyConsolidationBatchRow = {
+  id: string;
+  club_id: string;
+  consolidation_date: string;
+  status: DailyConsolidationBatch["status"] | null;
+  executed_at: string | null;
+  executed_by_user_id: string | null;
+  error_message: string | null;
+};
+
+type MovementAuditLogRow = {
+  id: string;
+  movement_id: string;
+  action_type: MovementAuditLog["actionType"];
+  payload_before: Record<string, unknown> | null;
+  payload_after: Record<string, unknown> | null;
+  performed_by_user_id: string;
+  performed_at: string | null;
+};
+
 function mapTreasuryMovementRow(row: TreasuryMovementRow): TreasuryMovement {
   return {
     id: row.id,
@@ -1417,6 +1501,30 @@ function mapTreasuryMovementRow(row: TreasuryMovementRow): TreasuryMovement {
     createdByUserId: row.created_by_user_id,
     status: row.status ?? "pending_consolidation",
     createdAt: row.created_at ?? now()
+  };
+}
+
+function mapDailyConsolidationBatchRow(row: DailyConsolidationBatchRow): DailyConsolidationBatch {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    consolidationDate: row.consolidation_date,
+    status: row.status ?? "pending",
+    executedAt: row.executed_at,
+    executedByUserId: row.executed_by_user_id,
+    errorMessage: row.error_message
+  };
+}
+
+function mapMovementAuditLogRow(row: MovementAuditLogRow): MovementAuditLog {
+  return {
+    id: row.id,
+    movementId: row.movement_id,
+    actionType: row.action_type,
+    payloadBefore: row.payload_before,
+    payloadAfter: row.payload_after,
+    performedByUserId: row.performed_by_user_id,
+    performedAt: row.performed_at ?? now()
   };
 }
 
@@ -1456,6 +1564,28 @@ function mapAccountTransferMutationRow(row: AccountTransferMutationRow): Account
     },
     sourceMovementDisplayId: row.source_movement_display_id,
     targetMovementDisplayId: row.target_movement_display_id
+  };
+}
+
+function mapFxOperationInsertRow(
+  row: FxOperationInsertRow,
+  input: {
+    sourceCurrencyCode: string;
+    targetCurrencyCode: string;
+    concept: string;
+  }
+): FxOperation {
+  return {
+    id: row.id,
+    clubId: row.club_id,
+    sourceAccountId: row.source_account_id,
+    targetAccountId: row.target_account_id,
+    sourceCurrencyCode: input.sourceCurrencyCode,
+    targetCurrencyCode: input.targetCurrencyCode,
+    sourceAmount: Number(row.source_amount),
+    targetAmount: Number(row.target_amount),
+    concept: input.concept,
+    createdAt: row.created_at ?? now()
   };
 }
 
@@ -2644,9 +2774,10 @@ async function updateRealTreasuryMovement(
   input: {
     movementId: string;
     clubId: string;
+    movementDate?: string;
     accountId: string;
     movementType: TreasuryMovementType;
-    categoryId: string;
+    categoryId?: string | null;
     concept: string;
     currencyCode: string;
     amount: number;
@@ -2658,31 +2789,227 @@ async function updateRealTreasuryMovement(
   },
   client?: AccessRepositoryClient
 ) {
-  const row = await runClubScopedMutationRpc<TreasuryMovementRow>(
-    "update_treasury_movement_for_current_club",
-    input.clubId,
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const operation = "update_treasury_movement";
+  const details = { movementId: input.movementId, accountId: input.accountId };
+  const baseParams = {
+    p_club_id: input.clubId,
+    p_movement_id: input.movementId,
+    p_account_id: input.accountId,
+    p_movement_type: input.movementType,
+    p_category_id: normalizeNullableUuidParam(input.categoryId),
+    p_concept: input.concept,
+    p_currency_code: input.currencyCode,
+    p_amount: input.amount,
+    p_activity_id: normalizeNullableUuidParam(input.activityId),
+    p_receipt_number: input.receiptNumber ?? null,
+    p_calendar_event_id: normalizeNullableUuidParam(input.calendarEventId),
+    p_status: input.status ?? null,
+    p_consolidation_batch_id: normalizeNullableUuidParam(input.consolidationBatchId)
+  };
+
+  const { data, error } = await supabase.rpc("update_treasury_movement_for_current_club", {
+    ...baseParams,
+    p_movement_date: input.movementDate ?? null
+  });
+
+  if (error && isLegacyUpdateTreasuryMovementRpcCause(error)) {
+    console.warn("[club-scoped-rpc-fallback]", {
+      operation,
+      clubId: input.clubId,
+      ...details,
+      fallback: "retry_without_movement_date",
+      error
+    });
+
+    const { data: legacyData, error: legacyError } = await supabase.rpc(
+      "update_treasury_movement_for_current_club",
+      baseParams
+    );
+
+    if (legacyError) {
+      logClubScopedRpcFailure(operation, { clubId: input.clubId, ...details, fallback: "legacy_signature" }, legacyError);
+      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", operation, {
+        cause: legacyError
+      });
+    }
+
+    const legacyRow = Array.isArray(legacyData)
+      ? ((legacyData[0] as TreasuryMovementRow | undefined) ?? null)
+      : ((legacyData as TreasuryMovementRow | null) ?? null);
+
+    return legacyRow ? mapTreasuryMovementRow(legacyRow) : null;
+  }
+
+  if (error) {
+    logClubScopedRpcFailure(operation, { clubId: input.clubId, ...details }, error);
+    throw new AccessRepositoryInfraError("club_scoped_rpc_failed", operation, {
+      cause: error
+    });
+  }
+
+  const row = Array.isArray(data)
+    ? ((data[0] as TreasuryMovementRow | undefined) ?? null)
+    : ((data as TreasuryMovementRow | null) ?? null);
+
+  return row ? mapTreasuryMovementRow(row) : null;
+}
+
+async function getRealDailyConsolidationBatchByDate(
+  clubId: string,
+  consolidationDate: string,
+  client?: AccessRepositoryClient
+) {
+  const rows = await runClubScopedReadRpc<DailyConsolidationBatchRow[]>(
+    "get_daily_consolidation_batch_by_date_for_current_club",
+    clubId,
     client,
     {
-      operation: "update_treasury_movement",
-      details: { movementId: input.movementId, accountId: input.accountId },
+      operation: "get_daily_consolidation_batch_by_date",
+      details: { consolidationDate },
+      strict: true,
       params: {
-        p_movement_id: input.movementId,
-        p_account_id: input.accountId,
-        p_movement_type: input.movementType,
-        p_category_id: input.categoryId,
-        p_concept: input.concept,
-        p_currency_code: input.currencyCode,
-        p_amount: input.amount,
-        p_activity_id: normalizeNullableUuidParam(input.activityId),
-        p_receipt_number: input.receiptNumber ?? null,
-        p_calendar_event_id: normalizeNullableUuidParam(input.calendarEventId),
-        p_status: input.status ?? null,
-        p_consolidation_batch_id: normalizeNullableUuidParam(input.consolidationBatchId)
+        p_consolidation_date: consolidationDate
       }
     }
   );
 
-  return row ? mapTreasuryMovementRow(row) : null;
+  return rows[0] ? mapDailyConsolidationBatchRow(rows[0]) : null;
+}
+
+async function createRealDailyConsolidationBatch(
+  input: {
+    clubId: string;
+    consolidationDate: string;
+    status: DailyConsolidationBatch["status"];
+    executedByUserId: string;
+  },
+  client?: AccessRepositoryClient
+) {
+  const row = await runClubScopedMutationRpc<DailyConsolidationBatchRow>(
+    "create_daily_consolidation_batch_for_current_club",
+    input.clubId,
+    client,
+    {
+      operation: "create_daily_consolidation_batch",
+      details: { consolidationDate: input.consolidationDate },
+      strict: true,
+      params: {
+        p_consolidation_date: input.consolidationDate,
+        p_status: input.status,
+        p_executed_by_user_id: input.executedByUserId
+      }
+    }
+  );
+
+  return row ? mapDailyConsolidationBatchRow(row) : null;
+}
+
+async function updateRealDailyConsolidationBatch(
+  input: {
+    clubId?: string;
+    batchId: string;
+    status: DailyConsolidationBatch["status"];
+    errorMessage?: string | null;
+  },
+  client?: AccessRepositoryClient
+) {
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return null;
+  }
+
+  const clubId = input.clubId?.trim();
+
+  if (!clubId) {
+    console.error("[daily-consolidation-batch-write-failure]", {
+      operation: "update_daily_consolidation_batch",
+      batchId: input.batchId,
+      status: input.status,
+      error: "missing_club_id"
+    });
+    return null;
+  }
+
+  const row = await runClubScopedMutationRpc<DailyConsolidationBatchRow>(
+    "update_daily_consolidation_batch_for_current_club",
+    clubId,
+    client,
+    {
+      operation: "update_daily_consolidation_batch",
+      details: { batchId: input.batchId, status: input.status },
+      strict: true,
+      params: {
+        p_batch_id: input.batchId,
+        p_status: input.status,
+        p_error_message: input.errorMessage ?? null
+      }
+    }
+  );
+
+  return row ? mapDailyConsolidationBatchRow(row) : null;
+}
+
+async function listRealMovementAuditLogsByMovementId(
+  input: {
+    clubId: string;
+    movementId: string;
+  },
+  client?: AccessRepositoryClient
+) {
+  const rows = await runClubScopedReadRpc<MovementAuditLogRow[]>(
+    "get_movement_audit_logs_by_movement_id_for_current_club",
+    input.clubId,
+    client,
+    {
+      operation: "list_movement_audit_logs_by_movement_id",
+      details: { movementId: input.movementId },
+      strict: true,
+      params: {
+        p_movement_id: input.movementId
+      }
+    }
+  );
+
+  return rows.map((row) => mapMovementAuditLogRow(row));
+}
+
+async function createRealMovementAuditLog(
+  input: {
+    clubId: string;
+    movementId: string;
+    actionType: MovementAuditLog["actionType"];
+    payloadBefore: Record<string, unknown> | null;
+    payloadAfter: Record<string, unknown> | null;
+    performedByUserId: string;
+  },
+  client?: AccessRepositoryClient
+) {
+  const row = await runClubScopedMutationRpc<MovementAuditLogRow>(
+    "create_movement_audit_log_for_current_club",
+    input.clubId,
+    client,
+    {
+      operation: "create_movement_audit_log",
+      details: { movementId: input.movementId, actionType: input.actionType },
+      strict: true,
+      params: {
+        p_movement_id: input.movementId,
+        p_action_type: input.actionType,
+        p_payload_before: input.payloadBefore,
+        p_payload_after: input.payloadAfter,
+        p_performed_by_user_id: input.performedByUserId
+      }
+    }
+  );
+
+  return row ? mapMovementAuditLogRow(row) : null;
 }
 
 async function createRealTreasuryMovement(
@@ -2694,7 +3021,7 @@ async function createRealTreasuryMovement(
     originSource: TreasuryMovementOriginSource;
     accountId: string;
     movementType: TreasuryMovementType;
-    categoryId: string;
+    categoryId: string | null;
     concept: string;
     currencyCode: string;
     amount: number;
@@ -2724,7 +3051,7 @@ async function createRealTreasuryMovement(
         p_origin_source: input.originSource,
         p_account_id: input.accountId,
         p_movement_type: input.movementType,
-        p_category_id: input.categoryId,
+        p_category_id: normalizeNullableUuidParam(input.categoryId),
         p_concept: input.concept,
         p_currency_code: input.currencyCode,
         p_amount: input.amount,
@@ -2789,6 +3116,49 @@ async function createRealAccountTransfer(
   return row ? mapAccountTransferMutationRow(row) : null;
 }
 
+async function createRealFxOperation(
+  input: {
+    clubId: string;
+    sourceAccountId: string;
+    targetAccountId: string;
+    sourceCurrencyCode: string;
+    targetCurrencyCode: string;
+    sourceAmount: number;
+    targetAmount: number;
+    concept: string;
+  },
+  client?: AccessRepositoryClient
+) {
+  const row = await runClubScopedMutationRpc<FxOperationInsertRow>(
+    "create_fx_operation_for_current_club",
+    input.clubId,
+    client,
+    {
+      operation: "create_fx_operation",
+      details: {
+        sourceAccountId: input.sourceAccountId,
+        targetAccountId: input.targetAccountId
+      },
+      params: {
+        p_source_account_id: input.sourceAccountId,
+        p_target_account_id: input.targetAccountId,
+        p_source_amount: input.sourceAmount,
+        p_target_amount: input.targetAmount
+      }
+    }
+  );
+
+  if (!row) {
+    return null;
+  }
+
+  return mapFxOperationInsertRow(row, {
+    sourceCurrencyCode: input.sourceCurrencyCode,
+    targetCurrencyCode: input.targetCurrencyCode,
+    concept: input.concept
+  });
+}
+
 async function countRealTreasuryMovementsByClubAndYear(
   clubId: string,
   year: string,
@@ -2839,7 +3209,15 @@ async function runClubScopedReadRpc<T>(
 
   if (error || !data) {
     if (!options?.suppressLog) {
-      logTreasurySettingsReadFailure(options?.operation ?? rpcName, { clubId, ...(options?.details ?? {}) }, error);
+      console.error("[club-scoped-rpc-read-failure]", {
+        operation: options?.operation ?? rpcName,
+        rpcName,
+        clubId,
+        ...(options?.details ?? {}),
+        errorCode: getSupabaseErrorCode(error),
+        missingRpcName: getMissingClubScopedRpcName(error, rpcName),
+        error
+      });
     }
 
     if (options?.strict) {
@@ -2863,11 +3241,16 @@ async function runClubScopedMutationRpc<T>(
     details?: Record<string, unknown>;
     params?: Record<string, unknown>;
     expectResult?: boolean;
+    strict?: boolean;
   }
 ): Promise<T | null> {
   const supabase = createAccessSupabaseClient(client);
 
   if (!supabase) {
+    if (options?.strict) {
+      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", options?.operation ?? rpcName);
+    }
+
     return null;
   }
 
@@ -2877,12 +3260,14 @@ async function runClubScopedMutationRpc<T>(
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
-      operation: options?.operation ?? rpcName,
-      clubId,
-      ...(options?.details ?? {}),
-      error
-    });
+    logClubScopedRpcFailure(options?.operation ?? rpcName, { clubId, rpcName, ...(options?.details ?? {}) }, error);
+
+    if (options?.strict) {
+      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", options?.operation ?? rpcName, {
+        cause: error
+      });
+    }
+
     return null;
   }
 
@@ -4509,9 +4894,10 @@ export const accessRepository: AccessRepository = {
       return null;
     }
 
+    movement.movementDate = input.movementDate ?? movement.movementDate;
     movement.accountId = input.accountId;
     movement.movementType = input.movementType;
-    movement.categoryId = input.categoryId;
+    movement.categoryId = input.categoryId ?? "";
     movement.concept = input.concept;
     movement.currencyCode = input.currencyCode;
     movement.amount = input.amount;
@@ -4526,6 +4912,10 @@ export const accessRepository: AccessRepository = {
     return movement;
   },
   async getDailyConsolidationBatchByDate(clubId, consolidationDate) {
+    if (shouldUseSupabaseDatabase()) {
+      return getRealDailyConsolidationBatchByDate(clubId, consolidationDate);
+    }
+
     return (
       getStore().dailyConsolidationBatches.find(
         (batch) => batch.clubId === clubId && batch.consolidationDate === consolidationDate
@@ -4533,6 +4923,10 @@ export const accessRepository: AccessRepository = {
     );
   },
   async createDailyConsolidationBatch(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealDailyConsolidationBatch(input);
+    }
+
     const batch: DailyConsolidationBatch = {
       id: `consolidation-batch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
@@ -4547,6 +4941,10 @@ export const accessRepository: AccessRepository = {
     return batch;
   },
   async updateDailyConsolidationBatch(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return updateRealDailyConsolidationBatch(input);
+    }
+
     const batch = getStore().dailyConsolidationBatches.find((entry) => entry.id === input.batchId);
 
     if (!batch) {
@@ -4576,10 +4974,18 @@ export const accessRepository: AccessRepository = {
     getStore().movementIntegrations.push(integration);
     return integration;
   },
-  async listMovementAuditLogsByMovementId(movementId) {
-    return getStore().movementAuditLogs.filter((entry) => entry.movementId === movementId);
+  async listMovementAuditLogsByMovementId(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return listRealMovementAuditLogsByMovementId(input);
+    }
+
+    return getStore().movementAuditLogs.filter((entry) => entry.movementId === input.movementId);
   },
   async createMovementAuditLog(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealMovementAuditLog(input);
+    }
+
     const log: MovementAuditLog = {
       id: `movement-audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       movementId: input.movementId,
@@ -4666,6 +5072,10 @@ export const accessRepository: AccessRepository = {
     };
   },
   async createFxOperation(input) {
+    if (shouldUseSupabaseDatabase()) {
+      return createRealFxOperation(input);
+    }
+
     const operation: FxOperation = {
       id: `fx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
@@ -4694,7 +5104,7 @@ export const accessRepository: AccessRepository = {
       dailyCashSessionId: input.dailyCashSessionId,
       accountId: input.accountId,
       movementType: input.movementType,
-      categoryId: input.categoryId,
+      categoryId: input.categoryId ?? "",
       concept: input.concept,
       currencyCode: input.currencyCode,
       amount: input.amount,

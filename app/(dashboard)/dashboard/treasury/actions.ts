@@ -6,7 +6,8 @@ import { revalidatePath } from "next/cache";
 import {
   executeDailyConsolidation,
   integrateMatchingMovement,
-  updateMovementBeforeConsolidation
+  updateMovementBeforeConsolidation,
+  updateTransferBeforeConsolidation
 } from "@/lib/services/treasury-service";
 
 function redirectToTreasury(code: string, consolidationDate: string, selectedMovementId?: string) {
@@ -34,9 +35,13 @@ export async function updateMovementBeforeConsolidationAction(formData: FormData
 
   const result = await updateMovementBeforeConsolidation({
     movementId,
+    movementDate: String(formData.get("movement_date") ?? ""),
     accountId: String(formData.get("account_id") ?? ""),
     movementType: String(formData.get("movement_type") ?? ""),
     categoryId: String(formData.get("category_id") ?? ""),
+    activityId: String(formData.get("activity_id") ?? ""),
+    receiptNumber: String(formData.get("receipt_number") ?? ""),
+    calendarEventId: String(formData.get("calendar_event_id") ?? ""),
     concept: String(formData.get("concept") ?? ""),
     currencyCode: String(formData.get("currency_code") ?? ""),
     amount: String(formData.get("amount") ?? "")
@@ -55,6 +60,22 @@ export async function integrateMatchingMovementAction(formData: FormData) {
   });
 
   redirectToTreasury(result.code, consolidationDate, secretariaMovementId);
+}
+
+export async function updateTransferBeforeConsolidationAction(formData: FormData) {
+  const consolidationDate = String(formData.get("consolidation_date") ?? "");
+  const movementId = String(formData.get("movement_id") ?? "");
+
+  const result = await updateTransferBeforeConsolidation({
+    movementId,
+    sourceAccountId: String(formData.get("source_account_id") ?? ""),
+    targetAccountId: String(formData.get("target_account_id") ?? ""),
+    currencyCode: String(formData.get("currency_code") ?? ""),
+    concept: String(formData.get("concept") ?? ""),
+    amount: String(formData.get("amount") ?? "")
+  });
+
+  redirectToTreasury(result.code, consolidationDate, movementId);
 }
 
 export async function executeDailyConsolidationAction(formData: FormData) {

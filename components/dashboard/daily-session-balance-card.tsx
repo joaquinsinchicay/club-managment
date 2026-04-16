@@ -5,7 +5,13 @@ import { useMemo, useState } from "react";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
-import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
+import {
+  formatLocalizedAmount,
+  formatLocalizedAmountInputOnBlur,
+  formatLocalizedAmountInputOnFocus,
+  parseLocalizedAmount,
+  sanitizeLocalizedAmountInput
+} from "@/lib/amounts";
 import { texts } from "@/lib/texts";
 import type { DailyCashSessionValidation } from "@/lib/domain/access";
 
@@ -175,7 +181,25 @@ export function DailySessionBalanceCard({
                               inputMode="decimal"
                               value={draft.declaredBalance}
                               onChange={(event) => {
-                                const nextValue = event.target.value;
+                                const nextValue = sanitizeLocalizedAmountInput(event.target.value);
+
+                                setDrafts((currentDrafts) =>
+                                  currentDrafts.map((entry, entryIndex) =>
+                                    entryIndex === index ? { ...entry, declaredBalance: nextValue } : entry
+                                  )
+                                );
+                              }}
+                              onBlur={(event) => {
+                                const nextValue = formatLocalizedAmountInputOnBlur(event.target.value);
+
+                                setDrafts((currentDrafts) =>
+                                  currentDrafts.map((entry, entryIndex) =>
+                                    entryIndex === index ? { ...entry, declaredBalance: nextValue } : entry
+                                  )
+                                );
+                              }}
+                              onFocus={(event) => {
+                                const nextValue = formatLocalizedAmountInputOnFocus(event.target.value);
 
                                 setDrafts((currentDrafts) =>
                                   currentDrafts.map((entry, entryIndex) =>

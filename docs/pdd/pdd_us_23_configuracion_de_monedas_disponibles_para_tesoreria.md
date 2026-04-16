@@ -59,7 +59,7 @@ Usuario autenticado con membership `activo` y rol `admin` para visualizar la con
 
 | Escenario | Resultado esperado |
 |---|---|
-| Admin entra a Tesorería | No ve configuración global de monedas. |
+| Admin entra a Configuración del club | No ve configuración global de monedas. |
 | Admin crea o edita cuenta | Puede elegir `ARS`, `USD` o ambas para la cuenta. |
 | Secretaría accede al formulario | La moneda disponible depende de la cuenta seleccionada y no existe moneda principal del club. |
 
@@ -77,7 +77,7 @@ Usuario autenticado con membership `activo` y rol `admin` para visualizar la con
 ## 9. Flujo principal
 
 1. Un admin entra a `Configuración del club`.
-2. Abre la solapa `Tesorería`.
+2. Abre la sección de Tesorería dentro de `Configuración del club`.
 3. No encuentra una sección de configuración global de monedas.
 4. Crea o edita una cuenta y define `ARS`, `USD` o ambas.
 5. Secretaría abre el formulario de movimientos.

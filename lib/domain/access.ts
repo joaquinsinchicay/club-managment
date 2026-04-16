@@ -305,6 +305,17 @@ export type TreasuryDashboardMovement = {
   canEdit: boolean;
 };
 
+export type TreasuryRoleDashboardMovementAccountGroup = {
+  accountId: string;
+  accountName: string;
+  movements: TreasuryDashboardMovement[];
+};
+
+export type TreasuryRoleDashboardMovementDateGroup = {
+  movementDate: string;
+  accounts: TreasuryRoleDashboardMovementAccountGroup[];
+};
+
 export type TreasuryRoleDashboard = {
   sessionDate: string;
   accounts: Array<{
@@ -315,7 +326,7 @@ export type TreasuryRoleDashboard = {
       amount: number;
     }>;
   }>;
-  movements: TreasuryDashboardMovement[];
+  movementGroups: TreasuryRoleDashboardMovementDateGroup[];
   availableActions: Array<"create_movement" | "create_fx_operation">;
 };
 
@@ -371,6 +382,12 @@ export type ConsolidationMovement = {
   movementType: TreasuryMovementType;
   categoryId: string;
   categoryName: string;
+  activityId: string | null;
+  activityName: string | null;
+  receiptNumber: string | null;
+  calendarEventId: string | null;
+  calendarEventTitle: string | null;
+  transferReference: string | null;
   concept: string;
   currencyCode: string;
   amount: number;
@@ -380,6 +397,17 @@ export type ConsolidationMovement = {
   isValid: boolean;
   validationIssues: string[];
   possibleMatch: ConsolidationMatch | null;
+};
+
+export type ConsolidationTransferEdit = {
+  movementId: string;
+  transferReference: string;
+  movementDate: string;
+  sourceAccountId: string;
+  targetAccountId: string;
+  currencyCode: string;
+  concept: string;
+  amount: number;
 };
 
 export type ConsolidationAuditEntry = {

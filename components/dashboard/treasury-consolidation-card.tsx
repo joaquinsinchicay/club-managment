@@ -1,48 +1,165 @@
 "use client";
 
-import { type FormEvent, useEffect, useState, useTransition } from "react";
-import Link from "next/link";
+import { type FormEvent, type KeyboardEvent, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import {
+  ConsolidationTransferEditForm,
+  SecretariaMovementEditForm
+} from "@/components/dashboard/treasury-operation-forms";
+import { Modal } from "@/components/ui/modal";
+import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import type {
+  ClubActivity,
+  ClubCalendarEvent,
   ConsolidationAuditEntry,
   ConsolidationMovement,
+  ConsolidationTransferEdit,
+  ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
   TreasuryConsolidationDashboard,
-  TreasuryCurrencyConfig
+  TreasuryCurrencyConfig,
+  TreasuryMovementType
 } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
+import { cn } from "@/lib/utils";
 
 type TreasuryConsolidationCardProps = {
   dashboard: TreasuryConsolidationDashboard;
   selectedMovement: ConsolidationMovement | null;
   selectedAuditEntries: ConsolidationAuditEntry[];
   accounts: TreasuryAccount[];
+  transferSourceAccounts: TreasuryAccount[];
+  transferTargetAccounts: TreasuryAccount[];
   categories: TreasuryCategory[];
+  activities: ClubActivity[];
+  calendarEvents: ClubCalendarEvent[];
   currencies: TreasuryCurrencyConfig[];
+  movementTypes: TreasuryMovementType[];
+  receiptFormats: ReceiptFormat[];
   updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
+  updateTransferBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   integrateMatchingMovementAction: (formData: FormData) => Promise<void>;
   executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
 };
+
+function EditMovementIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function formatMovementDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(date);
+}
+
+function formatAuditDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "long"
+  }).format(date);
+}
+
+function formatAuditTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function getTransferReferenceSuffix(value: string) {
+  return value.slice(-6);
+}
+
+function buildEditableTransfer(
+  movement: ConsolidationMovement,
+  movements: ConsolidationMovement[]
+): ConsolidationTransferEdit | null {
+  if (!movement.transferReference) {
+    return null;
+  }
+
+  const relatedMovements = movements.filter((entry) => entry.transferReference === movement.transferReference);
+  const sourceMovement = relatedMovements.find((entry) => entry.movementType === "egreso") ?? null;
+  const targetMovement = relatedMovements.find((entry) => entry.movementType === "ingreso") ?? null;
+
+  if (!sourceMovement || !targetMovement) {
+    return null;
+  }
+
+  return {
+    movementId: movement.movementId,
+    transferReference: movement.transferReference,
+    movementDate: movement.movementDate,
+    sourceAccountId: sourceMovement.accountId,
+    targetAccountId: targetMovement.accountId,
+    currencyCode: sourceMovement.currencyCode,
+    concept: sourceMovement.concept,
+    amount: sourceMovement.amount
+  };
+}
 
 function MovementList({
   title,
   emptyLabel,
   movements,
   selectedMovementId,
-  consolidationDate
+  onSelectMovement,
+  onEditMovement
 }: {
   title: string;
   emptyLabel: string;
   movements: ConsolidationMovement[];
   selectedMovementId?: string;
-  consolidationDate: string;
+  onSelectMovement: (movementId: string) => void;
+  onEditMovement?: (movement: ConsolidationMovement) => void;
 }) {
+  function handleRowKeyDown(event: KeyboardEvent<HTMLElement>, movementId: string) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    onSelectMovement(movementId);
+  }
+
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-3">
@@ -55,41 +172,52 @@ function MovementList({
           {emptyLabel}
         </div>
       ) : (
-        <div className="grid gap-3">
-          {movements.map((movement) => {
-            const isSelected = movement.movementId === selectedMovementId;
+        <div className="overflow-hidden rounded-[20px] border border-border bg-card">
+          <div className="hidden bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(140px,0.8fr)_minmax(0,1.5fr)_minmax(160px,0.85fr)_minmax(240px,1fr)_minmax(170px,0.8fr)_88px] md:items-center md:gap-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {texts.dashboard.consolidation.status_label}
+            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {texts.dashboard.consolidation.concept_label}
+            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {texts.dashboard.consolidation.account_label}
+            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {texts.dashboard.consolidation.detail_label}
+            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
+              {texts.dashboard.consolidation.amount_label}
+            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
+              {texts.dashboard.consolidation.actions_label}
+            </p>
+          </div>
 
-            return (
-              <Link
-                key={movement.movementId}
-                href={`/dashboard/treasury/consolidation?date=${encodeURIComponent(
-                  consolidationDate
-                )}&movement=${encodeURIComponent(movement.movementId)}`}
-                aria-current={isSelected ? "page" : undefined}
-                className={`relative rounded-xl border p-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 ${
-                  isSelected
-                    ? "border-foreground bg-card shadow-soft ring-1 ring-foreground/10"
-                    : "border-border bg-secondary/40 hover:bg-secondary/60"
-                }`}
-              >
-                <span
-                  aria-hidden="true"
-                  className={`absolute inset-y-3 left-0 w-1 rounded-full transition ${
-                    isSelected ? "bg-foreground" : "bg-transparent"
-                  }`}
-                />
+          <div className="grid gap-3 bg-card p-3 md:gap-0 md:bg-transparent md:p-0">
+            {movements.map((movement, index) => {
+              const isSelected = movement.movementId === selectedMovementId;
+              const canEdit = movement.status === "pending_consolidation" && Boolean(onEditMovement);
 
-                <div className="flex items-start justify-between gap-3 pl-2">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-base font-semibold text-foreground">{movement.concept}</p>
-                      {isSelected ? (
-                        <StatusBadge
-                          label={texts.dashboard.consolidation.selected_label}
-                          tone="neutral"
-                          className="border-foreground/15 bg-foreground/5"
-                        />
-                      ) : null}
+              return (
+                <div
+                  key={movement.movementId}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelectMovement(movement.movementId)}
+                  onKeyDown={(event) => handleRowKeyDown(event, movement.movementId)}
+                  aria-pressed={isSelected}
+                  className={cn(
+                    "relative rounded-[18px] border border-border bg-card p-4 shadow-soft transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 md:grid md:grid-cols-[minmax(140px,0.8fr)_minmax(0,1.5fr)_minmax(160px,0.85fr)_minmax(240px,1fr)_minmax(170px,0.8fr)_88px] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none",
+                    isSelected && "border-foreground/25 bg-secondary/10 ring-1 ring-foreground/10",
+                    index === movements.length - 1 && "md:rounded-b-[20px]"
+                  )}
+                >
+                  <div className="grid gap-2 text-sm text-muted-foreground md:mt-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
+                      {texts.dashboard.consolidation.status_label}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
                       <StatusBadge
                         label={
                           movement.status === "integrated"
@@ -101,6 +229,51 @@ function MovementList({
                       {!movement.isValid ? (
                         <StatusBadge label={texts.dashboard.consolidation.status_invalid} tone="danger" />
                       ) : null}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      {movement.movementDisplayId}
+                    </p>
+                    <p
+                      className="overflow-hidden text-pretty text-base font-semibold leading-6 text-foreground"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2
+                      }}
+                    >
+                      {movement.concept}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatMovementDateTime(movement.createdAt)} · {texts.dashboard.consolidation.created_by_label}{" "}
+                      {movement.createdByUserName}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
+                      {texts.dashboard.consolidation.account_label}
+                    </p>
+                    <p className="font-medium text-foreground">{movement.accountName}</p>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
+                      {texts.dashboard.consolidation.detail_label}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {movement.categoryName || !movement.transferReference ? (
+                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
+                        </span>
+                      ) : null}
+                      {movement.activityName ? (
+                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {movement.activityName}
+                        </span>
+                      ) : null}
                       {movement.possibleMatch ? (
                         <StatusBadge
                           label={texts.dashboard.consolidation.status_possible_match}
@@ -108,23 +281,57 @@ function MovementList({
                         />
                       ) : null}
                     </div>
-                    <div className="grid gap-1 text-sm text-muted-foreground">
+                    {movement.transferReference ? (
                       <p>
-                        {movement.movementDate} · {movement.accountName}
+                        <span className="font-medium text-foreground">
+                          {texts.dashboard.treasury.detail_transfer_label}
+                        </span>{" "}
+                        {getTransferReferenceSuffix(movement.transferReference)}
                       </p>
-                      <p>
-                        {movement.categoryName} · {texts.dashboard.treasury.movement_types[movement.movementType]} ·{" "}
-                        {movement.createdByUserName}
-                      </p>
-                    </div>
+                    ) : null}
                   </div>
-                  <p className="text-2xl font-semibold tracking-tight text-foreground">
-                    {movement.currencyCode} {formatLocalizedAmount(movement.amount)}
-                  </p>
+
+                  <div className="mt-4 md:mt-0 md:text-right">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
+                      {texts.dashboard.consolidation.amount_label}
+                    </p>
+                    <p
+                      className={cn(
+                        "text-2xl font-semibold tracking-tight md:text-[1.75rem]",
+                        movement.movementType === "ingreso" ? "text-success" : "text-destructive"
+                      )}
+                    >
+                      {movement.movementType === "egreso" ? "-" : "+"} {movement.currencyCode}{" "}
+                      {formatLocalizedAmount(movement.amount)}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex min-h-10 items-center justify-start md:mt-0 md:justify-end">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
+                      {texts.dashboard.consolidation.actions_label}
+                    </p>
+                    {canEdit ? (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onEditMovement?.(movement);
+                        }}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[18px] border border-border bg-card px-0 py-0 text-foreground transition hover:bg-secondary"
+                        aria-label={texts.dashboard.consolidation.edit_cta}
+                      >
+                        <EditMovementIcon />
+                      </button>
+                    ) : (
+                      <span aria-hidden="true" className="text-xs font-medium text-muted-foreground">
+                        -
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </Link>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </section>
@@ -136,9 +343,16 @@ export function TreasuryConsolidationCard({
   selectedMovement,
   selectedAuditEntries,
   accounts,
+  transferSourceAccounts,
+  transferTargetAccounts,
   categories,
+  activities,
+  calendarEvents,
   currencies,
+  movementTypes,
+  receiptFormats,
   updateMovementBeforeConsolidationAction,
+  updateTransferBeforeConsolidationAction,
   integrateMatchingMovementAction,
   executeDailyConsolidationAction
 }: TreasuryConsolidationCardProps) {
@@ -146,11 +360,56 @@ export function TreasuryConsolidationCard({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedDate, setSelectedDate] = useState(dashboard.consolidationDate);
+  const [editingMovement, setEditingMovement] = useState<ConsolidationMovement | null>(null);
+  const [editingTransfer, setEditingTransfer] = useState<ConsolidationTransferEdit | null>(null);
+  const [isEditSubmissionPending, setIsEditSubmissionPending] = useState(false);
   const [isDateNavigationPending, startDateNavigationTransition] = useTransition();
+  const pendingOverlayLabel = isEditSubmissionPending ? texts.dashboard.consolidation.save_changes_loading : null;
 
   useEffect(() => {
     setSelectedDate(dashboard.consolidationDate);
   }, [dashboard.consolidationDate]);
+
+  useEffect(() => {
+    if (!editingMovement) {
+      return;
+    }
+
+    const editableMovement = dashboard.pendingMovements.find(
+      (movement) => movement.movementId === editingMovement.movementId
+    );
+
+    if (!editableMovement) {
+      setEditingMovement(null);
+      return;
+    }
+
+    setEditingMovement(editableMovement);
+  }, [dashboard.pendingMovements, editingMovement]);
+
+  useEffect(() => {
+    if (!editingTransfer) {
+      return;
+    }
+
+    const editableMovement = dashboard.pendingMovements.find(
+      (movement) => movement.movementId === editingTransfer.movementId
+    );
+
+    if (!editableMovement) {
+      setEditingTransfer(null);
+      return;
+    }
+
+    const nextTransfer = buildEditableTransfer(editableMovement, [...dashboard.pendingMovements, ...dashboard.integratedMovements]);
+
+    if (!nextTransfer) {
+      setEditingTransfer(null);
+      return;
+    }
+
+    setEditingTransfer(nextTransfer);
+  }, [dashboard.pendingMovements, dashboard.integratedMovements, editingTransfer]);
 
   function handleLoadDateSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -171,10 +430,62 @@ export function TreasuryConsolidationCard({
     });
   }
 
-  const hasMovements = dashboard.pendingMovements.length > 0 || dashboard.integratedMovements.length > 0;
+  function handleSelectMovement(movementId: string) {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("date", dashboard.consolidationDate);
+    nextParams.set("movement", movementId);
+    nextParams.delete("feedback");
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+  }
+
+  async function handleUpdateMovementBeforeConsolidation(formData: FormData) {
+    setIsEditSubmissionPending(true);
+    setEditingMovement(null);
+    setEditingTransfer(null);
+
+    try {
+      await updateMovementBeforeConsolidationAction(formData);
+    } finally {
+      setIsEditSubmissionPending(false);
+    }
+  }
+
+  async function handleUpdateTransferBeforeConsolidation(formData: FormData) {
+    setIsEditSubmissionPending(true);
+    setEditingMovement(null);
+    setEditingTransfer(null);
+
+    try {
+      await updateTransferBeforeConsolidationAction(formData);
+    } finally {
+      setIsEditSubmissionPending(false);
+    }
+  }
+
+  const allMovements = [...dashboard.pendingMovements, ...dashboard.integratedMovements].sort((left, right) => {
+    if (left.status !== right.status) {
+      return left.status === "pending_consolidation" ? -1 : 1;
+    }
+
+    return right.createdAt.localeCompare(left.createdAt);
+  });
+  const hasMovements = allMovements.length > 0;
+  const selectedAuditHeaderEntry =
+    selectedAuditEntries.find((entry) => entry.actionType === "original") ?? selectedAuditEntries[0] ?? null;
+  const selectedAuditHeaderTime = selectedAuditHeaderEntry
+    ? formatAuditTime(selectedAuditHeaderEntry.performedAt)
+    : null;
+  const consolidationTotals = dashboard.pendingMovements.reduce<Map<string, number>>((totals, movement) => {
+    const signedAmount = movement.movementType === "egreso" ? -movement.amount : movement.amount;
+    totals.set(movement.currencyCode, (totals.get(movement.currencyCode) ?? 0) + signedAmount);
+    return totals;
+  }, new Map());
+  const consolidationTotalsList = Array.from(consolidationTotals.entries());
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 pb-28 sm:py-8 sm:pb-32">
+      <BlockingStatusOverlay open={pendingOverlayLabel !== null} label={pendingOverlayLabel ?? ""} />
+
       <PageContentHeader
         eyebrow={texts.dashboard.consolidation.eyebrow}
         title={texts.dashboard.consolidation.title}
@@ -217,13 +528,30 @@ export function TreasuryConsolidationCard({
                   )}
                 </button>
               </PendingFieldset>
-              <span aria-live="polite" className="text-xs text-muted-foreground">
-                {texts.dashboard.consolidation.load_helper}
-              </span>
-              <p className="text-xs text-muted-foreground">
-                {texts.dashboard.consolidation.default_date_hint} {dashboard.defaultDate}
-              </p>
             </form>
+
+            {selectedMovement && selectedAuditHeaderEntry ? (
+              <div className="mt-4 rounded-xl border border-border bg-card p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      {texts.dashboard.consolidation.audit_actions[selectedAuditHeaderEntry.actionType]}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{selectedAuditHeaderEntry.performedByUserName}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <span className="rounded-full border border-border bg-secondary/35 px-3 py-1 text-xs font-semibold text-foreground">
+                      {formatAuditDate(selectedAuditHeaderEntry.performedAt)}
+                    </span>
+                    {selectedAuditHeaderTime ? (
+                      <span className="rounded-full border border-border/80 bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+                        {selectedAuditHeaderTime}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {dashboard.batch ? (
@@ -257,271 +585,182 @@ export function TreasuryConsolidationCard({
               {texts.dashboard.consolidation.empty}
             </div>
           ) : hasMovements ? (
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-              <div className="grid gap-6">
-                <MovementList
-                  title={texts.dashboard.consolidation.pending_title}
-                  emptyLabel={texts.dashboard.consolidation.empty_pending}
-                  movements={dashboard.pendingMovements}
-                  selectedMovementId={selectedMovement?.movementId}
-                  consolidationDate={dashboard.consolidationDate}
-                />
+            <div className="grid gap-6">
+              <MovementList
+                title={texts.dashboard.consolidation.movements_title}
+                emptyLabel={texts.dashboard.consolidation.empty}
+                movements={allMovements}
+                selectedMovementId={selectedMovement?.movementId}
+                onSelectMovement={handleSelectMovement}
+                onEditMovement={(movement) => {
+                  const editableTransfer = buildEditableTransfer(movement, allMovements);
 
-                <MovementList
-                  title={texts.dashboard.consolidation.integrated_title}
-                  emptyLabel={texts.dashboard.consolidation.empty_integrated}
-                  movements={dashboard.integratedMovements}
-                  selectedMovementId={selectedMovement?.movementId}
-                  consolidationDate={dashboard.consolidationDate}
-                />
+                  if (editableTransfer) {
+                    setEditingMovement(null);
+                    setEditingTransfer(editableTransfer);
+                    return;
+                  }
 
-                <form action={executeDailyConsolidationAction} className="rounded-xl border border-border bg-card p-4">
-                  <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
-                  <div className="space-y-2">
-                    <h2 className="text-lg font-semibold text-foreground">
-                      {texts.dashboard.consolidation.execute_title}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {texts.dashboard.consolidation.execute_description}
-                    </p>
-                  </div>
-                  <div className="mt-4">
-                    <PendingSubmitButton
-                      idleLabel={texts.dashboard.consolidation.execute_cta}
-                      pendingLabel={texts.dashboard.consolidation.execute_loading}
-                      className="min-h-11 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                    />
-                  </div>
-                </form>
-              </div>
+                  setEditingTransfer(null);
+                  setEditingMovement(movement);
+                }}
+              />
 
-              <div className="grid gap-6">
-                {selectedMovement ? (
-                  <>
+              {selectedMovement ? (
+                <>
+                  {selectedMovement.possibleMatch ? (
                     <section className="rounded-xl border border-border bg-card p-4">
                       <div className="space-y-2">
                         <h2 className="text-lg font-semibold text-foreground">
-                          {texts.dashboard.consolidation.detail_title}
+                          {texts.dashboard.consolidation.match_title}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                          {texts.dashboard.consolidation.detail_description}
+                          {texts.dashboard.consolidation.match_description}
                         </p>
                       </div>
 
-                      <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
-                        <p>
-                          {selectedMovement.movementDate} · {selectedMovement.accountName}
-                        </p>
-                        <p>
-                          {selectedMovement.categoryName} ·{" "}
-                          {texts.dashboard.treasury.movement_types[selectedMovement.movementType]}
-                        </p>
-                        <p>{selectedMovement.createdByUserName}</p>
-                        <p className="text-base font-semibold text-foreground">
-                          {selectedMovement.currencyCode} {formatLocalizedAmount(selectedMovement.amount)}
-                        </p>
-                      </div>
-
-                      {!selectedMovement.isValid ? (
-                        <div className="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
-                          <p className="font-semibold">{texts.dashboard.consolidation.invalid_title}</p>
-                          <ul className="mt-2 list-disc space-y-1 pl-5">
-                            {selectedMovement.validationIssues.map((issue) => (
-                              <li key={issue}>
-                                {texts.dashboard.feedback[issue as keyof typeof texts.dashboard.feedback] ?? issue}
-                              </li>
-                            ))}
-                          </ul>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-xl border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
+                          <p className="font-semibold text-foreground">
+                            {texts.dashboard.consolidation.secretaria_side}
+                          </p>
+                          <p className="mt-2">{selectedMovement.accountName}</p>
+                          <p>{selectedMovement.categoryName}</p>
+                          <p>{selectedMovement.concept}</p>
+                          <p>
+                            {selectedMovement.currencyCode} {formatLocalizedAmount(selectedMovement.amount)}
+                          </p>
                         </div>
-                      ) : null}
+                        <div className="rounded-xl border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
+                          <p className="font-semibold text-foreground">
+                            {texts.dashboard.consolidation.tesoreria_side}
+                          </p>
+                          <p className="mt-2">{selectedMovement.possibleMatch.accountName}</p>
+                          <p>{selectedMovement.possibleMatch.categoryName}</p>
+                          <p>{selectedMovement.possibleMatch.concept}</p>
+                          <p>
+                            {selectedMovement.possibleMatch.currencyCode}{" "}
+                            {formatLocalizedAmount(selectedMovement.possibleMatch.amount)}
+                          </p>
+                        </div>
+                      </div>
 
                       {selectedMovement.status === "pending_consolidation" ? (
-                        <form action={updateMovementBeforeConsolidationAction} className="mt-4 grid gap-4">
+                        <form action={integrateMatchingMovementAction} className="mt-4">
                           <PendingFieldset className="grid gap-4">
                             <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
-                            <input type="hidden" name="movement_id" value={selectedMovement.movementId} />
-
-                            <label className="grid gap-2 text-sm text-foreground">
-                              <span className="font-medium">{texts.dashboard.treasury.account_label}</span>
-                              <select
-                                name="account_id"
-                                defaultValue={selectedMovement.accountId}
-                                className="min-h-11 rounded-xl border border-border bg-secondary/20 px-4 py-3 text-sm text-foreground"
-                              >
-                                {accounts.map((account) => (
-                                  <option key={account.id} value={account.id}>
-                                    {account.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-
-                            <label className="grid gap-2 text-sm text-foreground">
-                              <span className="font-medium">{texts.dashboard.treasury.movement_type_label}</span>
-                              <select
-                                name="movement_type"
-                                defaultValue={selectedMovement.movementType}
-                                className="min-h-11 rounded-xl border border-border bg-secondary/20 px-4 py-3 text-sm text-foreground"
-                              >
-                                <option value="ingreso">{texts.dashboard.treasury.movement_types.ingreso}</option>
-                                <option value="egreso">{texts.dashboard.treasury.movement_types.egreso}</option>
-                              </select>
-                            </label>
-
-                            <label className="grid gap-2 text-sm text-foreground">
-                              <span className="font-medium">{texts.dashboard.treasury.category_label}</span>
-                              <select
-                                name="category_id"
-                                defaultValue={selectedMovement.categoryId}
-                                className="min-h-11 rounded-xl border border-border bg-secondary/20 px-4 py-3 text-sm text-foreground"
-                              >
-                                {categories.map((category) => (
-                                  <option key={category.id} value={category.id}>
-                                    {category.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-
-                            <label className="grid gap-2 text-sm text-foreground">
-                              <span className="font-medium">{texts.dashboard.treasury.concept_label}</span>
-                              <input
-                                type="text"
-                                name="concept"
-                                defaultValue={selectedMovement.concept}
-                                className="min-h-11 rounded-xl border border-border bg-secondary/20 px-4 py-3 text-sm text-foreground"
-                              />
-                            </label>
-
-                            <label className="grid gap-2 text-sm text-foreground">
-                              <span className="font-medium">{texts.dashboard.treasury.currency_label}</span>
-                              <select
-                                name="currency_code"
-                                defaultValue={selectedMovement.currencyCode}
-                                className="min-h-11 rounded-xl border border-border bg-secondary/20 px-4 py-3 text-sm text-foreground"
-                              >
-                                {currencies.map((currency) => (
-                                  <option key={currency.currencyCode} value={currency.currencyCode}>
-                                    {currency.currencyCode}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-
-                            <label className="grid gap-2 text-sm text-foreground">
-                              <span className="font-medium">{texts.dashboard.treasury.amount_label}</span>
-                              <input
-                                type="text"
-                                name="amount"
-                                inputMode="decimal"
-                                defaultValue={formatLocalizedAmount(selectedMovement.amount)}
-                                className="min-h-11 rounded-xl border border-border bg-secondary/20 px-4 py-3 text-sm text-foreground"
-                              />
-                            </label>
-
+                            <input type="hidden" name="secretaria_movement_id" value={selectedMovement.movementId} />
+                            <input
+                              type="hidden"
+                              name="tesoreria_movement_id"
+                              value={selectedMovement.possibleMatch.tesoreriaMovementId}
+                            />
                             <PendingSubmitButton
-                              idleLabel={texts.dashboard.consolidation.save_changes_cta}
-                              pendingLabel={texts.dashboard.consolidation.save_changes_loading}
-                              className="min-h-11 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                              idleLabel={texts.dashboard.consolidation.integrate_cta}
+                              pendingLabel={texts.dashboard.consolidation.integrate_loading}
+                              className="min-h-11 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
                             />
                           </PendingFieldset>
                         </form>
                       ) : null}
                     </section>
+                  ) : null}
+                </>
+              ) : (
+                <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
+                  {texts.dashboard.consolidation.select_movement}
+                </div>
+              )}
 
-                    {selectedMovement.possibleMatch ? (
-                      <section className="rounded-xl border border-border bg-card p-4">
-                        <div className="space-y-2">
-                          <h2 className="text-lg font-semibold text-foreground">
-                            {texts.dashboard.consolidation.match_title}
-                          </h2>
-                          <p className="text-sm text-muted-foreground">
-                            {texts.dashboard.consolidation.match_description}
-                          </p>
-                        </div>
-
-                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                          <div className="rounded-xl border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
-                            <p className="font-semibold text-foreground">
-                              {texts.dashboard.consolidation.secretaria_side}
-                            </p>
-                            <p className="mt-2">{selectedMovement.accountName}</p>
-                            <p>{selectedMovement.categoryName}</p>
-                            <p>{selectedMovement.concept}</p>
-                            <p>
-                              {selectedMovement.currencyCode} {formatLocalizedAmount(selectedMovement.amount)}
-                            </p>
-                          </div>
-                          <div className="rounded-xl border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
-                            <p className="font-semibold text-foreground">
-                              {texts.dashboard.consolidation.tesoreria_side}
-                            </p>
-                            <p className="mt-2">{selectedMovement.possibleMatch.accountName}</p>
-                            <p>{selectedMovement.possibleMatch.categoryName}</p>
-                            <p>{selectedMovement.possibleMatch.concept}</p>
-                            <p>
-                              {selectedMovement.possibleMatch.currencyCode}{" "}
-                              {formatLocalizedAmount(selectedMovement.possibleMatch.amount)}
-                            </p>
-                          </div>
-                        </div>
-
-                        {selectedMovement.status === "pending_consolidation" ? (
-                          <form action={integrateMatchingMovementAction} className="mt-4">
-                            <PendingFieldset className="grid gap-4">
-                              <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
-                              <input type="hidden" name="secretaria_movement_id" value={selectedMovement.movementId} />
-                              <input
-                                type="hidden"
-                                name="tesoreria_movement_id"
-                                value={selectedMovement.possibleMatch.tesoreriaMovementId}
-                              />
-                              <PendingSubmitButton
-                                idleLabel={texts.dashboard.consolidation.integrate_cta}
-                                pendingLabel={texts.dashboard.consolidation.integrate_loading}
-                                className="min-h-11 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                              />
-                            </PendingFieldset>
-                          </form>
-                        ) : null}
-                      </section>
-                    ) : null}
-
-                    <section className="rounded-xl border border-border bg-card p-4">
-                      <div className="space-y-2">
-                        <h2 className="text-lg font-semibold text-foreground">
-                          {texts.dashboard.consolidation.audit_title}
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                          {texts.dashboard.consolidation.audit_description}
-                        </p>
-                      </div>
-
-                      <div className="mt-4 grid gap-3">
-                        {selectedAuditEntries.map((entry) => (
-                          <article key={entry.id} className="rounded-xl border border-border bg-secondary/30 p-3">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <p className="text-sm font-semibold text-foreground">
-                                {texts.dashboard.consolidation.audit_actions[entry.actionType]}
-                              </p>
-                              <p className="text-xs text-muted-foreground">{entry.performedAt}</p>
-                            </div>
-                            <p className="mt-1 text-sm text-muted-foreground">{entry.performedByUserName}</p>
-                          </article>
-                        ))}
-                      </div>
-                    </section>
-                  </>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-                    {texts.dashboard.consolidation.select_movement}
-                  </div>
-                )}
-              </div>
             </div>
           ) : null}
         </div>
       </section>
+
+      {hasMovements ? (
+        <form
+          action={executeDailyConsolidationAction}
+          className="sticky bottom-4 z-20 rounded-[20px] border border-border bg-card/95 p-4 shadow-soft backdrop-blur sm:p-5"
+        >
+          <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {texts.dashboard.consolidation.footer_total_label}
+              </p>
+              <div className="flex flex-col gap-1">
+                {consolidationTotalsList.length > 0 ? (
+                  consolidationTotalsList.map(([currencyCode, amount]) => (
+                    <p key={currencyCode} className="text-2xl font-semibold tracking-tight text-foreground">
+                      {amount < 0 ? "-" : ""}
+                      {currencyCode} {formatLocalizedAmount(Math.abs(amount))}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-2xl font-semibold tracking-tight text-foreground">
+                    0,00
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <PendingSubmitButton
+              idleLabel={texts.dashboard.consolidation.footer_execute_cta}
+              pendingLabel={texts.dashboard.consolidation.execute_loading}
+              className="min-h-11 rounded-xl bg-foreground px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:min-w-52"
+            />
+          </div>
+        </form>
+      ) : null}
+
+      <Modal
+        open={editingMovement !== null || editingTransfer !== null}
+        onClose={() => {
+          setEditingMovement(null);
+          setEditingTransfer(null);
+        }}
+        title={
+          editingTransfer
+            ? texts.dashboard.consolidation.edit_transfer_title
+            : texts.dashboard.consolidation.edit_title
+        }
+        description={
+          editingTransfer
+            ? texts.dashboard.consolidation.edit_transfer_description
+            : texts.dashboard.consolidation.edit_description
+        }
+        closeDisabled={isEditSubmissionPending}
+      >
+        {editingTransfer ? (
+          <ConsolidationTransferEditForm
+            sourceAccounts={transferSourceAccounts}
+            targetAccounts={transferTargetAccounts}
+            currencies={currencies}
+            submitAction={handleUpdateTransferBeforeConsolidation}
+            submitLabel={texts.dashboard.consolidation.save_changes_cta}
+            pendingLabel={texts.dashboard.consolidation.save_changes_loading}
+            transfer={editingTransfer}
+            extraHiddenFields={<input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />}
+          />
+        ) : editingMovement ? (
+          <SecretariaMovementEditForm
+            accounts={accounts}
+            categories={categories}
+            activities={activities}
+            calendarEvents={calendarEvents}
+            currencies={currencies}
+            movementTypes={movementTypes}
+            receiptFormats={receiptFormats}
+            submitAction={handleUpdateMovementBeforeConsolidation}
+            submitLabel={texts.dashboard.consolidation.save_changes_cta}
+            pendingLabel={texts.dashboard.consolidation.save_changes_loading}
+            movement={editingMovement}
+            copy={texts.dashboard.consolidation.edit_form}
+            editableMovementDate
+            extraHiddenFields={<input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />}
+          />
+        ) : null}
+      </Modal>
     </main>
   );
 }

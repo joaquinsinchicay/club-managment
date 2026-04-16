@@ -27,8 +27,8 @@ function getActiveMembership(membership: MembershipLike): ActiveMembershipLike |
 export function getClubSettingsPermissions(membership: MembershipLike): ClubSettingsPermissions {
   const activeMembership = getActiveMembership(membership);
   const canManageMembers = Boolean(activeMembership && hasMembershipRole(activeMembership, "admin"));
-  const canAccessTreasury = Boolean(activeMembership && hasMembershipRole(activeMembership, "tesoreria"));
-  const canAccessPage = canManageMembers || canAccessTreasury;
+  const canAccessTreasury = canManageMembers;
+  const canAccessPage = canManageMembers;
 
   return {
     canAccessPage,

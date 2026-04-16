@@ -2,16 +2,21 @@
 
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 
-import { formatLocalizedAmount } from "@/lib/amounts";
+import {
+  formatLocalizedAmount,
+  formatLocalizedAmountInputOnBlur,
+  formatLocalizedAmountInputOnFocus,
+  sanitizeLocalizedAmountInput
+} from "@/lib/amounts";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
   ClubCalendarEvent,
+  ConsolidationTransferEdit,
   ReceiptFormat,
   TreasuryAccount,
   TreasuryCategory,
   TreasuryCurrencyConfig,
-  TreasuryDashboardMovement,
   TreasuryMovementType
 } from "@/lib/domain/access";
 import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
@@ -104,6 +109,23 @@ type TransferFormState = {
   amount: string;
 };
 
+type EditableMovement = {
+  movementId: string;
+  movementDisplayId: string;
+  movementDate: string;
+  accountId: string;
+  movementType: TreasuryMovementType;
+  categoryId: string;
+  activityId: string | null;
+  receiptNumber: string | null;
+  calendarEventId: string | null;
+  transferReference?: string | null;
+  fxOperationReference?: string | null;
+  concept: string;
+  currencyCode: string;
+  amount: number;
+};
+
 function FormField({
   children,
   fullWidth = false
@@ -136,14 +158,15 @@ function ReceiptHelper({
 }
 
 function sanitizeAmountInput(value: string) {
-  const normalizedValue = value.replace(/[^\d,]/g, "");
-  const [integerPart, ...decimalParts] = normalizedValue.split(",");
+  return sanitizeLocalizedAmountInput(value);
+}
 
-  if (decimalParts.length === 0) {
-    return integerPart;
-  }
+function normalizeAmountInputOnBlur(value: string) {
+  return formatLocalizedAmountInputOnBlur(value);
+}
 
-  return `${integerPart},${decimalParts.join("")}`;
+function normalizeAmountInputOnFocus(value: string) {
+  return formatLocalizedAmountInputOnFocus(value);
 }
 
 function getDefaultCurrencyCode(account: TreasuryAccount | undefined, currencies: TreasuryCurrencyConfig[]) {
@@ -371,6 +394,8 @@ function MovementFormFields({
           inputMode="decimal"
           value={formState.amount}
           onChange={(event) => onChange({ amount: sanitizeAmountInput(event.target.value) })}
+          onBlur={(event) => onChange({ amount: normalizeAmountInputOnBlur(event.target.value) })}
+          onFocus={(event) => onChange({ amount: normalizeAmountInputOnFocus(event.target.value) })}
           onKeyDown={(event) => {
             if (event.key === "-") {
               event.preventDefault();
@@ -408,7 +433,7 @@ function buildEmptySecretariaMovementFormState(): MovementFormState {
   };
 }
 
-function buildEditMovementFormState(movement: TreasuryDashboardMovement): MovementFormState {
+function buildEditMovementFormState(movement: EditableMovement): MovementFormState {
   return {
     movementDate: movement.movementDate,
     accountId: movement.accountId,
@@ -430,6 +455,16 @@ function buildEmptyTransferFormState(): TransferFormState {
     currencyCode: "",
     concept: "",
     amount: ""
+  };
+}
+
+function buildEditTransferFormState(transfer: ConsolidationTransferEdit): TransferFormState {
+  return {
+    sourceAccountId: transfer.sourceAccountId,
+    targetAccountId: transfer.targetAccountId,
+    currencyCode: transfer.currencyCode,
+    concept: transfer.concept,
+    amount: formatLocalizedAmount(transfer.amount)
   };
 }
 
@@ -540,11 +575,15 @@ export function SecretariaMovementEditForm({
   pendingLabel,
   submitAction,
   movement,
-  copy = texts.dashboard.treasury
+  copy = texts.dashboard.treasury,
+  extraHiddenFields,
+  editableMovementDate = false
 }: BaseMovementFormProps & {
   calendarEvents?: ClubCalendarEvent[];
-  movement: TreasuryDashboardMovement;
+  movement: EditableMovement;
   copy?: OperationalFormCopy;
+  extraHiddenFields?: ReactNode;
+  editableMovementDate?: boolean;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
 
@@ -574,6 +613,7 @@ export function SecretariaMovementEditForm({
       className="grid gap-4"
     >
       <input type="hidden" name="movement_id" value={movement.movementId} />
+      {extraHiddenFields}
 
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
@@ -583,7 +623,17 @@ export function SecretariaMovementEditForm({
 
         <FormField>
           <span className="font-medium">{copy.date_label}</span>
-          <input type="text" value={movement.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
+          {editableMovementDate ? (
+            <input
+              type="date"
+              name="movement_date"
+              value={formState.movementDate ?? ""}
+              onChange={(event) => setFormState((current) => ({ ...current, movementDate: event.target.value }))}
+              className={CONTROL_CLASSNAME}
+            />
+          ) : (
+            <input type="text" value={movement.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
+          )}
         </FormField>
 
         <MovementFormFields
@@ -804,6 +854,10 @@ export function AccountTransferForm({
             inputMode="decimal"
             value={formState.amount}
             onChange={(event) => setFormState((current) => ({ ...current, amount: sanitizeAmountInput(event.target.value) }))}
+            onBlur={(event) => setFormState((current) => ({ ...current, amount: normalizeAmountInputOnBlur(event.target.value) }))}
+            onFocus={(event) =>
+              setFormState((current) => ({ ...current, amount: normalizeAmountInputOnFocus(event.target.value) }))
+            }
             onKeyDown={(event) => {
               if (event.key === "-") {
                 event.preventDefault();
@@ -832,10 +886,225 @@ export function AccountTransferForm({
   );
 }
 
+export function ConsolidationTransferEditForm({
+  sourceAccounts,
+  targetAccounts,
+  currencies,
+  submitAction,
+  submitLabel,
+  pendingLabel,
+  transfer,
+  extraHiddenFields
+}: {
+  sourceAccounts: TreasuryAccount[];
+  targetAccounts: TreasuryAccount[];
+  currencies: TreasuryCurrencyConfig[];
+  submitAction: (formData: FormData) => Promise<unknown>;
+  submitLabel: string;
+  pendingLabel: string;
+  transfer: ConsolidationTransferEdit;
+  extraHiddenFields?: ReactNode;
+}) {
+  const [formState, setFormState] = useState<TransferFormState>(() => buildEditTransferFormState(transfer));
+
+  useEffect(() => {
+    setFormState(buildEditTransferFormState(transfer));
+  }, [transfer]);
+
+  const selectedSourceAccount = useMemo(
+    () => sourceAccounts.find((account) => account.id === formState.sourceAccountId),
+    [formState.sourceAccountId, sourceAccounts]
+  );
+  const selectedTargetAccount = useMemo(
+    () => targetAccounts.find((account) => account.id === formState.targetAccountId),
+    [formState.targetAccountId, targetAccounts]
+  );
+  const availableCurrencies = useMemo(() => {
+    if (!selectedSourceAccount) {
+      return [];
+    }
+
+    return currencies.filter((currency) => selectedSourceAccount.currencies.includes(currency.currencyCode));
+  }, [currencies, selectedSourceAccount]);
+  const targetAccountCurrencyError =
+    selectedTargetAccount &&
+    formState.currencyCode &&
+    !selectedTargetAccount.currencies.includes(formState.currencyCode)
+      ? texts.dashboard.treasury.transfer_target_account_currency_error
+      : null;
+
+  useEffect(() => {
+    const nextCurrencyCode = getDefaultCurrencyCode(selectedSourceAccount, currencies);
+
+    if (!selectedSourceAccount && formState.currencyCode) {
+      setFormState((current) => ({ ...current, currencyCode: "" }));
+      return;
+    }
+
+    if (
+      selectedSourceAccount &&
+      nextCurrencyCode &&
+      !selectedSourceAccount.currencies.includes(formState.currencyCode)
+    ) {
+      setFormState((current) => ({ ...current, currencyCode: nextCurrencyCode }));
+    }
+  }, [currencies, formState.currencyCode, selectedSourceAccount]);
+
+  return (
+    <form
+      action={async (formData) => {
+        await submitAction(formData);
+      }}
+      className="grid gap-4"
+      onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        if (!isTransferFormValid(formState, targetAccountCurrencyError)) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <input type="hidden" name="movement_id" value={transfer.movementId} />
+      {extraHiddenFields}
+
+      <PendingFieldset className={FORM_GRID_CLASSNAME}>
+        <FormField>
+          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <input type="text" value={transfer.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
+        </FormField>
+
+        <FormField fullWidth>
+          <span className="font-medium">{texts.dashboard.treasury.detail_transfer_label}</span>
+          <input type="text" value={transfer.transferReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
+        </FormField>
+
+        <FormField>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label, texts.dashboard.treasury)}
+          </span>
+          <select
+            name="source_account_id"
+            value={formState.sourceAccountId}
+            onChange={(event) => setFormState((current) => ({ ...current, sourceAccountId: event.target.value }))}
+            className={CONTROL_CLASSNAME}
+          >
+            <option value="" disabled>
+              {texts.dashboard.treasury.transfer_source_account_placeholder}
+            </option>
+            {sourceAccounts.map((account) => (
+              <option key={`edit-source-${account.id}`} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label, texts.dashboard.treasury)}
+          </span>
+          <select
+            name="target_account_id"
+            value={formState.targetAccountId}
+            onChange={(event) => setFormState((current) => ({ ...current, targetAccountId: event.target.value }))}
+            aria-describedby={targetAccountCurrencyError ? "edit-transfer-target-account-error" : undefined}
+            aria-invalid={targetAccountCurrencyError ? "true" : undefined}
+            className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
+          >
+            <option value="" disabled>
+              {texts.dashboard.treasury.transfer_target_account_placeholder}
+            </option>
+            {targetAccounts.map((account) => (
+              <option key={`edit-target-${account.id}`} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+          {targetAccountCurrencyError ? (
+            <span
+              id="edit-transfer-target-account-error"
+              aria-live="polite"
+              className="text-xs leading-5 text-destructive"
+            >
+              {targetAccountCurrencyError}
+            </span>
+          ) : null}
+        </FormField>
+
+        <FormField>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.currency_label, texts.dashboard.treasury)}
+          </span>
+          <select
+            name="currency_code"
+            value={formState.currencyCode}
+            onChange={(event) => setFormState((current) => ({ ...current, currencyCode: event.target.value }))}
+            disabled={availableCurrencies.length === 0}
+            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground")}
+          >
+            <option value="" disabled>
+              {texts.dashboard.treasury.currency_placeholder}
+            </option>
+            {availableCurrencies.map((currency) => (
+              <option key={`edit-transfer-currency-${currency.currencyCode}`} value={currency.currencyCode}>
+                {currency.currencyCode}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField fullWidth>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.concept_label, texts.dashboard.treasury)}
+          </span>
+          <input
+            type="text"
+            name="concept"
+            value={formState.concept}
+            onChange={(event) => setFormState((current) => ({ ...current, concept: event.target.value }))}
+            className={CONTROL_CLASSNAME}
+          />
+        </FormField>
+
+        <FormField>
+          <span className="font-medium">
+            {getRequiredLabel(texts.dashboard.treasury.amount_label, texts.dashboard.treasury)}
+          </span>
+          <input
+            type="text"
+            name="amount"
+            inputMode="decimal"
+            value={formState.amount}
+            onChange={(event) => setFormState((current) => ({ ...current, amount: sanitizeAmountInput(event.target.value) }))}
+            onBlur={(event) => setFormState((current) => ({ ...current, amount: normalizeAmountInputOnBlur(event.target.value) }))}
+            onFocus={(event) =>
+              setFormState((current) => ({ ...current, amount: normalizeAmountInputOnFocus(event.target.value) }))
+            }
+            onKeyDown={(event) => {
+              if (event.key === "-") {
+                event.preventDefault();
+              }
+            }}
+            className={CONTROL_CLASSNAME}
+          />
+        </FormField>
+
+        <div className="sm:col-span-2">
+          <PendingSubmitButton
+            idleLabel={submitLabel}
+            pendingLabel={pendingLabel}
+            disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
+            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+          />
+        </div>
+      </PendingFieldset>
+    </form>
+  );
+}
+
 export function TreasuryRoleMovementForm({
   accounts,
   categories,
   activities,
+  calendarEvents,
   currencies,
   movementTypes,
   receiptFormats,
@@ -843,7 +1112,7 @@ export function TreasuryRoleMovementForm({
   pendingLabel,
   submitAction,
   sessionDate
-}: BaseMovementFormProps & { sessionDate: string }) {
+}: BaseMovementFormProps & { calendarEvents: ClubCalendarEvent[]; sessionDate: string }) {
   const [formState, setFormState] = useState<MovementFormState>({
     movementDate: sessionDate,
     accountId: "",
@@ -851,6 +1120,7 @@ export function TreasuryRoleMovementForm({
     categoryId: "",
     activityId: "",
     receiptNumber: "",
+    calendarEventId: "",
     concept: "",
     currencyCode: "",
     amount: ""
@@ -878,6 +1148,7 @@ export function TreasuryRoleMovementForm({
       categoryId: "",
       activityId: "",
       receiptNumber: "",
+      calendarEventId: "",
       concept: "",
       currencyCode: "",
       amount: ""
@@ -904,6 +1175,7 @@ export function TreasuryRoleMovementForm({
           accounts={accounts}
           categories={categories}
           activities={activities}
+          calendarEvents={calendarEvents}
           currencies={currencies}
           movementTypes={movementTypes}
           receiptFormats={receiptFormats}
@@ -1132,6 +1404,12 @@ export function TreasuryRoleFxForm({
             inputMode="decimal"
             value={formState.sourceAmount}
             onChange={(event) => setFormState((current) => ({ ...current, sourceAmount: sanitizeAmountInput(event.target.value) }))}
+            onBlur={(event) =>
+              setFormState((current) => ({ ...current, sourceAmount: normalizeAmountInputOnBlur(event.target.value) }))
+            }
+            onFocus={(event) =>
+              setFormState((current) => ({ ...current, sourceAmount: normalizeAmountInputOnFocus(event.target.value) }))
+            }
             onKeyDown={(event) => {
               if (event.key === "-") {
                 event.preventDefault();
@@ -1189,6 +1467,12 @@ export function TreasuryRoleFxForm({
             inputMode="decimal"
             value={formState.targetAmount}
             onChange={(event) => setFormState((current) => ({ ...current, targetAmount: sanitizeAmountInput(event.target.value) }))}
+            onBlur={(event) =>
+              setFormState((current) => ({ ...current, targetAmount: normalizeAmountInputOnBlur(event.target.value) }))
+            }
+            onFocus={(event) =>
+              setFormState((current) => ({ ...current, targetAmount: normalizeAmountInputOnFocus(event.target.value) }))
+            }
             onKeyDown={(event) => {
               if (event.key === "-") {
                 event.preventDefault();

@@ -12,6 +12,7 @@ import { canOperateTesoreria } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import {
   getActiveActivitiesForTesoreria,
+  getEnabledCalendarEventsForTesoreria,
   getActiveReceiptFormatsForTesoreria,
   getActiveTreasuryCurrenciesForTesoreria,
   getEnabledMovementTypesForTesoreria,
@@ -40,7 +41,7 @@ export default async function TreasuryDashboardPage() {
     redirect("/dashboard");
   }
 
-  const [accounts, categories, activities, currencies, movementTypes, receiptFormats] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents, currencies, movementTypes, receiptFormats] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id).then((entries) =>
       entries.filter((account) => account.visibleForTesoreria)
     ),
@@ -48,6 +49,7 @@ export default async function TreasuryDashboardPage() {
       entries.filter((category) => category.visibleForTesoreria)
     ),
     getActiveActivitiesForTesoreria(),
+    getEnabledCalendarEventsForTesoreria(),
     getActiveTreasuryCurrenciesForTesoreria(),
     getEnabledMovementTypesForTesoreria(),
     getActiveReceiptFormatsForTesoreria()
@@ -66,6 +68,7 @@ export default async function TreasuryDashboardPage() {
         accounts={accounts}
         categories={categories}
         activities={activities}
+        calendarEvents={calendarEvents}
         currencies={currencies}
         movementTypes={movementTypes}
         receiptFormats={receiptFormats}

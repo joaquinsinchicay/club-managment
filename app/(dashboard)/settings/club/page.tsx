@@ -38,29 +38,25 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
   }
 
   const permissions = getClubSettingsPermissions(context.activeMembership);
-  const canViewMembers = permissions.canManageMembers;
-  const canViewTreasury = permissions.canAccessTreasury;
 
   if (!permissions.canAccessPage) {
     return <ClubSettingsForbiddenCard />;
   }
 
   const [clubMembersData, treasurySettings] = await Promise.all([
-    canViewMembers ? getClubMembersForActiveClub() : Promise.resolve(null),
-    canViewTreasury ? getTreasurySettingsForActiveClub() : Promise.resolve(null)
+    getClubMembersForActiveClub(),
+    getTreasurySettingsForActiveClub()
   ]);
 
-  if ((canViewMembers && !clubMembersData) || (canViewTreasury && !treasurySettings)) {
+  if (!clubMembersData || !treasurySettings) {
     return <ClubSettingsForbiddenCard />;
   }
 
   return (
     <ClubSettingsCard
       context={context}
-      canManageMembers={canViewMembers}
-      canManageTreasury={canViewTreasury}
-      members={clubMembersData?.members ?? []}
-      pendingInvitations={clubMembersData?.pendingInvitations ?? []}
+      members={clubMembersData.members}
+      pendingInvitations={clubMembersData.pendingInvitations}
       treasurySettings={treasurySettings}
       inviteUserAction={inviteClubUserAction}
       approveMembershipAction={approveClubMembershipAction}

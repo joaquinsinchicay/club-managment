@@ -36,3 +36,66 @@ export function parseLocalizedAmount(rawValue: string) {
 
   return null;
 }
+
+export function sanitizeLocalizedAmountInput(value: string) {
+  const normalizedValue = value.replace(/[^\d,]/g, "");
+  const [integerPart, ...decimalParts] = normalizedValue.split(",");
+
+  if (decimalParts.length === 0) {
+    return integerPart;
+  }
+
+  return `${integerPart},${decimalParts.join("")}`;
+}
+
+function trimTrailingZeros(decimalPart: string) {
+  return decimalPart.replace(/0+$/, "");
+}
+
+function toEditableLocalizedAmount(value: number) {
+  if (!Number.isFinite(value)) {
+    return "";
+  }
+
+  const fixedValue = value.toFixed(2);
+  const [integerPart, decimalPart = ""] = fixedValue.split(".");
+  const trimmedDecimalPart = trimTrailingZeros(decimalPart);
+
+  if (!trimmedDecimalPart) {
+    return integerPart;
+  }
+
+  return `${integerPart},${trimmedDecimalPart}`;
+}
+
+export function formatLocalizedAmountInputOnBlur(rawValue: string) {
+  const trimmedValue = rawValue.trim();
+
+  if (!trimmedValue) {
+    return "";
+  }
+
+  const parsedValue = parseLocalizedAmount(trimmedValue);
+
+  if (parsedValue === null) {
+    return sanitizeLocalizedAmountInput(trimmedValue);
+  }
+
+  return formatLocalizedAmount(parsedValue);
+}
+
+export function formatLocalizedAmountInputOnFocus(rawValue: string) {
+  const trimmedValue = rawValue.trim();
+
+  if (!trimmedValue) {
+    return "";
+  }
+
+  const parsedValue = parseLocalizedAmount(trimmedValue);
+
+  if (parsedValue === null) {
+    return sanitizeLocalizedAmountInput(trimmedValue);
+  }
+
+  return toEditableLocalizedAmount(parsedValue);
+}

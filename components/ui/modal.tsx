@@ -1,9 +1,10 @@
 "use client";
 
-import { type ComponentPropsWithoutRef, type ReactNode, useEffect } from "react";
+import { type ComponentPropsWithoutRef, type ReactNode } from "react";
 
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
+import { BlockingOverlay } from "@/components/ui/overlay";
 
 type ModalProps = {
   open: boolean;
@@ -24,40 +25,21 @@ export function Modal({
   panelClassName,
   closeDisabled = false
 }: ModalProps) {
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !closeDisabled) {
-        onClose();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [closeDisabled, open, onClose]);
-
   if (!open) {
     return null;
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-3 sm:items-center sm:p-6"
+    <BlockingOverlay
+      open={open}
+      className="z-50"
+      contentClassName="items-end justify-center p-3 sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="app-modal-title"
       aria-describedby={description ? "app-modal-description" : undefined}
-      onClick={closeDisabled ? undefined : onClose}
+      onBackdropClick={closeDisabled ? undefined : onClose}
+      onEscape={closeDisabled ? undefined : onClose}
     >
       <div
         className={cn(
@@ -65,6 +47,8 @@ export function Modal({
           panelClassName
         )}
         onClick={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
@@ -79,7 +63,10 @@ export function Modal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClose();
+            }}
             disabled={closeDisabled}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
             aria-label={texts.app.modal_close_cta}
@@ -90,7 +77,7 @@ export function Modal({
 
         <div className="mt-5">{children}</div>
       </div>
-    </div>
+    </BlockingOverlay>
   );
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { BlockingOverlay } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
 import { type FeedbackToast, resolveFeedbackToast } from "@/lib/feedback";
 
@@ -162,15 +163,14 @@ export function GlobalFeedbackToast() {
   }
 
   return (
-    <div
-      className={cn(
-        "pointer-events-none fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/45 p-3 transition duration-200 sm:items-center sm:p-6",
-        isVisible ? "opacity-100" : "opacity-0"
-      )}
+    <BlockingOverlay
+      open
+      className={cn("z-[60] transition duration-200", isVisible ? "opacity-100" : "opacity-0")}
+      contentClassName="items-end justify-center p-3 sm:items-center sm:p-6"
     >
-      <div className="pointer-events-auto w-full max-w-xl">
+      <div className="w-full max-w-xl">
         <ToastCard {...activeToast} visible={isVisible} />
       </div>
-    </div>
+    </BlockingOverlay>
   );
 }

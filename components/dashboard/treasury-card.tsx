@@ -11,6 +11,7 @@ import {
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
+import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
@@ -576,11 +577,7 @@ export function TreasuryCard({
 
   return (
     <>
-      {pendingOverlayLabel ? (
-        <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground">
-          {pendingOverlayLabel}
-        </div>
-      ) : null}
+      <BlockingStatusOverlay open={pendingOverlayLabel !== null} label={pendingOverlayLabel ?? ""} />
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.95fr)]">
         <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
@@ -834,6 +831,7 @@ export function TreasuryCard({
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury.transfer_form_title}
         description={texts.dashboard.treasury.transfer_form_description}
+        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isTransferSubmissionPending}
       >
         <AccountTransferForm
           sourceAccounts={transferSourceAccounts}
