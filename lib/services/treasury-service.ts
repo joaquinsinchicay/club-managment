@@ -498,6 +498,10 @@ function buildDashboardMovementView(input: {
   };
 }
 
+function isTreasuryRoleMovementEditable(movement: TreasuryMovement) {
+  return movement.status === "posted" && !movement.transferGroupId && !movement.fxOperationGroupId;
+}
+
 function isMovementWithinOperationalWindow(movementDate: string, startDate: string, endDate: string) {
   return movementDate >= startDate && movementDate <= endDate;
 }
@@ -1217,7 +1221,7 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
         activitiesById,
         calendarEventsById,
         usersById,
-        canEdit: movement.status === "posted"
+        canEdit: isTreasuryRoleMovementEditable(movement)
       })
     )
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
@@ -2176,7 +2180,7 @@ export async function updateTreasuryRoleMovement(input: {
   const clubId = context.activeClub.id;
   const movement = await accessRepository.findTreasuryMovementById(clubId, input.movementId);
 
-  if (!movement || movement.clubId !== clubId || movement.status !== "posted") {
+  if (!movement || movement.clubId !== clubId || !isTreasuryRoleMovementEditable(movement)) {
     return { ok: false, code: "movement_not_editable" };
   }
 

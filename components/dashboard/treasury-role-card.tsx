@@ -675,6 +675,10 @@ export function TreasuryRoleCard({
             <TreasuryRoleMovementGroups
               groups={filteredMovementGroups}
               onEditMovement={(movement) => {
+                if (!movement.canEdit) {
+                  return;
+                }
+
                 setSelectedMovement(movement);
                 setActiveModal("edit_movement");
               }}
@@ -706,7 +710,7 @@ export function TreasuryRoleCard({
       </Modal>
 
       <Modal
-        open={activeModal === "edit_movement" && selectedMovement !== null}
+        open={activeModal === "edit_movement" && selectedMovement !== null && selectedMovement.canEdit}
         onClose={() => {
           setActiveModal(null);
           setSelectedMovement(null);
@@ -715,7 +719,7 @@ export function TreasuryRoleCard({
         description={texts.dashboard.treasury_role.edit_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
       >
-        {selectedMovement ? (
+        {selectedMovement?.canEdit ? (
           <SecretariaMovementEditForm
             accounts={accounts}
             categories={categories}
