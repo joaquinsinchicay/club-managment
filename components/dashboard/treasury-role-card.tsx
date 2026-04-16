@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import {
@@ -220,11 +220,38 @@ function formatMovementGroupDate(value: string) {
   }).format(date);
 }
 
+function getMovementGroupsForAccount(
+  groups: TreasuryRoleDashboardMovementDateGroup[],
+  accountId: string | null
+) {
+  if (!accountId) {
+    return [];
+  }
+
+  return groups
+    .map((group) => {
+      const accountGroup = group.accounts.find((entry) => entry.accountId === accountId);
+
+      if (!accountGroup) {
+        return null;
+      }
+
+      return {
+        movementDate: group.movementDate,
+        movements: accountGroup.movements
+      };
+    })
+    .filter((group): group is { movementDate: string; movements: TreasuryDashboardMovement[] } => group !== null);
+}
+
 function TreasuryRoleMovementGroups({
   groups,
   onEditMovement
 }: {
-  groups: TreasuryRoleDashboardMovementDateGroup[];
+  groups: Array<{
+    movementDate: string;
+    movements: TreasuryDashboardMovement[];
+  }>;
   onEditMovement: (movement: TreasuryDashboardMovement) => void;
 }) {
   return (
@@ -240,54 +267,41 @@ function TreasuryRoleMovementGroups({
             </p>
           </div>
 
-          <div className="grid gap-3">
-            {group.accounts.map((accountGroup) => (
-              <section key={`${group.movementDate}-${accountGroup.accountId}`} className="space-y-3">
-                <div className="rounded-xl border border-border bg-card px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    {texts.dashboard.treasury_role.movements_account_label}
-                  </p>
-                  <p className="mt-1 text-base font-semibold text-foreground">{accountGroup.accountName}</p>
-                </div>
-
-                <SecretariaMovementList
-                  items={accountGroup.movements.map((movement) => ({
-                    movementId: movement.movementId,
-                    movementDisplayId: movement.movementDisplayId,
-                    concept: movement.concept,
-                    createdAt: movement.createdAt,
-                    createdByUserName: movement.createdByUserName,
-                    accountName: movement.accountName,
-                    movementType: movement.movementType,
-                    currencyCode: movement.currencyCode,
-                    amount: movement.amount,
-                    categoryName: movement.categoryName,
-                    activityName: movement.activityName,
-                    receiptNumber: movement.receiptNumber,
-                    calendarEventTitle: movement.calendarEventTitle,
-                    transferReference: movement.transferReference,
-                    fxOperationReference: movement.fxOperationReference,
-                    action:
-                      movement.canEdit ? (
-                        <ModalTriggerButton
-                          onClick={() => onEditMovement(movement)}
-                          aria-label={texts.dashboard.treasury_role.edit_movement_cta}
-                          className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
-                        >
-                          <EditMovementIcon />
-                        </ModalTriggerButton>
-                      ) : undefined
-                  }))}
-                  conceptLabel={texts.dashboard.treasury_role.movements_concept_label}
-                  accountLabel={texts.dashboard.treasury_role.movements_account_label}
-                  detailLabel={texts.dashboard.treasury_role.movements_detail_label}
-                  amountLabel={texts.dashboard.treasury_role.movements_amount_label}
-                  actionsLabel={texts.dashboard.treasury_role.movements_actions_label}
-                  createdByLabel={texts.dashboard.treasury_role.movements_created_by_label}
-                />
-              </section>
-            ))}
-          </div>
+          <SecretariaMovementList
+            items={group.movements.map((movement) => ({
+              movementId: movement.movementId,
+              movementDisplayId: movement.movementDisplayId,
+              concept: movement.concept,
+              createdAt: movement.createdAt,
+              createdByUserName: movement.createdByUserName,
+              accountName: movement.accountName,
+              movementType: movement.movementType,
+              currencyCode: movement.currencyCode,
+              amount: movement.amount,
+              categoryName: movement.categoryName,
+              activityName: movement.activityName,
+              receiptNumber: movement.receiptNumber,
+              calendarEventTitle: movement.calendarEventTitle,
+              transferReference: movement.transferReference,
+              fxOperationReference: movement.fxOperationReference,
+              action:
+                movement.canEdit ? (
+                  <ModalTriggerButton
+                    onClick={() => onEditMovement(movement)}
+                    aria-label={texts.dashboard.treasury_role.edit_movement_cta}
+                    className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
+                  >
+                    <EditMovementIcon />
+                  </ModalTriggerButton>
+                ) : undefined
+            }))}
+            conceptLabel={texts.dashboard.treasury_role.movements_concept_label}
+            accountLabel={texts.dashboard.treasury_role.movements_account_label}
+            detailLabel={texts.dashboard.treasury_role.movements_detail_label}
+            amountLabel={texts.dashboard.treasury_role.movements_amount_label}
+            actionsLabel={texts.dashboard.treasury_role.movements_actions_label}
+            createdByLabel={texts.dashboard.treasury_role.movements_created_by_label}
+          />
         </section>
       ))}
     </div>
@@ -391,6 +405,9 @@ export function TreasuryRoleCard({
   const searchParams = useSearchParams();
   const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "fx" | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<TreasuryDashboardMovement | null>(null);
+  const [selectedMovementAccountId, setSelectedMovementAccountId] = useState<string | null>(
+    dashboard.accounts[0]?.accountId ?? null
+  );
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
   const [isFxSubmissionPending, setIsFxSubmissionPending] = useState(false);
@@ -398,6 +415,7 @@ export function TreasuryRoleCard({
   const detailHref = dashboard.accounts[0] ? `/dashboard/treasury/accounts/${dashboard.accounts[0].accountId}` : null;
   const canCreateMovement = dashboard.availableActions.includes("create_movement");
   const canCreateFxOperation = dashboard.availableActions.includes("create_fx_operation");
+  const filteredMovementGroups = getMovementGroupsForAccount(dashboard.movementGroups, selectedMovementAccountId);
   const pendingOverlayLabel = isMovementSubmissionPending
     ? texts.dashboard.treasury_role.create_loading
     : isMovementUpdatePending
@@ -405,6 +423,22 @@ export function TreasuryRoleCard({
       : isFxSubmissionPending
         ? texts.dashboard.treasury_role.fx_create_loading
         : null;
+
+  useEffect(() => {
+    const nextSelectedAccountId = dashboard.accounts[0]?.accountId ?? null;
+
+    setSelectedMovementAccountId((currentAccountId) => {
+      if (!nextSelectedAccountId) {
+        return null;
+      }
+
+      if (currentAccountId && dashboard.accounts.some((account) => account.accountId === currentAccountId)) {
+        return currentAccountId;
+      }
+
+      return nextSelectedAccountId;
+    });
+  }, [dashboard.accounts]);
 
   async function handleCreateTreasuryRoleMovement(formData: FormData) {
     setIsMovementSubmissionPending(true);
@@ -606,14 +640,40 @@ export function TreasuryRoleCard({
           </p>
         </div>
 
-        {dashboard.movementGroups.length === 0 ? (
+        {dashboard.accounts.length > 0 ? (
+          <div className="mt-5 grid gap-2">
+            <p className="text-sm font-medium text-foreground">
+              {texts.dashboard.treasury.account_switch_label}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {dashboard.accounts.map((account) => (
+                <button
+                  key={account.accountId}
+                  type="button"
+                  onClick={() => setSelectedMovementAccountId(account.accountId)}
+                  className={cn(
+                    "rounded-full border px-3 py-2 text-sm font-medium transition",
+                    account.accountId === selectedMovementAccountId
+                      ? "border-foreground bg-foreground text-primary-foreground"
+                      : "border-border bg-card text-foreground hover:bg-secondary"
+                  )}
+                  aria-pressed={account.accountId === selectedMovementAccountId}
+                >
+                  {account.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {filteredMovementGroups.length === 0 ? (
           <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
             {texts.dashboard.treasury_role.movements_empty}
           </div>
         ) : (
           <div className="mt-5">
             <TreasuryRoleMovementGroups
-              groups={dashboard.movementGroups}
+              groups={filteredMovementGroups}
               onEditMovement={(movement) => {
                 setSelectedMovement(movement);
                 setActiveModal("edit_movement");
