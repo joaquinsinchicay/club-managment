@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import { BlockingOverlay } from "@/components/ui/overlay";
 import { Modal } from "@/components/ui/modal";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import { SettingsTabShell } from "@/components/settings/settings-tab-shell";
@@ -191,16 +190,16 @@ export function MembersTab({
                     </div>
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-5 flex items-center gap-2">
                     {member.status === "pendiente_aprobacion" ? (
-                      <form action={approveMembershipAction} className="contents">
+                      <form action={approveMembershipAction} className="flex-1">
                         <input type="hidden" name="membership_id" value={member.membershipId} />
                         <input type="hidden" name="role" value={member.roles[0] ?? "secretaria"} />
                         <PendingFieldset className="contents">
                           <PendingSubmitButton
                             idleLabel={texts.settings.club.members.approve_cta}
                             pendingLabel={texts.settings.club.members.approve_loading}
-                            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                            className="min-h-11 w-full rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
                           />
                         </PendingFieldset>
                       </form>
@@ -208,20 +207,24 @@ export function MembersTab({
                       <button
                         type="button"
                         onClick={() => setEditingMember(member)}
-                        className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                        aria-label={texts.settings.club.members.update_roles_cta}
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
                       >
-                        {texts.settings.club.members.update_roles_cta}
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
                       </button>
                     )}
 
                     <button
                       type="button"
                       onClick={() => setRemovingMembershipId(member.membershipId)}
-                      className="min-h-11 rounded-2xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-destructive/15"
+                      aria-label={isCurrentUser ? texts.settings.club.members.leave_club_cta : texts.settings.club.members.remove_cta}
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-destructive/25 bg-destructive/10 text-destructive transition hover:bg-destructive/15"
                     >
-                      {isCurrentUser
-                        ? texts.settings.club.members.leave_club_cta
-                        : texts.settings.club.members.remove_cta}
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
                     </button>
                   </div>
                 </article>
@@ -326,33 +329,16 @@ export function MembersTab({
         ) : null}
       </Modal>
 
-      {/* Overlay: Confirmar remover */}
-      {removingMember ? (
-        <BlockingOverlay
-          open
-          className="z-30 bg-foreground/45"
-          contentClassName="items-center justify-center px-4"
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="remove-member-dialog-title"
-            aria-describedby="remove-member-dialog-description"
-            className="w-full max-w-md rounded-[32px] border border-border bg-card p-6 shadow-soft"
-          >
-            <div className="space-y-3">
-              <div className="inline-flex w-fit rounded-full border border-destructive/25 bg-destructive/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground">
-                {texts.settings.club.members.remove_cta}
-              </div>
-              <h2 id="remove-member-dialog-title" className="text-xl font-semibold tracking-tight text-card-foreground">
-                {texts.settings.club.members.remove_dialog_title}
-              </h2>
-              <p id="remove-member-dialog-description" className="text-sm leading-6 text-muted-foreground">
-                {texts.settings.club.members.remove_dialog_description}
-              </p>
-            </div>
-
-            <div className="mt-4 rounded-[24px] border border-border bg-secondary/50 px-4 py-4">
+      {/* Modal: Confirmar remover */}
+      <Modal
+        open={removingMember !== null}
+        title={texts.settings.club.members.remove_dialog_title}
+        description={texts.settings.club.members.remove_dialog_description}
+        onClose={() => setRemovingMembershipId(null)}
+      >
+        {removingMember ? (
+          <>
+            <div className="rounded-[24px] border border-border bg-secondary/50 px-4 py-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 {texts.settings.club.members.remove_dialog_member_label}
               </p>
@@ -360,28 +346,26 @@ export function MembersTab({
               <p className="text-sm text-muted-foreground">{removingMember.email}</p>
             </div>
 
-            <div className="mt-6">
-              <form action={removeMembershipAction}>
-                <PendingFieldset className="grid gap-3 sm:grid-cols-2">
-                  <input type="hidden" name="membership_id" value={removingMember.membershipId} />
-                  <button
-                    type="button"
-                    onClick={() => setRemovingMembershipId(null)}
-                    className="min-h-11 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
-                  >
-                    {texts.settings.club.members.remove_dialog_cancel_cta}
-                  </button>
-                  <PendingSubmitButton
-                    idleLabel={texts.settings.club.members.remove_dialog_confirm_cta}
-                    pendingLabel={texts.settings.club.members.remove_loading}
-                    className="min-h-11 w-full rounded-2xl bg-destructive px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-                  />
-                </PendingFieldset>
-              </form>
-            </div>
-          </div>
-        </BlockingOverlay>
-      ) : null}
+            <form action={removeMembershipAction} className="mt-4">
+              <PendingFieldset className="grid gap-3 sm:grid-cols-2">
+                <input type="hidden" name="membership_id" value={removingMember.membershipId} />
+                <button
+                  type="button"
+                  onClick={() => setRemovingMembershipId(null)}
+                  className="min-h-11 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
+                >
+                  {texts.settings.club.members.remove_dialog_cancel_cta}
+                </button>
+                <PendingSubmitButton
+                  idleLabel={texts.settings.club.members.remove_dialog_confirm_cta}
+                  pendingLabel={texts.settings.club.members.remove_loading}
+                  className="min-h-11 w-full rounded-2xl bg-destructive px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                />
+              </PendingFieldset>
+            </form>
+          </>
+        ) : null}
+      </Modal>
     </>
   );
 }

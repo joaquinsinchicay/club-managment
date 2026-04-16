@@ -1,7 +1,6 @@
 "use client";
 
 import { PageContentHeader } from "@/components/ui/page-content-header";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
 import { AccountsTab } from "@/components/settings/tabs/accounts-tab";
 import { ActivitiesTab } from "@/components/settings/tabs/activities-tab";
@@ -46,10 +45,6 @@ export function ClubSettingsCard({
   updateClubActivityAction
 }: ClubSettingsCardProps) {
   const activeClubName = context.activeClub?.name ?? "";
-  const activeRoles =
-    context.activeMembership?.roles
-      .map((role) => texts.settings.club.members.roles[role] ?? role)
-      .join(" + ") ?? "";
 
   const tabs = [
     {
@@ -113,49 +108,21 @@ export function ClubSettingsCard({
         eyebrow={texts.settings.club.eyebrow}
         title={texts.settings.club.title}
         description={texts.settings.club.description}
-        backHref="/dashboard"
-        backLabel={texts.settings.club.back_to_dashboard_cta}
       />
 
       <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div className="space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              {texts.settings.club.club_summary_title}
-            </p>
-            <p className="text-2xl font-semibold tracking-tight text-foreground">{activeClubName}</p>
-            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-              {texts.settings.club.club_summary_description}
-            </p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
+              {activeClubName.charAt(0).toUpperCase()}
+            </div>
+            <p className="text-xl font-semibold tracking-tight text-foreground">{activeClubName}</p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-border bg-secondary/35 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.settings.club.club_summary_status_label}
-              </p>
-              <div className="mt-2">
-                <StatusBadge label={texts.settings.club.club_summary_status_value} tone="success" />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-border bg-secondary/35 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.settings.club.members.roles_label}
-              </p>
-              <p className="mt-2 text-sm font-semibold text-foreground">
-                {activeRoles || texts.settings.club.club_summary_roles_empty}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-dashed border-border bg-secondary/20 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {texts.settings.club.club_summary_future_fields_label}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {texts.settings.club.club_summary_future_fields_value}
-              </p>
-            </div>
+          <div className="flex items-center gap-2">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-6 w-6 rounded-full bg-border" />
+            ))}
           </div>
         </div>
       </section>
