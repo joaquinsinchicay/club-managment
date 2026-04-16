@@ -464,6 +464,13 @@
       "club_summary_roles_empty": "Sin roles operativos visibles",
       "club_summary_future_fields_label": "Proximamente editable",
       "club_summary_future_fields_value": "Nombre del club, icono y colores identificatorios.",
+      "tabs": {
+        "members": "Miembros",
+        "accounts": "Cuentas",
+        "categories": "Categorías",
+        "activities": "Actividades",
+        "membership_systems": "Sistema de Socios"
+      },
       "invitations": {
         "section_title": "Invitar usuario",
         "section_description": "Genera una invitacion para sumar un usuario al club activo con el rol correcto.",

@@ -1,10 +1,13 @@
 "use client";
 
-import { ClubInvitationManager } from "@/components/settings/club-invitation-manager";
-import { ClubMembersManager } from "@/components/settings/club-members-manager";
-import { ClubTreasurySettingsManager } from "@/components/settings/club-treasury-settings-manager";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
+import { AccountsTab } from "@/components/settings/tabs/accounts-tab";
+import { ActivitiesTab } from "@/components/settings/tabs/activities-tab";
+import { CategoriesTab } from "@/components/settings/tabs/categories-tab";
+import { MembersTab } from "@/components/settings/tabs/members-tab";
+import { MembershipSystemsTab } from "@/components/settings/tabs/membership-systems-tab";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { ClubMember, PendingClubInvitation, TreasurySettings } from "@/lib/domain/access";
@@ -25,15 +28,6 @@ type ClubSettingsCardProps = {
   createClubActivityAction: (formData: FormData) => Promise<void>;
   updateClubActivityAction: (formData: FormData) => Promise<void>;
 };
-
-function SectionIntro({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="space-y-2">
-      <h2 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
-      <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
-    </div>
-  );
-}
 
 export function ClubSettingsCard({
   context,
@@ -56,6 +50,62 @@ export function ClubSettingsCard({
     context.activeMembership?.roles
       .map((role) => texts.settings.club.members.roles[role] ?? role)
       .join(" + ") ?? "";
+
+  const tabs = [
+    {
+      id: "miembros",
+      label: texts.settings.club.tabs.members,
+      content: (
+        <MembersTab
+          members={members}
+          pendingInvitations={pendingInvitations}
+          currentUserId={context.user.id}
+          inviteUserAction={inviteUserAction}
+          approveMembershipAction={approveMembershipAction}
+          updateMembershipRoleAction={updateMembershipRolesAction}
+          removeMembershipAction={removeMembershipAction}
+        />
+      )
+    },
+    {
+      id: "cuentas",
+      label: texts.settings.club.tabs.accounts,
+      content: (
+        <AccountsTab
+          accounts={treasurySettings.accounts}
+          createTreasuryAccountAction={createTreasuryAccountAction}
+          updateTreasuryAccountAction={updateTreasuryAccountAction}
+        />
+      )
+    },
+    {
+      id: "categorias",
+      label: texts.settings.club.tabs.categories,
+      content: (
+        <CategoriesTab
+          categories={treasurySettings.categories}
+          createTreasuryCategoryAction={createTreasuryCategoryAction}
+          updateTreasuryCategoryAction={updateTreasuryCategoryAction}
+        />
+      )
+    },
+    {
+      id: "actividades",
+      label: texts.settings.club.tabs.activities,
+      content: (
+        <ActivitiesTab
+          activities={treasurySettings.activities}
+          createClubActivityAction={createClubActivityAction}
+          updateClubActivityAction={updateClubActivityAction}
+        />
+      )
+    },
+    {
+      id: "sistema-de-socios",
+      label: texts.settings.club.tabs.membership_systems,
+      content: <MembershipSystemsTab receiptFormats={treasurySettings.receiptFormats} />
+    }
+  ];
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
@@ -110,34 +160,8 @@ export function ClubSettingsCard({
         </div>
       </section>
 
-      <section className="space-y-8 rounded-[20px] border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
-        <section className="space-y-6">
-          <SectionIntro
-            title={texts.settings.club.members.section_title}
-            description={texts.settings.club.members.section_description}
-          />
-
-          <ClubInvitationManager inviteUserAction={inviteUserAction} />
-
-          <ClubMembersManager
-            members={members}
-            pendingInvitations={pendingInvitations}
-            currentUserId={context.user.id}
-            approveMembershipAction={approveMembershipAction}
-            updateMembershipRoleAction={updateMembershipRolesAction}
-            removeMembershipAction={removeMembershipAction}
-          />
-        </section>
-
-        <ClubTreasurySettingsManager
-          treasurySettings={treasurySettings}
-          createTreasuryAccountAction={createTreasuryAccountAction}
-          updateTreasuryAccountAction={updateTreasuryAccountAction}
-          createTreasuryCategoryAction={createTreasuryCategoryAction}
-          updateTreasuryCategoryAction={updateTreasuryCategoryAction}
-          createClubActivityAction={createClubActivityAction}
-          updateClubActivityAction={updateClubActivityAction}
-        />
+      <section className="rounded-[20px] border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
+        <SettingsPageLayout tabs={tabs} defaultTabId="miembros" />
       </section>
     </main>
   );
