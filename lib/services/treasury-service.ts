@@ -1153,12 +1153,47 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
     }))
   );
 
-  const [categories, activities, calendarEvents, roleMovements] = await Promise.all([
+  const [categories, activities, calendarEvents] = await Promise.all([
     accessRepository.listTreasuryCategoriesForClub(clubId),
     accessRepository.listClubActivitiesForClub(clubId),
-    accessRepository.listClubCalendarEventsForClub(clubId),
-    accessRepository.listTreasuryMovementsHistoryByAccounts(clubId, accounts.map((account) => account.id))
+    accessRepository.listClubCalendarEventsForClub(clubId)
   ]);
+  let roleMovements: TreasuryMovement[] = [];
+  let shouldUseLegacyMovementFallback = false;
+
+  try {
+    roleMovements = await accessRepository.listTreasuryMovementsHistoryByAccounts(
+      clubId,
+      accounts.map((account) => account.id)
+    );
+  } catch (error) {
+    if (isMissingBulkMovementHistoryRpcError(error)) {
+      shouldUseLegacyMovementFallback = true;
+    } else {
+      console.error("[treasury-role-dashboard-movement-resolution-failed]", {
+        clubId,
+        error
+      });
+      throw error;
+    }
+  }
+
+  if (shouldUseLegacyMovementFallback) {
+    try {
+      roleMovements = (
+        await Promise.all(
+          accounts.map((account) => accessRepository.listTreasuryMovementsHistoryByAccount(clubId, account.id))
+        )
+      ).flat();
+    } catch (error) {
+      console.error("[treasury-role-dashboard-movement-fallback-resolution-failed]", {
+        clubId,
+        error
+      });
+      throw error;
+    }
+  }
+
   const visibleRoleMovements = roleMovements
     .filter((movement) => visibleAccountIds.has(movement.accountId))
     .filter((movement) => shouldIncludeMovementInRoleBalances(movement, "tesoreria"))
