@@ -921,13 +921,15 @@ export function AccountTransferForm({
   targetAccounts,
   currencies,
   submitAction,
-  sessionDate
+  sessionDate,
+  onCancel
 }: {
   sourceAccounts: TreasuryAccount[];
   targetAccounts: TreasuryAccount[];
   currencies: TreasuryCurrencyConfig[];
   submitAction: (formData: FormData) => Promise<void>;
   sessionDate: string;
+  onCancel?: () => void;
 }) {
   const [formState, setFormState] = useState<TransferFormState>(buildEmptyTransferFormState);
 
@@ -940,12 +942,12 @@ export function AccountTransferForm({
     [formState.targetAccountId, targetAccounts]
   );
   const availableCurrencies = useMemo(() => {
-    if (!selectedSourceAccount) {
-      return [];
-    }
-
+    if (!selectedSourceAccount) return [];
     return currencies.filter((currency) => selectedSourceAccount.currencies.includes(currency.currencyCode));
   }, [currencies, selectedSourceAccount]);
+
+  const hasMultipleCurrencies = availableCurrencies.length > 1;
+
   const targetAccountCurrencyError =
     selectedTargetAccount &&
     formState.currencyCode &&
@@ -955,171 +957,160 @@ export function AccountTransferForm({
 
   useEffect(() => {
     const nextCurrencyCode = getDefaultCurrencyCode(selectedSourceAccount, currencies);
-
     if (!selectedSourceAccount && formState.currencyCode) {
-      setFormState((current) => ({ ...current, currencyCode: "" }));
+      setFormState((s) => ({ ...s, currencyCode: "" }));
       return;
     }
-
-    if (
-      selectedSourceAccount &&
-      nextCurrencyCode &&
-      !selectedSourceAccount.currencies.includes(formState.currencyCode)
-    ) {
-      setFormState((current) => ({ ...current, currencyCode: nextCurrencyCode }));
+    if (selectedSourceAccount && nextCurrencyCode && !selectedSourceAccount.currencies.includes(formState.currencyCode)) {
+      setFormState((s) => ({ ...s, currencyCode: nextCurrencyCode }));
     }
   }, [currencies, formState.currencyCode, selectedSourceAccount]);
 
-  const handleReset = () => setFormState(buildEmptyTransferFormState());
-
   return (
     <form
-      action={async (formData) => {
-        await submitAction(formData);
-      }}
+      action={async (formData) => { await submitAction(formData); }}
       className="grid gap-4"
-      onReset={handleReset}
       onSubmit={(event: FormEvent<HTMLFormElement>) => {
         if (!isTransferFormValid(formState, targetAccountCurrencyError)) {
           event.preventDefault();
         }
       }}
     >
-      <PendingFieldset className={FORM_GRID_CLASSNAME}>
-        <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
-          <input
-            type="text"
-            value={sessionDate}
-            disabled
-            className={DISABLED_CONTROL_CLASSNAME}
-          />
-        </FormField>
+      <PendingFieldset className="grid gap-4">
+        {/* FECHA */}
+        <div className="grid gap-1.5">
+          <p className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury.date_label}</p>
+          <div className={cn(DISABLED_CONTROL_CLASSNAME, "font-medium text-foreground")}>
+            {formatSessionDateLong(sessionDate)}
+          </div>
+          <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.date_helper_text}</p>
+        </div>
 
-        <FormField>
-          <span className="font-medium">
+        {/* CUENTA ORIGEN */}
+        <label className="grid gap-2">
+          <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label, texts.dashboard.treasury)}
           </span>
           <select
             name="source_account_id"
             value={formState.sourceAccountId}
-            onChange={(event) => setFormState((current) => ({ ...current, sourceAccountId: event.target.value }))}
+            onChange={(e) => setFormState((s) => ({ ...s, sourceAccountId: e.target.value }))}
             className={CONTROL_CLASSNAME}
           >
-            <option value="" disabled>
-              {texts.dashboard.treasury.transfer_source_account_placeholder}
-            </option>
+            <option value="" disabled>{texts.dashboard.treasury.transfer_source_account_placeholder}</option>
             {sourceAccounts.map((account) => (
-              <option key={`source-${account.id}`} value={account.id}>
-                {account.name}
-              </option>
+              <option key={`source-${account.id}`} value={account.id}>{account.name}</option>
             ))}
           </select>
-        </FormField>
+        </label>
 
-        <FormField>
-          <span className="font-medium">
-            {getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label, texts.dashboard.treasury)}
-          </span>
-          <select
-            name="target_account_id"
-            value={formState.targetAccountId}
-            onChange={(event) => setFormState((current) => ({ ...current, targetAccountId: event.target.value }))}
-            aria-describedby={targetAccountCurrencyError ? "transfer-target-account-error" : undefined}
-            aria-invalid={targetAccountCurrencyError ? "true" : undefined}
-            className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury.transfer_target_account_placeholder}
-            </option>
-            {targetAccounts.map((account) => (
-              <option key={`target-${account.id}`} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-          {targetAccountCurrencyError ? (
-            <span
-              id="transfer-target-account-error"
-              aria-live="polite"
-              className="text-xs leading-5 text-destructive"
+        {/* MONEDA + IMPORTE */}
+        <div className="grid gap-2">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-2">
+              <span className={FIELD_LABEL_CLASSNAME}>
+                {getRequiredLabel(texts.dashboard.treasury.currency_label, texts.dashboard.treasury)}
+              </span>
+              {hasMultipleCurrencies ? (
+                <select
+                  name="currency_code"
+                  value={formState.currencyCode}
+                  onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))}
+                  className={CONTROL_CLASSNAME}
+                >
+                  <option value="" disabled>{texts.dashboard.treasury.currency_placeholder}</option>
+                  {availableCurrencies.map((c) => (
+                    <option key={`transfer-${c.currencyCode}`} value={c.currencyCode}>{c.currencyCode}</option>
+                  ))}
+                </select>
+              ) : (
+                <>
+                  <input type="hidden" name="currency_code" value={formState.currencyCode} />
+                  <div className={cn(DISABLED_CONTROL_CLASSNAME, "font-medium text-foreground")}>
+                    {formState.currencyCode || "—"}
+                  </div>
+                </>
+              )}
+            </label>
+            <label className="grid gap-2">
+              <span className={FIELD_LABEL_CLASSNAME}>
+                {getRequiredLabel(texts.dashboard.treasury.amount_label, texts.dashboard.treasury)}
+              </span>
+              <input
+                type="text"
+                name="amount"
+                inputMode="decimal"
+                value={formState.amount}
+                onChange={(e) => setFormState((s) => ({ ...s, amount: sanitizeAmountInput(e.target.value) }))}
+                onBlur={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnBlur(e.target.value) }))}
+                onFocus={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnFocus(e.target.value) }))}
+                onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
+                placeholder="0,00"
+                className={cn(CONTROL_CLASSNAME, "text-right tabular-nums")}
+              />
+            </label>
+          </div>
+        </div>
+
+        {/* CUENTA DESTINO */}
+        <div className="grid gap-1.5">
+          <label className="grid gap-2">
+            <span className={FIELD_LABEL_CLASSNAME}>
+              {getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label, texts.dashboard.treasury)}
+            </span>
+            <select
+              name="target_account_id"
+              value={formState.targetAccountId}
+              onChange={(e) => setFormState((s) => ({ ...s, targetAccountId: e.target.value }))}
+              aria-describedby="transfer-target-account-error"
+              aria-invalid={targetAccountCurrencyError ? "true" : undefined}
+              className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
             >
+              <option value="" disabled>{texts.dashboard.treasury.transfer_target_account_placeholder}</option>
+              {targetAccounts.map((account) => (
+                <option key={`target-${account.id}`} value={account.id}>{account.name}</option>
+              ))}
+            </select>
+          </label>
+          {targetAccountCurrencyError ? (
+            <span id="transfer-target-account-error" aria-live="polite" className="text-[11px] text-destructive">
               {targetAccountCurrencyError}
             </span>
-          ) : null}
-        </FormField>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.transfer_target_account_helper}</p>
+          )}
+        </div>
 
-        <FormField>
-          <span className="font-medium">
-            {getRequiredLabel(texts.dashboard.treasury.currency_label, texts.dashboard.treasury)}
-          </span>
-          <select
-            name="currency_code"
-            value={formState.currencyCode}
-            onChange={(event) => setFormState((current) => ({ ...current, currencyCode: event.target.value }))}
-            disabled={availableCurrencies.length === 0}
-            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground")}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury.currency_placeholder}
-            </option>
-            {availableCurrencies.map((currency) => (
-              <option key={`transfer-${currency.currencyCode}`} value={currency.currencyCode}>
-                {currency.currencyCode}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField fullWidth>
-          <span className="font-medium">
+        {/* CONCEPTO */}
+        <label className="grid gap-2">
+          <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.concept_label, texts.dashboard.treasury)}
           </span>
           <input
             type="text"
             name="concept"
             value={formState.concept}
-            onChange={(event) => setFormState((current) => ({ ...current, concept: event.target.value }))}
+            onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
+            placeholder={texts.dashboard.treasury.transfer_concept_placeholder}
             className={CONTROL_CLASSNAME}
           />
-        </FormField>
+        </label>
 
-        <FormField>
-          <span className="font-medium">
-            {getRequiredLabel(texts.dashboard.treasury.amount_label, texts.dashboard.treasury)}
-          </span>
-          <input
-            type="text"
-            name="amount"
-            inputMode="decimal"
-            value={formState.amount}
-            onChange={(event) => setFormState((current) => ({ ...current, amount: sanitizeAmountInput(event.target.value) }))}
-            onBlur={(event) => setFormState((current) => ({ ...current, amount: normalizeAmountInputOnBlur(event.target.value) }))}
-            onFocus={(event) =>
-              setFormState((current) => ({ ...current, amount: normalizeAmountInputOnFocus(event.target.value) }))
-            }
-            onKeyDown={(event) => {
-              if (event.key === "-") {
-                event.preventDefault();
-              }
-            }}
-            className={CONTROL_CLASSNAME}
-          />
-        </FormField>
-
-        <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+        {/* BUTTONS */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+          >
+            {texts.dashboard.treasury.reset_cta}
+          </button>
           <PendingSubmitButton
             idleLabel={texts.dashboard.treasury.transfer_create_cta}
             pendingLabel={texts.dashboard.treasury.transfer_create_loading}
             disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
             className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
-          <button
-            type="reset"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {texts.dashboard.treasury.reset_cta}
-          </button>
         </div>
       </PendingFieldset>
     </form>

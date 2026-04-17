@@ -766,7 +766,9 @@ export function TreasuryCard({
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury.transfer_form_title}
         description={texts.dashboard.treasury.transfer_form_description}
-        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isTransferSubmissionPending}
+        closeDisabled={isTransferSubmissionPending}
+        hideCloseButton
+        panelClassName="max-w-xl"
       >
         <AccountTransferForm
           sourceAccounts={transferSourceAccounts}
@@ -774,6 +776,7 @@ export function TreasuryCard({
           currencies={currencies}
           submitAction={handleCreateAccountTransfer}
           sessionDate={localTreasuryCard.sessionDate}
+          onCancel={() => setActiveModal(null)}
         />
       </Modal>
     </>
