@@ -102,23 +102,7 @@ function formatMovementGroupDate(value: string) {
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-function EditMovementIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={cn("size-4", className)}
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
+
 
 function MovementIcon() {
   return (
@@ -414,18 +398,12 @@ function TreasuryRoleMovementGroups({
                 <ModalTriggerButton
                   onClick={() => onEditMovement(movement)}
                   aria-label={texts.dashboard.treasury_role.edit_movement_cta}
-                  className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
+                  className="cursor-pointer border-0 bg-transparent p-0 text-[11px] font-semibold text-slate-500 hover:text-foreground"
                 >
-                  <EditMovementIcon />
+                  {texts.dashboard.treasury.movements_edit_cta}
                 </ModalTriggerButton>
               ) : undefined
             }))}
-            conceptLabel={texts.dashboard.treasury_role.movements_concept_label}
-            accountLabel={texts.dashboard.treasury_role.movements_account_label}
-            detailLabel={texts.dashboard.treasury_role.movements_detail_label}
-            amountLabel={texts.dashboard.treasury_role.movements_amount_label}
-            actionsLabel={texts.dashboard.treasury_role.movements_actions_label}
-            createdByLabel={texts.dashboard.treasury_role.movements_created_by_label}
           />
         </section>
       ))}
