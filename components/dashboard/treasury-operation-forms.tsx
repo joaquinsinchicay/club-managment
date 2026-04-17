@@ -44,6 +44,7 @@ type OperationalFormCopy = {
   movement_type_placeholder: string;
   category_label: string;
   category_placeholder: string;
+  parent_category_label: string;
   activity_label: string;
   activity_placeholder: string;
   receipt_label: string;
@@ -287,8 +288,9 @@ function MovementFormFields({
         <select
           name="category_id"
           value={formState.categoryId}
+          disabled={!formState.movementType}
           onChange={(event) => onChange({ categoryId: event.target.value })}
-          className={CONTROL_CLASSNAME}
+          className={formState.movementType ? CONTROL_CLASSNAME : DISABLED_CONTROL_CLASSNAME}
         >
           <option value="" disabled>
             {copy.category_placeholder}
@@ -300,6 +302,19 @@ function MovementFormFields({
           ))}
         </select>
       </FormField>
+
+      {formState.categoryId ? (
+        <FormField>
+          <span className="font-medium">{copy.parent_category_label}</span>
+          <input
+            type="text"
+            value={availableCategories.find((c) => c.id === formState.categoryId)?.parentCategory ?? ""}
+            disabled
+            readOnly
+            className={DISABLED_CONTROL_CLASSNAME}
+          />
+        </FormField>
+      ) : null}
 
       {activities.length > 0 ? (
         <FormField>
