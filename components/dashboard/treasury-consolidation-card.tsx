@@ -747,7 +747,6 @@ export function TreasuryConsolidationCard({
             accounts={accounts}
             categories={categories}
             activities={activities}
-            calendarEvents={calendarEvents}
             currencies={currencies}
             movementTypes={movementTypes}
             receiptFormats={receiptFormats}

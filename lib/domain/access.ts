@@ -70,6 +70,7 @@ export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
 export type TreasuryConfigStatus = "active" | "inactive";
 export type TreasuryCurrencyCode = "ARS" | "USD";
 export type TreasuryMovementType = "ingreso" | "egreso";
+export type TreasuryCategoryMovementType = TreasuryMovementType | "saldo";
 export type TreasuryMovementOriginRole = "secretaria" | "tesoreria" | "system";
 export type TreasuryMovementOriginSource =
   | "manual"
@@ -105,9 +106,15 @@ export type TreasuryCategory = {
   id: string;
   clubId: string;
   name: string;
+  subCategoryName: string;
+  description: string;
+  parentCategory: string;
+  movementType: TreasuryCategoryMovementType;
   visibleForSecretaria: boolean;
   visibleForTesoreria: boolean;
   emoji: string | null;
+  isSystem: boolean;
+  isLegacy: boolean;
 };
 
 export type ClubActivity = {

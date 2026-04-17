@@ -41,7 +41,7 @@ export async function updateMovementBeforeConsolidationAction(formData: FormData
     categoryId: String(formData.get("category_id") ?? ""),
     activityId: String(formData.get("activity_id") ?? ""),
     receiptNumber: String(formData.get("receipt_number") ?? ""),
-    calendarEventId: String(formData.get("calendar_event_id") ?? ""),
+    calendarEventId: "",
     concept: String(formData.get("concept") ?? ""),
     currencyCode: String(formData.get("currency_code") ?? ""),
     amount: String(formData.get("amount") ?? "")

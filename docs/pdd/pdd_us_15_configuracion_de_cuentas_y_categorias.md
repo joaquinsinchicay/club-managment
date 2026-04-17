@@ -1,4 +1,4 @@
-# PDD — US-15 · Configuración de cuentas y categorías del club
+# PDD — US-15 · Configuración de cuentas y subcategorías del club
 
 ---
 
@@ -7,21 +7,21 @@
 | Campo | Valor |
 |---|---|
 | Epic | E03 · Tesorería |
-| User Story | Como Admin del club, quiero configurar las cuentas y categorías de tesorería del club activo, para definir los parámetros que utilizará Secretaria en la operatoria diaria. |
+| User Story | Como Admin del club, quiero configurar las cuentas y subcategorías de tesorería del club activo, para definir los parámetros que utilizará Secretaria en la operatoria diaria. |
 | Prioridad | Alta |
-| Objetivo de negocio | Permitir que cada club defina su base operativa de cuentas y categorías antes de la carga diaria de movimientos, manteniendo aislamiento por club y administración solo por rol `admin`. |
+| Objetivo de negocio | Permitir que cada club defina su base operativa de cuentas y subcategorías antes de la carga diaria de movimientos, manteniendo aislamiento por club y administración solo por rol `admin`. |
 
 ---
 
 ## 2. Problema a resolver
 
-La operatoria diaria de Secretaría ya puede registrar movimientos, pero todavía depende de una configuración financiera fija. Admin necesita crear y editar cuentas y categorías del club activo para adaptar la tesorería a su operación real.
+La operatoria diaria de Secretaría ya puede registrar movimientos, pero todavía depende de una configuración financiera fija. Admin necesita crear y editar cuentas y subcategorías del club activo para adaptar la tesorería a su operación real.
 
 ---
 
 ## 3. Objetivo funcional
 
-Desde `Configuración del club`, un usuario `admin` debe visualizar las cards de configuración operativa del club y administrar cuentas y categorías del club activo, pudiendo listarlas, crearlas y editarlas con sus atributos operativos mínimos.
+Desde `Configuración del club`, un usuario `admin` debe visualizar las cards de configuración operativa del club y administrar cuentas y subcategorías del club activo, pudiendo listarlas, crearlas y editarlas con sus atributos operativos mínimos.
 
 ---
 
@@ -30,12 +30,12 @@ Desde `Configuración del club`, un usuario `admin` debe visualizar las cards de
 ### Incluye
 - Cards de `Cuentas` y `Categorías` dentro de `Configuración del club`.
 - Listado de cuentas del club activo.
-- Listado de categorías del club activo.
+- Listado de subcategorías del club activo.
 - Alta de cuenta.
 - Edición de cuenta.
-- Alta de categoría.
-- Edición de categoría.
-- Validaciones de nombre obligatorio, tipo obligatorio, duplicados por club y visibilidad opcional para categorías.
+- Alta de subcategoría.
+- Edición de subcategoría.
+- Validaciones de subcategoría, descripción, categoría padre, tipo derivado, duplicados por club y visibilidad opcional.
 - Feedback visible en la misma pantalla.
 
 ### No incluye
@@ -80,13 +80,13 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - Las cuentas creadas en esta historia quedan orientadas a la operatoria de `secretaria`.
 - La definición explícita de monedas por cuenta queda superseded por US-28.
 - La visibilidad operativa de cuentas se define por rol y no por la combinación de `ámbito` más un campo visible redundante.
-- El club debe contar con un catálogo fijo de categorías del sistema, siempre presente y no eliminable.
-- Las categorías del sistema solo permiten editar su visibilidad por rol.
-- Las categorías manuales adicionales mantienen edición completa de nombre, visibilidad y emoji.
-- Las categorías pueden guardarse sin roles seleccionados en `Visibilidad`; en ese caso quedan ocultas para la operatoria.
+- El club debe contar con un catálogo fijo de subcategorías del sistema, siempre presente y no eliminable.
+- Las subcategorías del sistema solo permiten editar su visibilidad por rol.
+- Las subcategorías manuales adicionales mantienen edición completa de subcategoría, descripción, categoría padre, tipo derivado, visibilidad y emoji.
+- Las subcategorías pueden guardarse sin roles seleccionados en `Visibilidad`; en ese caso quedan ocultas para la operatoria.
 - El nombre de cuenta es obligatorio.
 - El tipo de cuenta es obligatorio.
-- El nombre de categoría es obligatorio.
+- La subcategoría es obligatoria.
 - No puede existir otra cuenta con el mismo nombre en el mismo club.
 - No puede existir otra categoría con el mismo nombre en el mismo club.
 - La edición debe respetar las mismas validaciones que el alta.

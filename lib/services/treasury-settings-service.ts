@@ -12,7 +12,10 @@ import { canAccessTreasurySettings, canMutateTreasurySettings } from "@/lib/doma
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { getDefaultReceiptFormatSeed } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
-import { getSystemTreasuryCategoryDefinition } from "@/lib/treasury-system-categories";
+import {
+  getMovementTypeForParentCategory,
+  getSystemTreasuryCategoryDefinition
+} from "@/lib/treasury-system-categories";
 
 type TreasurySettingsActionCode =
   | "forbidden"
@@ -23,6 +26,8 @@ type TreasurySettingsActionCode =
   | "account_name_required"
   | "account_type_required"
   | "category_name_required"
+  | "category_description_required"
+  | "category_parent_required"
   | "activity_created"
   | "activity_updated"
   | "activity_name_required"
@@ -238,7 +243,8 @@ function hasDuplicateActiveCategoryName(
   return categories.some(
     (category) =>
       category.id !== categoryId &&
-      category.name.trim().toLowerCase() === normalizedName
+      !category.isLegacy &&
+      category.subCategoryName.trim().toLowerCase() === normalizedName
   );
 }
 
@@ -515,7 +521,10 @@ export async function updateTreasuryAccountForActiveClub(input: {
 }
 
 export async function createTreasuryCategoryForActiveClub(input: {
-  name: string;
+  subCategoryName: string;
+  description: string;
+  parentCategory: string;
+  movementType: string;
   visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
@@ -525,16 +534,28 @@ export async function createTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "forbidden" };
   }
 
-  const name = normalizeConfigName(input.name);
+  const subCategoryName = normalizeConfigName(input.subCategoryName);
+  const description = normalizeConfigName(input.description);
+  const parentCategory = normalizeConfigName(input.parentCategory);
+  const derivedMovementType = getMovementTypeForParentCategory(parentCategory);
+  const movementType = (derivedMovementType ?? input.movementType.trim()) as TreasuryCategory["movementType"];
 
-  if (!name) {
+  if (!subCategoryName) {
     return { ok: false, code: "category_name_required" };
+  }
+
+  if (!description) {
+    return { ok: false, code: "category_description_required" };
+  }
+
+  if (!parentCategory) {
+    return { ok: false, code: "category_parent_required" };
   }
 
   const categories = await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id);
   const selectedVisibility = normalizeCategoryVisibility(input.visibility);
 
-  if (hasDuplicateActiveCategoryName(categories, name)) {
+  if (hasDuplicateActiveCategoryName(categories, subCategoryName)) {
     return { ok: false, code: "duplicate_category_name" };
   }
 
@@ -549,7 +570,10 @@ export async function createTreasuryCategoryForActiveClub(input: {
   try {
     created = await accessRepository.createTreasuryCategory({
       clubId: context.activeClub.id,
-      name,
+      subCategoryName,
+      description,
+      parentCategory,
+      movementType,
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji
@@ -567,7 +591,10 @@ export async function createTreasuryCategoryForActiveClub(input: {
 
 export async function updateTreasuryCategoryForActiveClub(input: {
   categoryId: string;
-  name: string;
+  subCategoryName: string;
+  description: string;
+  parentCategory: string;
+  movementType: string;
   visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
@@ -577,10 +604,20 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "forbidden" };
   }
 
-  const name = normalizeConfigName(input.name);
+  const subCategoryName = normalizeConfigName(input.subCategoryName);
+  const description = normalizeConfigName(input.description);
+  const parentCategory = normalizeConfigName(input.parentCategory);
 
-  if (!name) {
+  if (!subCategoryName) {
     return { ok: false, code: "category_name_required" };
+  }
+
+  if (!description) {
+    return { ok: false, code: "category_description_required" };
+  }
+
+  if (!parentCategory) {
+    return { ok: false, code: "category_parent_required" };
   }
 
   const categories = await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id);
@@ -590,12 +627,18 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "category_not_found" };
   }
 
-  const systemCategoryDefinition = getSystemTreasuryCategoryDefinition(existingCategory.name);
-  const nextName = systemCategoryDefinition?.name ?? name;
+  const systemCategoryDefinition = getSystemTreasuryCategoryDefinition(existingCategory.subCategoryName);
+  const nextSubCategoryName = systemCategoryDefinition?.subCategoryName ?? subCategoryName;
+  const nextDescription = systemCategoryDefinition?.description ?? description;
+  const nextParentCategory = systemCategoryDefinition?.parentCategory ?? parentCategory;
+  const nextMovementType =
+    systemCategoryDefinition?.movementType ??
+    getMovementTypeForParentCategory(nextParentCategory) ??
+    (input.movementType.trim() as TreasuryCategory["movementType"]);
   const nextEmojiInput = systemCategoryDefinition?.emoji ?? input.emoji;
   const selectedVisibility = normalizeCategoryVisibility(input.visibility);
 
-  if (hasDuplicateActiveCategoryName(categories, nextName, input.categoryId)) {
+  if (hasDuplicateActiveCategoryName(categories, nextSubCategoryName, input.categoryId)) {
     return { ok: false, code: "duplicate_category_name" };
   }
 
@@ -615,7 +658,10 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     updated = await accessRepository.updateTreasuryCategory({
       categoryId: input.categoryId,
       clubId: context.activeClub.id,
-      name: nextName,
+      subCategoryName: nextSubCategoryName,
+      description: nextDescription,
+      parentCategory: nextParentCategory,
+      movementType: nextMovementType,
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji

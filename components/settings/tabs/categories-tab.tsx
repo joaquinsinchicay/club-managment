@@ -8,7 +8,10 @@ import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-fo
 import { SettingsTabShell } from "@/components/settings/settings-tab-shell";
 import type { TreasuryCategory } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
-import { isSystemTreasuryCategoryName } from "@/lib/treasury-system-categories";
+import {
+  getMovementTypeForParentCategory,
+  getParentCategoryOptionsWithCurrentValue
+} from "@/lib/treasury-system-categories";
 
 const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
@@ -17,18 +20,30 @@ function getEmojiOptions(options: string[], currentEmoji?: string | null) {
   if (currentEmoji && !options.includes(currentEmoji)) {
     return [currentEmoji, ...options];
   }
+
   return options;
 }
 
 function getRoleVisibilityLabel(visibleForSecretaria: boolean, visibleForTesoreria: boolean) {
   const labels = [];
+
   if (visibleForSecretaria) {
     labels.push(texts.settings.club.treasury.account_visibility_options.secretaria);
   }
+
   if (visibleForTesoreria) {
     labels.push(texts.settings.club.treasury.account_visibility_options.tesoreria);
   }
+
   return labels.join(" + ") || texts.settings.club.treasury.visibility_hidden;
+}
+
+function getMovementTypeLabel(movementType: TreasuryCategory["movementType"]) {
+  return texts.settings.club.treasury.category_movement_types[movementType];
+}
+
+function getParentCategoryOptions(defaultCategory?: TreasuryCategory) {
+  return getParentCategoryOptionsWithCurrentValue(defaultCategory?.parentCategory);
 }
 
 type CategoryFormProps = {
@@ -46,13 +61,19 @@ function CategoryForm({
   defaultCategory,
   onSuccess
 }: CategoryFormProps) {
-  const isSystemCategory = defaultCategory ? isSystemTreasuryCategoryName(defaultCategory.name) : false;
+  const isSystemCategory = defaultCategory?.isSystem ?? false;
   const [selectedVisibility, setSelectedVisibility] = useState<string[]>(
-    TREASURY_ACCOUNT_VISIBILITY_OPTIONS.filter((v) =>
-      v === "secretaria" ? (defaultCategory?.visibleForSecretaria ?? true) : (defaultCategory?.visibleForTesoreria ?? false)
+    TREASURY_ACCOUNT_VISIBILITY_OPTIONS.filter((visibility) =>
+      visibility === "secretaria"
+        ? (defaultCategory?.visibleForSecretaria ?? true)
+        : (defaultCategory?.visibleForTesoreria ?? true)
     )
   );
   const [visibilityTouched, setVisibilityTouched] = useState(false);
+  const [selectedParentCategory, setSelectedParentCategory] = useState(defaultCategory?.parentCategory ?? "");
+  const [movementType, setMovementType] = useState<TreasuryCategory["movementType"]>(
+    defaultCategory?.movementType ?? "egreso"
+  );
   const searchParams = useSearchParams();
   const feedbackCode = searchParams.get("feedback");
 
@@ -62,10 +83,18 @@ function CategoryForm({
     }
   }, [feedbackCode, onSuccess]);
 
+  useEffect(() => {
+    const nextMovementType = getMovementTypeForParentCategory(selectedParentCategory);
+
+    if (nextMovementType) {
+      setMovementType(nextMovementType);
+    }
+  }, [selectedParentCategory]);
+
   function handleVisibilityToggle(visibility: string, checked: boolean) {
     setVisibilityTouched(true);
     setSelectedVisibility((current) =>
-      checked ? [...current, visibility] : current.filter((v) => v !== visibility)
+      checked ? [...current, visibility] : current.filter((value) => value !== visibility)
     );
   }
 
@@ -82,41 +111,84 @@ function CategoryForm({
     >
       <PendingFieldset className="grid gap-4">
         {defaultCategory ? <input type="hidden" name="category_id" value={defaultCategory.id} /> : null}
-
         {isSystemCategory ? (
           <>
-            <input type="hidden" name="name" value={defaultCategory?.name ?? ""} />
+            <input type="hidden" name="sub_category_name" value={defaultCategory?.subCategoryName ?? ""} />
+            <input type="hidden" name="description" value={defaultCategory?.description ?? ""} />
+            <input type="hidden" name="parent_category" value={defaultCategory?.parentCategory ?? ""} />
             <input type="hidden" name="emoji" value={defaultCategory?.emoji ?? ""} />
           </>
-        ) : (
-          <>
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.category_name_label}</span>
-              <input
-                type="text"
-                name="name"
-                defaultValue={defaultCategory?.name ?? ""}
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-              />
-            </label>
+        ) : null}
 
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-              <select
-                name="emoji"
-                defaultValue={defaultCategory?.emoji ?? ""}
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-              >
-                <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
-                {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
-                  <option key={`category-emoji-${emoji}`} value={emoji}>
-                    {emoji}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </>
-        )}
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.sub_category_name_label}</span>
+          <input
+            type="text"
+            name="sub_category_name"
+            defaultValue={defaultCategory?.subCategoryName ?? ""}
+            disabled={isSystemCategory}
+            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
+          <select
+            name="emoji"
+            defaultValue={defaultCategory?.emoji ?? ""}
+            disabled={isSystemCategory}
+            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+          >
+            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+            {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
+              <option key={`category-emoji-${emoji}`} value={emoji}>
+                {emoji}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.category_description_label}</span>
+          <input
+            type="text"
+            name="description"
+            defaultValue={defaultCategory?.description ?? ""}
+            disabled={isSystemCategory}
+            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.parent_category_label}</span>
+          <select
+            name="parent_category"
+            value={selectedParentCategory}
+            disabled={isSystemCategory}
+            onChange={(event) => setSelectedParentCategory(event.target.value)}
+            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+          >
+            <option value="" disabled>
+              {texts.settings.club.treasury.parent_category_placeholder}
+            </option>
+            {getParentCategoryOptions(defaultCategory).map((parentCategory) => (
+              <option key={`parent-category-${parentCategory}`} value={parentCategory}>
+                {parentCategory}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm text-foreground">
+          <span className="font-medium">{texts.settings.club.treasury.category_type_label}</span>
+          <input
+            type="text"
+            value={getMovementTypeLabel(movementType)}
+            readOnly
+            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground"
+          />
+          <input type="hidden" name="movement_type" value={movementType} />
+        </label>
 
         <fieldset className="grid gap-3">
           <legend className="text-sm font-medium text-foreground">
@@ -133,7 +205,7 @@ function CategoryForm({
                   name="visibility"
                   value={visibility}
                   checked={selectedVisibility.includes(visibility)}
-                  onChange={(e) => handleVisibilityToggle(visibility, e.target.checked)}
+                  onChange={(event) => handleVisibilityToggle(visibility, event.target.checked)}
                   className="size-4 rounded border-border"
                 />
                 <span className="font-medium">
@@ -174,9 +246,12 @@ export function CategoriesTab({
   const [search, setSearch] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [editingCategory, setEditingCategory] = useState<TreasuryCategory | null>(null);
-
-  const filteredCategories = categories.filter((category) =>
-    category.name.toLowerCase().includes(search.toLowerCase())
+  const visibleCategories = categories.filter((category) => !category.isLegacy);
+  const filteredCategories = visibleCategories.filter((category) =>
+    [category.subCategoryName, category.description, category.parentCategory]
+      .join(" ")
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
   return (
@@ -193,9 +268,9 @@ export function CategoriesTab({
       >
         {filteredCategories.length === 0 ? (
           <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-            {categories.length === 0
+            {visibleCategories.length === 0
               ? texts.settings.club.treasury.empty_categories
-              : "Sin resultados para la búsqueda."}
+              : texts.settings.club.treasury.empty_categories_search}
           </div>
         ) : (
           <div className="grid gap-4">
@@ -210,17 +285,26 @@ export function CategoriesTab({
                       <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/10 text-xl">
                         {category.emoji ?? texts.settings.club.treasury.default_category_emoji}
                       </div>
-                      <div>
-                        <p className="truncate text-base font-semibold text-foreground">{category.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {getRoleVisibilityLabel(
-                            category.visibleForSecretaria,
-                            category.visibleForTesoreria
-                          )}
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-semibold text-foreground">
+                          {category.subCategoryName}
                         </p>
+                        <p className="text-sm text-muted-foreground">{category.description}</p>
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {texts.settings.club.treasury.parent_category_badge}
+                        </span>
+                        <span className="font-medium">{category.parentCategory}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          {texts.settings.club.treasury.category_type_badge}
+                        </span>
+                        <span className="font-medium">{getMovementTypeLabel(category.movementType)}</span>
+                      </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
                         <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           {texts.settings.club.treasury.account_visibility_label}
@@ -232,6 +316,11 @@ export function CategoriesTab({
                           )}
                         </span>
                       </span>
+                      {category.isSystem ? (
+                        <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
+                          <span className="font-medium">{texts.settings.club.treasury.system_category_badge}</span>
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 

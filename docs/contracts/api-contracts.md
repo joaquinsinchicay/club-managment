@@ -459,7 +459,7 @@ Sí
 ### 5.4 Create treasury category
 
 **Purpose**
-Crear categoría del club.
+Crear subcategoría del club.
 
 **Auth required**
 Sí
@@ -471,9 +471,12 @@ Sí
 
 ```json
 {
-  "name": "Cuotas",
+  "sub_category_name": "Cuotas/Fichajes",
+  "description": "Cuota social, cuota deportiva, inscripción, etc.",
+  "parent_category": "Ingresos por socios",
+  "movement_type": "ingreso",
   "visibility": ["secretaria", "tesoreria"],
-  "emoji": "📄"
+  "emoji": "👥"
 }
 ```
 
@@ -481,7 +484,9 @@ Sí
 
 * `visibility` debe incluir `secretaria`, `tesoreria` o ambos
 * `visibility` debe incluir al menos un rol
-* `emoji` debe pertenecer al catálogo predefinido del sistema para categorías
+* `sub_category_name`, `description` y `parent_category` son obligatorios
+* `movement_type` se deriva de `parent_category` y se expone read-only en UI
+* `emoji` debe pertenecer al catálogo predefinido del sistema para subcategorías
 
 **Output**
 
@@ -496,7 +501,7 @@ Sí
 ### 5.5 Update treasury category
 
 **Purpose**
-Editar categoría.
+Editar subcategoría.
 
 **Auth required**
 Sí
@@ -509,9 +514,12 @@ Sí
 ```json
 {
   "category_id": "uuid",
-  "name": "Sueldos",
+  "sub_category_name": "Sueldos",
+  "description": "Profesores / contratados",
+  "parent_category": "Recursos humanos",
+  "movement_type": "egreso",
   "visibility": ["secretaria", "tesoreria"],
-  "emoji": "💼"
+  "emoji": "💰"
 }
 ```
 
@@ -989,22 +997,21 @@ Sí
   "amount": 25000,
   "movement_date": "2026-04-02",
   "receipt_number": "PAY-SOC-26205",
-  "activity_id": "uuid",
-  "calendar_event_id": "uuid"
+  "activity_id": "uuid"
 }
 ```
 
 **Validations**
 
 * cuenta válida del club activo
-* categoría válida y visible para el rol
+* subcategoría válida y visible para el rol
 * movement_type habilitado en el club
 * currency_code válida para la cuenta
 * receipt_number debe cumplir `^PAY-SOC-[0-9]{5}$` y ser `>= PAY-SOC-10556` cuando se informa
 * amount > 0
 * si `movement_type = egreso`, la cuenta debe tener saldo disponible suficiente en la moneda seleccionada
 * para `tesoreria`, el saldo disponible se valida contra el acumulado hasta `movement_date`
-* `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
+* `activity_id` y `receipt_number` son opcionales
 * si el rol es `secretaria`, debe existir jornada abierta
 * si el rol es `secretaria`, `movement_date` debe ser la fecha del día y no editable por contrato
 * si el rol es `tesoreria`, la fecha puede ser editable según negocio
@@ -1049,7 +1056,6 @@ Sí
   "category_id": "uuid",
   "activity_id": "uuid",
   "receipt_number": "PAY-SOC-26205",
-  "calendar_event_id": "uuid",
   "concept": "Pago cuota abril",
   "currency_code": "ARS",
   "amount": 25000
@@ -1062,10 +1068,10 @@ Sí
 * el movimiento debe pertenecer al club activo
 * el movimiento debe pertenecer a la jornada abierta actual
 * cuenta válida del club activo y visible para `secretaria`
-* categoría válida y visible para `secretaria`
+* subcategoría válida y visible para `secretaria`
 * movement_type habilitado en el club
 * currency_code válida para la cuenta
-* `activity_id`, `receipt_number` y `calendar_event_id` son opcionales
+* `activity_id` y `receipt_number` son opcionales
 * amount > 0
 * si el resultado editado es un `egreso`, la cuenta debe conservar saldo disponible suficiente en la moneda seleccionada
 * `movement_date` no es editable por contrato
