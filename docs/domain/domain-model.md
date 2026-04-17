@@ -236,6 +236,8 @@ Atributos:
 * min_numeric_value
 * example
 * status
+* visible_for_secretaria
+* visible_for_tesoreria
 
 ---
 

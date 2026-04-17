@@ -2126,10 +2126,66 @@ async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepo
     return receiptFormats;
   }
 
-  // Keep the settings page render read-only. If a club still lacks persisted
-  // receipt formats, expose a functional default in memory and defer the actual
-  // insert until an admin explicitly saves changes.
+  try {
+    const bootstrappedReceiptFormat = await bootstrapRealReceiptFormatForClub(clubId, client);
+
+    if (bootstrappedReceiptFormat) {
+      return [bootstrappedReceiptFormat];
+    }
+  } catch (error) {
+    logTreasurySettingsReadFailure("bootstrap_receipt_format_for_club", { clubId }, error);
+  }
+
   return [buildDefaultReceiptFormat(clubId)];
+}
+
+async function bootstrapRealReceiptFormatForClub(clubId: string, client?: AccessRepositoryClient) {
+  const defaultReceiptFormat = getDefaultReceiptFormatSeed();
+
+  try {
+    return await createRealReceiptFormat(
+      {
+        clubId,
+        name: defaultReceiptFormat.name,
+        validationType: defaultReceiptFormat.validationType,
+        pattern: defaultReceiptFormat.pattern,
+        minNumericValue: defaultReceiptFormat.minNumericValue,
+        example: defaultReceiptFormat.example,
+        status: defaultReceiptFormat.status,
+        visibleForSecretaria: defaultReceiptFormat.visibleForSecretaria,
+        visibleForTesoreria: defaultReceiptFormat.visibleForTesoreria
+      },
+      client
+    );
+  } catch (error) {
+    const errorCode = getSupabaseErrorCode(error);
+    const errorMessage = getSupabaseErrorMessage(error).toLowerCase();
+    const isConcurrentBootstrap =
+      errorCode === "23505" ||
+      errorMessage.includes("duplicate key") ||
+      errorMessage.includes("already exists");
+
+    if (!isConcurrentBootstrap) {
+      throw error;
+    }
+  }
+
+  const rows = await runClubScopedReadRpc<
+    Array<{
+      id: string;
+      club_id: string;
+      name: string;
+      validation_type: ReceiptFormat["validationType"];
+      pattern: string | null;
+      min_numeric_value: number | null;
+      example: string | null;
+      status: ReceiptFormat["status"];
+      visible_for_secretaria: boolean | null;
+      visible_for_tesoreria: boolean | null;
+    }>
+  >("get_receipt_formats_for_current_club", clubId, client);
+
+  return rows.map(mapReceiptFormatRow)[0] ?? null;
 }
 
 async function listRealTreasuryCurrenciesForClub(clubId: string, client?: AccessRepositoryClient) {

@@ -358,7 +358,20 @@ Sí
   "activities": [],
   "currencies": [],
   "movement_types": [],
-  "receipt_formats": []
+  "receipt_formats": [
+    {
+      "id": "uuid",
+      "club_id": "uuid",
+      "name": "Sistema de socios",
+      "validation_type": "pattern",
+      "pattern": "^PAY-SOC-[0-9]{5}$",
+      "min_numeric_value": 10556,
+      "example": "PAY-SOC-26205",
+      "status": "active",
+      "visible_for_secretaria": false,
+      "visible_for_tesoreria": false
+    }
+  ]
 }
 ```
 
@@ -644,6 +657,7 @@ Sí
 - El mínimo inclusivo es `PAY-SOC-10556`.
 - No existe máximo.
 - El club debe contar siempre con una configuración persistida en `receipt_formats`; si no existe, debe bootstrapearse con los defaults del sistema.
+- La lectura de settings debe devolver `visible_for_secretaria` y `visible_for_tesoreria` dentro de `receipt_formats`.
 - La configuración puede quedar oculta para todos los roles si `visible_for_secretaria=false` y `visible_for_tesoreria=false`.
 - La UI no administra colecciones libres de formatos en esta iteración.
 - Solo `admin` puede mutar la configuración del sistema de socios.

@@ -171,7 +171,7 @@ Usuario autenticado con membership `activo` y rol `admin` para editar la configu
 
 ### Entidades afectadas
 - `receipt_formats`: READ, CREATE defensivo y UPDATE de `name`, `validation_type`, `visible_for_secretaria`, `visible_for_tesoreria`. Los campos `pattern`, `min_numeric_value` y `example` se mantienen en DB pero no se exponen en la UI.
-- Si el club no tiene registros, el sistema debe crear uno con los defaults funcionales del sistema de socios y visibilidad inicial `Oculta`.
+- Si el club no tiene registros, el sistema debe crear y persistir uno con los defaults funcionales del sistema de socios y visibilidad inicial `Oculta` antes de renderizar la sección.
 
 Do not reference current code files.
 
