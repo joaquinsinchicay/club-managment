@@ -819,12 +819,14 @@ export function SecretariaMovementEditForm({
   movement,
   copy = texts.dashboard.treasury,
   extraHiddenFields,
-  editableMovementDate = false
+  editableMovementDate = false,
+  onCancel
 }: BaseMovementFormProps & {
   movement: EditableMovement;
   copy?: OperationalFormCopy;
   extraHiddenFields?: ReactNode;
   editableMovementDate?: boolean;
+  onCancel?: () => void;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
 
@@ -832,78 +834,319 @@ export function SecretariaMovementEditForm({
     setFormState(buildEditMovementFormState(movement));
   }, [movement]);
 
-  useEffect(() => {
-    const selectedAccount = accounts.find((account) => account.id === formState.accountId);
-    const nextCurrencyCode = getDefaultCurrencyCode(selectedAccount, currencies);
+  const availableCurrencies = useMemo(() => {
+    const selectedAccount = accounts.find((a) => a.id === formState.accountId);
+    if (!selectedAccount) return [];
+    return currencies.filter((c) => selectedAccount.currencies.includes(c.currencyCode));
+  }, [accounts, currencies, formState.accountId]);
 
+  const availableCategories = useMemo(
+    () =>
+      categories.filter((c) => {
+        if (c.isLegacy || c.movementType === "saldo") return false;
+        if (!formState.movementType) return true;
+        return c.movementType === formState.movementType;
+      }),
+    [categories, formState.movementType]
+  );
+
+  useEffect(() => {
+    if (!formState.categoryId) return;
+    if (!availableCategories.some((c) => c.id === formState.categoryId)) {
+      setFormState((s) => ({ ...s, categoryId: "" }));
+    }
+  }, [availableCategories, formState.categoryId]);
+
+  useEffect(() => {
+    const selectedAccount = accounts.find((a) => a.id === formState.accountId);
+    const nextCurrencyCode = getDefaultCurrencyCode(selectedAccount, currencies);
     if (!selectedAccount && formState.currencyCode) {
-      setFormState((current) => ({ ...current, currencyCode: "" }));
+      setFormState((s) => ({ ...s, currencyCode: "" }));
       return;
     }
-
     if (selectedAccount && nextCurrencyCode && !selectedAccount.currencies.includes(formState.currencyCode)) {
-      setFormState((current) => ({ ...current, currencyCode: nextCurrencyCode }));
+      setFormState((s) => ({ ...s, currencyCode: nextCurrencyCode }));
     }
   }, [accounts, currencies, formState.accountId, formState.currencyCode]);
 
+  const selectedParentCategory =
+    availableCategories.find((c) => c.id === formState.categoryId)?.parentCategory ?? "";
+
+  const hasMultipleCurrencies = availableCurrencies.length > 1;
+  const hasActivityAndReceipt = activities.length > 0 && receiptFormats.length > 0;
+
   return (
     <form
-      action={async (formData) => {
-        await submitAction(formData);
-      }}
+      action={async (formData) => { await submitAction(formData); }}
       className="grid gap-4"
     >
       <input type="hidden" name="movement_id" value={movement.movementId} />
       {extraHiddenFields}
 
-      <PendingFieldset className={FORM_GRID_CLASSNAME}>
-        <FormField>
-          <span className="font-medium">{copy.movement_id_label}</span>
-          <input type="text" value={movement.movementDisplayId} disabled className={DISABLED_CONTROL_CLASSNAME} />
-        </FormField>
+      <PendingFieldset className="grid gap-4">
+        {/* ID chip */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            {copy.movement_id_label}
+          </span>
+          <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-semibold tabular-nums text-foreground">
+            {movement.movementDisplayId}
+          </span>
+        </div>
 
-        <FormField>
-          <span className="font-medium">{copy.date_label}</span>
+        {/* FECHA */}
+        <div className="grid gap-1.5">
+          <p className={FIELD_LABEL_CLASSNAME}>{copy.date_label}</p>
           {editableMovementDate ? (
             <input
               type="date"
               name="movement_date"
               value={formState.movementDate ?? ""}
-              onChange={(event) => setFormState((current) => ({ ...current, movementDate: event.target.value }))}
+              onChange={(e) => setFormState((s) => ({ ...s, movementDate: e.target.value }))}
               className={CONTROL_CLASSNAME}
             />
           ) : (
-            <input type="text" value={movement.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
+            <div className={cn(DISABLED_CONTROL_CLASSNAME, "font-medium text-foreground")}>
+              {formatSessionDateLong(movement.movementDate)}
+            </div>
           )}
-        </FormField>
+        </div>
 
-        <MovementFormFields
-          accounts={accounts}
-          categories={categories}
-          activities={activities}
-          currencies={currencies}
-          movementTypes={movementTypes}
-          receiptFormats={receiptFormats}
-          formState={formState}
-          onChange={(patch) => setFormState((current) => ({ ...current, ...patch }))}
-          copy={copy}
-        />
+        {/* TIPO DE MOVIMIENTO */}
+        <div className="grid gap-2">
+          <p className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.movement_type_label, copy)}</p>
+          <div className="grid grid-cols-2 gap-2">
+            {movementTypes.map((type) => {
+              const isSelected = formState.movementType === type;
+              const isIngreso = type === "ingreso";
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setFormState((s) => ({ ...s, movementType: type }))}
+                  className={cn(
+                    "flex flex-col items-center gap-0.5 rounded-xl border px-3 py-3 transition",
+                    isSelected
+                      ? isIngreso
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-red-200 bg-red-50 text-red-700"
+                      : "border-border bg-card text-muted-foreground hover:bg-secondary"
+                  )}
+                >
+                  <span className="text-sm font-semibold">{copy.movement_types[type]}</span>
+                  <span className="text-[10px] font-medium opacity-70">
+                    {isIngreso
+                      ? texts.dashboard.treasury.movement_type_ingreso_sublabel
+                      : texts.dashboard.treasury.movement_type_egreso_sublabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <input type="hidden" name="movement_type" value={formState.movementType} />
+        </div>
 
+        {/* CUENTA */}
+        <label className="grid gap-2">
+          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.account_label, copy)}</span>
+          <select
+            name="account_id"
+            value={formState.accountId}
+            onChange={(e) => setFormState((s) => ({ ...s, accountId: e.target.value }))}
+            className={CONTROL_CLASSNAME}
+          >
+            <option value="" disabled>{copy.account_placeholder}</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+        </label>
+
+        {/* MONTO */}
+        <div className="grid gap-2">
+          <p className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.amount_label, copy)}</p>
+          <div className="flex gap-2">
+            {hasMultipleCurrencies ? (
+              <select
+                name="currency_code"
+                value={formState.currencyCode}
+                onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))}
+                className={cn(CONTROL_CLASSNAME, "w-24 shrink-0")}
+              >
+                <option value="" disabled>{copy.currency_placeholder}</option>
+                {availableCurrencies.map((c) => (
+                  <option key={c.currencyCode} value={c.currencyCode}>{c.currencyCode}</option>
+                ))}
+              </select>
+            ) : (
+              <>
+                <input type="hidden" name="currency_code" value={formState.currencyCode} />
+                <div className={cn(DISABLED_CONTROL_CLASSNAME, "w-24 shrink-0 text-center font-medium text-foreground")}>
+                  {formState.currencyCode || "—"}
+                </div>
+              </>
+            )}
+            <input
+              type="text"
+              name="amount"
+              inputMode="decimal"
+              value={formState.amount}
+              onChange={(e) => setFormState((s) => ({ ...s, amount: sanitizeAmountInput(e.target.value) }))}
+              onBlur={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnBlur(e.target.value) }))}
+              onFocus={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnFocus(e.target.value) }))}
+              onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
+              className={cn(CONTROL_CLASSNAME, "flex-1 text-right tabular-nums")}
+            />
+          </div>
+        </div>
+
+        {/* SUBCATEGORÍA (izq) / CATEGORÍA (der) */}
+        <div className="grid grid-cols-2 gap-3">
+          <label className="grid gap-2">
+            <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.category_label, copy)}</span>
+            <select
+              name="category_id"
+              value={formState.categoryId}
+              disabled={!formState.movementType}
+              onChange={(e) => setFormState((s) => ({ ...s, categoryId: e.target.value }))}
+              className={formState.movementType ? CONTROL_CLASSNAME : DISABLED_CONTROL_CLASSNAME}
+            >
+              <option value="" disabled>{copy.category_placeholder}</option>
+              {availableCategories.map((c) => (
+                <option key={c.id} value={c.id}>{c.subCategoryName}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2">
+            <span className={FIELD_LABEL_CLASSNAME}>{copy.parent_category_label}</span>
+            <input
+              type="text"
+              value={selectedParentCategory}
+              disabled
+              readOnly
+              placeholder="—"
+              className={DISABLED_CONTROL_CLASSNAME}
+            />
+          </label>
+        </div>
+        <p className="-mt-2 text-[11px] text-muted-foreground">{texts.dashboard.treasury.category_helper_text}</p>
+
+        {/* ACTIVIDAD + RECIBO */}
+        {hasActivityAndReceipt ? (
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-2">
+              <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
+              <select
+                name="activity_id"
+                value={formState.activityId}
+                onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
+                className={CONTROL_CLASSNAME}
+              >
+                <option value="">{copy.activity_placeholder}</option>
+                {activities.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-2">
+              <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
+              <input
+                type="text"
+                name="receipt_number"
+                value={formState.receiptNumber}
+                inputMode={receiptFormats[0]?.validationType === "numeric" ? "numeric" : "text"}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (receiptFormats[0]?.validationType === "numeric") {
+                    if (value === "" || /^[0-9]+$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
+                  } else {
+                    if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
+                  }
+                }}
+                className={CONTROL_CLASSNAME}
+              />
+            </label>
+          </div>
+        ) : (
+          <>
+            {activities.length > 0 ? (
+              <label className="grid gap-2">
+                <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
+                <select
+                  name="activity_id"
+                  value={formState.activityId}
+                  onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
+                  className={CONTROL_CLASSNAME}
+                >
+                  <option value="">{copy.activity_placeholder}</option>
+                  {activities.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {receiptFormats.length > 0 ? (
+              <label className="grid gap-2">
+                <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
+                <input
+                  type="text"
+                  name="receipt_number"
+                  value={formState.receiptNumber}
+                  inputMode={receiptFormats[0]?.validationType === "numeric" ? "numeric" : "text"}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (receiptFormats[0]?.validationType === "numeric") {
+                      if (value === "" || /^[0-9]+$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
+                    } else {
+                      if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
+                    }
+                  }}
+                  className={CONTROL_CLASSNAME}
+                />
+              </label>
+            ) : null}
+          </>
+        )}
+
+        {/* CONCEPTO */}
+        <label className="grid gap-2">
+          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.concept_label, copy)}</span>
+          <input
+            type="text"
+            name="concept"
+            value={formState.concept}
+            onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
+            className={CONTROL_CLASSNAME}
+          />
+        </label>
+
+        {/* REFERENCIAS (solo lectura si existen) */}
         {movement.transferReference ? (
-          <FormField fullWidth>
-            <span className="font-medium">{copy.detail_transfer_label}</span>
-            <input type="text" value={movement.transferReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
-          </FormField>
+          <div className="grid gap-1.5">
+            <p className={FIELD_LABEL_CLASSNAME}>{copy.detail_transfer_label}</p>
+            <div className={cn(DISABLED_CONTROL_CLASSNAME, "truncate text-[12px] tabular-nums")}>
+              {movement.transferReference}
+            </div>
+          </div>
         ) : null}
-
         {movement.fxOperationReference ? (
-          <FormField fullWidth>
-            <span className="font-medium">{copy.detail_fx_label}</span>
-            <input type="text" value={movement.fxOperationReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
-          </FormField>
+          <div className="grid gap-1.5">
+            <p className={FIELD_LABEL_CLASSNAME}>{copy.detail_fx_label}</p>
+            <div className={cn(DISABLED_CONTROL_CLASSNAME, "truncate text-[12px] tabular-nums")}>
+              {movement.fxOperationReference}
+            </div>
+          </div>
         ) : null}
 
-        <div className="sm:col-span-2">
+        {/* BUTTONS */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+          >
+            {copy.reset_cta}
+          </button>
           <PendingSubmitButton
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}

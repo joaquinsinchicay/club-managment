@@ -743,7 +743,9 @@ export function TreasuryCard({
         }}
         title={texts.dashboard.treasury.edit_form_title}
         description={texts.dashboard.treasury.edit_form_description}
-        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending}
+        closeDisabled={isMovementUpdatePending}
+        hideCloseButton
+        panelClassName="max-w-xl"
       >
         {selectedMovement ? (
           <SecretariaMovementEditForm
@@ -757,6 +759,10 @@ export function TreasuryCard({
             submitLabel={texts.dashboard.treasury.update_cta}
             pendingLabel={texts.dashboard.treasury.update_loading}
             movement={selectedMovement}
+            onCancel={() => {
+              setActiveModal(null);
+              setSelectedMovement(null);
+            }}
           />
         ) : null}
       </Modal>
