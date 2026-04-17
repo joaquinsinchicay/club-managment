@@ -16,7 +16,9 @@ export function buildDefaultReceiptFormat(clubId: string): ReceiptFormat {
     pattern: DEFAULT_RECEIPT_PATTERN,
     minNumericValue: DEFAULT_RECEIPT_MIN_VALUE,
     example: DEFAULT_RECEIPT_EXAMPLE,
-    status: "active"
+    status: "active",
+    visibleForSecretaria: true,
+    visibleForTesoreria: false
   };
 }
 

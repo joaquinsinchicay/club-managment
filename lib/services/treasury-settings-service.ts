@@ -29,6 +29,9 @@ type TreasurySettingsActionCode =
   | "receipt_format_created"
   | "receipt_format_updated"
   | "receipt_format_name_required"
+  | "receipt_format_name_too_long"
+  | "receipt_format_name_invalid"
+  | "receipt_format_invalid_type"
   | "receipt_format_min_required"
   | "receipt_format_pattern_required"
   | "account_currencies_required"
@@ -801,14 +804,15 @@ export async function createReceiptFormatForActiveClub(input: {
   return { ok: true, code: "receipt_format_created" };
 }
 
+const RECEIPT_FORMAT_NAME_REGEX = /^[a-zA-Z0-9\u00C0-\u024F ]+$/;
+const RECEIPT_FORMAT_NAME_MAX_LENGTH = 50;
+const VALID_RECEIPT_VALIDATION_TYPES: ReceiptFormat["validationType"][] = ["numeric", "pattern"];
+
 export async function updateReceiptFormatForActiveClub(input: {
   receiptFormatId: string;
   name: string;
   validationType: string;
-  minNumericValue: string;
-  pattern: string;
-  example: string;
-  status: string;
+  visibility: string[];
 }): Promise<TreasurySettingsActionResult> {
   const context = await getTreasurySettingsAdminContext();
 
@@ -822,43 +826,29 @@ export async function updateReceiptFormatForActiveClub(input: {
     return { ok: false, code: "receipt_format_name_required" };
   }
 
-  if (!RECEIPT_FORMAT_STATUSES.includes(input.status as ReceiptFormat["status"])) {
-    return { ok: false, code: "invalid_config_status" };
+  if (name.length > RECEIPT_FORMAT_NAME_MAX_LENGTH) {
+    return { ok: false, code: "receipt_format_name_too_long" };
   }
 
-  if (input.validationType !== "numeric" && input.validationType !== "pattern") {
-    return { ok: false, code: "invalid_receipt_validation_type" };
+  if (!RECEIPT_FORMAT_NAME_REGEX.test(name)) {
+    return { ok: false, code: "receipt_format_name_invalid" };
   }
+
+  if (!VALID_RECEIPT_VALIDATION_TYPES.includes(input.validationType as ReceiptFormat["validationType"])) {
+    return { ok: false, code: "receipt_format_invalid_type" };
+  }
+
+  const validationType = input.validationType as ReceiptFormat["validationType"];
+  const selectedVisibility = normalizeAccountVisibility(input.visibility);
 
   const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
-  const existingReceiptFormat = receiptFormats.find((receiptFormat) => receiptFormat.id === input.receiptFormatId);
+  const existingReceiptFormat = receiptFormats.find((f) => f.id === input.receiptFormatId);
 
   if (!existingReceiptFormat) {
     return { ok: false, code: "receipt_format_not_found" };
   }
 
-  if (hasDuplicateActiveReceiptFormatName(receiptFormats, name, input.receiptFormatId)) {
-    return { ok: false, code: "duplicate_receipt_format_name" };
-  }
-
-  const pattern = normalizeConfigName(input.pattern);
-  const example = normalizeConfigName(input.example);
-  const minNumericValue = input.minNumericValue.trim();
-
-  if (input.validationType === "numeric" && !minNumericValue) {
-    return { ok: false, code: "receipt_format_min_required" };
-  }
-
-  if (input.validationType === "pattern" && !pattern) {
-    return { ok: false, code: "receipt_format_pattern_required" };
-  }
-
-  const parsedMin =
-    input.validationType === "numeric" ? Number(minNumericValue) : null;
-
-  if (input.validationType === "numeric" && (!Number.isFinite(parsedMin) || parsedMin === null)) {
-    return { ok: false, code: "receipt_format_min_required" };
-  }
+  const pattern = validationType === "pattern" ? "^[a-zA-Z0-9]+$" : null;
 
   let updated: ReceiptFormat | null = null;
 
@@ -867,11 +857,13 @@ export async function updateReceiptFormatForActiveClub(input: {
       receiptFormatId: input.receiptFormatId,
       clubId: context.activeClub.id,
       name,
-      validationType: input.validationType as ReceiptFormat["validationType"],
-      pattern: input.validationType === "pattern" ? pattern : null,
-      minNumericValue: input.validationType === "numeric" ? parsedMin : null,
-      example: example || null,
-      status: input.status as ReceiptFormat["status"]
+      validationType,
+      pattern,
+      minNumericValue: null,
+      example: null,
+      status: existingReceiptFormat.status,
+      visibleForSecretaria: selectedVisibility.includes("secretaria"),
+      visibleForTesoreria: selectedVisibility.includes("tesoreria")
     });
   } catch (error) {
     return resolveTreasurySettingsMutationError(error, "update_receipt_format_for_active_club", context.activeClub.id);

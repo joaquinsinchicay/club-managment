@@ -32,7 +32,7 @@ Un usuario `admin` debe poder crear y editar cuentas del club definiendo un úni
 - Campo `Visibilidad` multiselect con `Secretaría` y `Tesorería`.
 - Selección obligatoria de una o más monedas por cuenta entre `ARS` y `USD`.
 - Visualización de la visibilidad compuesta y monedas configuradas en el listado.
-- Validación de nombre obligatorio, al menos una visibilidad y al menos una moneda por cuenta.
+- Validación de nombre obligatorio y al menos una moneda por cuenta.
 - Consumo operativo por rol según visibilidad configurada.
 
 ### No incluye
@@ -71,7 +71,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - Toda cuenta pertenece exclusivamente al club activo.
 - El nombre de cuenta es obligatorio.
 - El tipo de cuenta es obligatorio.
-- Debe existir al menos una visibilidad habilitada para la cuenta.
+- Una cuenta puede quedar sin roles seleccionados en `Visibilidad`; en ese caso permanece oculta para ambos roles.
 - Debe existir al menos una moneda habilitada para la cuenta.
 - Las monedas de la cuenta solo pueden ser `ARS` y/o `USD`.
 - No puede existir otra cuenta con el mismo nombre en el mismo club.
@@ -101,8 +101,8 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 
 ### B. Cuenta sin visibilidad
 
-1. El admin intenta guardar sin seleccionar ninguna visibilidad.
-2. El sistema devuelve `account_visibility_required`.
+1. El admin guarda sin seleccionar ninguna visibilidad.
+2. El sistema permite guardar. La cuenta queda marcada como oculta y no aparece en formularios operativos.
 
 ### C. Cuenta sin monedas
 

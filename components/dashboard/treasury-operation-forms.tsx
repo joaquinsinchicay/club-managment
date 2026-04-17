@@ -19,7 +19,6 @@ import type {
   TreasuryCurrencyConfig,
   TreasuryMovementType
 } from "@/lib/domain/access";
-import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -136,26 +135,6 @@ function FormField({
   return <label className={cn(FIELD_CLASSNAME, fullWidth && FULL_WIDTH_FIELD_CLASSNAME)}>{children}</label>;
 }
 
-function ReceiptHelper({
-  receiptFormats,
-  copy
-}: {
-  receiptFormats: ReceiptFormat[];
-  copy: OperationalFormCopy;
-}) {
-  if (receiptFormats.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="text-xs leading-5 text-muted-foreground">
-      <span>
-        {copy.receipt_helper_example} {receiptFormats[0]?.example ?? DEFAULT_RECEIPT_PATTERN}. {copy.receipt_helper_available_from}{" "}
-        {DEFAULT_RECEIPT_MIN_LABEL}
-      </span>
-    </div>
-  );
-}
 
 function sanitizeAmountInput(value: string) {
   return sanitizeLocalizedAmountInput(value);
@@ -319,17 +298,31 @@ function MovementFormFields({
         </FormField>
       ) : null}
 
-      <FormField fullWidth>
-        <span className="font-medium">{copy.receipt_label}</span>
-        <input
-          type="text"
-          name="receipt_number"
-          value={formState.receiptNumber}
-          onChange={(event) => onChange({ receiptNumber: event.target.value })}
-          className={CONTROL_CLASSNAME}
-        />
-        <ReceiptHelper receiptFormats={receiptFormats} copy={copy} />
-      </FormField>
+      {receiptFormats.length > 0 ? (
+        <FormField fullWidth>
+          <span className="font-medium">{receiptFormats[0]?.name ?? copy.receipt_label}</span>
+          <input
+            type="text"
+            name="receipt_number"
+            value={formState.receiptNumber}
+            inputMode={receiptFormats[0]?.validationType === "numeric" ? "numeric" : "text"}
+            pattern={receiptFormats[0]?.validationType === "numeric" ? "[0-9]*" : undefined}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (receiptFormats[0]?.validationType === "numeric") {
+                if (value === "" || /^[0-9]+$/.test(value)) {
+                  onChange({ receiptNumber: value });
+                }
+              } else {
+                if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) {
+                  onChange({ receiptNumber: value });
+                }
+              }
+            }}
+            className={CONTROL_CLASSNAME}
+          />
+        </FormField>
+      ) : null}
 
       {calendarEvents ? (
         <FormField fullWidth>

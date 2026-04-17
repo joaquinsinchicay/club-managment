@@ -50,7 +50,6 @@ function ActivityForm({
       v === "secretaria" ? (defaultActivity?.visibleForSecretaria ?? true) : (defaultActivity?.visibleForTesoreria ?? false)
     )
   );
-  const [visibilityTouched, setVisibilityTouched] = useState(false);
   const searchParams = useSearchParams();
   const feedbackCode = searchParams.get("feedback");
 
@@ -61,7 +60,6 @@ function ActivityForm({
   }, [feedbackCode, onSuccess]);
 
   function handleVisibilityToggle(visibility: string, checked: boolean) {
-    setVisibilityTouched(true);
     setSelectedVisibility((current) =>
       checked ? [...current, visibility] : current.filter((v) => v !== visibility)
     );
@@ -70,12 +68,6 @@ function ActivityForm({
   return (
     <form
       action={action}
-      onSubmit={(event) => {
-        if (selectedVisibility.length === 0) {
-          event.preventDefault();
-          setVisibilityTouched(true);
-        }
-      }}
       className="grid gap-4"
     >
       <PendingFieldset className="grid gap-4">
@@ -115,11 +107,6 @@ function ActivityForm({
               </label>
             ))}
           </div>
-          {visibilityTouched && selectedVisibility.length === 0 ? (
-            <p aria-live="assertive" className="text-sm text-destructive">
-              {texts.settings.club.treasury.feedback.account_visibility_required}
-            </p>
-          ) : null}
         </fieldset>
 
         <label className="grid gap-2 text-sm text-foreground">
@@ -141,7 +128,6 @@ function ActivityForm({
         <PendingSubmitButton
           idleLabel={submitLabel}
           pendingLabel={pendingLabel}
-          disabled={selectedVisibility.length === 0}
           className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
       </PendingFieldset>

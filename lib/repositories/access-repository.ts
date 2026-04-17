@@ -295,6 +295,8 @@ type AccessRepository = {
     minNumericValue: number | null;
     example: string | null;
     status: ReceiptFormat["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
   }): Promise<ReceiptFormat | null>;
   findTreasuryAdjustmentCategory(clubId: string): Promise<TreasuryCategory | null>;
   getDailyCashSessionByDate(clubId: string, sessionDate: string): Promise<DailyCashSession | null>;
@@ -849,27 +851,33 @@ function createStore(): MockStore {
       pattern: null,
       minNumericValue: 1,
       example: "12345",
-      status: "active"
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false
     },
     {
       id: "receipt-format-modern-001",
       clubId: CLUB_ID,
       name: "Recibo moderno",
       validationType: "pattern",
-      pattern: "^RC-[0-9]{6}$",
+      pattern: "^[a-zA-Z0-9]+$",
       minNumericValue: null,
-      example: "RC-000123",
-      status: "active"
+      example: null,
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false
     },
     {
       id: "receipt-format-sur-001",
       clubId: CLUB_SUR_ID,
       name: "Recibo Sur",
       validationType: "pattern",
-      pattern: "^SUR-[0-9]{4}$",
+      pattern: "^[a-zA-Z0-9]+$",
       minNumericValue: null,
-      example: "SUR-0101",
-      status: "active"
+      example: null,
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false
     }
   ];
 
@@ -1346,6 +1354,8 @@ function mapReceiptFormatRow(row: {
   min_numeric_value: number | null;
   example: string | null;
   status: ReceiptFormat["status"];
+  visible_for_secretaria?: boolean | null;
+  visible_for_tesoreria?: boolean | null;
 }): ReceiptFormat {
   return {
     id: row.id,
@@ -1355,7 +1365,9 @@ function mapReceiptFormatRow(row: {
     pattern: row.pattern,
     minNumericValue: row.min_numeric_value,
     example: row.example,
-    status: row.status
+    status: row.status,
+    visibleForSecretaria: row.visible_for_secretaria ?? true,
+    visibleForTesoreria: row.visible_for_tesoreria ?? false
   };
 }
 
@@ -2082,6 +2094,8 @@ async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepo
       min_numeric_value: number | null;
       example: string | null;
       status: ReceiptFormat["status"];
+      visible_for_secretaria: boolean | null;
+      visible_for_tesoreria: boolean | null;
     }>
   >("get_receipt_formats_for_current_club", clubId, client);
 
@@ -3783,6 +3797,8 @@ async function updateRealReceiptFormat(
     minNumericValue: number | null;
     example: string | null;
     status: ReceiptFormat["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
   },
   client?: AccessRepositoryClient
 ) {
@@ -3799,11 +3815,13 @@ async function updateRealReceiptFormat(
       pattern: input.pattern,
       min_numeric_value: input.minNumericValue,
       example: input.example,
-      status: input.status
+      status: input.status,
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria
     })
     .eq("id", input.receiptFormatId)
     .eq("club_id", input.clubId)
-    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status")
+    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status,visible_for_secretaria,visible_for_tesoreria")
     .maybeSingle();
 
   if (error || !data) {
@@ -4541,7 +4559,9 @@ export const accessRepository: AccessRepository = {
       pattern: input.pattern,
       minNumericValue: input.minNumericValue,
       example: input.example,
-      status: input.status
+      status: input.status,
+      visibleForSecretaria: true,
+      visibleForTesoreria: false
     };
 
     getStore().receiptFormats.push(receiptFormat);
@@ -4566,6 +4586,8 @@ export const accessRepository: AccessRepository = {
     receiptFormat.minNumericValue = input.minNumericValue;
     receiptFormat.example = input.example;
     receiptFormat.status = input.status;
+    receiptFormat.visibleForSecretaria = input.visibleForSecretaria;
+    receiptFormat.visibleForTesoreria = input.visibleForTesoreria;
     return receiptFormat;
   },
   async findTreasuryAdjustmentCategory(clubId) {

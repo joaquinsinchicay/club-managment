@@ -166,7 +166,9 @@ validation_type receipt_validation_type,
 pattern text,
 min_numeric_value numeric,
 example text,
-status text
+status text,
+visible_for_secretaria boolean default true,
+visible_for_tesoreria boolean default false
 );
 
 create table club_treasury_currencies (

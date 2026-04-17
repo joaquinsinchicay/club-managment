@@ -130,6 +130,8 @@ export type ReceiptFormat = {
   minNumericValue: number | null;
   example: string | null;
   status: TreasuryConfigStatus;
+  visibleForSecretaria: boolean;
+  visibleForTesoreria: boolean;
 };
 
 export type MovementTypeConfig = {

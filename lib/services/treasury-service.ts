@@ -23,7 +23,7 @@ import type {
   TreasuryMovementStatus,
   User
 } from "@/lib/domain/access";
-import { getDefaultReceiptFormats, isDefaultReceiptNumberValid } from "@/lib/receipt-formats";
+import { getDefaultReceiptFormats } from "@/lib/receipt-formats";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { texts } from "@/lib/texts";
 
@@ -3336,7 +3336,8 @@ export async function getActiveReceiptFormatsForSecretaria(): Promise<ReceiptFor
     return [];
   }
 
-  return getDefaultReceiptFormats(context.activeClub.id);
+  const formats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
+  return formats.filter((f) => f.status === "active" && f.visibleForSecretaria);
 }
 
 export async function getActiveReceiptFormatsForTesoreria(): Promise<ReceiptFormat[]> {
@@ -3346,35 +3347,19 @@ export async function getActiveReceiptFormatsForTesoreria(): Promise<ReceiptForm
     return [];
   }
 
-  return getDefaultReceiptFormats(context.activeClub.id);
+  const formats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
+  return formats.filter((f) => f.status === "active" && f.visibleForTesoreria);
 }
 
 function validateReceiptNumberAgainstFormat(
   receiptNumber: string,
   receiptFormat: ReceiptFormat
 ) {
-  if (receiptFormat.example === "PAY-SOC-26205") {
-    return isDefaultReceiptNumberValid(receiptNumber);
+  if (receiptFormat.validationType === "numeric") {
+    return /^[0-9]+$/.test(receiptNumber);
   }
 
-  if (!receiptFormat.pattern) {
-    return false;
-  }
-
-  try {
-    if (!new RegExp(receiptFormat.pattern).test(receiptNumber)) {
-      return false;
-    }
-
-    if (receiptFormat.minNumericValue === null) {
-      return true;
-    }
-
-    const parsedValue = Number(receiptNumber);
-    return Number.isFinite(parsedValue) && parsedValue >= receiptFormat.minNumericValue;
-  } catch {
-    return false;
-  }
+  return /^[a-zA-Z0-9]+$/.test(receiptNumber);
 }
 
 export async function getTreasuryAccountDetailForActiveClub(

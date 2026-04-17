@@ -166,10 +166,7 @@ export async function updateReceiptFormatAction(formData: FormData) {
     receiptFormatId: String(formData.get("receipt_format_id") ?? ""),
     name: String(formData.get("name") ?? ""),
     validationType: String(formData.get("validation_type") ?? ""),
-    minNumericValue: String(formData.get("min_numeric_value") ?? ""),
-    pattern: String(formData.get("pattern") ?? ""),
-    example: String(formData.get("example") ?? ""),
-    status: String(formData.get("status") ?? "")
+    visibility: formData.getAll("visibility").map(String)
   });
 
   redirectToSettings(result.code, "treasury");

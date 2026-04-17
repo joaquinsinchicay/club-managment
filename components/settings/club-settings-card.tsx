@@ -26,6 +26,7 @@ type ClubSettingsCardProps = {
   updateTreasuryCategoryAction: (formData: FormData) => Promise<void>;
   createClubActivityAction: (formData: FormData) => Promise<void>;
   updateClubActivityAction: (formData: FormData) => Promise<void>;
+  updateReceiptFormatAction: (formData: FormData) => Promise<void>;
 };
 
 export function ClubSettingsCard({
@@ -42,7 +43,8 @@ export function ClubSettingsCard({
   createTreasuryCategoryAction,
   updateTreasuryCategoryAction,
   createClubActivityAction,
-  updateClubActivityAction
+  updateClubActivityAction,
+  updateReceiptFormatAction
 }: ClubSettingsCardProps) {
   const activeClubName = context.activeClub?.name ?? "";
 
@@ -98,7 +100,12 @@ export function ClubSettingsCard({
     {
       id: "sistema-de-socios",
       label: texts.settings.club.tabs.membership_systems,
-      content: <MembershipSystemsTab receiptFormats={treasurySettings.receiptFormats} />
+      content: (
+        <MembershipSystemsTab
+          receiptFormats={treasurySettings.receiptFormats}
+          updateReceiptFormatAction={updateReceiptFormatAction}
+        />
+      )
     }
   ];
 

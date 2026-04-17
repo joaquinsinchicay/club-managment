@@ -1,4 +1,4 @@
-# PDD — US-18 · Configuración de formatos válidos para recibos
+# PDD — US-18 · Configuración del sistema de socios
 
 ---
 
@@ -7,43 +7,45 @@
 | Campo | Valor |
 |---|---|
 | Epic | E03 · Tesorería |
-| User Story | Como Admin del club, quiero visualizar la integración del campo Recibo, para asegurar que Secretaría cargue referencias consistentes con el sistema de socios utilizado por el club. |
+| User Story | Como Admin del club, quiero configurar el sistema de socios, para definir el nombre del campo, el tipo de formato aceptado y la visibilidad por rol en los formularios operativos. |
 | Prioridad | Media |
-| Objetivo de negocio | Estandarizar la captura del campo `Recibo` con una integración predefinida visible para Admin y reusable en los formularios operativos de Secretaría. |
+| Objetivo de negocio | Permitir que cada club defina cómo se captura y valida el campo de recibo del sistema de socios, controlando su nombre, tipo de dato y visibilidad por rol. |
 
 ---
 
 ## 2. Problema a resolver
 
-La versión anterior de la historia permitía administrar formatos libres desde la UI. En esta iteración el negocio define una integración fija con el sistema de socios, por lo que la pantalla debe dejar de comportarse como configurador manual y pasar a mostrar una referencia operativa consistente para Admin y Secretaría.
+La sección de sistema de socios era read-only y usaba un formato fijo `PAY-SOC-*`. En esta iteración el negocio requiere que Admin pueda configurar el nombre del campo, elegir entre dos tipos de formato (Alfanumérico / Número) y definir la visibilidad por rol. Si no hay roles habilitados, el campo queda oculto y no se muestra en formularios operativos.
 
 ---
 
 ## 3. Objetivo funcional
 
-Un usuario `admin` debe poder visualizar dentro de `Configuración del club` la configuración fija del recibo del sistema de socios, mientras que Secretaría debe ver ayuda contextual con el formato válido y el rango disponible al cargar movimientos.
+Un usuario `admin` debe poder editar dentro de `Configuración del club` el nombre, tipo de formato y visibilidad del sistema de socios. Los formularios operativos consumen esa configuración para mostrar u ocultar el campo con el nombre y tipo correcto.
 
 ---
 
 ## 4. Alcance
 
 ### Incluye
-- Sección read-only de recibos dentro de la sección de Tesorería de `Configuración del club`.
-- Visualización de `Nombre del sistema de socios`, `Ejemplo`, `Patrón` y `Próximo recibo`.
-- Helper visible para Secretaría en formularios de movimientos.
-- Validación server-side del campo `Recibo` contra el formato fijo predefinido.
+- Formulario de configuración del sistema de socios con campos `Nombre`, `Tipo de formato` y `Visibilidad`.
+- Selector de tipo de formato: `Alfanumérico` (`^[a-zA-Z0-9]+$`) y `Número` (`^[0-9]+$`).
+- Configuración de visibilidad por rol (Secretaría y/o Tesorería). Sin roles seleccionados → "Oculta".
+- Validación client-side y server-side del campo en formularios operativos según tipo configurado.
+- El label del campo en formularios es dinámico y proviene del `Nombre` configurado.
+- Cuando la visibilidad es "Oculta", el campo no se muestra en ningún formulario operativo.
 
 ### No incluye
-- Alta, edición o baja manual de formatos desde la UI.
-- Configuración de múltiples formatos convivientes.
+- Visualización de ejemplo, patrón regex ni próximo recibo en la UI.
+- Alta o baja de sistemas de socios desde la UI.
+- Configuración de múltiples sistemas convivientes.
 - Validaciones cruzadas contra sistemas externos.
-- Límite máximo de recibos disponibles.
 
 ---
 
 ## 5. Actor principal
 
-Usuario autenticado con membership `activo` y rol `admin` para visualizar la integración; usuario `secretaria` o `tesoreria` para consumir la ayuda y validación durante la carga de movimientos.
+Usuario autenticado con membership `activo` y rol `admin` para editar la configuración; usuario `secretaria` o `tesoreria` para consumir el campo según visibilidad al cargar movimientos.
 
 ---
 
@@ -51,7 +53,7 @@ Usuario autenticado con membership `activo` y rol `admin` para visualizar la int
 
 - El club activo está resuelto.
 - El usuario `admin` puede acceder a `Configuración del club`.
-- La operatoria diaria ya permite registrar movimientos.
+- Existe al menos un registro en `receipt_formats` para el club activo.
 
 ---
 
@@ -59,7 +61,11 @@ Usuario autenticado con membership `activo` y rol `admin` para visualizar la int
 
 | Escenario | Resultado esperado |
 |---|---|
-| Admin visualiza la integración | La sección muestra la configuración read-only del recibo del sistema de socios. |
+| Admin edita nombre | El campo en formularios muestra el nuevo nombre. |
+| Admin selecciona tipo Número | El campo acepta solo dígitos enteros en formularios. |
+| Admin selecciona tipo Alfanumérico | El campo acepta letras y números, sin caracteres especiales. |
+| Admin configura visibilidad Secretaría | Solo Secretaría ve el campo en sus formularios. |
+| Admin configura sin visibilidad | El campo queda oculto en todos los formularios. |
 | Secretaría o Tesorería ingresan un recibo válido | El movimiento puede continuar. |
 | Secretaría o Tesorería ingresan un recibo inválido | El movimiento se bloquea con feedback. |
 
@@ -67,43 +73,46 @@ Usuario autenticado con membership `activo` y rol `admin` para visualizar la int
 
 ## 8. Reglas de negocio
 
-- Solo `admin` accede a la visualización de la integración en `Configuración del club`.
-- La UI no expone acciones para crear o editar formatos de recibo.
-- El formato soportado por defecto es `PAY-SOC-<número de 5 dígitos>`.
-- El ejemplo visible es `PAY-SOC-26205`.
-- El patrón visible es `^PAY-SOC-[0-9]{5}$`.
-- El próximo recibo visible y mínimo inclusivo es `PAY-SOC-10556`.
-- No existe valor máximo configurable ni visible.
-- El helper de formularios debe mostrar formato válido, ejemplo y disponibilidad desde el mínimo.
-- La validación server-side exige:
-  - prefijo `PAY-SOC-`
-  - bloque numérico de 5 dígitos
-  - valor numérico mayor o igual a `10556`
+- Solo `admin` puede editar la configuración del sistema de socios.
+- El nombre es obligatorio, máximo 50 caracteres, solo letras, números y espacios.
+- El tipo de formato es obligatorio: `Alfanumérico` (mapeado a `validationType: "pattern"`) o `Número` (mapeado a `validationType: "numeric"`).
+- Un admin puede configurar la visibilidad por rol (Secretaría y/o Tesorería).
+- Una configuración puede quedar sin roles seleccionados en `Visibilidad`; en ese caso el campo queda oculto y no se muestra en ningún formulario operativo.
+- El label del campo en formularios operativos es dinámico y proviene del `Nombre` configurado.
+- La validación server-side aplica el patrón correspondiente al tipo configurado:
+  - `Alfanumérico`: `^[a-zA-Z0-9]+$`
+  - `Número`: `^[0-9]+$`
 
 ---
 
 ## 9. Flujo principal
 
 1. Un admin entra a `Configuración del club`.
-2. Abre la sección de Tesorería dentro de `Configuración del club`.
-3. Visualiza la integración de recibos en un bloque read-only.
-4. Secretaría o Tesorería abren el formulario de movimientos.
-5. El sistema muestra el formato válido, un ejemplo y el texto `Disponibles desde PAY-SOC-10556`.
-6. Al guardar un movimiento con recibo informado, el sistema valida el valor server-side.
+2. Abre la solapa `Sistema de socios`.
+3. Presiona el botón de edición.
+4. Configura nombre, tipo de formato y visibilidad.
+5. El sistema valida y persiste la configuración.
+6. Los formularios operativos consumen la configuración actualizada.
 
 ---
 
 ## 10. Flujos alternativos
 
-### A. Recibo debajo del mínimo
+### A. Sin visibilidad seleccionada
 
-1. El usuario ingresa `PAY-SOC-10555`.
+1. Admin guarda sin seleccionar ningún rol.
+2. El sistema permite guardar.
+3. El campo queda oculto en todos los formularios operativos.
+
+### B. Recibo con formato inválido
+
+1. El usuario ingresa un valor que no cumple el patrón configurado.
 2. El sistema devuelve `invalid_receipt_format`.
 
-### B. Recibo con patrón inválido
+### C. Nombre inválido
 
-1. El usuario ingresa un valor con prefijo o estructura distinta.
-2. El sistema devuelve `invalid_receipt_format`.
+1. Admin intenta guardar con nombre vacío, muy largo o con caracteres especiales.
+2. El sistema devuelve el feedback correspondiente.
 
 ---
 
@@ -113,10 +122,10 @@ Usuario autenticado con membership `activo` y rol `admin` para visualizar la int
 - `docs/design/design-system.md`
 
 ### Reglas
-- La sección debe convivir con cuentas, categorías y actividades dentro de `Tesorería`.
-- La configuración de recibos se renderiza como información read-only.
-- No deben mostrarse CTAs para crear o editar formatos de recibo.
-- La ayuda contextual del campo `Recibo` debe ser breve y fácil de escanear en mobile.
+- La sección convive con cuentas, categorías y actividades dentro de `Tesorería`.
+- El card principal muestra: nombre actual, tipo de formato y badge de visibilidad.
+- El botón de edición abre modal con el mismo patrón visual que el resto de las tabs.
+- No se muestran ejemplo, patrón técnico ni próximo recibo.
 - No debe haber textos hardcodeados.
 
 ---
@@ -135,24 +144,32 @@ Usuario autenticado con membership `activo` y rol `admin` para visualizar la int
 | Tipo | Key | Contexto |
 |---|---|---|
 | title | `settings.club.treasury.receipt_formats_title` | Encabezado de la sección. |
-| body | `settings.club.treasury.receipt_formats_description` | Descripción de la integración. |
+| body | `settings.club.treasury.receipt_formats_description` | Descripción de la sección. |
 | label | `settings.club.treasury.receipt_name_label` | Nombre del sistema de socios. |
-| label | `settings.club.treasury.receipt_example_label` | Ejemplo fijo. |
-| label | `settings.club.treasury.receipt_pattern_label` | Patrón visible. |
-| label | `settings.club.treasury.receipt_min_label` | Próximo recibo. |
-| body | `settings.club.treasury.receipt_formats_read_only` | Aclaración de solo lectura. |
-| label | `dashboard.treasury.receipt_label` | Campo recibo en formulario. |
-| body | `dashboard.treasury.receipt_helper_example` | Helper de ejemplo. |
-| body | `dashboard.treasury.receipt_helper_available_from` | Helper de disponibilidad. |
-| feedback | `dashboard.feedback.invalid_receipt_format` | Recibo inválido. |
+| label | `settings.club.treasury.receipt_validation_type_label` | Tipo de formato. |
+| options | `settings.club.treasury.receipt_validation_type_options.numeric` | Opción Número. |
+| options | `settings.club.treasury.receipt_validation_type_options.pattern` | Opción Alfanumérico. |
+| label | `settings.club.treasury.account_visibility_label` | Visibilidad (reutilizada). |
+| options | `settings.club.treasury.account_visibility_options` | Opciones de visibilidad (reutilizadas). |
+| status | `settings.club.treasury.visibility_hidden` | Estado "Oculta" (reutilizado). |
+| body | `settings.club.treasury.receipt_formats_read_only` | Descripción del card. |
+| action | `settings.club.treasury.edit_receipt_format_cta` | CTA de edición. |
+| action | `settings.club.treasury.update_receipt_format_cta` | CTA de submit. |
+| status | `settings.club.treasury.update_receipt_format_loading` | Estado de carga. |
+| label | `dashboard.treasury.receipt_label` | Fallback del campo en formulario. |
+| feedback | `settings.club.treasury.feedback.receipt_format_updated` | Actualización exitosa. |
+| feedback | `settings.club.treasury.feedback.receipt_format_name_required` | Nombre obligatorio. |
+| feedback | `settings.club.treasury.feedback.receipt_format_name_too_long` | Nombre muy largo. |
+| feedback | `settings.club.treasury.feedback.receipt_format_name_invalid` | Caracteres inválidos. |
+| feedback | `settings.club.treasury.feedback.receipt_format_invalid_type` | Tipo inválido. |
+| feedback | `dashboard.feedback.invalid_receipt_format` | Recibo inválido en formulario. |
 
 ---
 
 ## 13. Persistencia
 
 ### Entidades afectadas
-- `treasury_movements`: escritura opcional de `receipt_number` con validación previa.
-- `receipt_formats`: puede conservarse internamente por compatibilidad técnica, pero no se administra desde la UI en esta iteración.
+- `receipt_formats`: READ y UPDATE de `name`, `validation_type`, `visible_for_secretaria`, `visible_for_tesoreria`. Los campos `pattern`, `min_numeric_value` y `example` se mantienen en DB pero no se exponen en la UI.
 
 Do not reference current code files.
 
@@ -160,17 +177,17 @@ Do not reference current code files.
 
 ## 14. Seguridad
 
+- Solo `admin` puede mutar la configuración del sistema de socios.
 - La validación del recibo debe ejecutarse server-side.
-- La integración visible no habilita escrituras desde la UI.
 - El comportamiento aplica al club activo resuelto en sesión.
 
 ---
 
 ## 15. Dependencias
 
-- contracts: `Set receipt formats`, `Create treasury movement`.
+- contracts: `Update receipt format`, `Create treasury movement`.
 - domain entities: `receipt_formats`, `treasury_movements`.
-- permissions: solo `admin` visualiza la sección; Secretaría y Tesorería consumen validación.
+- permissions: solo `admin` edita la sección; Secretaría y Tesorería consumen validación según visibilidad configurada.
 
 ---
 
@@ -178,6 +195,6 @@ Do not reference current code files.
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
-| Aceptar recibos inválidos | Media | Alta | Validar prefijo, longitud y mínimo server-side. |
-| Mostrar información distinta entre settings y formularios | Media | Media | Resolver la integración desde una fuente única. |
-| Reintroducir edición manual por error | Baja | Media | Eliminar CTAs y formularios de edición en la UI. |
+| Mostrar el campo a un rol no habilitado | Media | Media | Filtrar receiptFormats por rol en las páginas del dashboard. |
+| Label de campo desactualizado tras cambio de nombre | Baja | Baja | El label se lee dinámicamente del receipt format en cada render. |
+| Aceptar recibos con formato incorrecto | Media | Alta | Validar client-side y server-side según validationType configurado. |
