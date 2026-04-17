@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, type ReactNode, useEffect, useMemo, useState } from "react";
 
 import {
+  AccountTransferEditForm,
   AccountTransferForm,
   SecretariaMovementEditForm,
   SecretariaMovementForm
@@ -40,6 +41,7 @@ type TreasuryCardProps = {
   receiptFormats: ReceiptFormat[];
   createTreasuryMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateSecretariaMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  updateSecretariaTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
 };
 
@@ -489,6 +491,7 @@ export function TreasuryCard({
   receiptFormats,
   createTreasuryMovementAction,
   updateSecretariaMovementAction,
+  updateSecretariaTransferAction,
   createAccountTransferAction
 }: TreasuryCardProps) {
   const pathname = usePathname();
@@ -498,7 +501,7 @@ export function TreasuryCard({
   const canCreateMovement = localTreasuryCard.availableActions.includes("create_movement");
   const canCloseSession = localTreasuryCard.availableActions.includes("close_session");
   const canOpenSession = localTreasuryCard.availableActions.includes("open_session");
-  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "transfer" | null>(null);
+  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "edit_transfer" | "transfer" | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
@@ -656,6 +659,25 @@ export function TreasuryCard({
     }
   }
 
+  async function handleUpdateSecretariaTransfer(formData: FormData) {
+    setIsMovementUpdatePending(true);
+    setActiveModal(null);
+    try {
+      const result = await updateSecretariaTransferAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+      setIsMovementUpdatePending(false);
+      setSelectedMovement(null);
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      startTransition(() => { router.refresh(); });
+    } catch (error) {
+      setIsMovementUpdatePending(false);
+      setSelectedMovement(null);
+      throw error;
+    }
+  }
+
   async function handleCreateAccountTransfer(formData: FormData) {
     setIsTransferSubmissionPending(true);
     setActiveModal(null);
@@ -706,7 +728,7 @@ export function TreasuryCard({
           onFilterChange={setActiveAccountFilter}
           onEditMovement={(movement) => {
             setSelectedMovement(movement);
-            setActiveModal("edit_movement");
+            setActiveModal(movement.transferReference !== null ? "edit_transfer" : "edit_movement");
           }}
         />
       </div>
@@ -765,6 +787,53 @@ export function TreasuryCard({
             }}
           />
         ) : null}
+      </Modal>
+
+      <Modal
+        open={activeModal === "edit_transfer" && selectedMovement !== null}
+        onClose={() => {
+          setActiveModal(null);
+          setSelectedMovement(null);
+        }}
+        title={texts.dashboard.treasury.transfer_form_title}
+        description={texts.dashboard.treasury.edit_form_description}
+        closeDisabled={isMovementUpdatePending}
+        hideCloseButton
+        panelClassName="max-w-xl"
+      >
+        {selectedMovement && selectedMovement.transferReference !== null ? (() => {
+          const pairedMovement = localTreasuryCard.movements.find(
+            (m) => m.transferReference === selectedMovement.transferReference && m.movementId !== selectedMovement.movementId
+          );
+          const sourceMovement = selectedMovement.movementType === "egreso"
+            ? selectedMovement
+            : (pairedMovement ?? selectedMovement);
+          const targetMovement = selectedMovement.movementType === "ingreso"
+            ? selectedMovement
+            : (pairedMovement ?? selectedMovement);
+          const initialValues = {
+            sourceAccountId: sourceMovement.accountId,
+            targetAccountId: targetMovement.accountId,
+            currencyCode: selectedMovement.currencyCode,
+            concept: selectedMovement.concept,
+            amount: formatLocalizedAmount(selectedMovement.amount)
+          };
+          return (
+            <AccountTransferEditForm
+              movementId={selectedMovement.movementId}
+              initialValues={initialValues}
+              sourceAccounts={transferSourceAccounts}
+              targetAccounts={transferTargetAccounts}
+              currencies={currencies}
+              submitAction={handleUpdateSecretariaTransfer}
+              sessionDate={localTreasuryCard.sessionDate}
+              onCancel={() => {
+                setActiveModal(null);
+                setSelectedMovement(null);
+              }}
+            />
+          );
+        })() : null}
       </Modal>
 
       <Modal

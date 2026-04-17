@@ -12,6 +12,7 @@ import {
   type TreasuryMovementOptimisticUpdate,
   updateTreasuryRoleMovement,
   updateSecretariaMovementInOpenSession,
+  updateSecretariaTransferInOpenSession,
   openDailyCashSession
 } from "@/lib/services/treasury-service";
 
@@ -127,6 +128,25 @@ export async function updateSecretariaMovementAction(formData: FormData) {
     calendarEventId: "",
     concept: String(formData.get("concept") ?? ""),
     currencyCode: String(formData.get("currency_code") ?? ""),
+    amount: String(formData.get("amount") ?? "")
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/secretaria");
+
+  return {
+    ok: result.ok,
+    code: result.code
+  } satisfies TreasuryActionResponse;
+}
+
+export async function updateSecretariaTransferAction(formData: FormData) {
+  const result = await updateSecretariaTransferInOpenSession({
+    movementId: String(formData.get("movement_id") ?? ""),
+    sourceAccountId: String(formData.get("source_account_id") ?? ""),
+    targetAccountId: String(formData.get("target_account_id") ?? ""),
+    currencyCode: String(formData.get("currency_code") ?? ""),
+    concept: String(formData.get("concept") ?? ""),
     amount: String(formData.get("amount") ?? "")
   });
 

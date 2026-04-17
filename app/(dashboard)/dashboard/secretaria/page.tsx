@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import {
   createAccountTransferAction,
   createTreasuryMovementAction,
-  updateSecretariaMovementAction
+  updateSecretariaMovementAction,
+  updateSecretariaTransferAction
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
@@ -93,6 +94,7 @@ export default async function SecretariaDashboardPage() {
         receiptFormats={receiptFormats}
         createTreasuryMovementAction={createTreasuryMovementAction}
         updateSecretariaMovementAction={updateSecretariaMovementAction}
+        updateSecretariaTransferAction={updateSecretariaTransferAction}
         createAccountTransferAction={createAccountTransferAction}
       />
     </main>
