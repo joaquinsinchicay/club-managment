@@ -11,7 +11,6 @@ import {
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
-  ClubCalendarEvent,
   ConsolidationTransferEdit,
   ReceiptFormat,
   TreasuryAccount,
@@ -19,7 +18,6 @@ import type {
   TreasuryCurrencyConfig,
   TreasuryMovementType
 } from "@/lib/domain/access";
-import { DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -49,9 +47,6 @@ type OperationalFormCopy = {
   activity_label: string;
   activity_placeholder: string;
   receipt_label: string;
-  calendar_label: string;
-  calendar_placeholder: string;
-  empty_calendar_events: string;
   concept_label: string;
   currency_label: string;
   currency_placeholder: string;
@@ -95,7 +90,6 @@ type MovementFormState = {
   categoryId: string;
   activityId: string;
   receiptNumber: string;
-  calendarEventId?: string;
   concept: string;
   currencyCode: string;
   amount: string;
@@ -118,7 +112,6 @@ type EditableMovement = {
   categoryId: string;
   activityId: string | null;
   receiptNumber: string | null;
-  calendarEventId: string | null;
   transferReference?: string | null;
   fxOperationReference?: string | null;
   concept: string;
@@ -136,26 +129,6 @@ function FormField({
   return <label className={cn(FIELD_CLASSNAME, fullWidth && FULL_WIDTH_FIELD_CLASSNAME)}>{children}</label>;
 }
 
-function ReceiptHelper({
-  receiptFormats,
-  copy
-}: {
-  receiptFormats: ReceiptFormat[];
-  copy: OperationalFormCopy;
-}) {
-  if (receiptFormats.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="text-xs leading-5 text-muted-foreground">
-      <span>
-        {copy.receipt_helper_example} {receiptFormats[0]?.example ?? DEFAULT_RECEIPT_PATTERN}. {copy.receipt_helper_available_from}{" "}
-        {DEFAULT_RECEIPT_MIN_LABEL}
-      </span>
-    </div>
-  );
-}
 
 function sanitizeAmountInput(value: string) {
   return sanitizeLocalizedAmountInput(value);
@@ -197,7 +170,6 @@ function MovementFormFields({
   accounts,
   categories,
   activities,
-  calendarEvents,
   currencies,
   movementTypes,
   receiptFormats,
@@ -209,7 +181,6 @@ function MovementFormFields({
   accounts: TreasuryAccount[];
   categories: TreasuryCategory[];
   activities: ClubActivity[];
-  calendarEvents?: ClubCalendarEvent[];
   currencies: TreasuryCurrencyConfig[];
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
@@ -227,6 +198,36 @@ function MovementFormFields({
 
     return currencies.filter((currency) => selectedAccount.currencies.includes(currency.currencyCode));
   }, [accounts, currencies, formState.accountId]);
+
+  const availableCategories = useMemo(
+    () =>
+      categories.filter((category) => {
+        if (category.isLegacy || category.movementType === "saldo") {
+          return false;
+        }
+
+        if (!formState.movementType) {
+          return true;
+        }
+
+        return category.movementType === formState.movementType;
+      }),
+    [categories, formState.movementType]
+  );
+
+  useEffect(() => {
+    if (!formState.categoryId) {
+      return;
+    }
+
+    const isSelectedCategoryAvailable = availableCategories.some(
+      (category) => category.id === formState.categoryId
+    );
+
+    if (!isSelectedCategoryAvailable) {
+      onChange({ categoryId: "" });
+    }
+  }, [availableCategories, formState.categoryId, onChange]);
 
   return (
     <>
@@ -292,9 +293,9 @@ function MovementFormFields({
           <option value="" disabled>
             {copy.category_placeholder}
           </option>
-          {categories.map((category) => (
+          {availableCategories.map((category) => (
             <option key={category.id} value={category.id}>
-              {category.name}
+              {category.subCategoryName}
             </option>
           ))}
         </select>
@@ -319,39 +320,29 @@ function MovementFormFields({
         </FormField>
       ) : null}
 
-      <FormField fullWidth>
-        <span className="font-medium">{copy.receipt_label}</span>
-        <input
-          type="text"
-          name="receipt_number"
-          value={formState.receiptNumber}
-          onChange={(event) => onChange({ receiptNumber: event.target.value })}
-          className={CONTROL_CLASSNAME}
-        />
-        <ReceiptHelper receiptFormats={receiptFormats} copy={copy} />
-      </FormField>
-
-      {calendarEvents ? (
+      {receiptFormats.length > 0 ? (
         <FormField fullWidth>
-          <span className="font-medium">{copy.calendar_label}</span>
-          <select
-            name="calendar_event_id"
-            value={formState.calendarEventId ?? ""}
-            onChange={(event) => onChange({ calendarEventId: event.target.value })}
-            disabled={calendarEvents.length === 0}
-            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground")}
-          >
-            <option value="">
-              {calendarEvents.length > 0
-                ? copy.calendar_placeholder
-                : copy.empty_calendar_events}
-            </option>
-            {calendarEvents.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.title}
-              </option>
-            ))}
-          </select>
+          <span className="font-medium">{receiptFormats[0]?.name ?? copy.receipt_label}</span>
+          <input
+            type="text"
+            name="receipt_number"
+            value={formState.receiptNumber}
+            inputMode={receiptFormats[0]?.validationType === "numeric" ? "numeric" : "text"}
+            pattern={receiptFormats[0]?.validationType === "numeric" ? "[0-9]*" : undefined}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (receiptFormats[0]?.validationType === "numeric") {
+                if (value === "" || /^[0-9]+$/.test(value)) {
+                  onChange({ receiptNumber: value });
+                }
+              } else {
+                if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) {
+                  onChange({ receiptNumber: value });
+                }
+              }
+            }}
+            className={CONTROL_CLASSNAME}
+          />
         </FormField>
       ) : null}
 
@@ -426,7 +417,6 @@ function buildEmptySecretariaMovementFormState(): MovementFormState {
     categoryId: "",
     activityId: "",
     receiptNumber: "",
-    calendarEventId: "",
     concept: "",
     currencyCode: "",
     amount: ""
@@ -441,7 +431,6 @@ function buildEditMovementFormState(movement: EditableMovement): MovementFormSta
     categoryId: movement.categoryId,
     activityId: movement.activityId ?? "",
     receiptNumber: movement.receiptNumber ?? "",
-    calendarEventId: movement.calendarEventId ?? "",
     concept: movement.concept,
     currencyCode: movement.currencyCode,
     amount: formatLocalizedAmount(movement.amount)
@@ -483,7 +472,6 @@ export function SecretariaMovementForm({
   accounts,
   categories,
   activities,
-  calendarEvents,
   currencies,
   movementTypes,
   receiptFormats,
@@ -493,7 +481,6 @@ export function SecretariaMovementForm({
   sessionDate,
   copy = texts.dashboard.treasury
 }: BaseMovementFormProps & {
-  calendarEvents: ClubCalendarEvent[];
   sessionDate: string;
   copy?: OperationalFormCopy;
 }) {
@@ -535,7 +522,6 @@ export function SecretariaMovementForm({
           accounts={accounts}
           categories={categories}
           activities={activities}
-          calendarEvents={calendarEvents}
           currencies={currencies}
           movementTypes={movementTypes}
           receiptFormats={receiptFormats}
@@ -567,7 +553,6 @@ export function SecretariaMovementEditForm({
   accounts,
   categories,
   activities,
-  calendarEvents,
   currencies,
   movementTypes,
   receiptFormats,
@@ -579,7 +564,6 @@ export function SecretariaMovementEditForm({
   extraHiddenFields,
   editableMovementDate = false
 }: BaseMovementFormProps & {
-  calendarEvents?: ClubCalendarEvent[];
   movement: EditableMovement;
   copy?: OperationalFormCopy;
   extraHiddenFields?: ReactNode;
@@ -640,7 +624,6 @@ export function SecretariaMovementEditForm({
           accounts={accounts}
           categories={categories}
           activities={activities}
-          calendarEvents={calendarEvents}
           currencies={currencies}
           movementTypes={movementTypes}
           receiptFormats={receiptFormats}
@@ -1104,7 +1087,6 @@ export function TreasuryRoleMovementForm({
   accounts,
   categories,
   activities,
-  calendarEvents,
   currencies,
   movementTypes,
   receiptFormats,
@@ -1112,7 +1094,7 @@ export function TreasuryRoleMovementForm({
   pendingLabel,
   submitAction,
   sessionDate
-}: BaseMovementFormProps & { calendarEvents: ClubCalendarEvent[]; sessionDate: string }) {
+}: BaseMovementFormProps & { sessionDate: string }) {
   const [formState, setFormState] = useState<MovementFormState>({
     movementDate: sessionDate,
     accountId: "",
@@ -1120,7 +1102,6 @@ export function TreasuryRoleMovementForm({
     categoryId: "",
     activityId: "",
     receiptNumber: "",
-    calendarEventId: "",
     concept: "",
     currencyCode: "",
     amount: ""
@@ -1148,7 +1129,6 @@ export function TreasuryRoleMovementForm({
       categoryId: "",
       activityId: "",
       receiptNumber: "",
-      calendarEventId: "",
       concept: "",
       currencyCode: "",
       amount: ""
@@ -1175,7 +1155,6 @@ export function TreasuryRoleMovementForm({
           accounts={accounts}
           categories={categories}
           activities={activities}
-          calendarEvents={calendarEvents}
           currencies={currencies}
           movementTypes={movementTypes}
           receiptFormats={receiptFormats}

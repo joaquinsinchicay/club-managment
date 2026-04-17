@@ -579,17 +579,17 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Treasury manage receipt formats in current club"
+create policy "Admins manage receipt formats in current club"
 on receipt_formats
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (select current_user_has_role('admin'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (select current_user_has_role('admin'))
 );
 
 -- =========================================

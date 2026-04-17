@@ -17,6 +17,7 @@ create type account_type as enum ('efectivo', 'bancaria', 'billetera_virtual', '
 create type account_scope as enum ('secretaria', 'tesoreria');
 
 create type movement_type as enum ('ingreso', 'egreso');
+create type category_movement_type as enum ('ingreso', 'egreso', 'saldo');
 create type movement_origin_role as enum ('secretaria', 'tesoreria', 'system');
 create type movement_origin_source as enum ('manual', 'transfer', 'fx', 'adjustment', 'consolidation');
 
@@ -128,12 +129,18 @@ create table treasury_categories (
 id uuid primary key default uuid_generate_v4(),
 club_id uuid references clubs(id),
 name text not null,
+sub_category_name text not null,
+description text not null,
+parent_category text not null,
+movement_type category_movement_type not null,
 -- Legacy field kept for compatibility. Business logic must resolve
 -- availability only from role visibility.
 status text not null,
 visible_for_secretaria boolean default true,
 visible_for_tesoreria boolean default true,
 emoji text,
+is_system boolean not null default false,
+is_legacy boolean not null default false,
 unique (club_id, name)
 );
 
@@ -166,7 +173,9 @@ validation_type receipt_validation_type,
 pattern text,
 min_numeric_value numeric,
 example text,
-status text
+status text,
+visible_for_secretaria boolean default true,
+visible_for_tesoreria boolean default false
 );
 
 create table club_treasury_currencies (

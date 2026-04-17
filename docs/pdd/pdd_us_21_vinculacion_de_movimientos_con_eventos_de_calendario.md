@@ -27,8 +27,9 @@ Secretaría debe poder seleccionar un evento del club activo para asociarlo al m
 
 ## 4. Alcance
 
+Esta historia queda limitada al historial ya persistido y a la visualización de eventos previamente vinculados. Los formularios manuales actuales ya no exponen el campo `Calendario`.
+
 ### Incluye
-- Campo `Calendario` opcional en el formulario manual.
 - Selección de eventos disponibles del club activo.
 - Persistencia de `calendar_event_id`.
 - Visualización del evento asociado en el detalle del movimiento.
@@ -49,13 +50,13 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 - Existe una jornada abierta para registrar movimientos.
 - Existen eventos del club marcados como disponibles para imputación.
-- El formulario manual expone el campo `Calendario` como dato opcional.
+- El formulario manual histórico pudo exponer el campo `Calendario` como dato opcional.
 
 ---
 
 ## 7. Reglas de negocio
 
-- El campo `Calendario` está disponible como dato opcional del formulario manual.
+- El detalle del movimiento debe seguir mostrando el evento asociado cuando exista un `calendar_event_id` histórico.
 - Secretaría solo puede ver eventos del club activo.
 - Solo se muestran eventos habilitados para imputación.
 - El evento asociado debe mostrarse en el detalle del movimiento cuando exista.

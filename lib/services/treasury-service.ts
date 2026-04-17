@@ -23,11 +23,32 @@ import type {
   TreasuryMovementStatus,
   User
 } from "@/lib/domain/access";
-import { getDefaultReceiptFormats, isDefaultReceiptNumberValid } from "@/lib/receipt-formats";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { texts } from "@/lib/texts";
 
 type TreasuryVisibilityRole = "secretaria" | "tesoreria";
+
+async function getActiveReceiptFormatsForRole(clubId: string, role: TreasuryVisibilityRole) {
+  const receiptFormats = await accessRepository.listReceiptFormatsForClub(clubId);
+
+  return receiptFormats.filter(
+    (receiptFormat) =>
+      receiptFormat.status === "active" &&
+      (role === "secretaria" ? receiptFormat.visibleForSecretaria : receiptFormat.visibleForTesoreria)
+  );
+}
+
+function isReceiptNumberValidForFormats(receiptNumber: string, activeReceiptFormats: ReceiptFormat[]) {
+  if (receiptNumber.length === 0) {
+    return true;
+  }
+
+  if (activeReceiptFormats.length === 0) {
+    return false;
+  }
+
+  return activeReceiptFormats.some((format) => validateReceiptNumberAgainstFormat(receiptNumber, format));
+}
 
 type TreasuryActionCode =
   | "session_opened"
@@ -1438,16 +1459,10 @@ export async function createTreasuryMovement(input: {
   }
 
   const receiptNumber = input.receiptNumber.trim();
-  const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
+  const activeReceiptFormats = await getActiveReceiptFormatsForRole(context.activeClub.id, "secretaria");
 
-  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
-    const isValidReceipt = activeReceiptFormats.some((format) =>
-      validateReceiptNumberAgainstFormat(receiptNumber, format)
-    );
-
-    if (!isValidReceipt) {
-      return { ok: false, code: "invalid_receipt_format" };
-    }
+  if (!isReceiptNumberValidForFormats(receiptNumber, activeReceiptFormats)) {
+    return { ok: false, code: "invalid_receipt_format" };
   }
 
   const calendarEvent =
@@ -1666,16 +1681,10 @@ export async function updateSecretariaMovementInOpenSession(input: {
   }
 
   const receiptNumber = input.receiptNumber.trim();
-  const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
+  const activeReceiptFormats = await getActiveReceiptFormatsForRole(context.activeClub.id, "secretaria");
 
-  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
-    const isValidReceipt = activeReceiptFormats.some((format) =>
-      validateReceiptNumberAgainstFormat(receiptNumber, format)
-    );
-
-    if (!isValidReceipt) {
-      return { ok: false, code: "invalid_receipt_format" };
-    }
+  if (!isReceiptNumberValidForFormats(receiptNumber, activeReceiptFormats)) {
+    return { ok: false, code: "invalid_receipt_format" };
   }
 
   const calendarEvent =
@@ -2111,16 +2120,10 @@ export async function createTreasuryRoleMovement(input: {
   }
 
   const receiptNumber = input.receiptNumber.trim();
-  const activeReceiptFormats = getDefaultReceiptFormats(context.activeClub.id);
+  const activeReceiptFormats = await getActiveReceiptFormatsForRole(context.activeClub.id, "tesoreria");
 
-  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
-    const isValidReceipt = activeReceiptFormats.some((format) =>
-      validateReceiptNumberAgainstFormat(receiptNumber, format)
-    );
-
-    if (!isValidReceipt) {
-      return { ok: false, code: "invalid_receipt_format" };
-    }
+  if (!isReceiptNumberValidForFormats(receiptNumber, activeReceiptFormats)) {
+    return { ok: false, code: "invalid_receipt_format" };
   }
 
   const calendarEvent =
@@ -2280,16 +2283,10 @@ export async function updateTreasuryRoleMovement(input: {
   }
 
   const receiptNumber = input.receiptNumber.trim();
-  const activeReceiptFormats = getDefaultReceiptFormats(clubId);
+  const activeReceiptFormats = await getActiveReceiptFormatsForRole(clubId, "tesoreria");
 
-  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
-    const isValidReceipt = activeReceiptFormats.some((format) =>
-      validateReceiptNumberAgainstFormat(receiptNumber, format)
-    );
-
-    if (!isValidReceipt) {
-      return { ok: false, code: "invalid_receipt_format" };
-    }
+  if (!isReceiptNumberValidForFormats(receiptNumber, activeReceiptFormats)) {
+    return { ok: false, code: "invalid_receipt_format" };
   }
 
   const calendarEvent =
@@ -2679,16 +2676,10 @@ export async function updateMovementBeforeConsolidation(input: {
   }
 
   const receiptNumber = input.receiptNumber.trim();
-  const activeReceiptFormats = getDefaultReceiptFormats(clubId);
+  const activeReceiptFormats = await getActiveReceiptFormatsForRole(clubId, "tesoreria");
 
-  if (receiptNumber.length > 0 && activeReceiptFormats.length > 0) {
-    const isValidReceipt = activeReceiptFormats.some((format) =>
-      validateReceiptNumberAgainstFormat(receiptNumber, format)
-    );
-
-    if (!isValidReceipt) {
-      return { ok: false, code: "invalid_receipt_format" };
-    }
+  if (!isReceiptNumberValidForFormats(receiptNumber, activeReceiptFormats)) {
+    return { ok: false, code: "invalid_receipt_format" };
   }
 
   const calendarEvent =
@@ -3336,7 +3327,8 @@ export async function getActiveReceiptFormatsForSecretaria(): Promise<ReceiptFor
     return [];
   }
 
-  return getDefaultReceiptFormats(context.activeClub.id);
+  const formats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
+  return formats.filter((f) => f.status === "active" && f.visibleForSecretaria);
 }
 
 export async function getActiveReceiptFormatsForTesoreria(): Promise<ReceiptFormat[]> {
@@ -3346,35 +3338,19 @@ export async function getActiveReceiptFormatsForTesoreria(): Promise<ReceiptForm
     return [];
   }
 
-  return getDefaultReceiptFormats(context.activeClub.id);
+  const formats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
+  return formats.filter((f) => f.status === "active" && f.visibleForTesoreria);
 }
 
 function validateReceiptNumberAgainstFormat(
   receiptNumber: string,
   receiptFormat: ReceiptFormat
 ) {
-  if (receiptFormat.example === "PAY-SOC-26205") {
-    return isDefaultReceiptNumberValid(receiptNumber);
+  if (receiptFormat.validationType === "numeric") {
+    return /^[0-9]+$/.test(receiptNumber);
   }
 
-  if (!receiptFormat.pattern) {
-    return false;
-  }
-
-  try {
-    if (!new RegExp(receiptFormat.pattern).test(receiptNumber)) {
-      return false;
-    }
-
-    if (receiptFormat.minNumericValue === null) {
-      return true;
-    }
-
-    const parsedValue = Number(receiptNumber);
-    return Number.isFinite(parsedValue) && parsedValue >= receiptFormat.minNumericValue;
-  } catch {
-    return false;
-  }
+  return /^[a-zA-Z0-9]+$/.test(receiptNumber);
 }
 
 export async function getTreasuryAccountDetailForActiveClub(

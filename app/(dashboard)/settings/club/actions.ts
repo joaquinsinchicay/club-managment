@@ -81,7 +81,7 @@ export async function createTreasuryAccountAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "cuentas");
 }
 
 export async function updateTreasuryAccountAction(formData: FormData) {
@@ -94,28 +94,34 @@ export async function updateTreasuryAccountAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "cuentas");
 }
 
 export async function createTreasuryCategoryAction(formData: FormData) {
   const result = await createTreasuryCategoryForActiveClub({
-    name: String(formData.get("name") ?? ""),
+    subCategoryName: String(formData.get("sub_category_name") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    parentCategory: String(formData.get("parent_category") ?? ""),
+    movementType: String(formData.get("movement_type") ?? ""),
     visibility: formData.getAll("visibility").map((value) => String(value)),
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "categorias");
 }
 
 export async function updateTreasuryCategoryAction(formData: FormData) {
   const result = await updateTreasuryCategoryForActiveClub({
     categoryId: String(formData.get("category_id") ?? ""),
-    name: String(formData.get("name") ?? ""),
+    subCategoryName: String(formData.get("sub_category_name") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    parentCategory: String(formData.get("parent_category") ?? ""),
+    movementType: String(formData.get("movement_type") ?? ""),
     visibility: formData.getAll("visibility").map((value) => String(value)),
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "categorias");
 }
 
 export async function createClubActivityAction(formData: FormData) {
@@ -125,7 +131,7 @@ export async function createClubActivityAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "actividades");
 }
 
 export async function updateClubActivityAction(formData: FormData) {
@@ -136,7 +142,7 @@ export async function updateClubActivityAction(formData: FormData) {
     emoji: String(formData.get("emoji") ?? "")
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "actividades");
 }
 
 export async function updateCalendarEventTreasuryAvailabilityAction(formData: FormData) {
@@ -166,11 +172,8 @@ export async function updateReceiptFormatAction(formData: FormData) {
     receiptFormatId: String(formData.get("receipt_format_id") ?? ""),
     name: String(formData.get("name") ?? ""),
     validationType: String(formData.get("validation_type") ?? ""),
-    minNumericValue: String(formData.get("min_numeric_value") ?? ""),
-    pattern: String(formData.get("pattern") ?? ""),
-    example: String(formData.get("example") ?? ""),
-    status: String(formData.get("status") ?? "")
+    visibility: formData.getAll("visibility").map(String)
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "sistema-de-socios");
 }

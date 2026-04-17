@@ -15,6 +15,7 @@ import {
   removeClubMembershipAction,
   updateClubActivityAction,
   updateClubMembershipRoleAction,
+  updateReceiptFormatAction,
   updateTreasuryAccountAction,
   updateTreasuryCategoryAction
 } from "@/app/(dashboard)/settings/club/actions";
@@ -68,6 +69,7 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
       updateTreasuryCategoryAction={updateTreasuryCategoryAction}
       createClubActivityAction={createClubActivityAction}
       updateClubActivityAction={updateClubActivityAction}
+      updateReceiptFormatAction={updateReceiptFormatAction}
     />
   );
 }

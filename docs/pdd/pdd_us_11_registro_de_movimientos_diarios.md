@@ -9,7 +9,7 @@
 | Epic | E03 · Tesorería |
 | User Story | Como Secretaria del club, quiero registrar movimientos diarios, para imputar correctamente ingresos y egresos en las cuentas del club durante una jornada abierta. |
 | Prioridad | Alta |
-| Objetivo de negocio | Permitir la carga básica de ingresos y egresos del día dentro de una jornada abierta, usando el catálogo fijo del sistema para tipos de movimiento y respetando validaciones mínimas de cuenta, categoría, moneda e importe. |
+| Objetivo de negocio | Permitir la carga básica de ingresos y egresos del día dentro de una jornada abierta, usando el catálogo fijo del sistema para tipos de movimiento y subcategorías operativas, y respetando validaciones mínimas de cuenta, subcategoría, moneda e importe. |
 
 ---
 
@@ -30,7 +30,7 @@ El dashboard debe habilitar un formulario de carga de movimientos solo cuando ex
 ### Incluye
 - Formulario de registro de movimientos para Secretaría.
 - Fecha visible y no editable.
-- Validaciones de cuenta, tipo, categoría, concepto, moneda e importe.
+- Validaciones de cuenta, tipo, subcategoría, concepto, moneda e importe.
 - Alta de movimiento asociado a jornada abierta.
 - Edición de movimientos de la jornada abierta desde el dashboard.
 - Confirmación de éxito y actualización del dashboard.
@@ -77,7 +77,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - El campo `Tipo` usa siempre el catálogo fijo del sistema `Ingreso` y `Egreso`.
 - `amount` debe ser mayor a cero.
 - La cuenta debe pertenecer al club activo y tener visibilidad `secretaria`.
-- La categoría debe pertenecer al club activo.
+- La subcategoría debe pertenecer al club activo.
 - La moneda debe ser válida para la cuenta elegida.
 - Si el movimiento es `egreso`, la cuenta debe tener saldo disponible suficiente en la moneda seleccionada.
 - El movimiento resultante queda en `pending_consolidation`.
@@ -91,7 +91,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 
 1. Secretaría entra al dashboard con jornada abierta.
 2. La UI muestra el formulario de registro.
-3. El usuario completa cuenta, tipo, categoría, concepto, moneda e importe.
+3. El usuario completa cuenta, tipo, subcategoría, concepto, moneda e importe.
 4. Envía el formulario.
 5. El modal se cierra de inmediato y la pantalla queda bloqueada con un loader mientras la mutación sigue pendiente.
 6. El backend valida datos y jornada abierta.

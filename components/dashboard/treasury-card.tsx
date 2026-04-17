@@ -512,7 +512,7 @@ export function TreasuryCard({
       movementType: movementType === "egreso" ? "egreso" : "ingreso",
       activityId: String(formData.get("activity_id") ?? "").trim() || null,
       receiptNumber: String(formData.get("receipt_number") ?? "").trim() || null,
-      calendarEventId: String(formData.get("calendar_event_id") ?? "").trim() || null,
+      calendarEventId: null,
       concept: String(formData.get("concept") ?? "").trim(),
       currencyCode: String(formData.get("currency_code") ?? ""),
       amount: parsedAmount ?? 0
@@ -788,7 +788,6 @@ export function TreasuryCard({
           accounts={movementAccounts}
           categories={categories}
           activities={activities}
-          calendarEvents={calendarEvents}
           currencies={currencies}
           movementTypes={movementTypes}
           receiptFormats={receiptFormats}
@@ -814,7 +813,6 @@ export function TreasuryCard({
             accounts={movementAccounts}
             categories={categories}
             activities={activities}
-            calendarEvents={calendarEvents}
             currencies={currencies}
             movementTypes={movementTypes}
             receiptFormats={receiptFormats}

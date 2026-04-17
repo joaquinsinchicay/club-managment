@@ -9,10 +9,13 @@ import type {
   TreasurySettings
 } from "@/lib/domain/access";
 import { canAccessTreasurySettings, canMutateTreasurySettings } from "@/lib/domain/authorization";
-import { getDefaultReceiptFormats } from "@/lib/receipt-formats";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
+import { getDefaultReceiptFormatSeed } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
-import { getSystemTreasuryCategoryDefinition } from "@/lib/treasury-system-categories";
+import {
+  getMovementTypeForParentCategory,
+  getSystemTreasuryCategoryDefinition
+} from "@/lib/treasury-system-categories";
 
 type TreasurySettingsActionCode =
   | "forbidden"
@@ -23,12 +26,17 @@ type TreasurySettingsActionCode =
   | "account_name_required"
   | "account_type_required"
   | "category_name_required"
+  | "category_description_required"
+  | "category_parent_required"
   | "activity_created"
   | "activity_updated"
   | "activity_name_required"
   | "receipt_format_created"
   | "receipt_format_updated"
   | "receipt_format_name_required"
+  | "receipt_format_name_too_long"
+  | "receipt_format_name_invalid"
+  | "receipt_format_invalid_type"
   | "receipt_format_min_required"
   | "receipt_format_pattern_required"
   | "account_currencies_required"
@@ -49,6 +57,9 @@ type TreasurySettingsActionCode =
   | "calendar_event_updated"
   | "calendar_event_not_found"
   | "treasury_admin_config_missing"
+  | "receipt_format_admin_config_missing"
+  | "receipt_format_forbidden"
+  | "receipt_format_unknown_error"
   | "unknown_error";
 
 export type TreasurySettingsActionResult = {
@@ -157,6 +168,27 @@ function normalizeActivityVisibility(input: string[]) {
   return normalizeAccountVisibility(input);
 }
 
+function resolveReceiptFormatPersistenceState(
+  validationType: ReceiptFormat["validationType"],
+  existingReceiptFormat?: ReceiptFormat | null
+) {
+  const defaults = getDefaultReceiptFormatSeed();
+  const baseReceiptFormat = existingReceiptFormat ?? defaults;
+
+  return {
+    pattern: validationType === "pattern" ? "^[a-zA-Z0-9]+$" : null,
+    minNumericValue:
+      validationType === "numeric"
+        ? baseReceiptFormat.minNumericValue ?? defaults.minNumericValue
+        : null,
+    example:
+      baseReceiptFormat.example ??
+      (validationType === "numeric"
+        ? String(baseReceiptFormat.minNumericValue ?? defaults.minNumericValue)
+        : defaults.example)
+  };
+}
+
 function resolveTreasurySettingsMutationError(
   error: unknown,
   operation: string,
@@ -211,7 +243,8 @@ function hasDuplicateActiveCategoryName(
   return categories.some(
     (category) =>
       category.id !== categoryId &&
-      category.name.trim().toLowerCase() === normalizedName
+      !category.isLegacy &&
+      category.subCategoryName.trim().toLowerCase() === normalizedName
   );
 }
 
@@ -253,11 +286,12 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
 
   const activeClubId = context.activeClub.id;
 
-  const [accounts, categories, activities, calendarEvents] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents, receiptFormats] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(activeClubId),
     accessRepository.listTreasuryCategoriesForClub(activeClubId),
     accessRepository.listClubActivitiesForClub(activeClubId),
-    accessRepository.listClubCalendarEventsForClub(activeClubId)
+    accessRepository.listClubCalendarEventsForClub(activeClubId),
+    accessRepository.listReceiptFormatsForClub(activeClubId)
   ]);
 
   return {
@@ -265,7 +299,7 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
     categories,
     activities,
     calendarEvents,
-    receiptFormats: getDefaultReceiptFormats(activeClubId),
+    receiptFormats,
     currencies: FIXED_TREASURY_CURRENCIES.map((currency) => ({
       clubId: activeClubId,
       currencyCode: currency.currencyCode,
@@ -361,10 +395,6 @@ export async function createTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "account_currencies_required" };
   }
 
-  if (selectedVisibility.length === 0) {
-    return { ok: false, code: "account_visibility_required" };
-  }
-
   if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
     return { ok: false, code: "invalid_account_currency" };
   }
@@ -452,10 +482,6 @@ export async function updateTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "account_currencies_required" };
   }
 
-  if (selectedVisibility.length === 0) {
-    return { ok: false, code: "account_visibility_required" };
-  }
-
   if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
     return { ok: false, code: "invalid_account_currency" };
   }
@@ -495,7 +521,10 @@ export async function updateTreasuryAccountForActiveClub(input: {
 }
 
 export async function createTreasuryCategoryForActiveClub(input: {
-  name: string;
+  subCategoryName: string;
+  description: string;
+  parentCategory: string;
+  movementType: string;
   visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
@@ -505,16 +534,28 @@ export async function createTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "forbidden" };
   }
 
-  const name = normalizeConfigName(input.name);
+  const subCategoryName = normalizeConfigName(input.subCategoryName);
+  const description = normalizeConfigName(input.description);
+  const parentCategory = normalizeConfigName(input.parentCategory);
+  const derivedMovementType = getMovementTypeForParentCategory(parentCategory);
+  const movementType = (derivedMovementType ?? input.movementType.trim()) as TreasuryCategory["movementType"];
 
-  if (!name) {
+  if (!subCategoryName) {
     return { ok: false, code: "category_name_required" };
+  }
+
+  if (!description) {
+    return { ok: false, code: "category_description_required" };
+  }
+
+  if (!parentCategory) {
+    return { ok: false, code: "category_parent_required" };
   }
 
   const categories = await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id);
   const selectedVisibility = normalizeCategoryVisibility(input.visibility);
 
-  if (hasDuplicateActiveCategoryName(categories, name)) {
+  if (hasDuplicateActiveCategoryName(categories, subCategoryName)) {
     return { ok: false, code: "duplicate_category_name" };
   }
 
@@ -529,7 +570,10 @@ export async function createTreasuryCategoryForActiveClub(input: {
   try {
     created = await accessRepository.createTreasuryCategory({
       clubId: context.activeClub.id,
-      name,
+      subCategoryName,
+      description,
+      parentCategory,
+      movementType,
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji
@@ -547,7 +591,10 @@ export async function createTreasuryCategoryForActiveClub(input: {
 
 export async function updateTreasuryCategoryForActiveClub(input: {
   categoryId: string;
-  name: string;
+  subCategoryName: string;
+  description: string;
+  parentCategory: string;
+  movementType: string;
   visibility: string[];
   emoji: string;
 }): Promise<TreasurySettingsActionResult> {
@@ -557,10 +604,20 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "forbidden" };
   }
 
-  const name = normalizeConfigName(input.name);
+  const subCategoryName = normalizeConfigName(input.subCategoryName);
+  const description = normalizeConfigName(input.description);
+  const parentCategory = normalizeConfigName(input.parentCategory);
 
-  if (!name) {
+  if (!subCategoryName) {
     return { ok: false, code: "category_name_required" };
+  }
+
+  if (!description) {
+    return { ok: false, code: "category_description_required" };
+  }
+
+  if (!parentCategory) {
+    return { ok: false, code: "category_parent_required" };
   }
 
   const categories = await accessRepository.listTreasuryCategoriesForClub(context.activeClub.id);
@@ -570,12 +627,18 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     return { ok: false, code: "category_not_found" };
   }
 
-  const systemCategoryDefinition = getSystemTreasuryCategoryDefinition(existingCategory.name);
-  const nextName = systemCategoryDefinition?.name ?? name;
+  const systemCategoryDefinition = getSystemTreasuryCategoryDefinition(existingCategory.subCategoryName);
+  const nextSubCategoryName = systemCategoryDefinition?.subCategoryName ?? subCategoryName;
+  const nextDescription = systemCategoryDefinition?.description ?? description;
+  const nextParentCategory = systemCategoryDefinition?.parentCategory ?? parentCategory;
+  const nextMovementType =
+    systemCategoryDefinition?.movementType ??
+    getMovementTypeForParentCategory(nextParentCategory) ??
+    (input.movementType.trim() as TreasuryCategory["movementType"]);
   const nextEmojiInput = systemCategoryDefinition?.emoji ?? input.emoji;
   const selectedVisibility = normalizeCategoryVisibility(input.visibility);
 
-  if (hasDuplicateActiveCategoryName(categories, nextName, input.categoryId)) {
+  if (hasDuplicateActiveCategoryName(categories, nextSubCategoryName, input.categoryId)) {
     return { ok: false, code: "duplicate_category_name" };
   }
 
@@ -595,7 +658,10 @@ export async function updateTreasuryCategoryForActiveClub(input: {
     updated = await accessRepository.updateTreasuryCategory({
       categoryId: input.categoryId,
       clubId: context.activeClub.id,
-      name: nextName,
+      subCategoryName: nextSubCategoryName,
+      description: nextDescription,
+      parentCategory: nextParentCategory,
+      movementType: nextMovementType,
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji
@@ -788,7 +854,9 @@ export async function createReceiptFormatForActiveClub(input: {
       pattern: input.validationType === "pattern" ? pattern : null,
       minNumericValue: input.validationType === "numeric" ? parsedMin : null,
       example: example || null,
-      status: input.status as ReceiptFormat["status"]
+      status: input.status as ReceiptFormat["status"],
+      visibleForSecretaria: false,
+      visibleForTesoreria: false
     });
   } catch (error) {
     return resolveTreasurySettingsMutationError(error, "create_receipt_format_for_active_club", context.activeClub.id);
@@ -801,19 +869,20 @@ export async function createReceiptFormatForActiveClub(input: {
   return { ok: true, code: "receipt_format_created" };
 }
 
+const RECEIPT_FORMAT_NAME_REGEX = /^[a-zA-Z0-9\u00C0-\u024F ]+$/;
+const RECEIPT_FORMAT_NAME_MAX_LENGTH = 50;
+const VALID_RECEIPT_VALIDATION_TYPES: ReceiptFormat["validationType"][] = ["numeric", "pattern"];
+
 export async function updateReceiptFormatForActiveClub(input: {
   receiptFormatId: string;
   name: string;
   validationType: string;
-  minNumericValue: string;
-  pattern: string;
-  example: string;
-  status: string;
+  visibility: string[];
 }): Promise<TreasurySettingsActionResult> {
   const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
-    return { ok: false, code: "forbidden" };
+    return { ok: false, code: "receipt_format_forbidden" };
   }
 
   const name = normalizeConfigName(input.name);
@@ -822,63 +891,83 @@ export async function updateReceiptFormatForActiveClub(input: {
     return { ok: false, code: "receipt_format_name_required" };
   }
 
-  if (!RECEIPT_FORMAT_STATUSES.includes(input.status as ReceiptFormat["status"])) {
-    return { ok: false, code: "invalid_config_status" };
+  if (name.length > RECEIPT_FORMAT_NAME_MAX_LENGTH) {
+    return { ok: false, code: "receipt_format_name_too_long" };
   }
 
-  if (input.validationType !== "numeric" && input.validationType !== "pattern") {
-    return { ok: false, code: "invalid_receipt_validation_type" };
+  if (!RECEIPT_FORMAT_NAME_REGEX.test(name)) {
+    return { ok: false, code: "receipt_format_name_invalid" };
   }
+
+  if (!VALID_RECEIPT_VALIDATION_TYPES.includes(input.validationType as ReceiptFormat["validationType"])) {
+    return { ok: false, code: "receipt_format_invalid_type" };
+  }
+
+  const validationType = input.validationType as ReceiptFormat["validationType"];
+  const selectedVisibility = normalizeAccountVisibility(input.visibility);
 
   const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
-  const existingReceiptFormat = receiptFormats.find((receiptFormat) => receiptFormat.id === input.receiptFormatId);
+  const existingReceiptFormat = receiptFormats.find((f) => f.id === input.receiptFormatId);
+  const shouldCreateReceiptFormat =
+    receiptFormats.length === 0 || input.receiptFormatId.startsWith("receipt-format-default-");
 
-  if (!existingReceiptFormat) {
+  if (!existingReceiptFormat && !shouldCreateReceiptFormat) {
     return { ok: false, code: "receipt_format_not_found" };
   }
 
-  if (hasDuplicateActiveReceiptFormatName(receiptFormats, name, input.receiptFormatId)) {
-    return { ok: false, code: "duplicate_receipt_format_name" };
-  }
+  const persistenceState = resolveReceiptFormatPersistenceState(validationType, existingReceiptFormat);
+  const visibleForSecretaria = selectedVisibility.includes("secretaria");
+  const visibleForTesoreria = selectedVisibility.includes("tesoreria");
 
-  const pattern = normalizeConfigName(input.pattern);
-  const example = normalizeConfigName(input.example);
-  const minNumericValue = input.minNumericValue.trim();
-
-  if (input.validationType === "numeric" && !minNumericValue) {
-    return { ok: false, code: "receipt_format_min_required" };
-  }
-
-  if (input.validationType === "pattern" && !pattern) {
-    return { ok: false, code: "receipt_format_pattern_required" };
-  }
-
-  const parsedMin =
-    input.validationType === "numeric" ? Number(minNumericValue) : null;
-
-  if (input.validationType === "numeric" && (!Number.isFinite(parsedMin) || parsedMin === null)) {
-    return { ok: false, code: "receipt_format_min_required" };
-  }
-
-  let updated: ReceiptFormat | null = null;
+  let saved: ReceiptFormat | null = null;
 
   try {
-    updated = await accessRepository.updateReceiptFormat({
-      receiptFormatId: input.receiptFormatId,
-      clubId: context.activeClub.id,
-      name,
-      validationType: input.validationType as ReceiptFormat["validationType"],
-      pattern: input.validationType === "pattern" ? pattern : null,
-      minNumericValue: input.validationType === "numeric" ? parsedMin : null,
-      example: example || null,
-      status: input.status as ReceiptFormat["status"]
-    });
+    if (shouldCreateReceiptFormat) {
+      saved = await accessRepository.createReceiptFormat({
+        clubId: context.activeClub.id,
+        name,
+        validationType,
+        pattern: persistenceState.pattern,
+        minNumericValue: persistenceState.minNumericValue,
+        example: persistenceState.example,
+        status: "active",
+        visibleForSecretaria,
+        visibleForTesoreria
+      });
+    } else {
+      saved = await accessRepository.updateReceiptFormat({
+        receiptFormatId: input.receiptFormatId,
+        clubId: context.activeClub.id,
+        name,
+        validationType,
+        pattern: persistenceState.pattern,
+        minNumericValue: persistenceState.minNumericValue,
+        example: persistenceState.example,
+        status: existingReceiptFormat!.status,
+        visibleForSecretaria,
+        visibleForTesoreria
+      });
+    }
   } catch (error) {
-    return resolveTreasurySettingsMutationError(error, "update_receipt_format_for_active_club", context.activeClub.id);
+    const result = resolveTreasurySettingsMutationError(
+      error,
+      "update_receipt_format_for_active_club",
+      context.activeClub.id
+    );
+
+    if (result.code === "treasury_admin_config_missing") {
+      return { ok: false, code: "receipt_format_admin_config_missing" };
+    }
+
+    if (result.code === "unknown_error") {
+      return { ok: false, code: "receipt_format_unknown_error" };
+    }
+
+    return result;
   }
 
-  if (!updated) {
-    return { ok: false, code: "unknown_error" };
+  if (!saved) {
+    return { ok: false, code: "receipt_format_unknown_error" };
   }
 
   return { ok: true, code: "receipt_format_updated" };

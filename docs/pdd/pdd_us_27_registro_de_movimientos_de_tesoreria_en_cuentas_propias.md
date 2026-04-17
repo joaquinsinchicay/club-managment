@@ -26,7 +26,7 @@ Un usuario con rol `tesoreria` en el club activo debe poder consultar saldos de 
 - Listado de cuentas visibles para Tesorería con saldos separados por moneda.
 - Formulario de alta con `Fecha`, `Cuenta`, `Tipo`, `Categoría`, `Concepto`, `Moneda` e `Importe`.
 - Soporte para cuentas bimonetarias y selección de moneda válida por cuenta.
-- Validaciones server-side de cuenta, tipo, categoría, moneda e importe.
+- Validaciones server-side de cuenta, tipo, subcategoría, moneda e importe.
 - Registro del usuario responsable y fecha/hora de creación.
 - Reseteo del formulario luego de crear exitosamente.
 - Feedback de éxito mediante toast dentro del módulo `/dashboard/treasury`, interpolando el ID visible del movimiento creado.
@@ -79,6 +79,6 @@ Do not reference current code files.
 ## 6. Dependencias
 
 - cuentas de Tesorería visibles para el rol
-- categorías visibles para Tesorería
+- subcategorías visibles para Tesorería
 - monedas habilitadas para el club y por cuenta
 - contrato `Create movement`

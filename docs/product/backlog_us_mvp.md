@@ -1679,27 +1679,27 @@ Feature: US-18 — Configuración de formatos válidos para recibos
     When intento acceder a la configuración de formatos de recibo
     Then no tengo acceso a la funcionalidad
 
-  Scenario 03: Visualización de integración predefinida
+  Scenario 03: Visualización de configuración bootstrap del sistema de socios
     Given estoy autenticado
     And soy admin del club activo
     When ingreso a la configuración de formatos de recibo
-    Then veo la información de la integración de recibos del sistema de socios
-    And se muestran como solo lectura los campos "Nombre del sistema de socios", "Ejemplo", "Patrón" y "Próximo recibo"
+    Then veo la configuración del sistema de socios del club activo
+    And la configuración existe aunque antes no hubiera un registro persistido
 
-  Scenario 04: Visualización del formato fijo por defecto
+  Scenario 04: Configuración inicial por defecto
     Given estoy autenticado
     And soy admin del club activo
     When ingreso a la configuración de formatos de recibo
     Then veo el ejemplo "PAY-SOC-26205"
     And veo el patrón "^PAY-SOC-[0-9]{5}$"
-    And veo "Próximo recibo" con valor "PAY-SOC-10556"
+    And la visibilidad inicial del sistema queda en estado "Oculta"
 
-  Scenario 05: La integración no se edita desde la UI
+  Scenario 05: La integración se edita desde la UI
     Given estoy autenticado
     And soy admin del club activo
     When ingreso a la configuración de formatos de recibo
-    Then no veo acciones para crear o editar formatos
-    And la integración se muestra solo como referencia operativa
+    Then veo acciones para editar el sistema de socios
+    And puedo cambiar nombre, tipo y visibilidad
 
   Scenario 06: Recibo válido según formato predefinido
     Given existe la integración por defecto de recibos del sistema de socios

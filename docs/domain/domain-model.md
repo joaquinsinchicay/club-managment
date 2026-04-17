@@ -224,7 +224,7 @@ Atributos:
 
 ### 4.6 ReceiptFormat
 
-Integración de recibos consumida por la operatoria diaria. Funcionalmente, en esta iteración el club trabaja con una integración predefinida del sistema de socios y la UI la muestra como referencia read-only.
+Integración de recibos consumida por la operatoria diaria. Cada club debe contar con una configuración bootstrap del sistema de socios persistida en `receipt_formats`, editable por Admin y con posibilidad de quedar `Oculta` para todos los roles operativos.
 
 Atributos:
 
@@ -236,6 +236,8 @@ Atributos:
 * min_numeric_value
 * example
 * status
+* visible_for_secretaria
+* visible_for_tesoreria
 
 ---
 

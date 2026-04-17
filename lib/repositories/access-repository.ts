@@ -25,6 +25,7 @@ import type {
   PendingClubInvitation,
   ReceiptFormat,
   TreasuryAccount,
+  TreasuryCategoryMovementType,
   TreasuryCurrencyCode,
   TreasuryCurrencyConfig,
   TreasuryMovementOriginRole,
@@ -36,7 +37,9 @@ import type {
   User
 } from "@/lib/domain/access";
 import { MEMBERSHIP_ROLES, sortMembershipRoles } from "@/lib/domain/membership-roles";
+import { buildDefaultReceiptFormat, getDefaultReceiptFormatSeed } from "@/lib/receipt-formats";
 import {
+  LEGACY_SYSTEM_TREASURY_CATEGORY_NAMES,
   SYSTEM_TREASURY_CATEGORY_DEFINITIONS,
   getSystemTreasuryCategoryDefinition,
   sortTreasuryCategories
@@ -249,18 +252,28 @@ type AccessRepository = {
   }): Promise<TreasuryAccount | null>;
   createTreasuryCategory(input: {
     clubId: string;
-    name: string;
+    subCategoryName: string;
+    description: string;
+    parentCategory: string;
+    movementType: TreasuryCategoryMovementType;
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
+    isSystem?: boolean;
+    isLegacy?: boolean;
   }): Promise<TreasuryCategory | null>;
   updateTreasuryCategory(input: {
     categoryId: string;
     clubId: string;
-    name: string;
+    subCategoryName: string;
+    description: string;
+    parentCategory: string;
+    movementType: TreasuryCategoryMovementType;
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
+    isSystem?: boolean;
+    isLegacy?: boolean;
   }): Promise<TreasuryCategory | null>;
   createClubActivity(input: {
     clubId: string;
@@ -285,6 +298,8 @@ type AccessRepository = {
     minNumericValue: number | null;
     example: string | null;
     status: ReceiptFormat["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
   }): Promise<ReceiptFormat | null>;
   updateReceiptFormat(input: {
     receiptFormatId: string;
@@ -295,6 +310,8 @@ type AccessRepository = {
     minNumericValue: number | null;
     example: string | null;
     status: ReceiptFormat["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
   }): Promise<ReceiptFormat | null>;
   findTreasuryAdjustmentCategory(clubId: string): Promise<TreasuryCategory | null>;
   getDailyCashSessionByDate(clubId: string, sessionDate: string): Promise<DailyCashSession | null>;
@@ -763,26 +780,44 @@ function createStore(): MockStore {
     ...SYSTEM_TREASURY_CATEGORY_DEFINITIONS.map((definition, index) => ({
       id: `category-system-${index + 1}`,
       clubId: CLUB_ID,
-      name: definition.name,
+      name: definition.subCategoryName,
+      subCategoryName: definition.subCategoryName,
+      description: definition.description,
+      parentCategory: definition.parentCategory,
+      movementType: definition.movementType,
       visibleForSecretaria: definition.visibleForSecretaria,
       visibleForTesoreria: definition.visibleForTesoreria,
-      emoji: definition.emoji
+      emoji: definition.emoji,
+      isSystem: true,
+      isLegacy: false
     })),
     {
       id: "category-manual-gastos-001",
       clubId: CLUB_ID,
       name: "Gastos operativos",
+      subCategoryName: "Gastos operativos",
+      description: "Categoría manual migrada",
+      parentCategory: "Migradas",
+      movementType: "egreso",
       visibleForSecretaria: true,
       visibleForTesoreria: true,
-      emoji: "🧾"
+      emoji: "🧾",
+      isSystem: false,
+      isLegacy: false
     },
     {
       id: "category-sur-manual-001",
       clubId: CLUB_SUR_ID,
       name: "Cuotas Sur",
+      subCategoryName: "Cuotas Sur",
+      description: "Categoría manual migrada",
+      parentCategory: "Migradas",
+      movementType: "ingreso",
       visibleForSecretaria: true,
       visibleForTesoreria: true,
-      emoji: "🧾"
+      emoji: "🧾",
+      isSystem: false,
+      isLegacy: false
     }
   ];
 
@@ -849,27 +884,33 @@ function createStore(): MockStore {
       pattern: null,
       minNumericValue: 1,
       example: "12345",
-      status: "active"
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false
     },
     {
       id: "receipt-format-modern-001",
       clubId: CLUB_ID,
       name: "Recibo moderno",
       validationType: "pattern",
-      pattern: "^RC-[0-9]{6}$",
+      pattern: "^[a-zA-Z0-9]+$",
       minNumericValue: null,
-      example: "RC-000123",
-      status: "active"
+      example: null,
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false
     },
     {
       id: "receipt-format-sur-001",
       clubId: CLUB_SUR_ID,
       name: "Recibo Sur",
       validationType: "pattern",
-      pattern: "^SUR-[0-9]{4}$",
+      pattern: "^[a-zA-Z0-9]+$",
       minNumericValue: null,
-      example: "SUR-0101",
-      status: "active"
+      example: null,
+      status: "active",
+      visibleForSecretaria: true,
+      visibleForTesoreria: false
     }
   ];
 
@@ -1236,17 +1277,31 @@ function mapTreasuryCategoryRow(row: {
   id: string;
   club_id: string;
   name: string;
+  sub_category_name?: string | null;
+  description?: string | null;
+  parent_category?: string | null;
+  movement_type?: TreasuryCategoryMovementType | null;
   visible_for_secretaria: boolean | null;
   visible_for_tesoreria: boolean | null;
   emoji: string | null;
+  is_system?: boolean | null;
+  is_legacy?: boolean | null;
 }): TreasuryCategory {
+  const subCategoryName = row.sub_category_name ?? row.name;
+
   return {
     id: row.id,
     clubId: row.club_id,
-    name: row.name,
+    name: subCategoryName,
+    subCategoryName,
+    description: row.description ?? subCategoryName,
+    parentCategory: row.parent_category ?? "Migradas",
+    movementType: row.movement_type ?? "egreso",
     visibleForSecretaria: row.visible_for_secretaria ?? true,
     visibleForTesoreria: row.visible_for_tesoreria ?? true,
-    emoji: row.emoji
+    emoji: row.emoji,
+    isSystem: row.is_system ?? false,
+    isLegacy: row.is_legacy ?? false
   };
 }
 
@@ -1255,38 +1310,55 @@ async function reconcileRealSystemTreasuryCategories(
   categories: TreasuryCategory[]
 ) {
   const categoriesByName = new Map(
-    categories.map((category) => [category.name.trim().toLowerCase(), category])
+    categories.map((category) => [category.subCategoryName.trim().toLowerCase(), category])
   );
   const resolvedCategories = [...categories];
 
   for (const definition of SYSTEM_TREASURY_CATEGORY_DEFINITIONS) {
-    const existingCategory = categoriesByName.get(definition.name.trim().toLowerCase());
+    const existingCategory = categoriesByName.get(definition.subCategoryName.trim().toLowerCase());
 
     if (!existingCategory) {
       const createdCategory = await createRealTreasuryCategory({
         clubId,
-        name: definition.name,
+        subCategoryName: definition.subCategoryName,
+        description: definition.description,
+        parentCategory: definition.parentCategory,
+        movementType: definition.movementType,
         visibleForSecretaria: definition.visibleForSecretaria,
         visibleForTesoreria: definition.visibleForTesoreria,
-        emoji: definition.emoji
+        emoji: definition.emoji,
+        isSystem: true,
+        isLegacy: false
       });
 
       resolvedCategories.push(createdCategory);
-      categoriesByName.set(definition.name.trim().toLowerCase(), createdCategory);
+      categoriesByName.set(definition.subCategoryName.trim().toLowerCase(), createdCategory);
       continue;
     }
 
-    if (existingCategory.emoji === definition.emoji) {
+    if (
+      existingCategory.emoji === definition.emoji &&
+      existingCategory.description === definition.description &&
+      existingCategory.parentCategory === definition.parentCategory &&
+      existingCategory.movementType === definition.movementType &&
+      existingCategory.isSystem &&
+      !existingCategory.isLegacy
+    ) {
       continue;
     }
 
     const updatedCategory = await updateRealTreasuryCategory({
       categoryId: existingCategory.id,
       clubId,
-      name: definition.name,
+      subCategoryName: definition.subCategoryName,
+      description: definition.description,
+      parentCategory: definition.parentCategory,
+      movementType: definition.movementType,
       visibleForSecretaria: existingCategory.visibleForSecretaria,
       visibleForTesoreria: existingCategory.visibleForTesoreria,
-      emoji: definition.emoji
+      emoji: definition.emoji,
+      isSystem: true,
+      isLegacy: false
     });
 
     const categoryIndex = resolvedCategories.findIndex((category) => category.id === existingCategory.id);
@@ -1295,7 +1367,7 @@ async function reconcileRealSystemTreasuryCategories(
       resolvedCategories[categoryIndex] = updatedCategory;
     }
 
-    categoriesByName.set(definition.name.trim().toLowerCase(), updatedCategory);
+    categoriesByName.set(definition.subCategoryName.trim().toLowerCase(), updatedCategory);
   }
 
   return sortTreasuryCategories(resolvedCategories);
@@ -1346,6 +1418,8 @@ function mapReceiptFormatRow(row: {
   min_numeric_value: number | null;
   example: string | null;
   status: ReceiptFormat["status"];
+  visible_for_secretaria?: boolean | null;
+  visible_for_tesoreria?: boolean | null;
 }): ReceiptFormat {
   return {
     id: row.id,
@@ -1355,34 +1429,66 @@ function mapReceiptFormatRow(row: {
     pattern: row.pattern,
     minNumericValue: row.min_numeric_value,
     example: row.example,
-    status: row.status
+    status: row.status,
+    visibleForSecretaria: row.visible_for_secretaria ?? true,
+    visibleForTesoreria: row.visible_for_tesoreria ?? false
   };
+}
+
+function ensureMockReceiptFormatsForClub(clubId: string) {
+  const existingFormats = getStore().receiptFormats.filter((format) => format.clubId === clubId);
+
+  if (existingFormats.length > 0) {
+    return existingFormats;
+  }
+
+  const defaultReceiptFormat = getDefaultReceiptFormatSeed();
+  const receiptFormat: ReceiptFormat = {
+    id: `receipt-format-${clubId}-default`,
+    clubId,
+    ...defaultReceiptFormat
+  };
+
+  getStore().receiptFormats.push(receiptFormat);
+  return [receiptFormat];
 }
 
 function reconcileMockSystemTreasuryCategories(clubId: string) {
   const store = getStore();
   const clubCategories = store.treasuryCategories.filter((category) => category.clubId === clubId);
   const categoriesByName = new Map(
-    clubCategories.map((category) => [category.name.trim().toLowerCase(), category])
+    clubCategories.map((category) => [category.subCategoryName.trim().toLowerCase(), category])
   );
 
   for (const definition of SYSTEM_TREASURY_CATEGORY_DEFINITIONS) {
-    const existingCategory = categoriesByName.get(definition.name.trim().toLowerCase());
+    const existingCategory = categoriesByName.get(definition.subCategoryName.trim().toLowerCase());
 
     if (!existingCategory) {
       store.treasuryCategories.push({
-        id: `category-system-${clubId}-${definition.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        id: `category-system-${clubId}-${definition.subCategoryName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
         clubId,
-        name: definition.name,
+        name: definition.subCategoryName,
+        subCategoryName: definition.subCategoryName,
+        description: definition.description,
+        parentCategory: definition.parentCategory,
+        movementType: definition.movementType,
         visibleForSecretaria: definition.visibleForSecretaria,
         visibleForTesoreria: definition.visibleForTesoreria,
-        emoji: definition.emoji
+        emoji: definition.emoji,
+        isSystem: true,
+        isLegacy: false
       });
       continue;
     }
 
-    existingCategory.name = definition.name;
+    existingCategory.name = definition.subCategoryName;
+    existingCategory.subCategoryName = definition.subCategoryName;
+    existingCategory.description = definition.description;
+    existingCategory.parentCategory = definition.parentCategory;
+    existingCategory.movementType = definition.movementType;
     existingCategory.emoji = definition.emoji;
+    existingCategory.isSystem = true;
+    existingCategory.isLegacy = false;
   }
 
   return sortTreasuryCategories(
@@ -1991,9 +2097,15 @@ async function listRealTreasuryCategoriesForClub(clubId: string, client?: Access
       id: string;
       club_id: string;
       name: string;
+      sub_category_name: string | null;
+      description: string | null;
+      parent_category: string | null;
+      movement_type: TreasuryCategoryMovementType | null;
       visible_for_secretaria: boolean | null;
       visible_for_tesoreria: boolean | null;
       emoji: string | null;
+      is_system: boolean | null;
+      is_legacy: boolean | null;
     }>
   >("get_treasury_categories_for_current_club", clubId, client);
 
@@ -2082,10 +2194,77 @@ async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepo
       min_numeric_value: number | null;
       example: string | null;
       status: ReceiptFormat["status"];
+      visible_for_secretaria: boolean | null;
+      visible_for_tesoreria: boolean | null;
     }>
   >("get_receipt_formats_for_current_club", clubId, client);
 
-  return rows.map(mapReceiptFormatRow);
+  const receiptFormats = rows.map(mapReceiptFormatRow);
+
+  if (receiptFormats.length > 0) {
+    return receiptFormats;
+  }
+
+  try {
+    const bootstrappedReceiptFormat = await bootstrapRealReceiptFormatForClub(clubId, client);
+
+    if (bootstrappedReceiptFormat) {
+      return [bootstrappedReceiptFormat];
+    }
+  } catch (error) {
+    logTreasurySettingsReadFailure("bootstrap_receipt_format_for_club", { clubId }, error);
+  }
+
+  return [buildDefaultReceiptFormat(clubId)];
+}
+
+async function bootstrapRealReceiptFormatForClub(clubId: string, client?: AccessRepositoryClient) {
+  const defaultReceiptFormat = getDefaultReceiptFormatSeed();
+
+  try {
+    return await createRealReceiptFormat(
+      {
+        clubId,
+        name: defaultReceiptFormat.name,
+        validationType: defaultReceiptFormat.validationType,
+        pattern: defaultReceiptFormat.pattern,
+        minNumericValue: defaultReceiptFormat.minNumericValue,
+        example: defaultReceiptFormat.example,
+        status: defaultReceiptFormat.status,
+        visibleForSecretaria: defaultReceiptFormat.visibleForSecretaria,
+        visibleForTesoreria: defaultReceiptFormat.visibleForTesoreria
+      },
+      client
+    );
+  } catch (error) {
+    const errorCode = getSupabaseErrorCode(error);
+    const errorMessage = getSupabaseErrorMessage(error).toLowerCase();
+    const isConcurrentBootstrap =
+      errorCode === "23505" ||
+      errorMessage.includes("duplicate key") ||
+      errorMessage.includes("already exists");
+
+    if (!isConcurrentBootstrap) {
+      throw error;
+    }
+  }
+
+  const rows = await runClubScopedReadRpc<
+    Array<{
+      id: string;
+      club_id: string;
+      name: string;
+      validation_type: ReceiptFormat["validationType"];
+      pattern: string | null;
+      min_numeric_value: number | null;
+      example: string | null;
+      status: ReceiptFormat["status"];
+      visible_for_secretaria: boolean | null;
+      visible_for_tesoreria: boolean | null;
+    }>
+  >("get_receipt_formats_for_current_club", clubId, client);
+
+  return rows.map(mapReceiptFormatRow)[0] ?? null;
 }
 
 async function listRealTreasuryCurrenciesForClub(clubId: string, client?: AccessRepositoryClient) {
@@ -3589,10 +3768,15 @@ async function updateRealTreasuryAccount(
 async function createRealTreasuryCategory(
   input: {
     clubId: string;
-    name: string;
+    subCategoryName: string;
+    description: string;
+    parentCategory: string;
+    movementType: TreasuryCategoryMovementType;
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
+    isSystem?: boolean;
+    isLegacy?: boolean;
   },
   client?: AccessRepositoryClient
 ) {
@@ -3604,13 +3788,19 @@ async function createRealTreasuryCategory(
     .from("treasury_categories")
     .insert({
       club_id: input.clubId,
-      name: input.name,
+      name: input.subCategoryName,
+      sub_category_name: input.subCategoryName,
+      description: input.description,
+      parent_category: input.parentCategory,
+      movement_type: input.movementType,
       status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
-      emoji: input.emoji
+      emoji: input.emoji,
+      is_system: input.isSystem ?? false,
+      is_legacy: input.isLegacy ?? false
     })
-    .select("id,club_id,name,status,visible_for_secretaria,visible_for_tesoreria,emoji")
+    .select("id,club_id,name,sub_category_name,description,parent_category,movement_type,status,visible_for_secretaria,visible_for_tesoreria,emoji,is_system,is_legacy")
     .single();
 
   if (error || !data) {
@@ -3624,10 +3814,15 @@ async function updateRealTreasuryCategory(
   input: {
     categoryId: string;
     clubId: string;
-    name: string;
+    subCategoryName: string;
+    description: string;
+    parentCategory: string;
+    movementType: TreasuryCategoryMovementType;
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
+    isSystem?: boolean;
+    isLegacy?: boolean;
   },
   client?: AccessRepositoryClient
 ) {
@@ -3639,15 +3834,21 @@ async function updateRealTreasuryCategory(
   const { data, error } = await supabase
     .from("treasury_categories")
     .update({
-      name: input.name,
+      name: input.subCategoryName,
+      sub_category_name: input.subCategoryName,
+      description: input.description,
+      parent_category: input.parentCategory,
+      movement_type: input.movementType,
       status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
-      emoji: input.emoji
+      emoji: input.emoji,
+      is_system: input.isSystem ?? false,
+      is_legacy: input.isLegacy ?? false
     })
     .eq("id", input.categoryId)
     .eq("club_id", input.clubId)
-    .select("id,club_id,name,status,visible_for_secretaria,visible_for_tesoreria,emoji")
+    .select("id,club_id,name,sub_category_name,description,parent_category,movement_type,status,visible_for_secretaria,visible_for_tesoreria,emoji,is_system,is_legacy")
     .maybeSingle();
 
   if (error || !data) {
@@ -3745,6 +3946,8 @@ async function createRealReceiptFormat(
     minNumericValue: number | null;
     example: string | null;
     status: ReceiptFormat["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
   },
   client?: AccessRepositoryClient
 ) {
@@ -3761,9 +3964,11 @@ async function createRealReceiptFormat(
       pattern: input.pattern,
       min_numeric_value: input.minNumericValue,
       example: input.example,
-      status: input.status
+      status: input.status,
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria
     })
-    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status")
+    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status,visible_for_secretaria,visible_for_tesoreria")
     .single();
 
   if (error || !data) {
@@ -3783,6 +3988,8 @@ async function updateRealReceiptFormat(
     minNumericValue: number | null;
     example: string | null;
     status: ReceiptFormat["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
   },
   client?: AccessRepositoryClient
 ) {
@@ -3799,11 +4006,13 @@ async function updateRealReceiptFormat(
       pattern: input.pattern,
       min_numeric_value: input.minNumericValue,
       example: input.example,
-      status: input.status
+      status: input.status,
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria
     })
     .eq("id", input.receiptFormatId)
     .eq("club_id", input.clubId)
-    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status")
+    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status,visible_for_secretaria,visible_for_tesoreria")
     .maybeSingle();
 
   if (error || !data) {
@@ -4342,7 +4551,7 @@ export const accessRepository: AccessRepository = {
       return listRealReceiptFormatsForClub(clubId);
     }
 
-    return getStore().receiptFormats.filter((format) => format.clubId === clubId);
+    return ensureMockReceiptFormatsForClub(clubId);
   },
   async listTreasuryCurrenciesForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
@@ -4462,10 +4671,16 @@ export const accessRepository: AccessRepository = {
     const category: TreasuryCategory = {
       id: `category-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       clubId: input.clubId,
-      name: input.name,
+      name: input.subCategoryName,
+      subCategoryName: input.subCategoryName,
+      description: input.description,
+      parentCategory: input.parentCategory,
+      movementType: input.movementType,
       visibleForSecretaria: input.visibleForSecretaria,
       visibleForTesoreria: input.visibleForTesoreria,
-      emoji: input.emoji
+      emoji: input.emoji,
+      isSystem: input.isSystem ?? false,
+      isLegacy: input.isLegacy ?? false
     };
 
     getStore().treasuryCategories.push(category);
@@ -4485,10 +4700,16 @@ export const accessRepository: AccessRepository = {
       return null;
     }
 
-    category.name = input.name;
+    category.name = input.subCategoryName;
+    category.subCategoryName = input.subCategoryName;
+    category.description = input.description;
+    category.parentCategory = input.parentCategory;
+    category.movementType = input.movementType;
     category.visibleForSecretaria = input.visibleForSecretaria;
     category.visibleForTesoreria = input.visibleForTesoreria;
     category.emoji = input.emoji;
+    category.isSystem = input.isSystem ?? category.isSystem;
+    category.isLegacy = input.isLegacy ?? category.isLegacy;
 
     return category;
   },
@@ -4541,7 +4762,9 @@ export const accessRepository: AccessRepository = {
       pattern: input.pattern,
       minNumericValue: input.minNumericValue,
       example: input.example,
-      status: input.status
+      status: input.status,
+      visibleForSecretaria: input.visibleForSecretaria,
+      visibleForTesoreria: input.visibleForTesoreria
     };
 
     getStore().receiptFormats.push(receiptFormat);
@@ -4566,6 +4789,8 @@ export const accessRepository: AccessRepository = {
     receiptFormat.minNumericValue = input.minNumericValue;
     receiptFormat.example = input.example;
     receiptFormat.status = input.status;
+    receiptFormat.visibleForSecretaria = input.visibleForSecretaria;
+    receiptFormat.visibleForTesoreria = input.visibleForTesoreria;
     return receiptFormat;
   },
   async findTreasuryAdjustmentCategory(clubId) {
@@ -4574,7 +4799,7 @@ export const accessRepository: AccessRepository = {
       : reconcileMockSystemTreasuryCategories(clubId);
 
     return (
-      categories.find((category) => getSystemTreasuryCategoryDefinition(category.name)?.name === "Ajuste") ?? null
+      categories.find((category) => category.subCategoryName === "Ajustes contables") ?? null
     );
   },
   async getDailyCashSessionByDate(clubId, sessionDate) {

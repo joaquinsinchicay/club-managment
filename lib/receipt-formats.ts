@@ -7,16 +7,26 @@ export const DEFAULT_RECEIPT_PREFIX = "PAY-SOC-";
 export const DEFAULT_RECEIPT_MIN_VALUE = 10556;
 export const DEFAULT_RECEIPT_MIN_LABEL = "PAY-SOC-10556";
 
-export function buildDefaultReceiptFormat(clubId: string): ReceiptFormat {
+export function getDefaultReceiptFormatSeed() {
   return {
-    id: `receipt-format-default-${clubId}`,
-    clubId,
     name: DEFAULT_RECEIPT_SYSTEM_NAME,
-    validationType: "pattern",
+    validationType: "pattern" as const,
     pattern: DEFAULT_RECEIPT_PATTERN,
     minNumericValue: DEFAULT_RECEIPT_MIN_VALUE,
     example: DEFAULT_RECEIPT_EXAMPLE,
-    status: "active"
+    status: "active" as const,
+    visibleForSecretaria: false,
+    visibleForTesoreria: false
+  };
+}
+
+export function buildDefaultReceiptFormat(clubId: string): ReceiptFormat {
+  const defaultReceiptFormat = getDefaultReceiptFormatSeed();
+
+  return {
+    id: `receipt-format-default-${clubId}`,
+    clubId,
+    ...defaultReceiptFormat
   };
 }
 
