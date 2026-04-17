@@ -35,6 +35,7 @@
     "welcome_message_single": "Bienvenido/a {name}, tu rol es {role}",
     "welcome_message_multiple": "Bienvenido/a {name}, tus roles son {role}",
     "club_switcher_chevron": "▾",
+    "role_label": "Rol",
     "navigation": {
       "aria_label": "Navegacion principal",
       "dashboard": "Dashboard",

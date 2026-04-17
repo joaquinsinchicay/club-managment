@@ -214,24 +214,51 @@ Rules:
 
 ### 6.1 Colors
 
-Purpose-driven colors only:
+Each semantic color has three tones: `-050` (soft background), base (active/accent), `-700` (text over `-050`).
 
-* green `#10B981` → income / open / healthy final state
-* red `#EF4444` → expense / closed / destructive state
-* amber `#F59E0B` → pending / warning / attention
-* slate neutrals → structure, borders, labels, surfaces
+| Semantic     | Hex base  | Usage                                          |
+|--------------|-----------|------------------------------------------------|
+| Green        | `#10B981` | Ingreso, session open, success state           |
+| Red          | `#EF4444` | Egreso, session close, destructive action      |
+| Amber        | `#F59E0B` | Pending, warning, session not started          |
+| Blue         | `#3B82F6` | Tesorería module accent, informational         |
+| Indigo       | `#6366F1` | Config/admin accent                            |
+| Slate (neutral) | —      | Structure, borders, labels, muted surfaces     |
+
+Module accent matrix:
+
+| Module       | Accent color |
+|--------------|-------------|
+| Dashboard    | Green        |
+| Secretaría   | Green        |
+| Tesorería    | Blue         |
+| Configuración| Indigo       |
 
 Rules:
 
 * color communicates meaning, not decoration
 * backgrounds stay white or light neutral
 * do not use colorful ambient gradients
+* use `-050` tint for badge and alert backgrounds, `-700` for text on those backgrounds
 
 ### 6.2 Typography
 
-Font:
+Fonts:
 
-* `Inter`
+* `Inter` — all UI text
+* `JetBrains Mono` — movement IDs, receipt numbers, transfer references, amounts in tabular rows
+
+Typography scale:
+
+| Level       | Size     | Weight    | Usage                              |
+|-------------|----------|-----------|------------------------------------|
+| Display     | 32–52px  | Semibold  | Balance totals, KPI amounts        |
+| Title       | 20–24px  | Semibold  | Card titles, page headings         |
+| Body        | 14–16px  | Regular   | Descriptions, paragraph text       |
+| Label bold  | 13–14px  | Semibold  | Movement concept, row primary text |
+| Label muted | 11–13px  | Medium    | Category, account, secondary meta  |
+| Eyebrow     | 10–11px  | Bold      | Section labels (uppercase + tracking) |
+| Mono ID     | 10–13px  | Regular   | Movement IDs, refs — JetBrains Mono |
 
 Rules:
 
@@ -240,8 +267,16 @@ Rules:
 * section titles are semibold
 * descriptions are short and scannable
 * render monetary amounts with localized `XX.XXX,XX`
+* use `font-mono` (JetBrains Mono) for IDs, receipt numbers, and reference suffixes
 
-### 6.3 Spacing and density
+### 6.3 Spacing, radii, and density
+
+Border radii:
+
+* `6px` — chips, inline badges
+* `8px` — buttons, inputs, small cards
+* `10px` — section cards
+* `18px` — main shell cards
 
 Rules:
 

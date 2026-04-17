@@ -36,10 +36,6 @@ type SecretariaMovementListProps = {
   createdByLabel: string;
 };
 
-function getMovementAmountClassName(movementType: TreasuryMovementType) {
-  return movementType === "ingreso" ? "text-success" : "text-destructive";
-}
-
 function formatMovementDateTime(value: string) {
   const date = new Date(value);
 
@@ -48,8 +44,12 @@ function formatMovementDateTime(value: string) {
   }
 
   return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short"
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
   }).format(date);
 }
 
@@ -57,133 +57,108 @@ function getReferenceSuffix(value: string) {
   return value.slice(-6);
 }
 
+function MovementDot({ movementType, isTransfer }: { movementType: TreasuryMovementType; isTransfer: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "mt-[3px] size-[6px] shrink-0 rounded-full",
+        isTransfer
+          ? "bg-slate-400"
+          : movementType === "ingreso"
+            ? "bg-emerald-500"
+            : "bg-red-500"
+      )}
+    />
+  );
+}
+
 export function SecretariaMovementList({
-  items,
-  conceptLabel,
-  accountLabel,
-  detailLabel,
-  amountLabel,
-  actionsLabel,
-  createdByLabel
+  items
 }: SecretariaMovementListProps) {
   return (
-    <div className="overflow-hidden rounded-[18px] border border-border">
-      <div className="hidden bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(170px,0.8fr)_88px] md:items-center md:gap-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {conceptLabel}
-        </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {accountLabel}
-        </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {detailLabel}
-        </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
-          {amountLabel}
-        </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
-          {actionsLabel}
-        </p>
-      </div>
+    <div className="flex flex-col">
+      {items.map((item, index) => {
+        const isTransfer = Boolean(item.transferReference || item.fxOperationReference);
 
-      <div className="grid gap-3 bg-card p-3 md:gap-0 md:bg-transparent md:p-0">
-        {items.map((item, index) => (
+        const footerParts: string[] = [item.movementDisplayId];
+        if (item.createdByUserName) footerParts.push(item.createdByUserName);
+        if (item.receiptNumber) footerParts.push(item.receiptNumber);
+        if (item.transferReference) footerParts.push(`${texts.dashboard.treasury.detail_transfer_label} ${getReferenceSuffix(item.transferReference)}`);
+        if (item.fxOperationReference) footerParts.push(`${texts.dashboard.treasury.detail_fx_label} ${getReferenceSuffix(item.fxOperationReference)}`);
+        if (item.calendarEventTitle) footerParts.push(item.calendarEventTitle);
+
+        return (
           <article
             key={item.movementId}
             className={cn(
-              "rounded-[18px] border border-border bg-card p-4 shadow-soft md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(170px,0.8fr)_88px] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none",
-              index === items.length - 1 && "md:last:rounded-b-[18px]"
+              "group flex items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-secondary/40",
+              index > 0 && "border-t border-border/60"
             )}
           >
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                {item.movementDisplayId}
-              </p>
-              <p
-                className="mt-1 overflow-hidden text-pretty text-base font-semibold leading-6 text-foreground"
-                style={{
-                  display: "-webkit-box",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 2
-                }}
-              >
-                {item.concept}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {formatMovementDateTime(item.createdAt)} · {createdByLabel} {item.createdByUserName}
-              </p>
-            </div>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex items-start gap-2">
+                <MovementDot movementType={item.movementType} isTransfer={isTransfer} />
+                <p className="text-[14px] font-semibold leading-snug tracking-tight text-foreground">
+                  {item.concept}
+                </p>
+              </div>
 
-            <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                {accountLabel}
-              </p>
-              <p className="font-medium text-foreground">{item.accountName}</p>
-            </div>
-
-            <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                {detailLabel}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  {item.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-[14px]">
+                <span className="inline-flex items-center rounded-[4px] bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-muted-foreground">
+                  {isTransfer ? "Transferencia interna" : item.accountName}
                 </span>
+                {item.categoryName && !isTransfer ? (
+                  <>
+                    <span aria-hidden="true" className="text-[10px] text-border">·</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{item.categoryName}</span>
+                  </>
+                ) : null}
                 {item.activityName ? (
-                  <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                    {item.activityName}
-                  </span>
+                  <>
+                    <span aria-hidden="true" className="text-[10px] text-border">·</span>
+                    <span className="text-[11px] text-muted-foreground/70">{item.activityName}</span>
+                  </>
                 ) : null}
               </div>
-              {item.transferReference ? (
-                <p>
-                  <span className="font-medium text-foreground">{texts.dashboard.treasury.detail_transfer_label}</span>{" "}
-                  {getReferenceSuffix(item.transferReference)}
-                </p>
-              ) : null}
-              {item.fxOperationReference ? (
-                <p>
-                  <span className="font-medium text-foreground">{texts.dashboard.treasury.detail_fx_label}</span>{" "}
-                  {getReferenceSuffix(item.fxOperationReference)}
-                </p>
-              ) : null}
-              {item.receiptNumber ? (
-                <p>
-                  <span className="font-medium text-foreground">{texts.dashboard.treasury.detail_receipt_label}</span>{" "}
-                  {item.receiptNumber}
-                </p>
-              ) : null}
-              {item.calendarEventTitle ? (
-                <p>
-                  <span className="font-medium text-foreground">{texts.dashboard.treasury.detail_calendar_label}</span>{" "}
-                  {item.calendarEventTitle}
-                </p>
-              ) : null}
+
+              <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0 pl-[14px] font-mono text-[10px] text-muted-foreground/60">
+                {footerParts.map((part, i) => (
+                  <span key={i} className="flex items-center gap-1.5">
+                    {i > 0 && <span aria-hidden="true" className="text-border">·</span>}
+                    {part}
+                  </span>
+                ))}
+              </p>
             </div>
 
-            <div className="mt-4 md:mt-0 md:text-right">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                {amountLabel}
-              </p>
+            <div className="flex shrink-0 flex-col items-end gap-1">
               <p
                 className={cn(
-                  "text-2xl font-semibold tracking-tight md:text-[1.75rem]",
-                  getMovementAmountClassName(item.movementType)
+                  "text-[16px] font-bold leading-none tracking-tight tabular-nums",
+                  isTransfer
+                    ? "text-slate-600"
+                    : item.movementType === "ingreso"
+                      ? "text-emerald-700"
+                      : "text-red-700"
                 )}
               >
-                {item.movementType === "egreso" ? "-" : "+"} {item.currencyCode} {formatLocalizedAmount(item.amount)}
+                {isTransfer ? "" : item.movementType === "ingreso" ? "+ " : "− "}
+                {item.currencyCode === "ARS" ? "$ " : `${item.currencyCode} `}
+                {formatLocalizedAmount(item.amount)}
               </p>
-            </div>
-
-            <div className="mt-4 flex min-h-10 items-center justify-start md:mt-0 md:justify-end">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                {actionsLabel}
+              <p className="text-[10px] tabular-nums text-muted-foreground/60">
+                {formatMovementDateTime(item.createdAt)}
               </p>
-              {item.action ?? <span aria-hidden="true" className="text-xs font-medium text-muted-foreground">-</span>}
+              {item.action ? (
+                <div className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                  {item.action}
+                </div>
+              ) : null}
             </div>
           </article>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

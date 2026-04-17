@@ -71,21 +71,21 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
           }
         ]
       : []),
-    ...(canOperateTesoreriaRole
-      ? [
-          {
-            key: "tesoreria" as const,
-            href: "/dashboard/treasury",
-            label: texts.header.navigation.tesoreria
-          }
-        ]
-      : []),
     ...(canOperateSecretariaRole
       ? [
           {
             key: "secretaria" as const,
             href: "/dashboard/secretaria",
             label: texts.header.navigation.secretaria
+          }
+        ]
+      : []),
+    ...(canOperateTesoreriaRole
+      ? [
+          {
+            key: "tesoreria" as const,
+            href: "/dashboard/treasury",
+            label: texts.header.navigation.tesoreria
           }
         ]
       : []),
@@ -133,10 +133,10 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
 
           <div className="flex min-w-0 items-center gap-3">
             <div className="min-w-0 text-right">
-              <p className="truncate text-sm font-semibold text-foreground">{clubLabel}</p>
               <p className="truncate text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                {roleLabel}
+                {texts.header.role_label}
               </p>
+              <p className="truncate text-sm font-semibold text-foreground">{roleLabel}</p>
             </div>
 
             <AvatarSessionMenu

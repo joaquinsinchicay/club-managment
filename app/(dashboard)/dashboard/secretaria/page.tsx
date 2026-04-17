@@ -16,6 +16,7 @@ import {
   getActiveReceiptFormatsForSecretaria,
   getActiveTreasuryCurrenciesForSecretaria,
   getDashboardTreasuryCardForActiveClub,
+  getDailyCashSessionValidationForActiveClub,
   getEnabledCalendarEventsForSecretaria,
   getEnabledMovementTypesForSecretaria
 } from "@/lib/services/treasury-service";
@@ -71,7 +72,7 @@ export default async function SecretariaDashboardPage() {
   const treasuryTransferTargetAccounts = allTreasuryAccounts.filter(
     (account) => !account.visibleForSecretaria && account.visibleForTesoreria
   );
-  const [treasuryCategories, treasuryActivities, treasuryCalendarEvents, treasuryCurrencies, movementTypes, receiptFormats] =
+  const [treasuryCategories, treasuryActivities, treasuryCalendarEvents, treasuryCurrencies, movementTypes, receiptFormats, sessionOpenValidation, sessionCloseValidation] =
     await Promise.all([
       accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
         categories.filter((category) => category.visibleForSecretaria)
@@ -80,7 +81,13 @@ export default async function SecretariaDashboardPage() {
       getEnabledCalendarEventsForSecretaria(),
       getActiveTreasuryCurrenciesForSecretaria(),
       getEnabledMovementTypesForSecretaria(),
-      getActiveReceiptFormatsForSecretaria()
+      getActiveReceiptFormatsForSecretaria(),
+      treasuryCard.sessionStatus === "not_started"
+        ? getDailyCashSessionValidationForActiveClub("open")
+        : null,
+      treasuryCard.sessionStatus === "open"
+        ? getDailyCashSessionValidationForActiveClub("close")
+        : null
     ]);
 
   return (
@@ -110,6 +117,8 @@ export default async function SecretariaDashboardPage() {
         currencies={treasuryCurrencies}
         movementTypes={movementTypes}
         receiptFormats={receiptFormats}
+        sessionOpenValidation={sessionOpenValidation}
+        sessionCloseValidation={sessionCloseValidation}
         createTreasuryMovementAction={createTreasuryMovementAction}
         updateSecretariaMovementAction={updateSecretariaMovementAction}
         createAccountTransferAction={createAccountTransferAction}
