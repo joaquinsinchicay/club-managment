@@ -25,13 +25,16 @@ export async function closeDailyCashSessionModalAction(formData: FormData) {
   const accountIds = formData.getAll("account_id");
   const currencyCodes = formData.getAll("currency_code");
   const declaredBalances = formData.getAll("declared_balance");
+  const diffNotes = String(formData.get("diff_notes") ?? "");
+  const notes = String(formData.get("notes") ?? "");
 
   const result = await closeDailyCashSessionWithDeclaredBalances(
     accountIds.map((accountId, index) => ({
       accountId: String(accountId ?? ""),
       currencyCode: String(currencyCodes[index] ?? ""),
       declaredBalance: String(declaredBalances[index] ?? "")
-    }))
+    })),
+    { diffNotes: diffNotes || undefined, notes: notes || undefined }
   );
 
   revalidatePath("/dashboard");

@@ -64,7 +64,7 @@ export function CloseSessionModalForm({
       accountId: account.accountId,
       accountName: account.accountName,
       currencyCode: account.currencyCode,
-      openingBalance: account.declaredBalance,
+      openingBalance: account.openingDeclaredBalance ?? 0,
       expectedBalance: account.expectedBalance,
       declaredBalance: formatLocalizedAmount(account.expectedBalance)
     }))
@@ -79,6 +79,10 @@ export function CloseSessionModalForm({
   }, [drafts]);
 
   const hasDifferences = diffs.some((d) => Math.abs(d.diff) >= 0.01);
+  const hasNegativeBalances = useMemo(
+    () => drafts.some((d) => { const p = parseLocalizedAmount(d.declaredBalance); return p !== null && p < 0; }),
+    [drafts]
+  );
   const summary = useMemo(() => computeDaySummary(movements), [movements]);
 
   function updateDraft(accountId: string, value: string) {
@@ -109,6 +113,10 @@ export function CloseSessionModalForm({
       action={async (formData) => { await submitAction(formData); }}
       className="flex flex-col gap-4"
       onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        if (hasNegativeBalances) {
+          event.preventDefault();
+          return;
+        }
         if (hasDifferences) {
           const diffNotes = new FormData(event.currentTarget).get("diff_notes");
           if (!diffNotes || String(diffNotes).trim() === "") {
@@ -180,6 +188,8 @@ export function CloseSessionModalForm({
               const netMovements = draft.expectedBalance - draft.openingBalance;
               const diff = getDiff(draft.accountId);
               const diffLabel = formatDiffLabel(diff);
+              const parsedDeclared = parseLocalizedAmount(draft.declaredBalance);
+              const isNegative = parsedDeclared !== null && parsedDeclared < 0;
 
               return (
                 <div
@@ -217,16 +227,26 @@ export function CloseSessionModalForm({
                       ? "—"
                       : `${netMovements > 0 ? "+ " : "− "}$ ${formatLocalizedAmount(Math.abs(netMovements))}`}
                   </p>
-                  <input
-                    type="text"
-                    name="declared_balance"
-                    inputMode="decimal"
-                    value={draft.declaredBalance}
-                    onChange={(e) => updateDraft(draft.accountId, sanitizeLocalizedAmountInput(e.target.value))}
-                    onBlur={(e) => updateDraft(draft.accountId, formatLocalizedAmountInputOnBlur(e.target.value))}
-                    onFocus={(e) => updateDraft(draft.accountId, formatLocalizedAmountInputOnFocus(e.target.value))}
-                    className="min-h-9 rounded-lg border border-border bg-card px-2 py-1.5 text-right text-[13px] tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
-                  />
+                  <div className="flex flex-col gap-1">
+                    <input
+                      type="text"
+                      name="declared_balance"
+                      inputMode="decimal"
+                      value={draft.declaredBalance}
+                      onChange={(e) => updateDraft(draft.accountId, sanitizeLocalizedAmountInput(e.target.value))}
+                      onBlur={(e) => updateDraft(draft.accountId, formatLocalizedAmountInputOnBlur(e.target.value))}
+                      onFocus={(e) => updateDraft(draft.accountId, formatLocalizedAmountInputOnFocus(e.target.value))}
+                      className={cn(
+                        "min-h-9 rounded-lg border bg-card px-2 py-1.5 text-right text-[13px] tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20",
+                        isNegative ? "border-destructive focus:ring-destructive/20" : "border-border"
+                      )}
+                    />
+                    {isNegative ? (
+                      <p className="text-right text-[10px] font-semibold text-destructive">
+                        {texts.dashboard.treasury.close_session_negative_balance_error}
+                      </p>
+                    ) : null}
+                  </div>
                   <p
                     className={cn(
                       "text-right text-[13px] font-semibold tabular-nums",

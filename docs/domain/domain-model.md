@@ -283,6 +283,7 @@ Atributos:
 * closed_at
 * opened_by_user_id
 * closed_by_user_id
+* notes (text, nullable): observación libre registrada por el operador al cierre de la jornada
 
 Reglas:
 

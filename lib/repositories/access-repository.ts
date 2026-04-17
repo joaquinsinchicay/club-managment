@@ -349,10 +349,15 @@ type AccessRepository = {
     }>;
   }): Promise<DailyCashSession | null>;
   closeDailyCashSession(clubId: string, sessionId: string, closedByUserId: string): Promise<DailyCashSession | null>;
+  getSessionOpeningBalances(
+    clubId: string,
+    sessionId: string
+  ): Promise<Array<{ accountId: string; currencyCode: string; declaredBalance: number }>>;
   closeDailyCashSessionWithBalances(input: {
     clubId: string;
     sessionId: string;
     closedByUserId: string;
+    notes?: string;
     balances: Array<{
       accountId: string;
       currencyCode: string;
@@ -2542,6 +2547,7 @@ async function closeRealDailyCashSessionWithBalances(input: {
   clubId: string;
   sessionId: string;
   closedByUserId: string;
+  notes?: string;
   balances: Array<{
     accountId: string;
     currencyCode: string;
@@ -2575,6 +2581,7 @@ async function closeRealDailyCashSessionWithBalances(input: {
     p_club_id: input.clubId,
     p_session_id: input.sessionId,
     p_closed_by_user_id: input.closedByUserId,
+    p_notes: input.notes ?? null,
     p_balance_entries: input.balances.map((entry) => ({
       account_id: entry.accountId,
       currency_code: entry.currencyCode,
@@ -4987,8 +4994,30 @@ export const accessRepository: AccessRepository = {
     session.status = "closed";
     session.closedAt = now();
     session.closedByUserId = input.closedByUserId;
+    if (input.notes) session.notes = input.notes;
 
     return session;
+  },
+  async getSessionOpeningBalances(clubId, sessionId) {
+    if (shouldUseSupabaseDatabase()) {
+      const supabase = createAccessSupabaseClient();
+      if (!supabase) return [];
+      const { data } = await supabase
+        .from("daily_cash_session_balances")
+        .select("account_id, currency_code, declared_balance")
+        .eq("session_id", sessionId)
+        .eq("balance_moment", "opening");
+      return (data ?? []).map((row) => ({
+        accountId: row.account_id as string,
+        currencyCode: row.currency_code as string,
+        declaredBalance: Number(row.declared_balance)
+      }));
+    }
+
+    const store = getStore();
+    return store.dailyCashSessionBalances
+      .filter((b) => b.sessionId === sessionId && b.balanceMoment === "opening")
+      .map((b) => ({ accountId: b.accountId, currencyCode: b.currencyCode, declaredBalance: b.declaredBalance }));
   },
   async autoCloseStaleDailyCashSessionWithBalances(input) {
     if (shouldUseSupabaseDatabase()) {

@@ -710,12 +710,22 @@ async function getSessionValidationBase(
   }
 
   try {
+    const drafts = await buildAccountBalanceDrafts(context.activeClub.id, sessionDate, accounts);
+
+    if (mode === "close" && session?.id) {
+      const openingBalances = await accessRepository.getSessionOpeningBalances(context.activeClub.id, session.id);
+      const openingMap = new Map(openingBalances.map((b) => [`${b.accountId}:${b.currencyCode}`, b.declaredBalance]));
+      for (const draft of drafts) {
+        draft.openingDeclaredBalance = openingMap.get(`${draft.accountId}:${draft.currencyCode}`) ?? 0;
+      }
+    }
+
     return {
       clubId: context.activeClub.id,
       sessionDate,
       sessionStatus: session?.status ?? "not_started",
       sessionId: session?.id ?? null,
-      accounts: await buildAccountBalanceDrafts(context.activeClub.id, sessionDate, accounts)
+      accounts: drafts
     };
   } catch (error) {
     console.error("[session-balance-data-resolution-failed]", {
@@ -848,6 +858,7 @@ async function buildBalanceAdjustmentEntries(input: {
   sessionDate: string;
   mode: "open" | "close";
   drafts: SessionBalanceDraft[];
+  diffNotes?: string;
 }) {
   const draftsWithAdjustments = input.drafts.filter((entry) => entry.differenceAmount !== 0 && entry.adjustmentType);
 
@@ -872,7 +883,9 @@ async function buildBalanceAdjustmentEntries(input: {
       accountId: draft.accountId,
       movementType: draft.adjustmentType!,
       categoryId: adjustmentCategory.id,
-      concept: `${adjustmentCategory.name} ${input.mode === "open" ? "de apertura" : "de cierre"}`,
+      concept: (input.mode === "close" && input.diffNotes?.trim())
+        ? input.diffNotes.trim()
+        : `${adjustmentCategory.name} ${input.mode === "open" ? "de apertura" : "de cierre"}`,
       currencyCode: draft.currencyCode,
       amount: Math.abs(draft.differenceAmount),
       movementDate: input.sessionDate,
@@ -950,11 +963,10 @@ export async function openDailyCashSessionWithDeclaredBalances(input: Array<{
   }
 }
 
-export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
-  accountId: string;
-  currencyCode: string;
-  declaredBalance: string;
-}>): Promise<TreasuryActionResult> {
+export async function closeDailyCashSessionWithDeclaredBalances(
+  input: Array<{ accountId: string; currencyCode: string; declaredBalance: string }>,
+  options?: { diffNotes?: string; notes?: string }
+): Promise<TreasuryActionResult> {
   const validation = await validateDeclaredBalances("close", input);
 
   if (!validation.ok || !validation.sessionId) {
@@ -970,7 +982,8 @@ export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
       userId: validation.userId,
       sessionDate: validation.sessionDate,
       mode: "close",
-      drafts: validation.drafts
+      drafts: validation.drafts,
+      diffNotes: options?.diffNotes
     });
   } catch (error) {
     console.error("[close-session-adjustment-preparation-failed]", {
@@ -992,6 +1005,7 @@ export async function closeDailyCashSessionWithDeclaredBalances(input: Array<{
       clubId: validation.clubId,
       sessionId: validation.sessionId,
       closedByUserId: validation.userId,
+      notes: options?.notes,
       balances: buildSessionBalanceEntries(validation.drafts, "closing"),
       adjustments: adjustmentEntries.adjustments
     });

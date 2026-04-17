@@ -301,6 +301,7 @@
       "close_session_diff_notes_placeholder": "Una o más cuentas presentan diferencias de arqueo. Detallá el motivo (faltante, sobrante, gasto no registrado, etc.)",
       "close_session_notes_label": "Observaciones generales",
       "close_session_notes_placeholder": "Opcional",
+      "close_session_negative_balance_error": "El saldo no puede ser negativo",
       "close_session_warning": "Al confirmar, se cierra la jornada para todas las cuentas, se bloquea la carga de movimientos y queda registrado el arqueo con tu usuario ({userName}). La acción no puede deshacerse."
     },
     "treasury_role": {

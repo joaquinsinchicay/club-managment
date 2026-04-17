@@ -201,6 +201,7 @@ export type DailyCashSession = {
   closedAt: string | null;
   openedByUserId: string | null;
   closedByUserId: string | null;
+  notes?: string | null;
 };
 
 export type TreasuryMovement = {
@@ -448,6 +449,7 @@ export type SessionBalanceDraft = {
   declaredBalance: number;
   differenceAmount: number;
   adjustmentType: TreasuryMovementType | null;
+  openingDeclaredBalance?: number;
 };
 
 export type DailyCashSessionValidation = {
