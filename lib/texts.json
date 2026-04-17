@@ -284,6 +284,7 @@
         "ingreso": "Ingreso",
         "egreso": "Egreso"
       },
+      "movements_see_all_cta": "Ver todos",
       "close_session_date_label": "Jornada",
       "close_session_time_label": "Hora",
       "close_session_summary_movements": "Movimientos",

@@ -396,6 +396,10 @@ function MovementsCard({
     return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }).format(d);
   })();
 
+  const detailHref = !isDataUnresolved && card.accounts.length > 0
+    ? `/dashboard/accounts/${activeFilter ?? card.accounts[0]?.accountId}`
+    : null;
+
   return (
     <section
       className="rounded-[14px] border border-border bg-card sm:col-span-2"
@@ -410,6 +414,15 @@ function MovementsCard({
             {card.movements.length} {texts.dashboard.treasury.movements_card_description} · {today}
           </p>
         </div>
+        {detailHref ? (
+          <NavigationLinkWithLoader
+            href={detailHref}
+            prefetch={false}
+            className="shrink-0 text-[12px] font-semibold text-muted-foreground transition hover:text-foreground"
+          >
+            {texts.dashboard.treasury.movements_see_all_cta}
+          </NavigationLinkWithLoader>
+        ) : null}
       </div>
 
       {/* Filter chips */}
