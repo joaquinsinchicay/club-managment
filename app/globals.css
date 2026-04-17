@@ -80,6 +80,7 @@
   --accent: 160 84% 39%;         /* ≈ --green */
   --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 60%;      /* ≈ --red */
+  --destructive-foreground: 0 0% 100%;
   --success: 160 84% 39%;
   --warning: 38 92% 50%;         /* ≈ --amber */
   --surface-container-low: 220 14% 97%;

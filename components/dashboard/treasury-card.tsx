@@ -398,10 +398,7 @@ function MovementsCard({
             {texts.dashboard.treasury.movements_card_title}
           </h2>
           <p className="text-[11px] font-medium text-muted-foreground">
-            {card.movements.length} {texts.dashboard.treasury.session_meta_movements_count.replace("{count}", "").trim()
-              ? texts.dashboard.treasury.movements_card_description
-              : texts.dashboard.treasury.movements_card_description}{" "}
-            · {today}
+            {card.movements.length} {texts.dashboard.treasury.movements_card_description} · {today}
           </p>
         </div>
       </div>
