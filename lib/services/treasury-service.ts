@@ -1287,38 +1287,6 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
   };
 }
 
-export async function openDailyCashSession(): Promise<TreasuryActionResult> {
-  const base = await getSessionValidationBase("open");
-
-  if (!base) {
-    return { ok: false, code: "forbidden" };
-  }
-
-  return openDailyCashSessionWithDeclaredBalances(
-    base.accounts.map((account) => ({
-      accountId: account.accountId,
-      currencyCode: account.currencyCode,
-      declaredBalance: String(account.expectedBalance)
-    }))
-  );
-}
-
-export async function closeDailyCashSession(): Promise<TreasuryActionResult> {
-  const base = await getSessionValidationBase("close");
-
-  if (!base) {
-    return { ok: false, code: "forbidden" };
-  }
-
-  return closeDailyCashSessionWithDeclaredBalances(
-    base.accounts.map((account) => ({
-      accountId: account.accountId,
-      currencyCode: account.currencyCode,
-      declaredBalance: String(account.expectedBalance)
-    }))
-  );
-}
-
 export async function createTreasuryMovement(input: {
   accountId: string;
   movementType: string;

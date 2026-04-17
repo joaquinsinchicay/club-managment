@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, type ReactNode, useEffect, useMemo, useState } from "react";
 
+import { CloseSessionModalForm } from "@/components/dashboard/close-session-modal-form";
 import {
   AccountTransferEditForm,
   AccountTransferForm,
@@ -18,6 +19,7 @@ import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasur
 import type {
   ClubActivity,
   ClubCalendarEvent,
+  DailyCashSessionValidation,
   DashboardTreasuryCard as DashboardTreasuryCardData,
   ReceiptFormat,
   TreasuryAccount,
@@ -39,10 +41,13 @@ type TreasuryCardProps = {
   currencies: TreasuryCurrencyConfig[];
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
+  closeSessionValidation: DailyCashSessionValidation | null;
+  currentUserDisplayName: string;
   createTreasuryMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateSecretariaMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateSecretariaTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  closeDailyCashSessionModalAction: (formData: FormData) => Promise<TreasuryActionResponse>;
 };
 
 function EditMovementIcon({ className }: { className?: string }) {
@@ -175,7 +180,8 @@ function SessionCard({
   canCreateMovement,
   canCloseSession,
   onOpenMovement,
-  onOpenTransfer
+  onOpenTransfer,
+  onOpenCloseSession
 }: {
   sessionStatus: DashboardTreasuryCardData["sessionStatus"];
   card: DashboardTreasuryCardData;
@@ -184,6 +190,7 @@ function SessionCard({
   canCloseSession: boolean;
   onOpenMovement: () => void;
   onOpenTransfer: () => void;
+  onOpenCloseSession: () => void;
 }) {
   const cfg = getSessionConfig(sessionStatus);
   const metaItems = buildSessionMeta(sessionStatus, card);
@@ -289,13 +296,13 @@ function SessionCard({
             {texts.dashboard.treasury.transfer_modal_cta}
           </button>
           {canCloseSession ? (
-            <NavigationLinkWithLoader
-              href="/dashboard/session/close"
-              prefetch={false}
-              className="col-span-2 flex min-h-11 items-center justify-center rounded-xl bg-destructive px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            <button
+              type="button"
+              onClick={onOpenCloseSession}
+              className="col-span-2 min-h-11 rounded-xl bg-destructive px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
             >
               {texts.dashboard.treasury.close_session_flow_cta}
-            </NavigationLinkWithLoader>
+            </button>
           ) : null}
         </div>
       ) : null}
@@ -489,10 +496,13 @@ export function TreasuryCard({
   currencies,
   movementTypes,
   receiptFormats,
+  closeSessionValidation,
+  currentUserDisplayName,
   createTreasuryMovementAction,
   updateSecretariaMovementAction,
   updateSecretariaTransferAction,
-  createAccountTransferAction
+  createAccountTransferAction,
+  closeDailyCashSessionModalAction
 }: TreasuryCardProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -501,7 +511,8 @@ export function TreasuryCard({
   const canCreateMovement = localTreasuryCard.availableActions.includes("create_movement");
   const canCloseSession = localTreasuryCard.availableActions.includes("close_session");
   const canOpenSession = localTreasuryCard.availableActions.includes("open_session");
-  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "edit_transfer" | "transfer" | null>(null);
+  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "edit_transfer" | "transfer" | "close_session" | null>(null);
+  const [isSessionClosePending, setIsSessionClosePending] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
@@ -527,7 +538,9 @@ export function TreasuryCard({
       ? texts.dashboard.treasury.transfer_create_loading
       : isMovementUpdatePending
         ? texts.dashboard.treasury.update_loading
-        : null;
+        : isSessionClosePending
+          ? texts.dashboard.treasury.confirm_close_session_loading
+          : null;
 
   useEffect(() => {
     setLocalTreasuryCard(treasuryCard);
@@ -705,6 +718,21 @@ export function TreasuryCard({
     }
   }
 
+  async function handleCloseSession(formData: FormData) {
+    setIsSessionClosePending(true);
+    setActiveModal(null);
+    try {
+      const result = await closeDailyCashSessionModalAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      startTransition(() => { router.refresh(); });
+    } finally {
+      setIsSessionClosePending(false);
+    }
+  }
+
   return (
     <>
       <BlockingStatusOverlay open={pendingOverlayLabel !== null} label={pendingOverlayLabel ?? ""} />
@@ -718,6 +746,7 @@ export function TreasuryCard({
           canCloseSession={canCloseSession}
           onOpenMovement={() => setActiveModal("movement")}
           onOpenTransfer={() => setActiveModal("transfer")}
+          onOpenCloseSession={() => setActiveModal("close_session")}
         />
 
         <BalancesCard card={localTreasuryCard} />
@@ -853,6 +882,26 @@ export function TreasuryCard({
           sessionDate={localTreasuryCard.sessionDate}
           onCancel={() => setActiveModal(null)}
         />
+      </Modal>
+
+      <Modal
+        open={activeModal === "close_session" && closeSessionValidation !== null}
+        onClose={() => setActiveModal(null)}
+        title={texts.dashboard.treasury.closing_title}
+        description={texts.dashboard.treasury.closing_description}
+        closeDisabled={isSessionClosePending}
+        hideCloseButton
+        panelClassName="max-w-2xl"
+      >
+        {closeSessionValidation ? (
+          <CloseSessionModalForm
+            validation={closeSessionValidation}
+            movements={localTreasuryCard.movements}
+            currentUserDisplayName={currentUserDisplayName}
+            submitAction={handleCloseSession}
+            onCancel={() => setActiveModal(null)}
+          />
+        ) : null}
       </Modal>
     </>
   );

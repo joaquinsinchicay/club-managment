@@ -1,10 +1,9 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import {
-  closeDailyCashSession,
+  closeDailyCashSessionWithDeclaredBalances,
   createAccountTransfer,
   createFxOperation,
   createTreasuryMovement,
@@ -12,8 +11,7 @@ import {
   type TreasuryMovementOptimisticUpdate,
   updateTreasuryRoleMovement,
   updateSecretariaMovementInOpenSession,
-  updateSecretariaTransferInOpenSession,
-  openDailyCashSession
+  updateSecretariaTransferInOpenSession
 } from "@/lib/services/treasury-service";
 
 export type TreasuryActionResponse = {
@@ -23,26 +21,26 @@ export type TreasuryActionResponse = {
   optimisticUpdate?: TreasuryMovementOptimisticUpdate;
 };
 
-function redirectToTreasuryModule(code: string, movementDisplayId?: string) {
+export async function closeDailyCashSessionModalAction(formData: FormData) {
+  const accountIds = formData.getAll("account_id");
+  const currencyCodes = formData.getAll("currency_code");
+  const declaredBalances = formData.getAll("declared_balance");
+
+  const result = await closeDailyCashSessionWithDeclaredBalances(
+    accountIds.map((accountId, index) => ({
+      accountId: String(accountId ?? ""),
+      currencyCode: String(currencyCodes[index] ?? ""),
+      declaredBalance: String(declaredBalances[index] ?? "")
+    }))
+  );
+
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/treasury");
-  const params = new URLSearchParams({ feedback: code });
+  revalidatePath("/dashboard/secretaria");
 
-  if (movementDisplayId) {
-    params.set("movement_id", movementDisplayId);
-  }
-
-  redirect(`/dashboard/treasury?${params.toString()}`);
-}
-
-export async function openDailyCashSessionAction() {
-  const result = await openDailyCashSession();
-  redirectToTreasuryModule(result.code, result.movementDisplayId);
-}
-
-export async function closeDailyCashSessionAction() {
-  const result = await closeDailyCashSession();
-  redirectToTreasuryModule(result.code, result.movementDisplayId);
+  return {
+    ok: result.ok,
+    code: result.code
+  } satisfies TreasuryActionResponse;
 }
 
 export async function createTreasuryMovementAction(formData: FormData) {

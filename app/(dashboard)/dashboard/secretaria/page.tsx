@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import {
+  closeDailyCashSessionModalAction,
   createAccountTransferAction,
   createTreasuryMovementAction,
   updateSecretariaMovementAction,
@@ -15,6 +16,7 @@ import {
   getActiveActivitiesForSecretaria,
   getActiveReceiptFormatsForSecretaria,
   getActiveTreasuryCurrenciesForSecretaria,
+  getDailyCashSessionValidationForActiveClub,
   getDashboardTreasuryCardForActiveClub,
   getEnabledCalendarEventsForSecretaria,
   getEnabledMovementTypesForSecretaria
@@ -50,22 +52,34 @@ export default async function SecretariaDashboardPage() {
     redirect("/dashboard");
   }
 
-  const allTreasuryAccounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
+  const canCloseSession = treasuryCard.availableActions.includes("close_session");
+
+  const [
+    allTreasuryAccounts,
+    treasuryCategories,
+    treasuryActivities,
+    treasuryCalendarEvents,
+    treasuryCurrencies,
+    movementTypes,
+    receiptFormats,
+    closeSessionValidation
+  ] = await Promise.all([
+    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
+    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
+      categories.filter((category) => category.visibleForSecretaria)
+    ),
+    getActiveActivitiesForSecretaria(),
+    getEnabledCalendarEventsForSecretaria(),
+    getActiveTreasuryCurrenciesForSecretaria(),
+    getEnabledMovementTypesForSecretaria(),
+    getActiveReceiptFormatsForSecretaria(),
+    canCloseSession ? getDailyCashSessionValidationForActiveClub("close") : Promise.resolve(null)
+  ]);
+
   const treasuryMovementAccounts = allTreasuryAccounts.filter((account) => account.visibleForSecretaria);
   const treasuryTransferTargetAccounts = allTreasuryAccounts.filter(
     (account) => !account.visibleForSecretaria && account.visibleForTesoreria
   );
-  const [treasuryCategories, treasuryActivities, treasuryCalendarEvents, treasuryCurrencies, movementTypes, receiptFormats] =
-    await Promise.all([
-      accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
-        categories.filter((category) => category.visibleForSecretaria)
-      ),
-      getActiveActivitiesForSecretaria(),
-      getEnabledCalendarEventsForSecretaria(),
-      getActiveTreasuryCurrenciesForSecretaria(),
-      getEnabledMovementTypesForSecretaria(),
-      getActiveReceiptFormatsForSecretaria()
-    ]);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
@@ -92,10 +106,13 @@ export default async function SecretariaDashboardPage() {
         currencies={treasuryCurrencies}
         movementTypes={movementTypes}
         receiptFormats={receiptFormats}
+        closeSessionValidation={closeSessionValidation}
+        currentUserDisplayName={context.user.fullName}
         createTreasuryMovementAction={createTreasuryMovementAction}
         updateSecretariaMovementAction={updateSecretariaMovementAction}
         updateSecretariaTransferAction={updateSecretariaTransferAction}
         createAccountTransferAction={createAccountTransferAction}
+        closeDailyCashSessionModalAction={closeDailyCashSessionModalAction}
       />
     </main>
   );

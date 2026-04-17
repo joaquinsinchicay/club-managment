@@ -283,7 +283,24 @@
       "movement_types": {
         "ingreso": "Ingreso",
         "egreso": "Egreso"
-      }
+      },
+      "close_session_date_label": "Jornada",
+      "close_session_time_label": "Hora",
+      "close_session_summary_movements": "Movimientos",
+      "close_session_summary_ingresos": "Ingresos",
+      "close_session_summary_egresos": "Egresos",
+      "close_session_summary_transfers": "Transferencias",
+      "close_session_table_account": "Cuenta",
+      "close_session_table_opening": "Apertura",
+      "close_session_table_net_movements": "Mov. netos",
+      "close_session_table_real_balance": "Saldo real",
+      "close_session_table_difference": "Diferencia",
+      "close_session_table_helper": "Ingresá el saldo físico verificado. La diferencia con el saldo esperado se calcula en vivo.",
+      "close_session_diff_notes_label": "Motivo de la diferencia",
+      "close_session_diff_notes_placeholder": "Una o más cuentas presentan diferencias de arqueo. Detallá el motivo (faltante, sobrante, gasto no registrado, etc.)",
+      "close_session_notes_label": "Observaciones generales",
+      "close_session_notes_placeholder": "Opcional",
+      "close_session_warning": "Al confirmar, se cierra la jornada para todas las cuentas, se bloquea la carga de movimientos y queda registrado el arqueo con tu usuario ({userName}). La acción no puede deshacerse."
     },
     "treasury_role": {
       "title": "Saldos de cuentas",
