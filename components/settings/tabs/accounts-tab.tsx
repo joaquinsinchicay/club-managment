@@ -62,6 +62,12 @@ function AccountForm({
     ) ?? []
   );
   const [currenciesTouched, setCurrenciesTouched] = useState(false);
+  const [selectedVisibility, setSelectedVisibility] = useState<string[]>(
+    TREASURY_ACCOUNT_VISIBILITY_OPTIONS.filter((v) =>
+      v === "secretaria" ? (defaultAccount?.visibleForSecretaria ?? true) : (defaultAccount?.visibleForTesoreria ?? false)
+    )
+  );
+  const [visibilityTouched, setVisibilityTouched] = useState(false);
   const searchParams = useSearchParams();
   const feedbackCode = searchParams.get("feedback");
 
@@ -73,6 +79,13 @@ function AccountForm({
       onSuccess();
     }
   }, [feedbackCode, onSuccess]);
+
+  function handleVisibilityToggle(visibility: string, checked: boolean) {
+    setVisibilityTouched(true);
+    setSelectedVisibility((current) =>
+      checked ? [...current, visibility] : current.filter((v) => v !== visibility)
+    );
+  }
 
   function handleCurrencyToggle(currencyCode: TreasuryCurrencyCode, checked: boolean) {
     setCurrenciesTouched(true);
@@ -88,6 +101,11 @@ function AccountForm({
     <form
       action={action}
       onSubmit={(event) => {
+        if (selectedVisibility.length === 0) {
+          event.preventDefault();
+          setVisibilityTouched(true);
+          return;
+        }
         if (selectedCurrencies.length > 0) return;
         event.preventDefault();
         setCurrenciesTouched(true);
@@ -139,11 +157,8 @@ function AccountForm({
                   type="checkbox"
                   name="visibility"
                   value={visibility}
-                  defaultChecked={
-                    visibility === "secretaria"
-                      ? (defaultAccount?.visibleForSecretaria ?? true)
-                      : (defaultAccount?.visibleForTesoreria ?? false)
-                  }
+                  checked={selectedVisibility.includes(visibility)}
+                  onChange={(e) => handleVisibilityToggle(visibility, e.target.checked)}
                   className="size-4 rounded border-border"
                 />
                 <span className="font-medium">
@@ -152,6 +167,11 @@ function AccountForm({
               </label>
             ))}
           </div>
+          {visibilityTouched && selectedVisibility.length === 0 ? (
+            <p aria-live="assertive" className="text-sm text-destructive">
+              {texts.settings.club.treasury.feedback.account_visibility_required}
+            </p>
+          ) : null}
         </fieldset>
 
         <label className="grid gap-2 text-sm text-foreground">
@@ -202,7 +222,7 @@ function AccountForm({
         <PendingSubmitButton
           idleLabel={submitLabel}
           pendingLabel={pendingLabel}
-          disabled={selectedCurrencies.length === 0}
+          disabled={selectedVisibility.length === 0 || selectedCurrencies.length === 0}
           className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
       </PendingFieldset>

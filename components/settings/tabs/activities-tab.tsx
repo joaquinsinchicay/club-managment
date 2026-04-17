@@ -45,6 +45,12 @@ function ActivityForm({
   defaultActivity,
   onSuccess
 }: ActivityFormProps) {
+  const [selectedVisibility, setSelectedVisibility] = useState<string[]>(
+    TREASURY_ACCOUNT_VISIBILITY_OPTIONS.filter((v) =>
+      v === "secretaria" ? (defaultActivity?.visibleForSecretaria ?? true) : (defaultActivity?.visibleForTesoreria ?? false)
+    )
+  );
+  const [visibilityTouched, setVisibilityTouched] = useState(false);
   const searchParams = useSearchParams();
   const feedbackCode = searchParams.get("feedback");
 
@@ -54,8 +60,24 @@ function ActivityForm({
     }
   }, [feedbackCode, onSuccess]);
 
+  function handleVisibilityToggle(visibility: string, checked: boolean) {
+    setVisibilityTouched(true);
+    setSelectedVisibility((current) =>
+      checked ? [...current, visibility] : current.filter((v) => v !== visibility)
+    );
+  }
+
   return (
-    <form action={action} className="grid gap-4">
+    <form
+      action={action}
+      onSubmit={(event) => {
+        if (selectedVisibility.length === 0) {
+          event.preventDefault();
+          setVisibilityTouched(true);
+        }
+      }}
+      className="grid gap-4"
+    >
       <PendingFieldset className="grid gap-4">
         {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 
@@ -83,11 +105,8 @@ function ActivityForm({
                   type="checkbox"
                   name="visibility"
                   value={visibility}
-                  defaultChecked={
-                    visibility === "secretaria"
-                      ? (defaultActivity?.visibleForSecretaria ?? true)
-                      : (defaultActivity?.visibleForTesoreria ?? false)
-                  }
+                  checked={selectedVisibility.includes(visibility)}
+                  onChange={(e) => handleVisibilityToggle(visibility, e.target.checked)}
                   className="size-4 rounded border-border"
                 />
                 <span className="font-medium">
@@ -96,6 +115,11 @@ function ActivityForm({
               </label>
             ))}
           </div>
+          {visibilityTouched && selectedVisibility.length === 0 ? (
+            <p aria-live="assertive" className="text-sm text-destructive">
+              {texts.settings.club.treasury.feedback.account_visibility_required}
+            </p>
+          ) : null}
         </fieldset>
 
         <label className="grid gap-2 text-sm text-foreground">
@@ -117,6 +141,7 @@ function ActivityForm({
         <PendingSubmitButton
           idleLabel={submitLabel}
           pendingLabel={pendingLabel}
+          disabled={selectedVisibility.length === 0}
           className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
       </PendingFieldset>
