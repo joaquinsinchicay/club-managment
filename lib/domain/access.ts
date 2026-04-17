@@ -278,6 +278,9 @@ export type DashboardTreasuryCard = {
   movementDataStatus: "resolved" | "unresolved";
   sessionDate: string;
   sessionId: string | null;
+  sessionOpenedAt: string | null;
+  sessionOpenedByUserName: string | null;
+  sessionClosedAt: string | null;
   accounts: Array<{
     accountId: string;
     name: string;

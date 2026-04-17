@@ -6,7 +6,6 @@ import {
   updateSecretariaMovementAction
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateSecretaria } from "@/lib/domain/authorization";
@@ -21,28 +20,12 @@ import {
 } from "@/lib/services/treasury-service";
 import { texts } from "@/lib/texts";
 
-function getSessionTone(status: "open" | "closed" | "not_started") {
-  if (status === "open") {
-    return "success";
-  }
-
-  if (status === "closed") {
-    return "danger";
-  }
-
-  return "warning";
-}
-
-function getSessionLabel(status: "open" | "closed" | "not_started") {
-  if (status === "open") {
-    return texts.dashboard.treasury.session_open;
-  }
-
-  if (status === "closed") {
-    return texts.dashboard.treasury.session_closed;
-  }
-
-  return texts.dashboard.treasury.session_not_started;
+function formatSessionDateChip(sessionDate: string): string {
+  const date = new Date(`${sessionDate}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return sessionDate;
+  const weekday = new Intl.DateTimeFormat("es-AR", { weekday: "short" }).format(date);
+  const dayMonth = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }).format(date);
+  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1, 3)} · ${dayMonth}`;
 }
 
 export default async function SecretariaDashboardPage() {
@@ -90,12 +73,10 @@ export default async function SecretariaDashboardPage() {
         title={texts.dashboard.treasury.title}
         description={texts.dashboard.treasury.description}
         actions={
-          treasuryCard.sessionStatus === "unresolved" ? null : (
-            <StatusBadge
-              label={getSessionLabel(treasuryCard.sessionStatus)}
-              tone={getSessionTone(treasuryCard.sessionStatus)}
-            />
-          )
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-semibold text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+            {formatSessionDateChip(treasuryCard.sessionDate)}
+          </span>
         }
       />
 

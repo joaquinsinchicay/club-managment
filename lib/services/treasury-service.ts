@@ -1113,8 +1113,9 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     }
   }
 
+  const sessionUserIds = [session?.openedByUserId, session?.closedByUserId].filter((id): id is string => !!id);
   const users = await accessRepository.findUsersByIds(
-    [...new Set(visibleMovements.map((movement) => movement.createdByUserId))]
+    [...new Set([...visibleMovements.map((movement) => movement.createdByUserId), ...sessionUserIds])]
   );
   const usersById = new Map(users.map((user) => [user.id, user]));
   const categoriesById = new Map(categories.map((category) => [category.id, category]));
@@ -1127,6 +1128,9 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     movementDataStatus: movementDataResolved ? "resolved" : "unresolved",
     sessionDate,
     sessionId: session?.id ?? null,
+    sessionOpenedAt: session?.openedAt ?? null,
+    sessionOpenedByUserName: session?.openedByUserId ? (usersById.get(session.openedByUserId)?.fullName ?? null) : null,
+    sessionClosedAt: session?.closedAt ?? null,
     accounts: secretaryAccounts.map((account) => ({
       accountId: account.id,
       name: account.name,
