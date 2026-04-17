@@ -169,5 +169,5 @@ export async function updateReceiptFormatAction(formData: FormData) {
     visibility: formData.getAll("visibility").map(String)
   });
 
-  redirectToSettings(result.code, "treasury");
+  redirectToSettings(result.code, "sistema-de-socios");
 }

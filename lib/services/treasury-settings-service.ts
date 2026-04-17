@@ -9,7 +9,6 @@ import type {
   TreasurySettings
 } from "@/lib/domain/access";
 import { canAccessTreasurySettings, canMutateTreasurySettings } from "@/lib/domain/authorization";
-import { getDefaultReceiptFormats } from "@/lib/receipt-formats";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { texts } from "@/lib/texts";
 import { getSystemTreasuryCategoryDefinition } from "@/lib/treasury-system-categories";
@@ -256,11 +255,12 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
 
   const activeClubId = context.activeClub.id;
 
-  const [accounts, categories, activities, calendarEvents] = await Promise.all([
+  const [accounts, categories, activities, calendarEvents, receiptFormats] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(activeClubId),
     accessRepository.listTreasuryCategoriesForClub(activeClubId),
     accessRepository.listClubActivitiesForClub(activeClubId),
-    accessRepository.listClubCalendarEventsForClub(activeClubId)
+    accessRepository.listClubCalendarEventsForClub(activeClubId),
+    accessRepository.listReceiptFormatsForClub(activeClubId)
   ]);
 
   return {
@@ -268,7 +268,7 @@ export async function getTreasurySettingsForActiveClub(): Promise<TreasurySettin
     categories,
     activities,
     calendarEvents,
-    receiptFormats: getDefaultReceiptFormats(activeClubId),
+    receiptFormats,
     currencies: FIXED_TREASURY_CURRENCIES.map((currency) => ({
       clubId: activeClubId,
       currencyCode: currency.currencyCode,
@@ -840,6 +840,10 @@ export async function updateReceiptFormatForActiveClub(input: {
 
   const validationType = input.validationType as ReceiptFormat["validationType"];
   const selectedVisibility = normalizeAccountVisibility(input.visibility);
+
+  if (selectedVisibility.length === 0) {
+    return { ok: false, code: "account_visibility_required" };
+  }
 
   const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
   const existingReceiptFormat = receiptFormats.find((f) => f.id === input.receiptFormatId);
