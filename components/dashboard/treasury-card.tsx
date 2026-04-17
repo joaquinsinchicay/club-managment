@@ -463,18 +463,12 @@ function MovementsCard({
                 <ModalTriggerButton
                   onClick={() => onEditMovement(movement)}
                   aria-label={texts.dashboard.treasury.edit_movement_cta}
-                  className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
+                  className="cursor-pointer border-0 bg-transparent p-0 text-[11px] font-semibold text-slate-500 hover:text-foreground"
                 >
-                  <EditMovementIcon />
+                  {texts.dashboard.treasury.movements_edit_cta}
                 </ModalTriggerButton>
               ) : undefined
             }))}
-            conceptLabel={texts.dashboard.treasury.movements_concept_label}
-            accountLabel={texts.dashboard.treasury.movements_account_label}
-            detailLabel={texts.dashboard.treasury.movements_detail_label}
-            amountLabel={texts.dashboard.treasury.movements_amount_label}
-            actionsLabel={texts.dashboard.treasury.movements_actions_label}
-            createdByLabel={texts.dashboard.treasury.movements_created_by_label}
           />
         )}
       </div>

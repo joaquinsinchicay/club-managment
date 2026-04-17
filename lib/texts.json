@@ -159,6 +159,7 @@
       "open_session_flow_description": "Habilitar jornada actual",
       "movements_card_title": "Movimientos de la jornada",
       "movements_card_description": "registrados",
+      "movements_edit_cta": "Editar",
       "movements_empty": "Todavia no hay movimientos registrados.",
       "movements_unresolved": "No pudimos cargar los movimientos del dia. Recarga la pantalla para volver a intentarlo.",
       "movements_concept_label": "Concepto",
