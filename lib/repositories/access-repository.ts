@@ -36,7 +36,7 @@ import type {
   User
 } from "@/lib/domain/access";
 import { MEMBERSHIP_ROLES, sortMembershipRoles } from "@/lib/domain/membership-roles";
-import { getDefaultReceiptFormatSeed } from "@/lib/receipt-formats";
+import { buildDefaultReceiptFormat, getDefaultReceiptFormatSeed } from "@/lib/receipt-formats";
 import {
   SYSTEM_TREASURY_CATEGORY_DEFINITIONS,
   getSystemTreasuryCategoryDefinition,
@@ -2126,13 +2126,10 @@ async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepo
     return receiptFormats;
   }
 
-  const defaultReceiptFormat = getDefaultReceiptFormatSeed();
-  const createdReceiptFormat = await createRealReceiptFormat({
-    clubId,
-    ...defaultReceiptFormat
-  });
-
-  return [createdReceiptFormat];
+  // Keep the settings page render read-only. If a club still lacks persisted
+  // receipt formats, expose a functional default in memory and defer the actual
+  // insert until an admin explicitly saves changes.
+  return [buildDefaultReceiptFormat(clubId)];
 }
 
 async function listRealTreasuryCurrenciesForClub(clubId: string, client?: AccessRepositoryClient) {

@@ -837,33 +837,51 @@ export async function updateReceiptFormatForActiveClub(input: {
 
   const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
   const existingReceiptFormat = receiptFormats.find((f) => f.id === input.receiptFormatId);
+  const shouldCreateReceiptFormat =
+    receiptFormats.length === 0 || input.receiptFormatId.startsWith("receipt-format-default-");
 
-  if (!existingReceiptFormat) {
+  if (!existingReceiptFormat && !shouldCreateReceiptFormat) {
     return { ok: false, code: "receipt_format_not_found" };
   }
 
   const pattern = validationType === "pattern" ? "^[a-zA-Z0-9]+$" : null;
+  const visibleForSecretaria = selectedVisibility.includes("secretaria");
+  const visibleForTesoreria = selectedVisibility.includes("tesoreria");
 
-  let updated: ReceiptFormat | null = null;
+  let saved: ReceiptFormat | null = null;
 
   try {
-    updated = await accessRepository.updateReceiptFormat({
-      receiptFormatId: input.receiptFormatId,
-      clubId: context.activeClub.id,
-      name,
-      validationType,
-      pattern,
-      minNumericValue: null,
-      example: null,
-      status: existingReceiptFormat.status,
-      visibleForSecretaria: selectedVisibility.includes("secretaria"),
-      visibleForTesoreria: selectedVisibility.includes("tesoreria")
-    });
+    if (shouldCreateReceiptFormat) {
+      saved = await accessRepository.createReceiptFormat({
+        clubId: context.activeClub.id,
+        name,
+        validationType,
+        pattern,
+        minNumericValue: null,
+        example: null,
+        status: "active",
+        visibleForSecretaria,
+        visibleForTesoreria
+      });
+    } else {
+      saved = await accessRepository.updateReceiptFormat({
+        receiptFormatId: input.receiptFormatId,
+        clubId: context.activeClub.id,
+        name,
+        validationType,
+        pattern,
+        minNumericValue: null,
+        example: null,
+        status: existingReceiptFormat!.status,
+        visibleForSecretaria,
+        visibleForTesoreria
+      });
+    }
   } catch (error) {
     return resolveTreasurySettingsMutationError(error, "update_receipt_format_for_active_club", context.activeClub.id);
   }
 
-  if (!updated) {
+  if (!saved) {
     return { ok: false, code: "unknown_error" };
   }
 
