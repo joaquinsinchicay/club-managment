@@ -629,13 +629,13 @@ Sí
 ### 5.11 Set receipt formats
 
 **Purpose**
-Exponer la configuración bootstrap del campo recibo del sistema de socios para el club activo.
+Permitir que Admin consulte y actualice la configuración bootstrap del campo recibo del sistema de socios para el club activo.
 
 **Auth required**
 Sí
 
 **Allowed roles**
-`tesoreria`
+`admin`
 
 **Behavior**
 
@@ -646,6 +646,7 @@ Sí
 - El club debe contar siempre con una configuración persistida en `receipt_formats`; si no existe, debe bootstrapearse con los defaults del sistema.
 - La configuración puede quedar oculta para todos los roles si `visible_for_secretaria=false` y `visible_for_tesoreria=false`.
 - La UI no administra colecciones libres de formatos en esta iteración.
+- Solo `admin` puede mutar la configuración del sistema de socios.
 
 **Output**
 
