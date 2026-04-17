@@ -716,7 +716,9 @@ export function TreasuryCard({
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury.movement_form_title}
         description={texts.dashboard.treasury.movement_form_description}
-        closeDisabled={isMovementSubmissionPending || isMovementUpdatePending}
+        closeDisabled={isMovementSubmissionPending}
+        hideCloseButton
+        panelClassName="max-w-xl"
       >
         <SecretariaMovementForm
           accounts={movementAccounts}
@@ -729,6 +731,7 @@ export function TreasuryCard({
           submitLabel={texts.dashboard.treasury.create_cta}
           pendingLabel={texts.dashboard.treasury.create_loading}
           sessionDate={localTreasuryCard.sessionDate}
+          onCancel={() => setActiveModal(null)}
         />
       </Modal>
 

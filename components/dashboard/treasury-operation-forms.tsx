@@ -508,9 +508,11 @@ export function SecretariaMovementForm({
   pendingLabel,
   submitAction,
   sessionDate,
+  onCancel,
   copy = texts.dashboard.treasury
 }: BaseMovementFormProps & {
   sessionDate: string;
+  onCancel?: () => void;
   copy?: OperationalFormCopy;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(buildEmptySecretariaMovementFormState);
@@ -553,11 +555,14 @@ export function SecretariaMovementForm({
   const selectedParentCategory =
     availableCategories.find((c) => c.id === formState.categoryId)?.parentCategory ?? "";
 
+  const hasMultipleCurrencies = availableCurrencies.length > 1;
+
+  const hasActivityAndReceipt = activities.length > 0 && receiptFormats.length > 0;
+
   return (
     <form
       action={async (formData) => { await submitAction(formData); }}
       className="grid gap-4"
-      onReset={() => setFormState(buildEmptySecretariaMovementFormState())}
     >
       <PendingFieldset className="grid gap-4">
         {/* FECHA */}
@@ -603,41 +608,6 @@ export function SecretariaMovementForm({
           <input type="hidden" name="movement_type" value={formState.movementType} />
         </div>
 
-        {/* MONTO - currency + amount inline */}
-        <div className="grid gap-2">
-          <p className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.amount_label, copy)}</p>
-          <div className="flex gap-2">
-            <select
-              name="currency_code"
-              value={formState.currencyCode}
-              onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))}
-              disabled={availableCurrencies.length === 0}
-              className={cn(
-                "w-20 shrink-0",
-                availableCurrencies.length === 0 ? DISABLED_CONTROL_CLASSNAME : CONTROL_CLASSNAME
-              )}
-            >
-              <option value="" disabled>{copy.currency_placeholder}</option>
-              {availableCurrencies.map((c) => (
-                <option key={c.currencyCode} value={c.currencyCode}>{c.currencyCode}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              name="amount"
-              inputMode="decimal"
-              value={formState.amount}
-              onChange={(e) => setFormState((s) => ({ ...s, amount: sanitizeAmountInput(e.target.value) }))}
-              onBlur={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnBlur(e.target.value) }))}
-              onFocus={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnFocus(e.target.value) }))}
-              onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
-              placeholder="0,00"
-              className={cn(CONTROL_CLASSNAME, "flex-1 text-right tabular-nums")}
-            />
-          </div>
-          <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.amount_helper_text}</p>
-        </div>
-
         {/* CUENTA */}
         <label className="grid gap-2">
           <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.account_label, copy)}</span>
@@ -654,19 +624,48 @@ export function SecretariaMovementForm({
           </select>
         </label>
 
-        {/* CATEGORÍA / SUBCATEGORÍA */}
-        <div className="grid grid-cols-2 gap-3">
-          <label className="grid gap-2">
-            <span className={FIELD_LABEL_CLASSNAME}>{copy.parent_category_label}</span>
+        {/* MONTO */}
+        <div className="grid gap-2">
+          <p className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.amount_label, copy)}</p>
+          <div className="flex gap-2">
+            {hasMultipleCurrencies ? (
+              <select
+                name="currency_code"
+                value={formState.currencyCode}
+                onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))}
+                className={cn(CONTROL_CLASSNAME, "w-24 shrink-0")}
+              >
+                <option value="" disabled>{copy.currency_placeholder}</option>
+                {availableCurrencies.map((c) => (
+                  <option key={c.currencyCode} value={c.currencyCode}>{c.currencyCode}</option>
+                ))}
+              </select>
+            ) : (
+              <>
+                <input type="hidden" name="currency_code" value={formState.currencyCode} />
+                <div className={cn(DISABLED_CONTROL_CLASSNAME, "w-24 shrink-0 text-center font-medium text-foreground")}>
+                  {formState.currencyCode || "—"}
+                </div>
+              </>
+            )}
             <input
               type="text"
-              value={selectedParentCategory}
-              disabled
-              readOnly
-              placeholder="—"
-              className={DISABLED_CONTROL_CLASSNAME}
+              name="amount"
+              inputMode="decimal"
+              value={formState.amount}
+              onChange={(e) => setFormState((s) => ({ ...s, amount: sanitizeAmountInput(e.target.value) }))}
+              onBlur={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnBlur(e.target.value) }))}
+              onFocus={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnFocus(e.target.value) }))}
+              onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
+              placeholder="0,00"
+              className={cn(CONTROL_CLASSNAME, "flex-1 text-right tabular-nums")}
             />
-          </label>
+          </div>
+          <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.amount_helper_text}</p>
+        </div>
+
+        {/* SUBCATEGORÍA (izq) / CATEGORÍA (der) */}
+        <div className="grid grid-cols-2 gap-3">
           <label className="grid gap-2">
             <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.category_label, copy)}</span>
             <select
@@ -682,52 +681,96 @@ export function SecretariaMovementForm({
               ))}
             </select>
           </label>
+          <label className="grid gap-2">
+            <span className={FIELD_LABEL_CLASSNAME}>{copy.parent_category_label}</span>
+            <input
+              type="text"
+              value={selectedParentCategory}
+              disabled
+              readOnly
+              placeholder="—"
+              className={DISABLED_CONTROL_CLASSNAME}
+            />
+          </label>
         </div>
         <p className="-mt-2 text-[11px] text-muted-foreground">{texts.dashboard.treasury.category_helper_text}</p>
 
-        {/* ACTIVIDAD */}
-        {activities.length > 0 ? (
-          <label className="grid gap-2">
-            <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
-            <select
-              name="activity_id"
-              value={formState.activityId}
-              onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
-              className={CONTROL_CLASSNAME}
-            >
-              <option value="">{copy.activity_placeholder}</option>
-              {activities.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-
-        {/* RECIBO */}
-        {receiptFormats.length > 0 ? (
-          <label className="grid gap-2">
-            <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
-            <input
-              type="text"
-              name="receipt_number"
-              value={formState.receiptNumber}
-              inputMode={receiptFormats[0]?.validationType === "numeric" ? "numeric" : "text"}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (receiptFormats[0]?.validationType === "numeric") {
-                  if (value === "" || /^[0-9]+$/.test(value)) {
-                    setFormState((s) => ({ ...s, receiptNumber: value }));
+        {/* ACTIVIDAD + RECIBO en la misma fila si ambos existen */}
+        {hasActivityAndReceipt ? (
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-2">
+              <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
+              <select
+                name="activity_id"
+                value={formState.activityId}
+                onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
+                className={CONTROL_CLASSNAME}
+              >
+                <option value="">{copy.activity_placeholder}</option>
+                {activities.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-2">
+              <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
+              <input
+                type="text"
+                name="receipt_number"
+                value={formState.receiptNumber}
+                inputMode={receiptFormats[0]?.validationType === "numeric" ? "numeric" : "text"}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (receiptFormats[0]?.validationType === "numeric") {
+                    if (value === "" || /^[0-9]+$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
+                  } else {
+                    if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
                   }
-                } else {
-                  if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) {
-                    setFormState((s) => ({ ...s, receiptNumber: value }));
-                  }
-                }
-              }}
-              className={CONTROL_CLASSNAME}
-            />
-          </label>
-        ) : null}
+                }}
+                className={CONTROL_CLASSNAME}
+              />
+            </label>
+          </div>
+        ) : (
+          <>
+            {activities.length > 0 ? (
+              <label className="grid gap-2">
+                <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
+                <select
+                  name="activity_id"
+                  value={formState.activityId}
+                  onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
+                  className={CONTROL_CLASSNAME}
+                >
+                  <option value="">{copy.activity_placeholder}</option>
+                  {activities.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {receiptFormats.length > 0 ? (
+              <label className="grid gap-2">
+                <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
+                <input
+                  type="text"
+                  name="receipt_number"
+                  value={formState.receiptNumber}
+                  inputMode={receiptFormats[0]?.validationType === "numeric" ? "numeric" : "text"}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (receiptFormats[0]?.validationType === "numeric") {
+                      if (value === "" || /^[0-9]+$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
+                    } else {
+                      if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
+                    }
+                  }}
+                  className={CONTROL_CLASSNAME}
+                />
+              </label>
+            ) : null}
+          </>
+        )}
 
         {/* CONCEPTO */}
         <label className="grid gap-2">
@@ -745,7 +788,8 @@ export function SecretariaMovementForm({
         {/* BUTTONS */}
         <div className="grid grid-cols-2 gap-3">
           <button
-            type="reset"
+            type="button"
+            onClick={onCancel}
             className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {copy.reset_cta}
