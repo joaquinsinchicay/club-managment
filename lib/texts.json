@@ -341,7 +341,23 @@
       "movement_types": {
         "ingreso": "Ingreso",
         "egreso": "Egreso"
-      }
+      },
+      "tab_resumen": "Resumen",
+      "tab_cuentas": "Cuentas",
+      "tab_movimientos": "Movimientos",
+      "tab_conciliacion": "Conciliacion",
+      "kpi_total_balance_label": "Saldo total",
+      "kpi_accounts_count_label": "cuentas activas",
+      "quick_actions_title": "Acciones rapidas",
+      "quick_actions_description": "Operaciones frecuentes",
+      "all_accounts_filter": "Todas las cuentas",
+      "accounts_tab_description": "Cuentas visibles para Tesoreria",
+      "account_type_bancaria": "Bancaria",
+      "account_type_efectivo": "Efectivo",
+      "account_type_billetera": "Billetera virtual",
+      "conciliacion_tab_description": "Revisa y aprueba movimientos cargados por Secretaria.",
+      "conciliacion_tab_cta": "Abrir consolidacion",
+      "conciliacion_tab_pending_count": "{count} pendientes"
     },
     "consolidation": {
       "eyebrow": "Consolidacion",
