@@ -1,3 +1,4 @@
+import type React from "react";
 import Link from "next/link";
 
 import type { TreasuryAccount, TreasuryAccountDetail } from "@/lib/domain/access";
@@ -23,22 +24,45 @@ function formatPaginationText(template: string, values: Record<string, number>) 
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ""));
 }
 
-function getMovementAmountClassName(movementType: "ingreso" | "egreso") {
-  return movementType === "ingreso" ? "text-success" : "text-destructive";
+function getBulletColor(type: "ingreso" | "egreso" | string): string {
+  if (type === "ingreso") return "var(--green)";
+  if (type === "egreso") return "var(--red)";
+  return "var(--slate-400)";
+}
+
+function getAmountColor(type: "ingreso" | "egreso" | string): string {
+  if (type === "ingreso") return "var(--green-700)";
+  if (type === "egreso") return "var(--red-700)";
+  return "var(--slate-700)";
+}
+
+function formatAmount(type: "ingreso" | "egreso" | string, currencyCode: string, amount: number): string {
+  const sign = type === "ingreso" ? "+" : type === "egreso" ? "-" : "";
+  const symbol = currencyCode === "ARS" ? "$" : "US$";
+  return `${sign}${symbol} ${formatLocalizedAmount(amount)}`;
 }
 
 function formatMovementDateTime(value: string) {
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
+  if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short"
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
   }).format(date);
 }
+
+const chipStyle: React.CSSProperties = {
+  background: "var(--slate-100)",
+  color: "var(--slate-600)",
+  borderRadius: 4,
+  fontSize: 10,
+  fontWeight: 600,
+  padding: "2px 6px",
+  lineHeight: "16px"
+};
 
 function formatMovementGroupDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
@@ -156,99 +180,81 @@ export function AccountDetailCard({
                   {texts.dashboard.treasury.detail_empty_movements}
                 </div>
               ) : (
-                <div className="grid gap-3">
-                  {movementGroups.map((group) => (
-                    <section key={group.movementDate} className="space-y-3">
-                      <div className="rounded-xl border border-border bg-card px-4 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                          {texts.dashboard.treasury.date_label}
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-foreground">
+                <div className="overflow-hidden rounded-[18px] border border-border bg-card">
+                  {movementGroups.map((group, groupIndex) => (
+                    <section key={group.movementDate}>
+                      <div className={`flex items-center gap-3 px-4 py-2 ${groupIndex > 0 ? "border-t border-border" : ""} bg-secondary/20`}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                           {formatMovementGroupDate(group.movementDate)}
                         </p>
                       </div>
 
-                      <div className="overflow-hidden rounded-[18px] border border-border">
-                        <div className="hidden bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(170px,0.8fr)] md:items-center md:gap-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                            {texts.dashboard.treasury.movements_concept_label}
-                          </p>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                            {texts.dashboard.treasury.movements_account_label}
-                          </p>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                            {texts.dashboard.treasury.movements_detail_label}
-                          </p>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
-                            {texts.dashboard.treasury.movements_amount_label}
-                          </p>
-                        </div>
+                      <div className="divide-y divide-border">
+                        {group.movements.map((movement) => {
+                          const meta = [
+                            movement.movementDisplayId,
+                            movement.createdByUserName,
+                            movement.receiptNumber
+                              ? `${texts.dashboard.treasury.detail_receipt_label} ${movement.receiptNumber}`
+                              : null,
+                            movement.transferReference
+                              ? `${texts.dashboard.treasury.detail_transfer_label} ${getTransferReferenceSuffix(movement.transferReference)}`
+                              : null,
+                            movement.fxOperationReference
+                              ? `${texts.dashboard.treasury.detail_fx_label} ${getTransferReferenceSuffix(movement.fxOperationReference)}`
+                              : null,
+                            movement.calendarEventTitle
+                          ]
+                            .filter(Boolean)
+                            .join(" · ");
 
-                        <div className="grid gap-3 bg-card p-3 md:gap-0 md:bg-transparent md:p-0">
-                          {group.movements.map((movement, index) => (
-                            <article
-                              key={movement.movementId}
-                              className={`rounded-[18px] border border-border bg-card p-4 shadow-soft md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(170px,0.8fr)] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none ${
-                                index === 0 ? "md:border-t-0" : ""
-                              } ${index === group.movements.length - 1 ? "md:last:rounded-b-[18px]" : ""}`}
-                            >
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                                  {movement.movementDisplayId}
-                                </p>
-                                <p className="mt-1 text-base font-semibold text-foreground">{movement.concept}</p>
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                  {formatMovementDateTime(movement.createdAt)} · {movement.createdByUserName}
-                                </p>
-                              </div>
+                          return (
+                            <article key={movement.movementId} className="px-4 py-3 transition-colors hover:bg-slate-50">
+                              <div className="flex items-start gap-3">
+                                <span
+                                  className="mt-1.5 size-2 shrink-0 rounded-full"
+                                  style={{ background: getBulletColor(movement.movementType) }}
+                                  aria-hidden="true"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <p
+                                      className="overflow-hidden text-[14px] font-semibold leading-snug text-foreground"
+                                      style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2 }}
+                                    >
+                                      {movement.concept}
+                                    </p>
+                                    <p
+                                      className="shrink-0 text-[14px] font-semibold tabular-nums"
+                                      style={{ color: getAmountColor(movement.movementType) }}
+                                    >
+                                      {formatAmount(movement.movementType, movement.currencyCode, movement.amount)}
+                                    </p>
+                                  </div>
 
-                              <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                                  {texts.dashboard.treasury.movements_account_label}
-                                </p>
-                                <p className="font-medium text-foreground">{detail.account.name}</p>
-                              </div>
+                                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                                    <div className="flex flex-wrap gap-1">
+                                      <span style={chipStyle}>{detail.account.name}</span>
+                                      {movement.categoryName ? (
+                                        <span style={chipStyle}>{movement.categoryName}</span>
+                                      ) : null}
+                                      {movement.activityName ? (
+                                        <span style={chipStyle}>{movement.activityName}</span>
+                                      ) : null}
+                                    </div>
+                                    <p className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                                      {formatMovementDateTime(movement.createdAt)}
+                                    </p>
+                                  </div>
 
-                              <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                                  {texts.dashboard.treasury.movements_detail_label}
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                  <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                    {movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
-                                  </span>
-                                  {movement.activityName ? (
-                                    <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                      {movement.activityName}
-                                    </span>
-                                  ) : null}
+                                  <div className="mt-1">
+                                    <p className="text-[11px] text-muted-foreground">{meta}</p>
+                                  </div>
                                 </div>
-                                {movement.transferReference ? (
-                                  <p>
-                                    <span className="font-medium text-foreground">
-                                      {texts.dashboard.treasury.detail_transfer_label}
-                                    </span>{" "}
-                                    {getTransferReferenceSuffix(movement.transferReference)}
-                                  </p>
-                                ) : null}
-                              </div>
-
-                              <div className="mt-4 md:mt-0 md:text-right">
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                                  {texts.dashboard.treasury.movements_amount_label}
-                                </p>
-                                <p
-                                  className={`text-2xl font-semibold tracking-tight md:text-[1.75rem] ${getMovementAmountClassName(
-                                    movement.movementType
-                                  )}`}
-                                >
-                                  {movement.movementType === "egreso" ? "-" : "+"} {movement.currencyCode}{" "}
-                                  {formatLocalizedAmount(movement.amount)}
-                                </p>
                               </div>
                             </article>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
                     </section>
                   ))}
