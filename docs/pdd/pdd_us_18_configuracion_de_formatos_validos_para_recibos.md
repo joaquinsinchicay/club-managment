@@ -34,6 +34,7 @@ Un usuario `admin` debe poder editar dentro de `Configuración del club` el nomb
 - Validación client-side y server-side del campo en formularios operativos según tipo configurado.
 - El label del campo en formularios es dinámico y proviene del `Nombre` configurado.
 - Cuando la visibilidad es "Oculta", el campo no se muestra en ningún formulario operativo.
+- Bootstrap defensivo de la configuración para que el club siempre disponga de un `receipt_format` editable, incluso si no existía registro persistido.
 
 ### No incluye
 - Visualización de ejemplo, patrón regex ni próximo recibo en la UI.
@@ -53,7 +54,7 @@ Usuario autenticado con membership `activo` y rol `admin` para editar la configu
 
 - El club activo está resuelto.
 - El usuario `admin` puede acceder a `Configuración del club`.
-- Existe al menos un registro en `receipt_formats` para el club activo.
+- El club activo debe contar con al menos un registro en `receipt_formats`; si no existe, el sistema debe bootstrapearlo automáticamente antes de renderizar la sección.
 
 ---
 
@@ -169,7 +170,8 @@ Usuario autenticado con membership `activo` y rol `admin` para editar la configu
 ## 13. Persistencia
 
 ### Entidades afectadas
-- `receipt_formats`: READ y UPDATE de `name`, `validation_type`, `visible_for_secretaria`, `visible_for_tesoreria`. Los campos `pattern`, `min_numeric_value` y `example` se mantienen en DB pero no se exponen en la UI.
+- `receipt_formats`: READ, CREATE defensivo y UPDATE de `name`, `validation_type`, `visible_for_secretaria`, `visible_for_tesoreria`. Los campos `pattern`, `min_numeric_value` y `example` se mantienen en DB pero no se exponen en la UI.
+- Si el club no tiene registros, el sistema debe crear uno con los defaults funcionales del sistema de socios y visibilidad inicial `Oculta`.
 
 Do not reference current code files.
 

@@ -38,7 +38,6 @@ function ReceiptFormatForm({ action, defaultFormat, onSuccess }: ReceiptFormatFo
       v === "secretaria" ? defaultFormat.visibleForSecretaria : defaultFormat.visibleForTesoreria
     )
   );
-  const [visibilityTouched, setVisibilityTouched] = useState(false);
   const searchParams = useSearchParams();
   const feedbackCode = searchParams.get("feedback");
 
@@ -49,23 +48,13 @@ function ReceiptFormatForm({ action, defaultFormat, onSuccess }: ReceiptFormatFo
   }, [feedbackCode, onSuccess]);
 
   function handleVisibilityToggle(visibility: string, checked: boolean) {
-    setVisibilityTouched(true);
     setSelectedVisibility((current) =>
       checked ? [...current, visibility] : current.filter((v) => v !== visibility)
     );
   }
 
   return (
-    <form
-      action={action}
-      onSubmit={(event) => {
-        if (selectedVisibility.length === 0) {
-          event.preventDefault();
-          setVisibilityTouched(true);
-        }
-      }}
-      className="grid gap-4"
-    >
+    <form action={action} className="grid gap-4">
       <PendingFieldset className="grid gap-4">
         <input type="hidden" name="receipt_format_id" value={defaultFormat.id} />
 
@@ -119,17 +108,11 @@ function ReceiptFormatForm({ action, defaultFormat, onSuccess }: ReceiptFormatFo
               </label>
             ))}
           </div>
-          {visibilityTouched && selectedVisibility.length === 0 ? (
-            <p aria-live="assertive" className="text-sm text-destructive">
-              {texts.settings.club.treasury.feedback.account_visibility_required}
-            </p>
-          ) : null}
         </fieldset>
 
         <PendingSubmitButton
           idleLabel={texts.settings.club.treasury.update_receipt_format_cta}
           pendingLabel={texts.settings.club.treasury.update_receipt_format_loading}
-          disabled={selectedVisibility.length === 0}
           className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
       </PendingFieldset>
@@ -147,11 +130,7 @@ export function MembershipSystemsTab({ receiptFormats, updateReceiptFormatAction
   const [isEditing, setIsEditing] = useState(false);
 
   if (!receiptFormat) {
-    return (
-      <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-        {texts.settings.club.treasury.empty_receipt_formats}
-      </div>
-    );
+    return null;
   }
 
   return (

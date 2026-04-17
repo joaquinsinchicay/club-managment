@@ -364,10 +364,6 @@ export async function createTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "account_currencies_required" };
   }
 
-  if (selectedVisibility.length === 0) {
-    return { ok: false, code: "account_visibility_required" };
-  }
-
   if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
     return { ok: false, code: "invalid_account_currency" };
   }
@@ -453,10 +449,6 @@ export async function updateTreasuryAccountForActiveClub(input: {
 
   if (selectedCurrencies.length === 0) {
     return { ok: false, code: "account_currencies_required" };
-  }
-
-  if (selectedVisibility.length === 0) {
-    return { ok: false, code: "account_visibility_required" };
   }
 
   if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
@@ -791,7 +783,9 @@ export async function createReceiptFormatForActiveClub(input: {
       pattern: input.validationType === "pattern" ? pattern : null,
       minNumericValue: input.validationType === "numeric" ? parsedMin : null,
       example: example || null,
-      status: input.status as ReceiptFormat["status"]
+      status: input.status as ReceiptFormat["status"],
+      visibleForSecretaria: false,
+      visibleForTesoreria: false
     });
   } catch (error) {
     return resolveTreasurySettingsMutationError(error, "create_receipt_format_for_active_club", context.activeClub.id);
@@ -840,10 +834,6 @@ export async function updateReceiptFormatForActiveClub(input: {
 
   const validationType = input.validationType as ReceiptFormat["validationType"];
   const selectedVisibility = normalizeAccountVisibility(input.visibility);
-
-  if (selectedVisibility.length === 0) {
-    return { ok: false, code: "account_visibility_required" };
-  }
 
   const receiptFormats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
   const existingReceiptFormat = receiptFormats.find((f) => f.id === input.receiptFormatId);

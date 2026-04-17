@@ -36,6 +36,7 @@ import type {
   User
 } from "@/lib/domain/access";
 import { MEMBERSHIP_ROLES, sortMembershipRoles } from "@/lib/domain/membership-roles";
+import { getDefaultReceiptFormatSeed } from "@/lib/receipt-formats";
 import {
   SYSTEM_TREASURY_CATEGORY_DEFINITIONS,
   getSystemTreasuryCategoryDefinition,
@@ -285,6 +286,8 @@ type AccessRepository = {
     minNumericValue: number | null;
     example: string | null;
     status: ReceiptFormat["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
   }): Promise<ReceiptFormat | null>;
   updateReceiptFormat(input: {
     receiptFormatId: string;
@@ -1371,6 +1374,24 @@ function mapReceiptFormatRow(row: {
   };
 }
 
+function ensureMockReceiptFormatsForClub(clubId: string) {
+  const existingFormats = getStore().receiptFormats.filter((format) => format.clubId === clubId);
+
+  if (existingFormats.length > 0) {
+    return existingFormats;
+  }
+
+  const defaultReceiptFormat = getDefaultReceiptFormatSeed();
+  const receiptFormat: ReceiptFormat = {
+    id: `receipt-format-${clubId}-default`,
+    clubId,
+    ...defaultReceiptFormat
+  };
+
+  getStore().receiptFormats.push(receiptFormat);
+  return [receiptFormat];
+}
+
 function reconcileMockSystemTreasuryCategories(clubId: string) {
   const store = getStore();
   const clubCategories = store.treasuryCategories.filter((category) => category.clubId === clubId);
@@ -2099,7 +2120,19 @@ async function listRealReceiptFormatsForClub(clubId: string, client?: AccessRepo
     }>
   >("get_receipt_formats_for_current_club", clubId, client);
 
-  return rows.map(mapReceiptFormatRow);
+  const receiptFormats = rows.map(mapReceiptFormatRow);
+
+  if (receiptFormats.length > 0) {
+    return receiptFormats;
+  }
+
+  const defaultReceiptFormat = getDefaultReceiptFormatSeed();
+  const createdReceiptFormat = await createRealReceiptFormat({
+    clubId,
+    ...defaultReceiptFormat
+  });
+
+  return [createdReceiptFormat];
 }
 
 async function listRealTreasuryCurrenciesForClub(clubId: string, client?: AccessRepositoryClient) {
@@ -3759,6 +3792,8 @@ async function createRealReceiptFormat(
     minNumericValue: number | null;
     example: string | null;
     status: ReceiptFormat["status"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
   },
   client?: AccessRepositoryClient
 ) {
@@ -3775,9 +3810,11 @@ async function createRealReceiptFormat(
       pattern: input.pattern,
       min_numeric_value: input.minNumericValue,
       example: input.example,
-      status: input.status
+      status: input.status,
+      visible_for_secretaria: input.visibleForSecretaria,
+      visible_for_tesoreria: input.visibleForTesoreria
     })
-    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status")
+    .select("id,club_id,name,validation_type,pattern,min_numeric_value,example,status,visible_for_secretaria,visible_for_tesoreria")
     .single();
 
   if (error || !data) {
@@ -4360,7 +4397,7 @@ export const accessRepository: AccessRepository = {
       return listRealReceiptFormatsForClub(clubId);
     }
 
-    return getStore().receiptFormats.filter((format) => format.clubId === clubId);
+    return ensureMockReceiptFormatsForClub(clubId);
   },
   async listTreasuryCurrenciesForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
@@ -4560,8 +4597,8 @@ export const accessRepository: AccessRepository = {
       minNumericValue: input.minNumericValue,
       example: input.example,
       status: input.status,
-      visibleForSecretaria: true,
-      visibleForTesoreria: false
+      visibleForSecretaria: input.visibleForSecretaria,
+      visibleForTesoreria: input.visibleForTesoreria
     };
 
     getStore().receiptFormats.push(receiptFormat);

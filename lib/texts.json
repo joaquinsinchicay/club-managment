@@ -624,7 +624,7 @@
         "empty_categories": "Todavia no hay categorias configuradas para el club activo.",
         "empty_activities": "Todavia no hay actividades configuradas para el club activo.",
         "empty_calendar_events": "No hay eventos sincronizados disponibles para el club activo.",
-        "empty_receipt_formats": "No hay una integracion de recibos disponible para el club activo.",
+        "empty_receipt_formats": "No pudimos cargar la configuracion del sistema de socios del club activo.",
         "account_types": {
           "efectivo": "Efectivo",
           "bancaria": "Bancaria",

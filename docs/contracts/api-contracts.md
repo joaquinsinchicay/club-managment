@@ -629,7 +629,7 @@ Sí
 ### 5.11 Set receipt formats
 
 **Purpose**
-Exponer la integración predefinida del campo recibo.
+Exponer la configuración bootstrap del campo recibo del sistema de socios para el club activo.
 
 **Auth required**
 Sí
@@ -643,6 +643,8 @@ Sí
 - El ejemplo visible es `PAY-SOC-26205`.
 - El mínimo inclusivo es `PAY-SOC-10556`.
 - No existe máximo.
+- El club debe contar siempre con una configuración persistida en `receipt_formats`; si no existe, debe bootstrapearse con los defaults del sistema.
+- La configuración puede quedar oculta para todos los roles si `visible_for_secretaria=false` y `visible_for_tesoreria=false`.
 - La UI no administra colecciones libres de formatos en esta iteración.
 
 **Output**
@@ -655,7 +657,7 @@ Sí
     "pattern": "^PAY-SOC-[0-9]{5}$",
     "min_receipt": "PAY-SOC-10556",
     "max_receipt": null,
-    "editable": false
+    "editable": true
   }
 }
 ```
