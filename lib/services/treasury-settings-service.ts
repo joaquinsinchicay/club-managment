@@ -10,6 +10,7 @@ import type {
 } from "@/lib/domain/access";
 import { canAccessTreasurySettings, canMutateTreasurySettings } from "@/lib/domain/authorization";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
+import { getDefaultReceiptFormatSeed } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
 import { getSystemTreasuryCategoryDefinition } from "@/lib/treasury-system-categories";
 
@@ -51,6 +52,9 @@ type TreasurySettingsActionCode =
   | "calendar_event_updated"
   | "calendar_event_not_found"
   | "treasury_admin_config_missing"
+  | "receipt_format_admin_config_missing"
+  | "receipt_format_forbidden"
+  | "receipt_format_unknown_error"
   | "unknown_error";
 
 export type TreasurySettingsActionResult = {
@@ -157,6 +161,27 @@ function normalizeCategoryVisibility(input: string[]) {
 
 function normalizeActivityVisibility(input: string[]) {
   return normalizeAccountVisibility(input);
+}
+
+function resolveReceiptFormatPersistenceState(
+  validationType: ReceiptFormat["validationType"],
+  existingReceiptFormat?: ReceiptFormat | null
+) {
+  const defaults = getDefaultReceiptFormatSeed();
+  const baseReceiptFormat = existingReceiptFormat ?? defaults;
+
+  return {
+    pattern: validationType === "pattern" ? "^[a-zA-Z0-9]+$" : null,
+    minNumericValue:
+      validationType === "numeric"
+        ? baseReceiptFormat.minNumericValue ?? defaults.minNumericValue
+        : null,
+    example:
+      baseReceiptFormat.example ??
+      (validationType === "numeric"
+        ? String(baseReceiptFormat.minNumericValue ?? defaults.minNumericValue)
+        : defaults.example)
+  };
 }
 
 function resolveTreasurySettingsMutationError(
@@ -811,7 +836,7 @@ export async function updateReceiptFormatForActiveClub(input: {
   const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
-    return { ok: false, code: "forbidden" };
+    return { ok: false, code: "receipt_format_forbidden" };
   }
 
   const name = normalizeConfigName(input.name);
@@ -844,7 +869,7 @@ export async function updateReceiptFormatForActiveClub(input: {
     return { ok: false, code: "receipt_format_not_found" };
   }
 
-  const pattern = validationType === "pattern" ? "^[a-zA-Z0-9]+$" : null;
+  const persistenceState = resolveReceiptFormatPersistenceState(validationType, existingReceiptFormat);
   const visibleForSecretaria = selectedVisibility.includes("secretaria");
   const visibleForTesoreria = selectedVisibility.includes("tesoreria");
 
@@ -856,9 +881,9 @@ export async function updateReceiptFormatForActiveClub(input: {
         clubId: context.activeClub.id,
         name,
         validationType,
-        pattern,
-        minNumericValue: null,
-        example: null,
+        pattern: persistenceState.pattern,
+        minNumericValue: persistenceState.minNumericValue,
+        example: persistenceState.example,
         status: "active",
         visibleForSecretaria,
         visibleForTesoreria
@@ -869,20 +894,34 @@ export async function updateReceiptFormatForActiveClub(input: {
         clubId: context.activeClub.id,
         name,
         validationType,
-        pattern,
-        minNumericValue: null,
-        example: null,
+        pattern: persistenceState.pattern,
+        minNumericValue: persistenceState.minNumericValue,
+        example: persistenceState.example,
         status: existingReceiptFormat!.status,
         visibleForSecretaria,
         visibleForTesoreria
       });
     }
   } catch (error) {
-    return resolveTreasurySettingsMutationError(error, "update_receipt_format_for_active_club", context.activeClub.id);
+    const result = resolveTreasurySettingsMutationError(
+      error,
+      "update_receipt_format_for_active_club",
+      context.activeClub.id
+    );
+
+    if (result.code === "treasury_admin_config_missing") {
+      return { ok: false, code: "receipt_format_admin_config_missing" };
+    }
+
+    if (result.code === "unknown_error") {
+      return { ok: false, code: "receipt_format_unknown_error" };
+    }
+
+    return result;
   }
 
   if (!saved) {
-    return { ok: false, code: "unknown_error" };
+    return { ok: false, code: "receipt_format_unknown_error" };
   }
 
   return { ok: true, code: "receipt_format_updated" };
