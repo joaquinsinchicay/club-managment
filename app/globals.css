@@ -3,22 +3,34 @@
 @tailwind utilities;
 
 :root {
-  --background: 210 20% 98%;
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --primary: 222 47% 11%;
+  /* Surfaces — warm-neutral palette (Gridiron Ledger design system) */
+  --background: 348 50% 99%;              /* #fcf8f9 */
+  --foreground: 240 3% 20%;               /* #323235 */
+  --card: 0 0% 100%;                      /* #ffffff */
+  --card-foreground: 240 3% 20%;          /* #323235 */
+  --surface-container-low: 345 14% 96%;   /* #f6f3f4 */
+  --surface-container: 300 6% 94%;        /* #f0edef */
+  --surface-container-high: 300 4% 91%;   /* #eae7ea */
+  --surface-dim: 270 3% 86%;              /* #dbd9dd */
+
+  /* Structure */
+  --primary: 222 47% 11%;                 /* #0F172A — slate */
   --primary-foreground: 210 40% 98%;
-  --secondary: 210 24% 96%;
+  --secondary: 300 6% 94%;               /* surface-container */
   --secondary-foreground: 222 47% 11%;
-  --border: 214 24% 88%;
-  --muted: 210 24% 96%;
-  --muted-foreground: 215 14% 42%;
-  --accent: 142 84% 39%;
+
+  /* Borders & outlines */
+  --border: 270 1% 71%;                   /* #b3b1b4 — outline_variant (subtle) */
+  --outline: 270 1% 48%;                  /* #7b7a7d — outline (inputs, focus rings) */
+  --muted: 300 6% 94%;                    /* surface-container */
+  --muted-foreground: 240 1% 38%;         /* #5f5f61 — on_surface_variant */
+
+  /* Semantic tones */
+  --accent: 142 84% 39%;                  /* #10B981 — income / open */
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;
-  --success: 160 84% 39%;
-  --warning: 38 92% 50%;
+  --destructive: 0 84% 60%;               /* #EF4444 — expense / closed */
+  --success: 160 84% 39%;                 /* healthy final state */
+  --warning: 38 92% 50%;                  /* #F59E0B — pending / attention */
 }
 
 * {
@@ -32,7 +44,7 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background: #f8fafc;
+  background: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }

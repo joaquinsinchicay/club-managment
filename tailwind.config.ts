@@ -18,13 +18,18 @@ const config: Config = {
         secondary: "hsl(var(--secondary))",
         "secondary-foreground": "hsl(var(--secondary-foreground))",
         border: "hsl(var(--border))",
+        outline: "hsl(var(--outline))",
         muted: "hsl(var(--muted))",
         "muted-foreground": "hsl(var(--muted-foreground))",
         accent: "hsl(var(--accent))",
         "accent-foreground": "hsl(var(--accent-foreground))",
         destructive: "hsl(var(--destructive))",
         success: "hsl(var(--success))",
-        warning: "hsl(var(--warning))"
+        warning: "hsl(var(--warning))",
+        "surface-container-low": "hsl(var(--surface-container-low))",
+        "surface-container": "hsl(var(--surface-container))",
+        "surface-container-high": "hsl(var(--surface-container-high))",
+        "surface-dim": "hsl(var(--surface-dim))"
       },
       boxShadow: {
         soft: "0 10px 24px -18px rgba(15, 23, 42, 0.18)"

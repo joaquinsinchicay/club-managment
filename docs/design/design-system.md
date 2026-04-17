@@ -219,12 +219,24 @@ Purpose-driven colors only:
 * green `#10B981` → income / open / healthy final state
 * red `#EF4444` → expense / closed / destructive state
 * amber `#F59E0B` → pending / warning / attention
-* slate neutrals → structure, borders, labels, surfaces
+* slate `#0F172A` → structure, primary text, headings
+
+Surface palette (warm-neutral):
+
+* `background` / `surface` `#fcf8f9` → page background
+* `surface-container-low` `#f6f3f4` → subtle container
+* `surface-container` `#f0edef` → default card/container background
+* `surface-container-high` `#eae7ea` → elevated containers
+* `surface-dim` `#dbd9dd` → dimmed/disabled surfaces
+* `outline-variant` `#b3b1b4` → subtle borders (cards, dividers)
+* `outline` `#7b7a7d` → strong borders (inputs, focus rings)
+* `on-surface` `#323235` → primary text on surface
+* `on-surface-variant` `#5f5f61` → secondary/muted text
 
 Rules:
 
 * color communicates meaning, not decoration
-* backgrounds stay white or light neutral
+* backgrounds stay warm-neutral (never pure white or cool blue)
 * do not use colorful ambient gradients
 
 ### 6.2 Typography
@@ -359,8 +371,30 @@ Rules:
 * validation inline
 * errors below field
 * required fields clearly marked
+* use `outline` color (`#7b7a7d`) for focus rings
 
 Do not use hidden validation.
+
+---
+
+### 7.8 Forms
+
+Principles:
+
+* fast input
+* minimal fields
+* dynamic fields based on selected category
+
+Post-submission reset behavior:
+
+* reset: `amount`, `concept`
+* keep: `account`, `category` (reduces friction for repeated entries)
+
+Error handling:
+
+* blocking errors prevent submission
+* no silent failures
+* prevent invalid operations explicitly (e.g. closed session, missing required field)
 
 ---
 
@@ -371,9 +405,12 @@ Do not use hidden validation.
 Rules:
 
 * prefer local pending states over fullscreen blockers
-* loading must happen in the affected CTA, card or form
+* every async mutation must show immediate feedback in the affected CTA
+* the affected form or card must become non-interactive while the mutation is pending
+* use local loading states, not fullscreen overlays, unless the flow truly blocks the whole screen
+* prefer skeleton screens over spinners for initial data loads
+* the in-flight loading state and the post-action toast are separate concerns — toast fires only after the mutation completes
 * avoid long spinner-only states without label
-* the affected area becomes non-interactive while pending
 
 ### 8.2 Success and error feedback
 
@@ -438,9 +475,50 @@ Never mix role behavior in UI just because multiple modules are technically reac
 
 ---
 
-## 11. Documentation Rules for Future Development
+## 11. Key Screens Behavior
+
+### 11.1 Dashboard
+
+Must show:
+
+* active club context in the upper bar
+* session status
+* balances
+* primary CTAs into each module
+
+Optional: last session timestamp.
+
+### 11.2 Create movement
+
+* fast form — minimal friction
+* dynamic fields based on category
+* no unnecessary steps
+
+### 11.3 Account detail
+
+* balance displayed first
+* movement list second
+* action button visible above the fold
+
+### 11.4 Consolidation
+
+* list of pending movements with clear status per row
+* actions per row: edit, match
+* CTA must reflect readiness (blocked if invalid data exists)
+* cannot consolidate with invalid or incomplete movement data
+
+### 11.5 Match view
+
+* side-by-side comparison of movements
+* all fields visible without scrolling
+* explicit decision actions (confirm / reject match)
+
+---
+
+## 12. Documentation Rules for Future Development
 
 Any future screen or redesign must follow this document before inventing new patterns.
+
 
 Mandatory rules:
 
