@@ -290,7 +290,7 @@ function SessionCard({
             <NavigationLinkWithLoader
               href="/dashboard/session/close"
               prefetch={false}
-              className="col-span-2 flex min-h-11 items-center justify-center rounded-xl bg-destructive px-4 py-2.5 text-sm font-semibold text-destructive-foreground transition hover:opacity-90"
+              className="col-span-2 flex min-h-11 items-center justify-center rounded-xl bg-destructive px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
             >
               {texts.dashboard.treasury.close_session_flow_cta}
             </NavigationLinkWithLoader>

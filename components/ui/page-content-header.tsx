@@ -38,17 +38,20 @@ export function PageContentHeader({
           </div>
         </div>
 
-        {backHref && backLabel ? (
-          <Link
-            href={backHref}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary sm:shrink-0"
-          >
-            {backLabel}
-          </Link>
+        {(backHref && backLabel) || actions ? (
+          <div className="flex shrink-0 items-center gap-3">
+            {actions}
+            {backHref && backLabel ? (
+              <Link
+                href={backHref}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+              >
+                {backLabel}
+              </Link>
+            ) : null}
+          </div>
         ) : null}
       </div>
-
-      {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
     </section>
   );
 }
