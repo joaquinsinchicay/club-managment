@@ -257,17 +257,30 @@ function KpiGrid({
         <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           {texts.dashboard.treasury_role.kpi_total_balance_label}
         </p>
-        {totalBalances.length === 0 ? (
-          <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-foreground tabular-nums">—</p>
-        ) : (
-          totalBalances.map((b, i) => (
-            <p key={b.currencyCode} className={`tabular-nums font-bold leading-none tracking-tight text-foreground ${i === 0 ? "mt-1 text-[1.25rem]" : "mt-1 text-[13px]"}`}>
-              <span className="mr-0.5 text-[10px] font-medium text-muted-foreground">{b.currencyCode}</span>
-              {formatLocalizedAmount(b.amount)}
-            </p>
-          ))
-        )}
-        <p className="mt-1 text-[11px] text-slate-500">
+        <div className="mt-2 flex flex-col">
+          {totalBalances.length === 0 ? (
+            <p className="py-1 text-[1.1rem] font-bold tabular-nums text-foreground">—</p>
+          ) : (
+            totalBalances.map((b, i) => (
+              <div
+                key={b.currencyCode}
+                className={cn(
+                  "flex items-center justify-between gap-2 py-1.5",
+                  i < totalBalances.length - 1 && "border-b border-dashed border-slate-100"
+                )}
+              >
+                <span className="inline-flex items-center rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                  {b.currencyCode}
+                </span>
+                <span className="text-[17px] font-bold tabular-nums tracking-tight text-foreground">
+                  {b.currencyCode === "ARS" ? "$ " : `${b.currencyCode} `}
+                  {formatLocalizedAmount(b.amount)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+        <p className="mt-1.5 text-[11px] text-slate-500">
           {accountCount} {texts.dashboard.treasury_role.kpi_accounts_count_label}
         </p>
       </div>

@@ -25,7 +25,7 @@ type TabKey = "dashboard" | "secretaria" | "tesoreria" | "settings" | "modules";
 const TAB_ACCENT: Record<TabKey, { color: string; underline: string }> = {
   dashboard:  { color: "var(--green-700)",  underline: "var(--green)" },
   secretaria: { color: "var(--green-700)",  underline: "var(--green)" },
-  tesoreria:  { color: "#1D4ED8",            underline: "#3B82F6" },
+  tesoreria:  { color: "#3B82F6",            underline: "#3B82F6" },
   settings:   { color: "var(--indigo-700)", underline: "var(--indigo)" },
   modules:    { color: "var(--indigo-700)", underline: "var(--indigo)" },
 };
