@@ -475,9 +475,8 @@ function QuickActions({
           <button
             type="button"
             onClick={onMovement}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-btn bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
+            className="flex min-h-11 items-center justify-center rounded-btn bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
           >
-            <MovementIcon />
             {texts.dashboard.treasury_role.movement_modal_cta}
           </button>
         )}
@@ -485,19 +484,17 @@ function QuickActions({
           <button
             type="button"
             onClick={onFx}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+            className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
           >
-            <FxIcon />
             {texts.dashboard.treasury_role.fx_modal_cta}
           </button>
         )}
         <button
           type="button"
           onClick={onConciliacion}
-          className="relative flex min-h-11 items-center justify-center gap-2 rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+          className="relative flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
         >
-          <ConsolidationIcon />
-          <span>{texts.dashboard.treasury_role.consolidation_cta}</span>
+          {texts.dashboard.treasury_role.consolidation_cta}
           {pendingConciliationCount > 0 && (
             <span className="absolute right-3 flex size-5 items-center justify-center rounded-full bg-amber-100 text-eyebrow font-bold text-amber-700">
               {pendingConciliationCount}
@@ -507,9 +504,8 @@ function QuickActions({
         <button
           type="button"
           onClick={onMovements}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+          className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
         >
-          <MovementsListIcon />
           {texts.dashboard.treasury_role.view_movements_cta}
         </button>
       </div>
