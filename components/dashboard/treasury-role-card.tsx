@@ -174,16 +174,26 @@ function MovementsListIcon() {
   );
 }
 
-function AccountTypeIcon({ accountType }: { accountType: TreasuryAccountType }) {
-  const initials =
-    accountType === "bancaria" ? "BK" : accountType === "billetera_virtual" ? "BV" : "EF";
+function AccountAvatar({
+  name,
+  accountType
+}: {
+  name: string;
+  accountType?: TreasuryAccountType;
+}) {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
 
   const colorClass =
     accountType === "bancaria"
-      ? "bg-blue-50 text-blue-700"
+      ? "bg-ds-blue-050 text-ds-blue-700"
       : accountType === "billetera_virtual"
         ? "bg-amber-50 text-amber-700"
-        : "bg-slate-100 text-slate-700";
+        : "bg-emerald-50 text-emerald-700"; // efectivo
 
   return (
     <div
@@ -375,39 +385,47 @@ function KpiGrid({
 
 // ─── Accounts summary list ────────────────────────────────────────────────────
 
-function AccountRow({
-  account
-}: {
-  account: TreasuryRoleDashboard["accounts"][number] & { accountType?: TreasuryAccountType };
-}) {
+type EnrichedDashboardAccount = TreasuryRoleDashboard["accounts"][number] & {
+  accountType?: TreasuryAccountType;
+};
+
+function AccountRow({ account }: { account: EnrichedDashboardAccount }) {
+  const isMulti = account.balances.length > 1;
+
   return (
-    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-dashed border-slate-200 py-3 last:border-b-0">
-      <div
-        className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-lg text-eyebrow font-bold tracking-wide",
-          "bg-slate-100 text-slate-700"
-        )}
-      >
-        {account.name.slice(0, 2).toUpperCase()}
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
+    <div className="border-b border-dashed border-slate-200 py-3 last:border-b-0">
+      {/* Header row */}
+      <div className="flex items-center gap-3">
+        <AccountAvatar name={account.name} accountType={account.accountType} />
+        <p className="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight text-foreground">
           {account.name}
         </p>
-      </div>
-      <div className="text-right">
-        {account.balances.map((b) => (
-          <p
-            key={b.currencyCode}
-            className="text-card-title font-bold tabular-nums tracking-tight text-foreground"
-          >
-            <span className="mr-0.5 text-eyebrow font-medium text-muted-foreground">
-              {b.currencyCode}
-            </span>
-            {formatLocalizedAmount(b.amount)}
+        {isMulti ? (
+          <span className="inline-flex shrink-0 items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold tracking-wider text-slate-500">
+            {account.balances.length} {texts.dashboard.treasury_role.multi_currency_label}
+          </span>
+        ) : (
+          <p className="shrink-0 text-card-title font-bold tabular-nums tracking-tight text-foreground">
+            {account.balances[0]?.currencyCode === "ARS" ? "$ " : "US$ "}
+            {formatLocalizedAmount(account.balances[0]?.amount ?? 0)}
           </p>
-        ))}
+        )}
       </div>
+
+      {/* Multi-currency breakdown */}
+      {isMulti && (
+        <div className="ml-12 mt-2 flex flex-col gap-1.5 border-l-2 border-slate-100 pl-3">
+          {account.balances.map((b) => (
+            <div key={b.currencyCode} className="flex items-center justify-between gap-3">
+              <span className="text-eyebrow font-semibold text-slate-400">{b.currencyCode}</span>
+              <span className="text-small font-semibold tabular-nums text-foreground">
+                {b.currencyCode === "ARS" ? "$ " : "US$ "}
+                {formatLocalizedAmount(b.amount)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -585,7 +603,7 @@ function CuentasTab({
             key={account.id}
             className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-dashed border-slate-200 py-3 last:border-b-0"
           >
-            <AccountTypeIcon accountType={account.accountType} />
+            <AccountAvatar name={account.name} accountType={account.accountType} />
             <div className="min-w-0">
               <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
                 {account.name}
@@ -707,6 +725,7 @@ function ConciliacionTab() {
 
 function ResumenTab({
   dashboard,
+  accounts,
   totalBalances,
   canCreateMovement,
   canCreateFxOperation,
@@ -717,6 +736,7 @@ function ResumenTab({
   detailHref
 }: {
   dashboard: TreasuryRoleDashboard;
+  accounts: TreasuryAccount[];
   totalBalances: TotalBalance[];
   canCreateMovement: boolean;
   canCreateFxOperation: boolean;
@@ -726,6 +746,12 @@ function ResumenTab({
   onMovements: () => void;
   detailHref: string | null;
 }) {
+  // Enrich dashboard accounts with accountType from the full accounts list
+  const enrichedAccounts: EnrichedDashboardAccount[] = dashboard.accounts.map((dashAccount) => {
+    const full = accounts.find((a) => a.id === dashAccount.accountId);
+    return { ...dashAccount, accountType: full?.accountType };
+  });
+
   return (
     <div className="space-y-3">
       <KpiGrid
@@ -757,12 +783,12 @@ function ResumenTab({
             )}
           </div>
           <div className="px-4">
-            {dashboard.accounts.length === 0 ? (
+            {enrichedAccounts.length === 0 ? (
               <p className="py-4 text-sm text-muted-foreground">
                 {texts.dashboard.treasury_role.empty_accounts}
               </p>
             ) : (
-              dashboard.accounts.map((account) => (
+              enrichedAccounts.map((account) => (
                 <AccountRow key={account.accountId} account={account} />
               ))
             )}
@@ -931,6 +957,7 @@ export function TreasuryRoleCard({
         {activeTab === "resumen" && (
           <ResumenTab
             dashboard={dashboard}
+            accounts={accounts}
             totalBalances={totalBalances}
             canCreateMovement={canCreateMovement}
             canCreateFxOperation={canCreateFxOperation}

@@ -390,6 +390,7 @@
       "tab_conciliacion": "Conciliacion",
       "kpi_total_balance_label": "Saldo total",
       "kpi_accounts_count_label": "cuentas activas",
+      "multi_currency_label": "MONEDAS",
       "kpi_monthly_income_label": "Ingresos del mes",
       "kpi_monthly_expenses_label": "Egresos del mes",
       "kpi_pending_conciliation_label": "Sin conciliar",
