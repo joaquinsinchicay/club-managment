@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   closeDailyCashSessionWithDeclaredBalances,
+  openDailyCashSessionWithDeclaredBalances,
   createAccountTransfer,
   createFxOperation,
   createTreasuryMovement,
@@ -20,6 +21,28 @@ export type TreasuryActionResponse = {
   movementDisplayId?: string;
   optimisticUpdate?: TreasuryMovementOptimisticUpdate;
 };
+
+export async function openDailyCashSessionModalAction(formData: FormData) {
+  const accountIds = formData.getAll("account_id");
+  const currencyCodes = formData.getAll("currency_code");
+  const declaredBalances = formData.getAll("declared_balance");
+
+  const result = await openDailyCashSessionWithDeclaredBalances(
+    accountIds.map((id, i) => ({
+      accountId: String(id ?? ""),
+      currencyCode: String(currencyCodes[i] ?? ""),
+      declaredBalance: String(declaredBalances[i] ?? "")
+    }))
+  );
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/secretaria");
+
+  return {
+    ok: result.ok,
+    code: result.code
+  } satisfies TreasuryActionResponse;
+}
 
 export async function closeDailyCashSessionModalAction(formData: FormData) {
   const accountIds = formData.getAll("account_id");
