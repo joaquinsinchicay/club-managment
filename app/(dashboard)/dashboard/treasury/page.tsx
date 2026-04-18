@@ -20,6 +20,19 @@ import {
 } from "@/lib/services/treasury-service";
 import { texts } from "@/lib/texts";
 
+function formatSessionDateLabel(sessionDate: string): string {
+  const date = new Date(`${sessionDate}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return sessionDate;
+  const weekday = new Intl.DateTimeFormat("es-AR", { weekday: "short" }).format(date);
+  const cap = weekday.charAt(0).toUpperCase() + weekday.slice(1).replace(/\.$/, "");
+  const dateStr = new Intl.DateTimeFormat("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+  return `${cap} · ${dateStr}`;
+}
+
 export default async function TreasuryDashboardPage() {
   const context = await getAuthenticatedSessionContext();
 
@@ -61,6 +74,12 @@ export default async function TreasuryDashboardPage() {
         eyebrow={texts.dashboard.treasury_role.eyebrow}
         title={texts.dashboard.treasury_role.title}
         description={texts.dashboard.treasury_role.description}
+        actions={
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-small font-semibold text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-ds-blue" aria-hidden="true" />
+            {formatSessionDateLabel(dashboard.sessionDate)}
+          </div>
+        }
       />
 
       <TreasuryRoleCard

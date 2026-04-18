@@ -237,6 +237,18 @@ function SubTabNav({
 
 // ─── KPI grid ────────────────────────────────────────────────────────────────
 
+// ─── KPI currency chip (shared) ──────────────────────────────────────────────
+
+function CurrencyChip({ code }: { code: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-eyebrow font-semibold text-slate-600">
+      {code}
+    </span>
+  );
+}
+
+// ─── KPI grid ────────────────────────────────────────────────────────────────
+
 function KpiGrid({
   totalBalances,
   accountCount,
@@ -248,32 +260,29 @@ function KpiGrid({
   monthlyStats: TreasuryRoleDashboard["monthlyStats"];
   pendingConciliationCount: number;
 }) {
-  const primaryMonthly = monthlyStats[0];
-
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-      {/* Saldo total */}
+
+      {/* ── Saldo total ── */}
       <div className="rounded-card border border-border bg-card px-3.5 py-3">
-        <p className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
           {texts.dashboard.treasury_role.kpi_total_balance_label}
         </p>
         <div className="mt-2 flex flex-col">
           {totalBalances.length === 0 ? (
-            <p className="py-1 text-[1.1rem] font-bold tabular-nums text-foreground">—</p>
+            <p className="py-1 text-h2 font-bold tabular-nums text-foreground">—</p>
           ) : (
             totalBalances.map((b, i) => (
               <div
                 key={b.currencyCode}
                 className={cn(
                   "flex items-center justify-between gap-2 py-1.5",
-                  i < totalBalances.length - 1 && "border-b border-dashed border-slate-100"
+                  i < totalBalances.length - 1 && "border-b border-slate-200"
                 )}
               >
-                <span className="inline-flex items-center rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-eyebrow font-semibold text-slate-600">
-                  {b.currencyCode}
-                </span>
+                <CurrencyChip code={b.currencyCode} />
                 <span className="text-[17px] font-bold tabular-nums tracking-tight text-foreground">
-                  {b.currencyCode === "ARS" ? "$ " : `${b.currencyCode} `}
+                  {b.currencyCode === "ARS" ? "$ " : "US$ "}
                   {formatLocalizedAmount(b.amount)}
                 </span>
               </div>
@@ -285,54 +294,81 @@ function KpiGrid({
         </p>
       </div>
 
-      {/* Ingresos del mes */}
+      {/* ── Ingresos del mes ── */}
       <div className="rounded-card border border-border bg-card px-3.5 py-3">
-        <p className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
           {texts.dashboard.treasury_role.kpi_monthly_income_label}
         </p>
-        {monthlyStats.length === 0 ? (
-          <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-emerald-700 tabular-nums">—</p>
-        ) : (
-          monthlyStats.map((s, i) => (
-            <p key={s.currencyCode} className={`tabular-nums font-bold leading-none tracking-tight text-emerald-700 ${i === 0 ? "mt-1 text-[1.25rem]" : "mt-1 text-[13px]"}`}>
-              + {formatLocalizedAmount(s.ingreso)}
-              {monthlyStats.length > 1 && <span className="ml-0.5 text-eyebrow font-medium">{s.currencyCode}</span>}
-            </p>
-          ))
-        )}
-        <p className="mt-1 text-meta text-slate-500">{primaryMonthly?.currencyCode ?? "ARS"}</p>
+        <div className="mt-2 flex flex-col">
+          {monthlyStats.length === 0 ? (
+            <p className="py-1 text-h2 font-bold tabular-nums text-ds-green-700">—</p>
+          ) : (
+            monthlyStats.map((s, i) => (
+              <div
+                key={s.currencyCode}
+                className={cn(
+                  "flex items-center justify-between gap-2 py-1.5",
+                  i < monthlyStats.length - 1 && "border-b border-slate-200"
+                )}
+              >
+                <span className={cn(
+                  "font-bold tabular-nums tracking-tight text-ds-green-700",
+                  i === 0 ? "text-[17px]" : "text-small"
+                )}>
+                  + {s.currencyCode === "ARS" ? "$ " : "US$ "}
+                  {formatLocalizedAmount(s.ingreso)}
+                </span>
+                <CurrencyChip code={s.currencyCode} />
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Egresos del mes */}
+      {/* ── Egresos del mes ── */}
       <div className="rounded-card border border-border bg-card px-3.5 py-3">
-        <p className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
           {texts.dashboard.treasury_role.kpi_monthly_expenses_label}
         </p>
-        {monthlyStats.length === 0 ? (
-          <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-red-700 tabular-nums">—</p>
-        ) : (
-          monthlyStats.map((s, i) => (
-            <p key={s.currencyCode} className={`tabular-nums font-bold leading-none tracking-tight text-red-700 ${i === 0 ? "mt-1 text-[1.25rem]" : "mt-1 text-[13px]"}`}>
-              − {formatLocalizedAmount(s.egreso)}
-              {monthlyStats.length > 1 && <span className="ml-0.5 text-eyebrow font-medium">{s.currencyCode}</span>}
-            </p>
-          ))
-        )}
-        <p className="mt-1 text-meta text-slate-500">{primaryMonthly?.currencyCode ?? "ARS"}</p>
+        <div className="mt-2 flex flex-col">
+          {monthlyStats.length === 0 ? (
+            <p className="py-1 text-h2 font-bold tabular-nums text-ds-red-700">—</p>
+          ) : (
+            monthlyStats.map((s, i) => (
+              <div
+                key={s.currencyCode}
+                className={cn(
+                  "flex items-center justify-between gap-2 py-1.5",
+                  i < monthlyStats.length - 1 && "border-b border-slate-200"
+                )}
+              >
+                <span className={cn(
+                  "font-bold tabular-nums tracking-tight text-ds-red-700",
+                  i === 0 ? "text-[17px]" : "text-small"
+                )}>
+                  − {s.currencyCode === "ARS" ? "$ " : "US$ "}
+                  {formatLocalizedAmount(s.egreso)}
+                </span>
+                <CurrencyChip code={s.currencyCode} />
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Sin conciliar */}
+      {/* ── Sin conciliar ── */}
       <div className="rounded-card border border-border bg-card px-3.5 py-3">
-        <p className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
           {texts.dashboard.treasury_role.kpi_pending_conciliation_label}
         </p>
-        <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-amber-600 tabular-nums">
+        <p className="mt-2 text-[2rem] font-bold leading-none tracking-tight text-ds-blue-700 tabular-nums">
           {pendingConciliationCount}
         </p>
-        <p className="mt-1 text-meta text-slate-500">
+        <p className="mt-1.5 text-meta text-slate-500">
           {texts.dashboard.treasury_role.kpi_pending_conciliation_meta}
         </p>
       </div>
+
     </div>
   );
 }
