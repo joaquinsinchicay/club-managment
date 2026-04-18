@@ -2,13 +2,15 @@ import { redirect } from "next/navigation";
 
 import {
   createFxOperationAction,
+  createTreasuryAccountFromTreasuryAction,
   createTreasuryRoleMovementAction,
+  updateTreasuryAccountFromTreasuryAction,
   updateTreasuryRoleMovementAction
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { canOperateTesoreria } from "@/lib/domain/authorization";
+import { canMutateTreasurySettings, canOperateTesoreria } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import {
   getActiveActivitiesForTesoreria,
@@ -54,10 +56,8 @@ export default async function TreasuryDashboardPage() {
     redirect("/dashboard");
   }
 
-  const [accounts, categories, activities, calendarEvents, currencies, movementTypes, receiptFormats] = await Promise.all([
-    accessRepository.listTreasuryAccountsForClub(context.activeClub.id).then((entries) =>
-      entries.filter((account) => account.visibleForTesoreria)
-    ),
+  const [allAccounts, categories, activities, calendarEvents, currencies, movementTypes, receiptFormats] = await Promise.all([
+    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((entries) =>
       entries.filter((category) => category.visibleForTesoreria)
     ),
@@ -67,6 +67,8 @@ export default async function TreasuryDashboardPage() {
     getEnabledMovementTypesForTesoreria(),
     getActiveReceiptFormatsForTesoreria()
   ]);
+
+  const accounts = allAccounts.filter((account) => account.visibleForTesoreria);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
@@ -94,6 +96,10 @@ export default async function TreasuryDashboardPage() {
         createTreasuryRoleMovementAction={createTreasuryRoleMovementAction}
         updateTreasuryRoleMovementAction={updateTreasuryRoleMovementAction}
         createFxOperationAction={createFxOperationAction}
+        createTreasuryAccountAction={createTreasuryAccountFromTreasuryAction}
+        updateTreasuryAccountAction={updateTreasuryAccountFromTreasuryAction}
+        allAccounts={allAccounts}
+        isAdmin={canMutateTreasurySettings(context.activeMembership)}
       />
     </main>
   );

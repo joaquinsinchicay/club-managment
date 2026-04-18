@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useState, type ReactNode } from "react";
 
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import {
@@ -9,6 +9,7 @@ import {
   TreasuryRoleFxForm,
   TreasuryRoleMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
+import { TreasuryAccountForm } from "@/components/treasury/account-form";
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
@@ -42,6 +43,10 @@ type TreasuryRoleCardProps = {
   createTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createFxOperationAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  createTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  updateTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  allAccounts: TreasuryAccount[];
+  isAdmin: boolean;
 };
 
 type SubTab = "resumen" | "cuentas" | "movimientos" | "conciliacion";
@@ -389,7 +394,7 @@ type EnrichedDashboardAccount = TreasuryRoleDashboard["accounts"][number] & {
   accountType?: TreasuryAccountType;
 };
 
-function AccountRow({ account }: { account: EnrichedDashboardAccount }) {
+function AccountRow({ account, action }: { account: EnrichedDashboardAccount; action?: ReactNode }) {
   const isMulti = account.balances.length > 1;
 
   return (
@@ -425,6 +430,7 @@ function AccountRow({ account }: { account: EnrichedDashboardAccount }) {
             {formatLocalizedAmount(account.balances[0]?.amount ?? 0)}
           </p>
         )}
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
 
       {/* Multi-currency breakdown */}
@@ -573,64 +579,111 @@ function TreasuryRoleMovementGroups({
 
 // ─── Cuentas tab ─────────────────────────────────────────────────────────────
 
+function EditAccountButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="inline-flex size-8 items-center justify-center rounded-btn border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+    >
+      <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+        />
+      </svg>
+    </button>
+  );
+}
+
 function CuentasTab({
   accounts,
-  detailHref
+  dashboardAccounts,
+  totalBalances,
+  isAdmin,
+  onCreateAccount,
+  onEditAccount
 }: {
   accounts: TreasuryAccount[];
-  detailHref: string | null;
+  dashboardAccounts: TreasuryRoleDashboard["accounts"];
+  totalBalances: TotalBalance[];
+  isAdmin: boolean;
+  onCreateAccount: () => void;
+  onEditAccount: (account: TreasuryAccount) => void;
 }) {
-  if (accounts.length === 0) {
-    return (
-      <div className="rounded-dialog border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-        {texts.dashboard.treasury_role.empty_accounts}
-      </div>
-    );
-  }
+  const enrichedAccounts: EnrichedDashboardAccount[] = accounts.map((account) => {
+    const dashAccount = dashboardAccounts.find((d) => d.accountId === account.id);
+    if (dashAccount) {
+      return { ...dashAccount, accountType: account.accountType };
+    }
+    return {
+      accountId: account.id,
+      name: account.name,
+      balances: account.currencies.map((currencyCode) => ({ currencyCode, amount: 0 })),
+      hasPendingMovements: false,
+      hasConciliatedMovements: false,
+      accountType: account.accountType
+    };
+  });
+
+  const subtitleParts = [
+    `${accounts.length} ${texts.dashboard.treasury_role.accounts_tab_active_label}`,
+    ...totalBalances.map(
+      (b) =>
+        `${b.currencyCode} ${b.currencyCode === "ARS" ? "$" : "US$"} ${formatLocalizedAmount(b.amount)}`
+    )
+  ];
 
   return (
     <div className="rounded-card border border-border bg-card">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-semibold tracking-tight text-foreground">
             {texts.dashboard.treasury_role.tab_cuentas}
           </p>
           <p className="text-meta text-muted-foreground">
-            {texts.dashboard.treasury_role.accounts_tab_description}
+            {subtitleParts.join(" · ")}
           </p>
         </div>
-        {detailHref && (
-          <NavigationLinkWithLoader
-            href={detailHref}
-            className="shrink-0 rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={onCreateAccount}
+            className="shrink-0 rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black"
           >
-            {texts.dashboard.treasury_role.detail_accounts_cta}
-          </NavigationLinkWithLoader>
+            {texts.dashboard.treasury_role.accounts_tab_create_cta}
+          </button>
         )}
       </div>
-      <div className="px-4">
-        {accounts.map((account) => (
-          <div
-            key={account.id}
-            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-dashed border-slate-200 py-3 last:border-b-0"
-          >
-            <AccountAvatar name={account.name} accountType={account.accountType} />
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
-                {account.name}
-              </p>
-              <p className="mt-0.5 text-meta text-slate-500">
-                {account.accountType === "bancaria"
-                  ? texts.dashboard.treasury_role.account_type_bancaria
-                  : account.accountType === "billetera_virtual"
-                    ? texts.dashboard.treasury_role.account_type_billetera
-                    : texts.dashboard.treasury_role.account_type_efectivo}
-                {account.currencies.length > 0 && ` · ${account.currencies.join(", ")}`}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+
+      {accounts.length === 0 ? (
+        <div className="px-4 py-5 text-sm text-muted-foreground">
+          {texts.dashboard.treasury_role.empty_accounts}
+        </div>
+      ) : (
+        <div className="px-4">
+          {enrichedAccounts.map((enriched) => {
+            const fullAccount = accounts.find((a) => a.id === enriched.accountId);
+            return (
+              <AccountRow
+                key={enriched.accountId}
+                account={enriched}
+                action={
+                  isAdmin && fullAccount ? (
+                    <EditAccountButton
+                      onClick={() => onEditAccount(fullAccount)}
+                      label={texts.dashboard.treasury_role.accounts_tab_edit_cta_label}
+                    />
+                  ) : undefined
+                }
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -835,24 +888,29 @@ export function TreasuryRoleCard({
   receiptFormats,
   createTreasuryRoleMovementAction,
   updateTreasuryRoleMovementAction,
-  createFxOperationAction
+  createFxOperationAction,
+  createTreasuryAccountAction,
+  updateTreasuryAccountAction,
+  allAccounts,
+  isAdmin
 }: TreasuryRoleCardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<SubTab>("resumen");
-  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "fx" | null>(null);
+  const [activeModal, setActiveModal] = useState<
+    "movement" | "edit_movement" | "fx" | "create_account" | "edit_account" | null
+  >(null);
   const [selectedMovement, setSelectedMovement] = useState<TreasuryDashboardMovement | null>(null);
+  const [editingAccount, setEditingAccount] = useState<TreasuryAccount | null>(null);
   const [selectedMovementAccountId, setSelectedMovementAccountId] = useState<string | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
   const [isFxSubmissionPending, setIsFxSubmissionPending] = useState(false);
+  const [isAccountSubmissionPending, setIsAccountSubmissionPending] = useState(false);
 
   const totalBalances = getTotalBalances(dashboard.accounts);
-  const detailHref = dashboard.accounts[0]
-    ? `/dashboard/treasury/accounts/${dashboard.accounts[0].accountId}`
-    : null;
   const canCreateMovement = dashboard.availableActions.includes("create_movement");
   const canCreateFxOperation = dashboard.availableActions.includes("create_fx_operation");
 
@@ -862,7 +920,9 @@ export function TreasuryRoleCard({
       ? texts.dashboard.treasury_role.update_loading
       : isFxSubmissionPending
         ? texts.dashboard.treasury_role.fx_create_loading
-        : null;
+        : isAccountSubmissionPending
+          ? texts.settings.club.treasury.save_account_loading
+          : null;
 
   useEffect(() => {
     const nextSelectedAccountId = dashboard.accounts[0]?.accountId ?? null;
@@ -949,6 +1009,49 @@ export function TreasuryRoleCard({
     }
   }
 
+  async function handleCreateAccount(formData: FormData) {
+    setIsAccountSubmissionPending(true);
+    setActiveModal(null);
+
+    try {
+      const result = await createTreasuryAccountAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } finally {
+      setIsAccountSubmissionPending(false);
+    }
+  }
+
+  async function handleUpdateAccount(formData: FormData) {
+    setIsAccountSubmissionPending(true);
+    setActiveModal(null);
+    setEditingAccount(null);
+
+    try {
+      const result = await updateTreasuryAccountAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } finally {
+      setIsAccountSubmissionPending(false);
+    }
+  }
+
   function handleEditMovement(movement: TreasuryDashboardMovement) {
     if (!movement.canEdit) return;
     setSelectedMovement(movement);
@@ -982,7 +1085,17 @@ export function TreasuryRoleCard({
         )}
 
         {activeTab === "cuentas" && (
-          <CuentasTab accounts={accounts} detailHref={detailHref} />
+          <CuentasTab
+            accounts={allAccounts}
+            dashboardAccounts={dashboard.accounts}
+            totalBalances={totalBalances}
+            isAdmin={isAdmin}
+            onCreateAccount={() => setActiveModal("create_account")}
+            onEditAccount={(account) => {
+              setEditingAccount(account);
+              setActiveModal("edit_account");
+            }}
+          />
         )}
 
         {activeTab === "movimientos" && (
@@ -1064,6 +1177,41 @@ export function TreasuryRoleCard({
           sessionDate={dashboard.sessionDate}
           onCancel={() => setActiveModal(null)}
         />
+      </Modal>
+
+      <Modal
+        open={activeModal === "create_account"}
+        onClose={() => setActiveModal(null)}
+        title={texts.dashboard.treasury_role.accounts_tab_create_title}
+        description={texts.dashboard.treasury_role.accounts_tab_create_description}
+        closeDisabled={isAccountSubmissionPending}
+      >
+        <TreasuryAccountForm
+          action={handleCreateAccount}
+          submitLabel={texts.settings.club.treasury.save_account_cta}
+          pendingLabel={texts.settings.club.treasury.save_account_loading}
+        />
+      </Modal>
+
+      <Modal
+        open={activeModal === "edit_account" && editingAccount !== null}
+        onClose={() => {
+          setActiveModal(null);
+          setEditingAccount(null);
+        }}
+        title={texts.dashboard.treasury_role.accounts_tab_edit_title}
+        description={texts.dashboard.treasury_role.accounts_tab_edit_description}
+        closeDisabled={isAccountSubmissionPending}
+      >
+        {editingAccount ? (
+          <TreasuryAccountForm
+            key={editingAccount.id}
+            action={handleUpdateAccount}
+            submitLabel={texts.settings.club.treasury.update_account_cta}
+            pendingLabel={texts.settings.club.treasury.update_account_loading}
+            defaultAccount={editingAccount}
+          />
+        ) : null}
       </Modal>
     </>
   );

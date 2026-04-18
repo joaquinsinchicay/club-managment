@@ -2,7 +2,6 @@
 
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
-import { AccountsTab } from "@/components/settings/tabs/accounts-tab";
 import { ActivitiesTab } from "@/components/settings/tabs/activities-tab";
 import { CategoriesTab } from "@/components/settings/tabs/categories-tab";
 import { MembersTab } from "@/components/settings/tabs/members-tab";
@@ -20,8 +19,6 @@ type ClubSettingsCardProps = {
   approveMembershipAction: (formData: FormData) => Promise<void>;
   updateMembershipRolesAction: (formData: FormData) => Promise<void>;
   removeMembershipAction: (formData: FormData) => Promise<void>;
-  createTreasuryAccountAction: (formData: FormData) => Promise<void>;
-  updateTreasuryAccountAction: (formData: FormData) => Promise<void>;
   createTreasuryCategoryAction: (formData: FormData) => Promise<void>;
   updateTreasuryCategoryAction: (formData: FormData) => Promise<void>;
   createClubActivityAction: (formData: FormData) => Promise<void>;
@@ -38,8 +35,6 @@ export function ClubSettingsCard({
   approveMembershipAction,
   updateMembershipRolesAction,
   removeMembershipAction,
-  createTreasuryAccountAction,
-  updateTreasuryAccountAction,
   createTreasuryCategoryAction,
   updateTreasuryCategoryAction,
   createClubActivityAction,
@@ -61,17 +56,6 @@ export function ClubSettingsCard({
           approveMembershipAction={approveMembershipAction}
           updateMembershipRoleAction={updateMembershipRolesAction}
           removeMembershipAction={removeMembershipAction}
-        />
-      )
-    },
-    {
-      id: "cuentas",
-      label: texts.settings.club.tabs.accounts,
-      content: (
-        <AccountsTab
-          accounts={treasurySettings.accounts}
-          createTreasuryAccountAction={createTreasuryAccountAction}
-          updateTreasuryAccountAction={updateTreasuryAccountAction}
         />
       )
     },
