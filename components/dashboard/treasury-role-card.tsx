@@ -1006,6 +1006,8 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.movement_form_title}
         description={texts.dashboard.treasury_role.movement_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
+        hideCloseButton
+        panelClassName="max-w-xl"
       >
         <TreasuryRoleMovementForm
           accounts={accounts}

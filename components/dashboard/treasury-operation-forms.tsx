@@ -1879,7 +1879,6 @@ export function TreasuryRoleMovementForm({
           <div className={cn(DISABLED_CONTROL_CLASSNAME, "font-medium text-foreground")}>
             {formatSessionDateLong(sessionDate)}
           </div>
-          <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.date_helper_text}</p>
         </div>
 
         {/* TIPO DE MOVIMIENTO */}
