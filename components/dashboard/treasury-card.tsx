@@ -216,10 +216,10 @@ function SessionCard({
           {isUnresolved ? "?" : cfg.iconText}
         </div>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {texts.dashboard.treasury.session_card_label}
           </span>
-          <span className="text-[15px] font-semibold leading-tight tracking-tight text-foreground">
+          <span className="text-card-title font-semibold leading-tight tracking-tight text-foreground">
             {isUnresolved
               ? texts.dashboard.treasury.actions_card_unresolved_description.split(".")[0]
               : cfg.badgeText}
@@ -228,7 +228,7 @@ function SessionCard({
         {!isUnresolved ? (
           <span
             className={cn(
-              "ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold",
+              "ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-meta font-semibold",
               cfg.badgeClass
             )}
           >
@@ -243,7 +243,7 @@ function SessionCard({
         <div className="mx-4 mb-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-dashed border-border pt-3">
           {metaItems.map((item) => (
             <div key={item.label} className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {item.label}
               </span>
               <span className="truncate text-[13px] font-semibold tabular-nums text-foreground">{item.value}</span>
@@ -323,11 +323,11 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
           <h2 className="text-[14px] font-semibold tracking-tight text-foreground">
             {texts.dashboard.treasury.balances_visible_title}
           </h2>
-          <p className="text-[11px] font-medium text-muted-foreground">
+          <p className="text-meta font-medium text-muted-foreground">
             {texts.dashboard.treasury.balances_visible_description}
           </p>
         </div>
-        <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+        <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-2 py-1 text-eyebrow font-semibold text-muted-foreground">
           ARS
         </span>
       </div>
@@ -343,7 +343,7 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
               <div key={account.accountId} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="truncate text-[13px] font-medium text-foreground">{account.name}</span>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     Efectivo
                   </span>
                 </div>
@@ -351,9 +351,9 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
                   {account.balances.map((balance) => (
                     <p
                       key={`${account.accountId}-${balance.currencyCode}`}
-                      className="text-[15px] font-semibold tabular-nums tracking-tight text-foreground"
+                      className="text-card-title font-semibold tabular-nums tracking-tight text-foreground"
                     >
-                      <span className="mr-0.5 text-[10px] font-medium text-muted-foreground">$</span>
+                      <span className="mr-0.5 text-eyebrow font-medium text-muted-foreground">$</span>
                       {formatLocalizedAmount(balance.amount)}
                     </p>
                   ))}
@@ -410,7 +410,7 @@ function MovementsCard({
           <h2 className="text-[14px] font-semibold tracking-tight text-foreground">
             {texts.dashboard.treasury.movements_card_title}
           </h2>
-          <p className="text-[11px] font-medium text-muted-foreground">
+          <p className="text-meta font-medium text-muted-foreground">
             {card.movements.length} {texts.dashboard.treasury.movements_card_description} · {today}
           </p>
         </div>
@@ -418,7 +418,7 @@ function MovementsCard({
           <NavigationLinkWithLoader
             href={detailHref}
             prefetch={false}
-            className="shrink-0 text-[12px] font-semibold text-muted-foreground transition hover:text-foreground"
+            className="shrink-0 text-small font-semibold text-muted-foreground transition hover:text-foreground"
           >
             {texts.dashboard.treasury.movements_see_all_cta}
           </NavigationLinkWithLoader>
@@ -432,7 +432,7 @@ function MovementsCard({
             type="button"
             onClick={() => onFilterChange(null)}
             className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+              "shrink-0 rounded-full px-3 py-1.5 text-meta font-semibold transition",
               activeFilter === null
                 ? "bg-foreground text-background"
                 : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -446,7 +446,7 @@ function MovementsCard({
               type="button"
               onClick={() => onFilterChange(account.accountId)}
               className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+                "shrink-0 rounded-full px-3 py-1.5 text-meta font-semibold transition",
                 activeFilter === account.accountId
                   ? "bg-foreground text-background"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -485,7 +485,7 @@ function MovementsCard({
                 <ModalTriggerButton
                   onClick={() => onEditMovement(movement)}
                   aria-label={texts.dashboard.treasury.edit_movement_cta}
-                  className="cursor-pointer border-0 bg-transparent p-0 text-[11px] font-semibold text-slate-500 hover:text-foreground"
+                  className="cursor-pointer border-0 bg-transparent p-0 text-meta font-semibold text-slate-500 hover:text-foreground"
                 >
                   {texts.dashboard.treasury.movements_edit_cta}
                 </ModalTriggerButton>

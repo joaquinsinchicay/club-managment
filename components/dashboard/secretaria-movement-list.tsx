@@ -125,14 +125,14 @@ export function SecretariaMovementList({ items }: SecretariaMovementListProps) {
                     {item.categoryName ? <span style={chipStyle}>{item.categoryName}</span> : null}
                     {item.activityName ? <span style={chipStyle}>{item.activityName}</span> : null}
                   </div>
-                  <p className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                  <p className="shrink-0 text-meta tabular-nums text-muted-foreground">
                     {formatMovementDateTime(item.createdAt)}
                   </p>
                 </div>
 
                 {/* Meta row + edit button */}
                 <div className="mt-1 flex items-center justify-between gap-2">
-                  <p className="text-[11px] text-muted-foreground">{meta}</p>
+                  <p className="text-meta text-muted-foreground">{meta}</p>
                   {item.action ? (
                     <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
                       {item.action}

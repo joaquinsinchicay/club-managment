@@ -117,7 +117,7 @@ export function DailySessionBalanceCard({
         backLabel={texts.dashboard.treasury.back_to_secretaria_cta}
       />
 
-      <section className="w-full max-w-5xl rounded-[20px] border border-border bg-card p-6 sm:p-8">
+      <section className="w-full max-w-5xl rounded-dialog border border-border bg-card p-6 sm:p-8">
         <div className="space-y-5">
           <p className="text-sm leading-6 text-muted-foreground">
             {texts.dashboard.treasury.session_validation_description}

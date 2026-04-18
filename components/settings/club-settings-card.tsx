@@ -117,7 +117,7 @@ export function ClubSettingsCard({
         description={texts.settings.club.description}
       />
 
-      <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
+      <section className="rounded-dialog border border-border bg-card p-5 sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
@@ -134,7 +134,7 @@ export function ClubSettingsCard({
         </div>
       </section>
 
-      <section className="rounded-[20px] border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
+      <section className="rounded-dialog border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
         <SettingsPageLayout tabs={tabs} defaultTabId="miembros" />
       </section>
     </main>

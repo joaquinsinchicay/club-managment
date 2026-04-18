@@ -85,11 +85,11 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {canOperateSecretariaRole && treasuryCard ? (
-          <article className="rounded-[20px] border border-border bg-card p-5">
+          <article className="rounded-dialog border border-border bg-card p-5">
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  <p className="text-meta font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                     {texts.header.navigation.secretaria}
                   </p>
                   <h2 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -105,7 +105,7 @@ export default async function DashboardPage() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   {texts.dashboard.overview.visible_accounts_label}
                 </p>
                 <p className="text-4xl font-semibold tracking-tight text-foreground">
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
               </div>
 
               <div className="rounded-xl border border-border bg-secondary/50 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   {texts.dashboard.overview.total_balance_label}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
@@ -133,10 +133,10 @@ export default async function DashboardPage() {
         ) : null}
 
         {canOperateTesoreriaRole && treasuryRoleDashboard ? (
-          <article className="rounded-[20px] border border-border bg-card p-5">
+          <article className="rounded-dialog border border-border bg-card p-5">
             <div className="space-y-4">
               <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                <p className="text-meta font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                   {texts.header.navigation.tesoreria}
                 </p>
                 <h2 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -146,7 +146,7 @@ export default async function DashboardPage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-border bg-secondary/50 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     {texts.dashboard.overview.visible_accounts_label}
                   </p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
@@ -155,7 +155,7 @@ export default async function DashboardPage() {
                 </div>
 
                 <div className="rounded-xl border border-border bg-secondary/50 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     {texts.dashboard.overview.recent_movements_label}
                   </p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
               </div>
 
               <div className="rounded-xl border border-border bg-secondary/50 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   {texts.dashboard.overview.total_balance_label}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
@@ -188,10 +188,10 @@ export default async function DashboardPage() {
         ) : null}
 
         {canAccessSettings ? (
-          <article className="rounded-[20px] border border-border bg-card p-5">
+          <article className="rounded-dialog border border-border bg-card p-5">
             <div className="space-y-4">
               <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                <p className="text-meta font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                   {texts.dashboard.overview.settings_title}
                 </p>
                 <h2 className="text-2xl font-semibold tracking-tight text-foreground">

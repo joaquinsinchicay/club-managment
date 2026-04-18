@@ -495,7 +495,7 @@ function formatSessionDateLong(sessionDate: string): string {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
-const FIELD_LABEL_CLASSNAME = "text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground";
+const FIELD_LABEL_CLASSNAME = "text-eyebrow font-semibold uppercase tracking-[0.1em] text-muted-foreground";
 
 export function SecretariaMovementForm({
   accounts,
@@ -571,7 +571,7 @@ export function SecretariaMovementForm({
           <div className={cn(DISABLED_CONTROL_CLASSNAME, "font-medium text-foreground")}>
             {formatSessionDateLong(sessionDate)}
           </div>
-          <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.date_helper_text}</p>
+          <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.date_helper_text}</p>
         </div>
 
         {/* TIPO DE MOVIMIENTO */}
@@ -596,7 +596,7 @@ export function SecretariaMovementForm({
                   )}
                 >
                   <span className="text-sm font-semibold">{copy.movement_types[type]}</span>
-                  <span className="text-[10px] font-medium opacity-70">
+                  <span className="text-eyebrow font-medium opacity-70">
                     {isIngreso
                       ? texts.dashboard.treasury.movement_type_ingreso_sublabel
                       : texts.dashboard.treasury.movement_type_egreso_sublabel}
@@ -661,7 +661,7 @@ export function SecretariaMovementForm({
               className={cn(CONTROL_CLASSNAME, "flex-1 text-right tabular-nums")}
             />
           </div>
-          <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.amount_helper_text}</p>
+          <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.amount_helper_text}</p>
         </div>
 
         {/* SUBCATEGORÍA (izq) / CATEGORÍA (der) */}
@@ -693,7 +693,7 @@ export function SecretariaMovementForm({
             />
           </label>
         </div>
-        <p className="-mt-2 text-[11px] text-muted-foreground">{texts.dashboard.treasury.category_helper_text}</p>
+        <p className="-mt-2 text-meta text-muted-foreground">{texts.dashboard.treasury.category_helper_text}</p>
 
         {/* ACTIVIDAD + RECIBO en la misma fila si ambos existen */}
         {hasActivityAndReceipt ? (
@@ -886,10 +886,10 @@ export function SecretariaMovementEditForm({
       <PendingFieldset className="grid gap-4">
         {/* ID chip */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          <span className="text-eyebrow font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             {copy.movement_id_label}
           </span>
-          <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-semibold tabular-nums text-foreground">
+          <span className="rounded-md bg-secondary px-2 py-0.5 text-meta font-semibold tabular-nums text-foreground">
             {movement.movementDisplayId}
           </span>
         </div>
@@ -934,7 +934,7 @@ export function SecretariaMovementEditForm({
                   )}
                 >
                   <span className="text-sm font-semibold">{copy.movement_types[type]}</span>
-                  <span className="text-[10px] font-medium opacity-70">
+                  <span className="text-eyebrow font-medium opacity-70">
                     {isIngreso
                       ? texts.dashboard.treasury.movement_type_ingreso_sublabel
                       : texts.dashboard.treasury.movement_type_egreso_sublabel}
@@ -1029,7 +1029,7 @@ export function SecretariaMovementEditForm({
             />
           </label>
         </div>
-        <p className="-mt-2 text-[11px] text-muted-foreground">{texts.dashboard.treasury.category_helper_text}</p>
+        <p className="-mt-2 text-meta text-muted-foreground">{texts.dashboard.treasury.category_helper_text}</p>
 
         {/* ACTIVIDAD + RECIBO */}
         {hasActivityAndReceipt ? (
@@ -1124,7 +1124,7 @@ export function SecretariaMovementEditForm({
         {movement.transferReference ? (
           <div className="grid gap-1.5">
             <p className={FIELD_LABEL_CLASSNAME}>{copy.detail_transfer_label}</p>
-            <div className={cn(DISABLED_CONTROL_CLASSNAME, "truncate text-[12px] tabular-nums")}>
+            <div className={cn(DISABLED_CONTROL_CLASSNAME, "truncate text-small tabular-nums")}>
               {movement.transferReference}
             </div>
           </div>
@@ -1132,7 +1132,7 @@ export function SecretariaMovementEditForm({
         {movement.fxOperationReference ? (
           <div className="grid gap-1.5">
             <p className={FIELD_LABEL_CLASSNAME}>{copy.detail_fx_label}</p>
-            <div className={cn(DISABLED_CONTROL_CLASSNAME, "truncate text-[12px] tabular-nums")}>
+            <div className={cn(DISABLED_CONTROL_CLASSNAME, "truncate text-small tabular-nums")}>
               {movement.fxOperationReference}
             </div>
           </div>
@@ -1237,7 +1237,7 @@ export function AccountTransferEditForm({
           <div className={cn(DISABLED_CONTROL_CLASSNAME, "font-medium text-foreground")}>
             {formatSessionDateLong(sessionDate)}
           </div>
-          <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.date_helper_text}</p>
+          <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.date_helper_text}</p>
         </div>
 
         {/* CUENTA ORIGEN */}
@@ -1327,11 +1327,11 @@ export function AccountTransferEditForm({
             </select>
           </label>
           {targetAccountCurrencyError ? (
-            <span id="edit-transfer-target-account-error" aria-live="polite" className="text-[11px] text-destructive">
+            <span id="edit-transfer-target-account-error" aria-live="polite" className="text-meta text-destructive">
               {targetAccountCurrencyError}
             </span>
           ) : (
-            <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.transfer_target_account_helper}</p>
+            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.transfer_target_account_helper}</p>
           )}
         </div>
 
@@ -1438,7 +1438,7 @@ export function AccountTransferForm({
           <div className={cn(DISABLED_CONTROL_CLASSNAME, "font-medium text-foreground")}>
             {formatSessionDateLong(sessionDate)}
           </div>
-          <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.date_helper_text}</p>
+          <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.date_helper_text}</p>
         </div>
 
         {/* CUENTA ORIGEN */}
@@ -1528,11 +1528,11 @@ export function AccountTransferForm({
             </select>
           </label>
           {targetAccountCurrencyError ? (
-            <span id="transfer-target-account-error" aria-live="polite" className="text-[11px] text-destructive">
+            <span id="transfer-target-account-error" aria-live="polite" className="text-meta text-destructive">
               {targetAccountCurrencyError}
             </span>
           ) : (
-            <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.transfer_target_account_helper}</p>
+            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.transfer_target_account_helper}</p>
           )}
         </div>
 

@@ -129,7 +129,7 @@ export function CloseSessionModalForm({
         {/* Fecha + Hora */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            <p className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground">
               {texts.dashboard.treasury.close_session_date_label}
             </p>
             <div className="min-h-11 rounded-lg border border-border bg-secondary/40 px-3 py-2 text-sm text-muted-foreground">
@@ -137,7 +137,7 @@ export function CloseSessionModalForm({
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            <p className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground">
               {texts.dashboard.treasury.close_session_time_label}
             </p>
             <div className="min-h-11 rounded-lg border border-border bg-secondary/40 px-3 py-2 text-sm text-muted-foreground">
@@ -149,35 +149,35 @@ export function CloseSessionModalForm({
         {/* Resumen del día */}
         <div className="grid grid-cols-4 gap-3 rounded-lg border border-border bg-secondary/30 px-4 py-3">
           <div>
-            <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.close_session_summary_movements}</p>
+            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.close_session_summary_movements}</p>
             <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-foreground">{summary.total}</p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.close_session_summary_ingresos}</p>
+            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.close_session_summary_ingresos}</p>
             <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-emerald-700">
               + {formatLocalizedAmount(summary.ingresos)}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.close_session_summary_egresos}</p>
+            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.close_session_summary_egresos}</p>
             <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-red-700">
               − {formatLocalizedAmount(summary.egresos)}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">{texts.dashboard.treasury.close_session_summary_transfers}</p>
+            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.close_session_summary_transfers}</p>
             <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-foreground">{summary.transfers}</p>
           </div>
         </div>
 
         {/* Tabla de arqueo */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+          <span className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground">
             {texts.dashboard.treasury.close_session_table_account}{" "}
             <span className="text-destructive" aria-hidden="true">*</span>
           </span>
           <div className="overflow-hidden rounded-lg border border-border">
-            <div className="grid grid-cols-[1.4fr_90px_90px_120px_90px] gap-2 border-b border-border bg-secondary/40 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">
+            <div className="grid grid-cols-[1.4fr_90px_90px_120px_90px] gap-2 border-b border-border bg-secondary/40 px-3 py-2 text-eyebrow font-bold uppercase tracking-[0.06em] text-muted-foreground">
               <span>{texts.dashboard.treasury.close_session_table_account}</span>
               <span className="text-right">{texts.dashboard.treasury.close_session_table_opening}</span>
               <span className="text-right">{texts.dashboard.treasury.close_session_table_net_movements}</span>
@@ -203,7 +203,7 @@ export function CloseSessionModalForm({
                   <input type="hidden" name="currency_code" value={draft.currencyCode} />
                   <div>
                     <p className="text-[13px] font-semibold text-foreground">{draft.accountName}</p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-meta text-muted-foreground">
                       {texts.dashboard.treasury.expected_balance_label}:{" "}
                       <span className="font-medium text-foreground">
                         $ {formatLocalizedAmount(draft.expectedBalance)}
@@ -242,7 +242,7 @@ export function CloseSessionModalForm({
                       )}
                     />
                     {isNegative ? (
-                      <p className="text-right text-[10px] font-semibold text-destructive">
+                      <p className="text-right text-eyebrow font-semibold text-destructive">
                         {texts.dashboard.treasury.close_session_negative_balance_error}
                       </p>
                     ) : null}
@@ -263,7 +263,7 @@ export function CloseSessionModalForm({
               );
             })}
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-meta text-muted-foreground">
             {texts.dashboard.treasury.close_session_table_helper}
           </p>
         </div>
@@ -273,7 +273,7 @@ export function CloseSessionModalForm({
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="cl-diff-notes"
-              className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground"
+              className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground"
             >
               {texts.dashboard.treasury.close_session_diff_notes_label}{" "}
               <span className="text-destructive" aria-hidden="true">*</span>
@@ -293,7 +293,7 @@ export function CloseSessionModalForm({
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="cl-notes"
-            className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground"
+            className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground"
           >
             {texts.dashboard.treasury.close_session_notes_label}
           </label>

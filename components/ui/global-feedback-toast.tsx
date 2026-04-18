@@ -75,7 +75,7 @@ function ToastCard({ message, tone, visible }: ToastCardProps) {
       role={tone === "destructive" ? "alert" : "status"}
       aria-live={tone === "destructive" ? "assertive" : "polite"}
       className={cn(
-        "w-full max-w-xl rounded-[28px] border bg-card p-5 shadow-soft transition duration-200 sm:p-6",
+        "w-full max-w-xl rounded-toast border bg-card p-5 shadow-soft transition duration-200 sm:p-6",
         visible ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-[0.98] opacity-0",
         tone === "destructive" && "border-destructive/25 text-foreground",
         tone === "warning" && "border-warning/25 text-foreground",

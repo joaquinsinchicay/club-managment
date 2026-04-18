@@ -18,7 +18,7 @@ export function CardShell({
   return (
     <section
       className={cn(
-        "w-full max-w-md rounded-[20px] border border-border bg-card p-6 sm:p-8",
+        "w-full max-w-md rounded-dialog border border-border bg-card p-6 sm:p-8",
         className
       )}
     >

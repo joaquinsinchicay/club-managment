@@ -128,7 +128,7 @@ export function AccountDetailCard({
         backLabel={secondaryActionLabel}
       />
 
-      <section className="w-full max-w-5xl rounded-[20px] border border-border bg-card p-6 sm:p-8">
+      <section className="w-full max-w-5xl rounded-dialog border border-border bg-card p-6 sm:p-8">
         <div className="space-y-5">
           {accounts.length > 0 ? (
             <div className="grid gap-2">
@@ -180,11 +180,11 @@ export function AccountDetailCard({
                   {texts.dashboard.treasury.detail_empty_movements}
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-[18px] border border-border bg-card">
+                <div className="overflow-hidden rounded-shell border border-border bg-card">
                   {movementGroups.map((group, groupIndex) => (
                     <section key={group.movementDate}>
                       <div className={`flex items-center gap-3 px-4 py-2 ${groupIndex > 0 ? "border-t border-border" : ""} bg-secondary/20`}>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        <p className="text-meta font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                           {formatMovementGroupDate(group.movementDate)}
                         </p>
                       </div>
@@ -242,13 +242,13 @@ export function AccountDetailCard({
                                         <span style={chipStyle}>{movement.activityName}</span>
                                       ) : null}
                                     </div>
-                                    <p className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                                    <p className="shrink-0 text-meta tabular-nums text-muted-foreground">
                                       {formatMovementDateTime(movement.createdAt)}
                                     </p>
                                   </div>
 
                                   <div className="mt-1">
-                                    <p className="text-[11px] text-muted-foreground">{meta}</p>
+                                    <p className="text-meta text-muted-foreground">{meta}</p>
                                   </div>
                                 </div>
                               </div>

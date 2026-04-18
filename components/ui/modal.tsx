@@ -45,7 +45,7 @@ export function Modal({
     >
       <div
         className={cn(
-          "w-full max-w-3xl rounded-[28px] border border-border bg-card p-5 shadow-soft sm:p-6",
+          "w-full max-w-3xl rounded-toast border border-border bg-card p-5 shadow-soft sm:p-6",
           panelClassName
         )}
         onClick={(event) => event.stopPropagation()}

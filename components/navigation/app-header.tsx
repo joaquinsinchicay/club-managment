@@ -115,13 +115,10 @@ export function AppHeader({ context }: AppHeaderProps) {
             {clubInitials}
           </div>
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0, lineHeight: 1.15 }}>
-            <span style={{
-              fontSize: 10,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--ink-muted)",
-            }}>
+            <span
+              className="text-eyebrow uppercase"
+              style={{ color: "var(--ink-muted)" }}
+            >
               Club activo
             </span>
             <span style={{
@@ -146,16 +143,16 @@ export function AppHeader({ context }: AppHeaderProps) {
             alignItems: "flex-end",
             lineHeight: 1.15,
           }}>
-            <span style={{
-              fontSize: 9,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--ink-muted)",
-            }}>
+            <span
+              className="text-eyebrow uppercase"
+              style={{ color: "var(--ink-muted)" }}
+            >
               Rol
             </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--slate-700)" }}>
+            <span
+              className="text-small font-semibold"
+              style={{ color: "var(--slate-700)" }}
+            >
               {roleLabel}
             </span>
           </div>
