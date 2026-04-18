@@ -1018,6 +1018,7 @@ export function TreasuryRoleCard({
           submitLabel={texts.dashboard.treasury_role.create_cta}
           pendingLabel={texts.dashboard.treasury_role.create_loading}
           sessionDate={dashboard.sessionDate}
+          onCancel={() => setActiveModal(null)}
         />
       </Modal>
 

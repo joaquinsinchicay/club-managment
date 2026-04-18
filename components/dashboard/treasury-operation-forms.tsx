@@ -1796,8 +1796,9 @@ export function TreasuryRoleMovementForm({
   submitLabel,
   pendingLabel,
   submitAction,
-  sessionDate
-}: BaseMovementFormProps & { sessionDate: string }) {
+  sessionDate,
+  onCancel
+}: BaseMovementFormProps & { sessionDate: string; onCancel?: () => void }) {
   const copy = texts.dashboard.treasury_role;
 
   const [formState, setFormState] = useState<MovementFormState>(() => ({
@@ -2096,7 +2097,7 @@ export function TreasuryRoleMovementForm({
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={handleReset}
+            onClick={onCancel ?? handleReset}
             className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {copy.reset_cta}
