@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   closeDailyCashSessionWithDeclaredBalances,
+  openDailyCashSessionWithDeclaredBalances,
   createAccountTransfer,
   createFxOperation,
   createTreasuryMovement,
@@ -13,6 +14,10 @@ import {
   updateSecretariaMovementInOpenSession,
   updateSecretariaTransferInOpenSession
 } from "@/lib/services/treasury-service";
+import {
+  createTreasuryAccountForActiveClub,
+  updateTreasuryAccountForActiveClub
+} from "@/lib/services/treasury-settings-service";
 
 export type TreasuryActionResponse = {
   ok: boolean;
@@ -20,6 +25,28 @@ export type TreasuryActionResponse = {
   movementDisplayId?: string;
   optimisticUpdate?: TreasuryMovementOptimisticUpdate;
 };
+
+export async function openDailyCashSessionModalAction(formData: FormData) {
+  const accountIds = formData.getAll("account_id");
+  const currencyCodes = formData.getAll("currency_code");
+  const declaredBalances = formData.getAll("declared_balance");
+
+  const result = await openDailyCashSessionWithDeclaredBalances(
+    accountIds.map((id, i) => ({
+      accountId: String(id ?? ""),
+      currencyCode: String(currencyCodes[i] ?? ""),
+      declaredBalance: String(declaredBalances[i] ?? "")
+    }))
+  );
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/secretaria");
+
+  return {
+    ok: result.ok,
+    code: result.code
+  } satisfies TreasuryActionResponse;
+}
 
 export async function closeDailyCashSessionModalAction(formData: FormData) {
   const accountIds = formData.getAll("account_id");
@@ -176,6 +203,41 @@ export async function createAccountTransferAction(formData: FormData) {
     ok: result.ok,
     code: result.code,
     movementDisplayId: result.movementDisplayId
+  } satisfies TreasuryActionResponse;
+}
+
+export async function createTreasuryAccountFromTreasuryAction(formData: FormData) {
+  const result = await createTreasuryAccountForActiveClub({
+    name: String(formData.get("name") ?? ""),
+    accountType: String(formData.get("account_type") ?? ""),
+    visibility: formData.getAll("visibility").map((value) => String(value)),
+    currencies: formData.getAll("currencies").map((value) => String(value)),
+    emoji: String(formData.get("emoji") ?? "")
+  });
+
+  revalidatePath("/dashboard/treasury");
+
+  return {
+    ok: result.ok,
+    code: result.code
+  } satisfies TreasuryActionResponse;
+}
+
+export async function updateTreasuryAccountFromTreasuryAction(formData: FormData) {
+  const result = await updateTreasuryAccountForActiveClub({
+    accountId: String(formData.get("account_id") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    accountType: String(formData.get("account_type") ?? ""),
+    visibility: formData.getAll("visibility").map((value) => String(value)),
+    currencies: formData.getAll("currencies").map((value) => String(value)),
+    emoji: String(formData.get("emoji") ?? "")
+  });
+
+  revalidatePath("/dashboard/treasury");
+
+  return {
+    ok: result.ok,
+    code: result.code
   } satisfies TreasuryActionResponse;
 }
 

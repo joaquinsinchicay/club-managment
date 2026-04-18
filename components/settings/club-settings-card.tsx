@@ -2,7 +2,6 @@
 
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
-import { AccountsTab } from "@/components/settings/tabs/accounts-tab";
 import { ActivitiesTab } from "@/components/settings/tabs/activities-tab";
 import { CategoriesTab } from "@/components/settings/tabs/categories-tab";
 import { MembersTab } from "@/components/settings/tabs/members-tab";
@@ -20,8 +19,6 @@ type ClubSettingsCardProps = {
   approveMembershipAction: (formData: FormData) => Promise<void>;
   updateMembershipRolesAction: (formData: FormData) => Promise<void>;
   removeMembershipAction: (formData: FormData) => Promise<void>;
-  createTreasuryAccountAction: (formData: FormData) => Promise<void>;
-  updateTreasuryAccountAction: (formData: FormData) => Promise<void>;
   createTreasuryCategoryAction: (formData: FormData) => Promise<void>;
   updateTreasuryCategoryAction: (formData: FormData) => Promise<void>;
   createClubActivityAction: (formData: FormData) => Promise<void>;
@@ -38,8 +35,6 @@ export function ClubSettingsCard({
   approveMembershipAction,
   updateMembershipRolesAction,
   removeMembershipAction,
-  createTreasuryAccountAction,
-  updateTreasuryAccountAction,
   createTreasuryCategoryAction,
   updateTreasuryCategoryAction,
   createClubActivityAction,
@@ -61,17 +56,6 @@ export function ClubSettingsCard({
           approveMembershipAction={approveMembershipAction}
           updateMembershipRoleAction={updateMembershipRolesAction}
           removeMembershipAction={removeMembershipAction}
-        />
-      )
-    },
-    {
-      id: "cuentas",
-      label: texts.settings.club.tabs.accounts,
-      content: (
-        <AccountsTab
-          accounts={treasurySettings.accounts}
-          createTreasuryAccountAction={createTreasuryAccountAction}
-          updateTreasuryAccountAction={updateTreasuryAccountAction}
         />
       )
     },
@@ -117,7 +101,7 @@ export function ClubSettingsCard({
         description={texts.settings.club.description}
       />
 
-      <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
+      <section className="rounded-dialog border border-border bg-card p-5 sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
@@ -134,7 +118,7 @@ export function ClubSettingsCard({
         </div>
       </section>
 
-      <section className="rounded-[20px] border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
+      <section className="rounded-dialog border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
         <SettingsPageLayout tabs={tabs} defaultTabId="miembros" />
       </section>
     </main>

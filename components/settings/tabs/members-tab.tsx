@@ -107,7 +107,7 @@ export function MembersTab({
         onCta={() => setIsInviting(true)}
       >
         {isEmpty ? (
-          <div className="rounded-[28px] border border-dashed border-border bg-secondary/30 p-6 text-sm text-muted-foreground">
+          <div className="rounded-toast border border-dashed border-border bg-secondary/30 p-6 text-sm text-muted-foreground">
             <p className="font-semibold text-foreground">{texts.settings.club.members.empty_title}</p>
             <p className="mt-2">{texts.settings.club.members.empty_description}</p>
           </div>
@@ -116,7 +116,7 @@ export function MembersTab({
             {filteredInvitations.map((invitation) => (
               <article
                 key={invitation.invitationId}
-                className="rounded-[28px] border border-warning/35 bg-[linear-gradient(180deg,rgba(251,191,36,0.10)_0%,rgba(255,255,255,0.98)_100%)] p-5 shadow-soft"
+                className="rounded-toast border border-warning/35 bg-[linear-gradient(180deg,rgba(251,191,36,0.10)_0%,rgba(255,255,255,0.98)_100%)] p-5 shadow-soft"
               >
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
@@ -126,7 +126,7 @@ export function MembersTab({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="truncate text-base font-semibold text-foreground">{invitation.email}</p>
-                      <span className="rounded-full bg-warning px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-foreground">
+                      <span className="rounded-full bg-warning px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-accent-foreground">
                         {texts.settings.club.members.pending_badge}
                       </span>
                     </div>
@@ -157,7 +157,7 @@ export function MembersTab({
               return (
                 <article
                   key={member.membershipId}
-                  className={`rounded-[28px] border p-5 shadow-soft ${memberToneClass}`}
+                  className={`rounded-toast border p-5 shadow-soft ${memberToneClass}`}
                 >
                   <div className="flex items-start gap-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
@@ -179,12 +179,12 @@ export function MembersTab({
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-base font-semibold text-foreground">{member.fullName}</p>
                         {isCurrentUser ? (
-                          <span className="rounded-full bg-foreground px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-foreground">
+                          <span className="rounded-full bg-foreground px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-primary-foreground">
                             {texts.settings.club.members.current_user_badge}
                           </span>
                         ) : null}
                         {member.status === "pendiente_aprobacion" ? (
-                          <span className="rounded-full bg-warning px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-foreground">
+                          <span className="rounded-full bg-warning px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-accent-foreground">
                             {texts.settings.club.members.pending_badge}
                           </span>
                         ) : null}
@@ -310,7 +310,7 @@ export function MembersTab({
               <input type="hidden" name="membership_id" value={editingMember.membershipId} />
 
               <div className="space-y-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   {texts.settings.club.members.roles_label}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-3">
@@ -357,7 +357,7 @@ export function MembersTab({
         {removingMember ? (
           <>
             <div className="rounded-[24px] border border-border bg-secondary/50 px-4 py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="text-meta font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 {texts.settings.club.members.remove_dialog_member_label}
               </p>
               <p className="mt-1 font-semibold text-foreground">{removingMember.fullName}</p>

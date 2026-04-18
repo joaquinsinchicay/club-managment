@@ -25,7 +25,7 @@ type TabKey = "dashboard" | "secretaria" | "tesoreria" | "settings" | "modules";
 const TAB_ACCENT: Record<TabKey, { color: string; underline: string }> = {
   dashboard:  { color: "var(--green-700)",  underline: "var(--green)" },
   secretaria: { color: "var(--green-700)",  underline: "var(--green)" },
-  tesoreria:  { color: "var(--blue-700)",   underline: "var(--blue)" },
+  tesoreria:  { color: "#3B82F6",            underline: "#3B82F6" },
   settings:   { color: "var(--indigo-700)", underline: "var(--indigo)" },
   modules:    { color: "var(--indigo-700)", underline: "var(--indigo)" },
 };
@@ -115,13 +115,10 @@ export function AppHeader({ context }: AppHeaderProps) {
             {clubInitials}
           </div>
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0, lineHeight: 1.15 }}>
-            <span style={{
-              fontSize: 10,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--ink-muted)",
-            }}>
+            <span
+              className="text-eyebrow uppercase"
+              style={{ color: "var(--ink-muted)" }}
+            >
               Club activo
             </span>
             <span style={{
@@ -146,16 +143,16 @@ export function AppHeader({ context }: AppHeaderProps) {
             alignItems: "flex-end",
             lineHeight: 1.15,
           }}>
-            <span style={{
-              fontSize: 9,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--ink-muted)",
-            }}>
+            <span
+              className="text-eyebrow uppercase"
+              style={{ color: "var(--ink-muted)" }}
+            >
               Rol
             </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--slate-700)" }}>
+            <span
+              className="text-small font-semibold"
+              style={{ color: "var(--slate-700)" }}
+            >
               {roleLabel}
             </span>
           </div>

@@ -6,6 +6,8 @@
   /* ============================================================
      CLUB MANAGEMENT · DESIGN TOKENS v2
      Fuente: design_handoff_club_management/tokens.css
+     ⚠️  Runtime tokens — sincronizar con lib/tokens/*.ts
+         si se modifica cualquier valor de este bloque.
      ============================================================ */
 
   /* Semantic colors */

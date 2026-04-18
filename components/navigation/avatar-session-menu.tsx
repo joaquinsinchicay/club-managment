@@ -127,7 +127,7 @@ export function AvatarSessionMenu({
             aria-modal="true"
             aria-labelledby="sign-out-dialog-title"
             aria-describedby="sign-out-dialog-description"
-            className="w-full max-w-sm rounded-[28px] border border-border bg-card p-6 shadow-soft"
+            className="w-full max-w-sm rounded-toast border border-border bg-card p-6 shadow-soft"
           >
             <h2 id="sign-out-dialog-title" className="text-xl font-semibold text-card-foreground">
               {texts.auth.sign_out.confirm_title}

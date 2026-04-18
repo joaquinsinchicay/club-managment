@@ -54,7 +54,7 @@ export function ActiveClubSelector({
         <PendingStatusText
           idleLabel={texts.dashboard.club_selector.helper}
           pendingLabel={texts.dashboard.club_selector.loading}
-          className={inline ? "sr-only" : "text-[11px]"}
+          className={inline ? "sr-only" : "text-meta"}
         />
       </PendingFieldset>
     </form>

@@ -172,24 +172,24 @@ function MovementList({
           {emptyLabel}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[20px] border border-border bg-card">
+        <div className="overflow-hidden rounded-dialog border border-border bg-card">
           <div className="hidden bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(140px,0.8fr)_minmax(0,1.5fr)_minmax(160px,0.85fr)_minmax(240px,1fr)_minmax(170px,0.8fr)_88px] md:items-center md:gap-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {texts.dashboard.consolidation.status_label}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {texts.dashboard.consolidation.concept_label}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {texts.dashboard.consolidation.account_label}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {texts.dashboard.consolidation.detail_label}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
+            <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
               {texts.dashboard.consolidation.amount_label}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
+            <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
               {texts.dashboard.consolidation.actions_label}
             </p>
           </div>
@@ -208,7 +208,7 @@ function MovementList({
                   onKeyDown={(event) => handleRowKeyDown(event, movement.movementId)}
                   aria-pressed={isSelected}
                   className={cn(
-                    "relative rounded-[18px] border border-border bg-card p-4 shadow-soft transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 md:grid md:grid-cols-[minmax(140px,0.8fr)_minmax(0,1.5fr)_minmax(160px,0.85fr)_minmax(240px,1fr)_minmax(170px,0.8fr)_88px] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none",
+                    "relative rounded-shell border border-border bg-card p-4 shadow-soft transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 md:grid md:grid-cols-[minmax(140px,0.8fr)_minmax(0,1.5fr)_minmax(160px,0.85fr)_minmax(240px,1fr)_minmax(170px,0.8fr)_88px] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none",
                     isSelected && "border-foreground/25 bg-secondary/10 ring-1 ring-foreground/10",
                     index === movements.length - 1 && "md:rounded-b-[20px]"
                   )}
@@ -265,12 +265,12 @@ function MovementList({
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {movement.categoryName || !movement.transferReference ? (
-                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           {movement.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
                         </span>
                       ) : null}
                       {movement.activityName ? (
-                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           {movement.activityName}
                         </span>
                       ) : null}
@@ -317,7 +317,7 @@ function MovementList({
                           event.stopPropagation();
                           onEditMovement?.(movement);
                         }}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[18px] border border-border bg-card px-0 py-0 text-foreground transition hover:bg-secondary"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-shell border border-border bg-card px-0 py-0 text-foreground transition hover:bg-secondary"
                         aria-label={texts.dashboard.consolidation.edit_cta}
                       >
                         <EditMovementIcon />
@@ -494,7 +494,7 @@ export function TreasuryConsolidationCard({
         backLabel={texts.dashboard.consolidation.back_to_treasury_cta}
       />
 
-      <section className="w-full rounded-[20px] border border-border bg-card p-6 sm:p-8">
+      <section className="w-full rounded-dialog border border-border bg-card p-6 sm:p-8">
         <div className="grid gap-6">
           <div className="rounded-xl border border-border bg-secondary/40 p-4">
             <form onSubmit={handleLoadDateSubmit} className="grid gap-4">
@@ -680,12 +680,12 @@ export function TreasuryConsolidationCard({
       {hasMovements ? (
         <form
           action={executeDailyConsolidationAction}
-          className="sticky bottom-4 z-20 rounded-[20px] border border-border bg-card/95 p-4 shadow-soft backdrop-blur sm:p-5"
+          className="sticky bottom-4 z-20 rounded-dialog border border-border bg-card/95 p-4 shadow-soft backdrop-blur sm:p-5"
         >
           <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {texts.dashboard.consolidation.footer_total_label}
               </p>
               <div className="flex flex-col gap-1">

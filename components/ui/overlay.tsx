@@ -118,7 +118,7 @@ export function BlockingStatusOverlay({
       role="status"
       aria-live="polite"
     >
-      <div className="flex w-full max-w-md items-center gap-3 rounded-[28px] border border-border bg-card px-5 py-4 text-sm font-semibold text-foreground shadow-soft sm:px-6 sm:py-5">
+      <div className="flex w-full max-w-md items-center gap-3 rounded-toast border border-border bg-card px-5 py-4 text-sm font-semibold text-foreground shadow-soft sm:px-6 sm:py-5">
         <Spinner className="size-5 shrink-0" />
         <span>{label}</span>
       </div>

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import {
   closeDailyCashSessionModalAction,
+  openDailyCashSessionModalAction,
   createAccountTransferAction,
   createTreasuryMovementAction,
   updateSecretariaMovementAction,
@@ -52,6 +53,7 @@ export default async function SecretariaDashboardPage() {
     redirect("/dashboard");
   }
 
+  const canOpenSession = treasuryCard.availableActions.includes("open_session");
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
 
   const [
@@ -62,7 +64,8 @@ export default async function SecretariaDashboardPage() {
     treasuryCurrencies,
     movementTypes,
     receiptFormats,
-    closeSessionValidation
+    closeSessionValidation,
+    openSessionValidation
   ] = await Promise.all([
     accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
     accessRepository.listTreasuryCategoriesForClub(context.activeClub.id).then((categories) =>
@@ -73,7 +76,8 @@ export default async function SecretariaDashboardPage() {
     getActiveTreasuryCurrenciesForSecretaria(),
     getEnabledMovementTypesForSecretaria(),
     getActiveReceiptFormatsForSecretaria(),
-    canCloseSession ? getDailyCashSessionValidationForActiveClub("close") : Promise.resolve(null)
+    canCloseSession ? getDailyCashSessionValidationForActiveClub("close") : Promise.resolve(null),
+    canOpenSession  ? getDailyCashSessionValidationForActiveClub("open")  : Promise.resolve(null)
   ]);
 
   const treasuryMovementAccounts = allTreasuryAccounts.filter((account) => account.visibleForSecretaria);
@@ -88,7 +92,7 @@ export default async function SecretariaDashboardPage() {
         title={texts.dashboard.treasury.title}
         description={texts.dashboard.treasury.description}
         actions={
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-semibold text-muted-foreground">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-meta font-semibold text-muted-foreground">
             <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
             {formatSessionDateChip(treasuryCard.sessionDate)}
           </span>
@@ -107,12 +111,14 @@ export default async function SecretariaDashboardPage() {
         movementTypes={movementTypes}
         receiptFormats={receiptFormats}
         closeSessionValidation={closeSessionValidation}
+        openSessionValidation={openSessionValidation}
         currentUserDisplayName={context.user.fullName}
         createTreasuryMovementAction={createTreasuryMovementAction}
         updateSecretariaMovementAction={updateSecretariaMovementAction}
         updateSecretariaTransferAction={updateSecretariaTransferAction}
         createAccountTransferAction={createAccountTransferAction}
         closeDailyCashSessionModalAction={closeDailyCashSessionModalAction}
+        openDailyCashSessionModalAction={openDailyCashSessionModalAction}
       />
     </main>
   );

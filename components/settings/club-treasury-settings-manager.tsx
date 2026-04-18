@@ -427,11 +427,11 @@ function SettingsSectionShell({
   children
 }: SettingsSectionShellProps) {
   return (
-    <section className="rounded-[28px] border border-border/70 bg-card p-5 shadow-soft sm:p-6">
+    <section className="rounded-toast border border-border/70 bg-card p-5 shadow-soft sm:p-6">
       <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           {eyebrow ? (
-            <div className="inline-flex w-fit rounded-full border border-border/70 bg-secondary/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="inline-flex w-fit rounded-full border border-border/70 bg-secondary/40 px-3 py-1 text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {eyebrow}
             </div>
           ) : null}
@@ -536,7 +536,7 @@ export function ClubTreasurySettingsManager({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/10 text-xl">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-shell bg-primary/10 text-xl">
                         {account.emoji ?? texts.settings.club.treasury.default_account_emoji}
                       </div>
                       <div>
@@ -668,7 +668,7 @@ export function ClubTreasurySettingsManager({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/10 text-xl">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-shell bg-primary/10 text-xl">
                         {category.emoji ?? texts.settings.club.treasury.default_category_emoji}
                       </div>
                       <div>
@@ -764,7 +764,7 @@ export function ClubTreasurySettingsManager({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/10 text-xl">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-shell bg-primary/10 text-xl">
                         {activity.emoji ?? texts.settings.club.treasury.default_activity_emoji}
                       </div>
                       <div>

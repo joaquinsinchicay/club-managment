@@ -55,16 +55,16 @@ export function MovementList({
   return (
     <div>
       <div className="hidden rounded-t-[18px] border border-border bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,1.7fr)_minmax(180px,0.95fr)_minmax(150px,0.9fr)_88px] md:items-center md:gap-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {conceptLabel}
         </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
+        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
           {amountLabel}
         </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {accountLabel}
         </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
+        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
           {actionsLabel}
         </p>
       </div>
@@ -74,7 +74,7 @@ export function MovementList({
           <article
             key={item.movementId}
             className={cn(
-              "rounded-[18px] border border-border bg-card p-4 shadow-soft md:grid md:grid-cols-[minmax(0,1.7fr)_minmax(180px,0.95fr)_minmax(150px,0.9fr)_88px] md:items-center md:gap-4 md:rounded-none md:border-t-0 md:p-5 md:shadow-none",
+              "rounded-shell border border-border bg-card p-4 shadow-soft md:grid md:grid-cols-[minmax(0,1.7fr)_minmax(180px,0.95fr)_minmax(150px,0.9fr)_88px] md:items-center md:gap-4 md:rounded-none md:border-t-0 md:p-5 md:shadow-none",
               index === items.length - 1 && "md:rounded-b-[18px]"
             )}
           >

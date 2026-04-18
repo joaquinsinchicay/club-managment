@@ -282,7 +282,7 @@ export function CategoriesTab({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/10 text-xl">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-shell bg-primary/10 text-xl">
                         {category.emoji ?? texts.settings.club.treasury.default_category_emoji}
                       </div>
                       <div className="min-w-0">

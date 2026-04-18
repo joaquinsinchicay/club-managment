@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { CloseSessionModalForm } from "@/components/dashboard/close-session-modal-form";
+import { OpenSessionModalForm } from "@/components/dashboard/open-session-modal-form";
 import {
   AccountTransferEditForm,
   AccountTransferForm,
@@ -42,12 +43,14 @@ type TreasuryCardProps = {
   movementTypes: TreasuryMovementType[];
   receiptFormats: ReceiptFormat[];
   closeSessionValidation: DailyCashSessionValidation | null;
+  openSessionValidation: DailyCashSessionValidation | null;
   currentUserDisplayName: string;
   createTreasuryMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateSecretariaMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateSecretariaTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   closeDailyCashSessionModalAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  openDailyCashSessionModalAction: (formData: FormData) => Promise<TreasuryActionResponse>;
 };
 
 function EditMovementIcon({ className }: { className?: string }) {
@@ -179,6 +182,7 @@ function SessionCard({
   canOpenSession,
   canCreateMovement,
   canCloseSession,
+  onOpenSession,
   onOpenMovement,
   onOpenTransfer,
   onOpenCloseSession
@@ -188,6 +192,7 @@ function SessionCard({
   canOpenSession: boolean;
   canCreateMovement: boolean;
   canCloseSession: boolean;
+  onOpenSession: () => void;
   onOpenMovement: () => void;
   onOpenTransfer: () => void;
   onOpenCloseSession: () => void;
@@ -216,10 +221,10 @@ function SessionCard({
           {isUnresolved ? "?" : cfg.iconText}
         </div>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {texts.dashboard.treasury.session_card_label}
           </span>
-          <span className="text-[15px] font-semibold leading-tight tracking-tight text-foreground">
+          <span className="text-card-title font-semibold leading-tight tracking-tight text-foreground">
             {isUnresolved
               ? texts.dashboard.treasury.actions_card_unresolved_description.split(".")[0]
               : cfg.badgeText}
@@ -228,7 +233,7 @@ function SessionCard({
         {!isUnresolved ? (
           <span
             className={cn(
-              "ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold",
+              "ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-meta font-semibold",
               cfg.badgeClass
             )}
           >
@@ -243,7 +248,7 @@ function SessionCard({
         <div className="mx-4 mb-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-dashed border-border pt-3">
           {metaItems.map((item) => (
             <div key={item.label} className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {item.label}
               </span>
               <span className="truncate text-[13px] font-semibold tabular-nums text-foreground">{item.value}</span>
@@ -269,13 +274,13 @@ function SessionCard({
       {/* CTAs */}
       {canOpenSession ? (
         <div className="px-4 pb-4">
-          <NavigationLinkWithLoader
-            href="/dashboard/session/open"
-            prefetch={false}
+          <button
+            type="button"
+            onClick={onOpenSession}
             className="flex min-h-11 w-full items-center justify-center rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-background transition hover:opacity-90"
           >
             {texts.dashboard.treasury.open_session_flow_cta}
-          </NavigationLinkWithLoader>
+          </button>
         </div>
       ) : null}
 
@@ -323,11 +328,11 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
           <h2 className="text-[14px] font-semibold tracking-tight text-foreground">
             {texts.dashboard.treasury.balances_visible_title}
           </h2>
-          <p className="text-[11px] font-medium text-muted-foreground">
+          <p className="text-meta font-medium text-muted-foreground">
             {texts.dashboard.treasury.balances_visible_description}
           </p>
         </div>
-        <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+        <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-2 py-1 text-eyebrow font-semibold text-muted-foreground">
           ARS
         </span>
       </div>
@@ -343,7 +348,7 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
               <div key={account.accountId} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="truncate text-[13px] font-medium text-foreground">{account.name}</span>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     Efectivo
                   </span>
                 </div>
@@ -351,9 +356,9 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
                   {account.balances.map((balance) => (
                     <p
                       key={`${account.accountId}-${balance.currencyCode}`}
-                      className="text-[15px] font-semibold tabular-nums tracking-tight text-foreground"
+                      className="text-card-title font-semibold tabular-nums tracking-tight text-foreground"
                     >
-                      <span className="mr-0.5 text-[10px] font-medium text-muted-foreground">$</span>
+                      <span className="mr-0.5 text-eyebrow font-medium text-muted-foreground">$</span>
                       {formatLocalizedAmount(balance.amount)}
                     </p>
                   ))}
@@ -410,7 +415,7 @@ function MovementsCard({
           <h2 className="text-[14px] font-semibold tracking-tight text-foreground">
             {texts.dashboard.treasury.movements_card_title}
           </h2>
-          <p className="text-[11px] font-medium text-muted-foreground">
+          <p className="text-meta font-medium text-muted-foreground">
             {card.movements.length} {texts.dashboard.treasury.movements_card_description} · {today}
           </p>
         </div>
@@ -418,7 +423,7 @@ function MovementsCard({
           <NavigationLinkWithLoader
             href={detailHref}
             prefetch={false}
-            className="shrink-0 text-[12px] font-semibold text-muted-foreground transition hover:text-foreground"
+            className="shrink-0 text-small font-semibold text-muted-foreground transition hover:text-foreground"
           >
             {texts.dashboard.treasury.movements_see_all_cta}
           </NavigationLinkWithLoader>
@@ -432,7 +437,7 @@ function MovementsCard({
             type="button"
             onClick={() => onFilterChange(null)}
             className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+              "shrink-0 rounded-full px-3 py-1.5 text-meta font-semibold transition",
               activeFilter === null
                 ? "bg-foreground text-background"
                 : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -446,7 +451,7 @@ function MovementsCard({
               type="button"
               onClick={() => onFilterChange(account.accountId)}
               className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition",
+                "shrink-0 rounded-full px-3 py-1.5 text-meta font-semibold transition",
                 activeFilter === account.accountId
                   ? "bg-foreground text-background"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -485,7 +490,7 @@ function MovementsCard({
                 <ModalTriggerButton
                   onClick={() => onEditMovement(movement)}
                   aria-label={texts.dashboard.treasury.edit_movement_cta}
-                  className="cursor-pointer border-0 bg-transparent p-0 text-[11px] font-semibold text-slate-500 hover:text-foreground"
+                  className="cursor-pointer border-0 bg-transparent p-0 text-meta font-semibold text-slate-500 hover:text-foreground"
                 >
                   {texts.dashboard.treasury.movements_edit_cta}
                 </ModalTriggerButton>
@@ -510,12 +515,14 @@ export function TreasuryCard({
   movementTypes,
   receiptFormats,
   closeSessionValidation,
+  openSessionValidation,
   currentUserDisplayName,
   createTreasuryMovementAction,
   updateSecretariaMovementAction,
   updateSecretariaTransferAction,
   createAccountTransferAction,
-  closeDailyCashSessionModalAction
+  closeDailyCashSessionModalAction,
+  openDailyCashSessionModalAction
 }: TreasuryCardProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -524,8 +531,9 @@ export function TreasuryCard({
   const canCreateMovement = localTreasuryCard.availableActions.includes("create_movement");
   const canCloseSession = localTreasuryCard.availableActions.includes("close_session");
   const canOpenSession = localTreasuryCard.availableActions.includes("open_session");
-  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "edit_transfer" | "transfer" | "close_session" | null>(null);
+  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "edit_transfer" | "transfer" | "close_session" | "open_session" | null>(null);
   const [isSessionClosePending, setIsSessionClosePending] = useState(false);
+  const [isSessionOpenPending, setIsSessionOpenPending] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<DashboardTreasuryCardData["movements"][number] | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
@@ -553,7 +561,9 @@ export function TreasuryCard({
         ? texts.dashboard.treasury.update_loading
         : isSessionClosePending
           ? texts.dashboard.treasury.confirm_close_session_loading
-          : null;
+          : isSessionOpenPending
+            ? texts.dashboard.treasury.confirm_open_session_loading
+            : null;
 
   useEffect(() => {
     setLocalTreasuryCard(treasuryCard);
@@ -746,6 +756,21 @@ export function TreasuryCard({
     }
   }
 
+  async function handleOpenSession(formData: FormData) {
+    setIsSessionOpenPending(true);
+    setActiveModal(null);
+    try {
+      const result = await openDailyCashSessionModalAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      startTransition(() => { router.refresh(); });
+    } finally {
+      setIsSessionOpenPending(false);
+    }
+  }
+
   return (
     <>
       <BlockingStatusOverlay open={pendingOverlayLabel !== null} label={pendingOverlayLabel ?? ""} />
@@ -757,6 +782,7 @@ export function TreasuryCard({
           canOpenSession={canOpenSession}
           canCreateMovement={canCreateMovement}
           canCloseSession={canCloseSession}
+          onOpenSession={() => setActiveModal("open_session")}
           onOpenMovement={() => setActiveModal("movement")}
           onOpenTransfer={() => setActiveModal("transfer")}
           onOpenCloseSession={() => setActiveModal("close_session")}
@@ -912,6 +938,24 @@ export function TreasuryCard({
             movements={localTreasuryCard.movements}
             currentUserDisplayName={currentUserDisplayName}
             submitAction={handleCloseSession}
+            onCancel={() => setActiveModal(null)}
+          />
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={activeModal === "open_session" && openSessionValidation !== null}
+        onClose={() => setActiveModal(null)}
+        title={texts.dashboard.treasury.opening_title}
+        description={texts.dashboard.treasury.opening_description}
+        closeDisabled={isSessionOpenPending}
+        hideCloseButton
+        panelClassName="max-w-2xl"
+      >
+        {openSessionValidation ? (
+          <OpenSessionModalForm
+            validation={openSessionValidation}
+            submitAction={handleOpenSession}
             onCancel={() => setActiveModal(null)}
           />
         ) : null}

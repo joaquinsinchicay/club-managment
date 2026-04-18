@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useState, type ReactNode } from "react";
 
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import {
@@ -9,6 +9,7 @@ import {
   TreasuryRoleFxForm,
   TreasuryRoleMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
+import { TreasuryAccountForm } from "@/components/treasury/account-form";
 import { Modal, ModalTriggerButton } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
@@ -42,6 +43,10 @@ type TreasuryRoleCardProps = {
   createTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createFxOperationAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  createTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  updateTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  allAccounts: TreasuryAccount[];
+  isAdmin: boolean;
 };
 
 type SubTab = "resumen" | "cuentas" | "movimientos" | "conciliacion";
@@ -157,21 +162,48 @@ function ConsolidationIcon() {
   );
 }
 
-function AccountTypeIcon({ accountType }: { accountType: TreasuryAccountType }) {
-  const initials =
-    accountType === "bancaria" ? "BK" : accountType === "billetera_virtual" ? "BV" : "EF";
+function MovementsListIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+    >
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12h6M9 16h4" />
+    </svg>
+  );
+}
+
+function AccountAvatar({
+  name,
+  accountType
+}: {
+  name: string;
+  accountType?: TreasuryAccountType;
+}) {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
 
   const colorClass =
     accountType === "bancaria"
-      ? "bg-blue-50 text-blue-700"
+      ? "bg-ds-blue-050 text-ds-blue-700"
       : accountType === "billetera_virtual"
         ? "bg-amber-50 text-amber-700"
-        : "bg-slate-100 text-slate-700";
+        : "bg-emerald-50 text-emerald-700"; // efectivo
 
   return (
     <div
       className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold tracking-wide",
+        "flex size-9 shrink-0 items-center justify-center rounded-lg text-eyebrow font-bold tracking-wide",
         colorClass
       )}
     >
@@ -197,7 +229,7 @@ function SubTabNav({
   ];
 
   return (
-    <div className="flex gap-0.5 rounded-[10px] bg-slate-100 p-[3px]">
+    <div className="flex gap-0.5 rounded-card bg-slate-100 p-[3px]">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -220,80 +252,201 @@ function SubTabNav({
 
 // ─── KPI grid ────────────────────────────────────────────────────────────────
 
+// ─── KPI currency chip (shared) ──────────────────────────────────────────────
+
+function CurrencyChip({ code }: { code: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-eyebrow font-semibold text-slate-600">
+      {code}
+    </span>
+  );
+}
+
+// ─── KPI grid ────────────────────────────────────────────────────────────────
+
 function KpiGrid({
   totalBalances,
-  accountCount
+  accountCount,
+  monthlyStats,
+  pendingConciliationCount
 }: {
   totalBalances: TotalBalance[];
   accountCount: number;
+  monthlyStats: TreasuryRoleDashboard["monthlyStats"];
+  pendingConciliationCount: number;
 }) {
-  const primary = totalBalances[0];
-
   return (
-    <div className="grid grid-cols-2 gap-2.5">
-      <div className="rounded-[10px] border border-border bg-card px-3.5 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+
+      {/* ── Saldo total ── */}
+      <div className="rounded-card border border-border bg-card px-3.5 py-3">
+        <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
           {texts.dashboard.treasury_role.kpi_total_balance_label}
         </p>
-        <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-foreground tabular-nums">
-          {primary ? `$ ${formatLocalizedAmount(primary.amount)}` : "—"}
-        </p>
-        <p className="mt-1 text-[11px] text-slate-500">
+        <div className="mt-2 flex flex-col">
+          {totalBalances.length === 0 ? (
+            <p className="py-1 text-h2 font-bold tabular-nums text-foreground">—</p>
+          ) : (
+            totalBalances.map((b, i) => (
+              <div
+                key={b.currencyCode}
+                className={cn(
+                  "flex items-center justify-between gap-2 py-1.5",
+                  i < totalBalances.length - 1 && "border-b border-slate-200"
+                )}
+              >
+                <CurrencyChip code={b.currencyCode} />
+                <span className="text-[17px] font-bold tabular-nums tracking-tight text-foreground">
+                  {b.currencyCode === "ARS" ? "$ " : "US$ "}
+                  {formatLocalizedAmount(b.amount)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+        <p className="mt-1.5 text-meta text-slate-500">
           {accountCount} {texts.dashboard.treasury_role.kpi_accounts_count_label}
-          {primary ? ` · ${primary.currencyCode}` : ""}
         </p>
       </div>
 
-      {totalBalances.slice(1).map((balance) => (
-        <div key={balance.currencyCode} className="rounded-[10px] border border-border bg-card px-3.5 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            {balance.currencyCode}
-          </p>
-          <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-foreground tabular-nums">
-            {formatLocalizedAmount(balance.amount)}
-          </p>
-          <p className="mt-1 text-[11px] text-slate-500">Saldo total</p>
+      {/* ── Ingresos del mes ── */}
+      <div className="rounded-card border border-border bg-card px-3.5 py-3">
+        <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
+          {texts.dashboard.treasury_role.kpi_monthly_income_label}
+        </p>
+        <div className="mt-2 flex flex-col">
+          {monthlyStats.length === 0 ? (
+            <p className="py-1 text-h2 font-bold tabular-nums text-ds-green-700">—</p>
+          ) : (
+            monthlyStats.map((s, i) => (
+              <div
+                key={s.currencyCode}
+                className={cn(
+                  "flex items-center justify-between gap-2 py-1.5",
+                  i < monthlyStats.length - 1 && "border-b border-slate-200"
+                )}
+              >
+                <span className={cn(
+                  "font-bold tabular-nums tracking-tight text-ds-green-700",
+                  i === 0 ? "text-[17px]" : "text-small"
+                )}>
+                  + {s.currencyCode === "ARS" ? "$ " : "US$ "}
+                  {formatLocalizedAmount(s.ingreso)}
+                </span>
+                <CurrencyChip code={s.currencyCode} />
+              </div>
+            ))
+          )}
         </div>
-      ))}
+      </div>
+
+      {/* ── Egresos del mes ── */}
+      <div className="rounded-card border border-border bg-card px-3.5 py-3">
+        <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
+          {texts.dashboard.treasury_role.kpi_monthly_expenses_label}
+        </p>
+        <div className="mt-2 flex flex-col">
+          {monthlyStats.length === 0 ? (
+            <p className="py-1 text-h2 font-bold tabular-nums text-ds-red-700">—</p>
+          ) : (
+            monthlyStats.map((s, i) => (
+              <div
+                key={s.currencyCode}
+                className={cn(
+                  "flex items-center justify-between gap-2 py-1.5",
+                  i < monthlyStats.length - 1 && "border-b border-slate-200"
+                )}
+              >
+                <span className={cn(
+                  "font-bold tabular-nums tracking-tight text-ds-red-700",
+                  i === 0 ? "text-[17px]" : "text-small"
+                )}>
+                  − {s.currencyCode === "ARS" ? "$ " : "US$ "}
+                  {formatLocalizedAmount(s.egreso)}
+                </span>
+                <CurrencyChip code={s.currencyCode} />
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* ── Sin conciliar ── */}
+      <div className="rounded-card border border-border bg-card px-3.5 py-3">
+        <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
+          {texts.dashboard.treasury_role.kpi_pending_conciliation_label}
+        </p>
+        <p className="mt-2 text-[2rem] font-bold leading-none tracking-tight text-ds-blue-700 tabular-nums">
+          {pendingConciliationCount}
+        </p>
+        <p className="mt-1.5 text-meta text-slate-500">
+          {texts.dashboard.treasury_role.kpi_pending_conciliation_meta}
+        </p>
+      </div>
+
     </div>
   );
 }
 
 // ─── Accounts summary list ────────────────────────────────────────────────────
 
-function AccountRow({
-  account
-}: {
-  account: TreasuryRoleDashboard["accounts"][number] & { accountType?: TreasuryAccountType };
-}) {
+type EnrichedDashboardAccount = TreasuryRoleDashboard["accounts"][number] & {
+  accountType?: TreasuryAccountType;
+};
+
+function AccountRow({ account, action }: { account: EnrichedDashboardAccount; action?: ReactNode }) {
+  const isMulti = account.balances.length > 1;
+
   return (
-    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-dashed border-slate-200 py-3 last:border-b-0">
-      <div
-        className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold tracking-wide",
-          "bg-slate-100 text-slate-700"
-        )}
-      >
-        {account.name.slice(0, 2).toUpperCase()}
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
-          {account.name}
-        </p>
-      </div>
-      <div className="text-right">
-        {account.balances.map((b) => (
-          <p
-            key={b.currencyCode}
-            className="text-[15px] font-bold tabular-nums tracking-tight text-foreground"
-          >
-            <span className="mr-0.5 text-[10px] font-medium text-muted-foreground">
-              {b.currencyCode}
-            </span>
-            {formatLocalizedAmount(b.amount)}
+    <div className="border-b border-dashed border-slate-200 py-3 last:border-b-0">
+      {/* Header row */}
+      <div className="flex items-center gap-3">
+        <AccountAvatar name={account.name} accountType={account.accountType} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
+            {account.name}
           </p>
-        ))}
+          {account.hasPendingMovements || account.hasConciliatedMovements ? (
+            <div className="mt-0.5 flex items-center gap-1">
+              <span className={cn(
+                "inline-flex size-1.5 rounded-full",
+                account.hasPendingMovements ? "bg-amber-500" : "bg-emerald-500"
+              )} />
+              <span className="text-eyebrow text-slate-500">
+                {account.hasPendingMovements
+                  ? texts.dashboard.treasury_role.conciliation_status_pending
+                  : texts.dashboard.treasury_role.conciliation_status_ok}
+              </span>
+            </div>
+          ) : null}
+        </div>
+        {isMulti ? (
+          <span className="inline-flex shrink-0 items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold tracking-wider text-slate-500">
+            {account.balances.length} {texts.dashboard.treasury_role.multi_currency_label}
+          </span>
+        ) : (
+          <p className="shrink-0 text-card-title font-bold tabular-nums tracking-tight text-foreground">
+            {account.balances[0]?.currencyCode === "ARS" ? "$ " : "US$ "}
+            {formatLocalizedAmount(account.balances[0]?.amount ?? 0)}
+          </p>
+        )}
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
+
+      {/* Multi-currency breakdown */}
+      {isMulti && (
+        <div className="ml-12 mt-2 flex flex-col gap-1.5 border-l-2 border-slate-100 pl-3">
+          {account.balances.map((b) => (
+            <div key={b.currencyCode} className="flex items-center justify-between gap-3">
+              <span className="text-eyebrow font-semibold text-slate-400">{b.currencyCode}</span>
+              <span className="text-small font-semibold tabular-nums text-foreground">
+                {b.currencyCode === "ARS" ? "$ " : "US$ "}
+                {formatLocalizedAmount(b.amount)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -303,22 +456,26 @@ function AccountRow({
 function QuickActions({
   canCreateMovement,
   canCreateFxOperation,
+  pendingConciliationCount,
   onMovement,
   onFx,
-  onConciliacion
+  onConciliacion,
+  onMovements
 }: {
   canCreateMovement: boolean;
   canCreateFxOperation: boolean;
+  pendingConciliationCount: number;
   onMovement: () => void;
   onFx: () => void;
   onConciliacion: () => void;
+  onMovements: () => void;
 }) {
   return (
-    <div className="rounded-[10px] border border-border bg-card p-4">
+    <div className="rounded-card border border-border bg-card p-4">
       <p className="text-sm font-semibold tracking-tight text-foreground">
         {texts.dashboard.treasury_role.quick_actions_title}
       </p>
-      <p className="mt-0.5 text-[11px] text-muted-foreground">
+      <p className="mt-0.5 text-meta text-muted-foreground">
         {texts.dashboard.treasury_role.quick_actions_description}
       </p>
       <div className="mt-3 flex flex-col gap-2">
@@ -326,9 +483,8 @@ function QuickActions({
           <button
             type="button"
             onClick={onMovement}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
+            className="flex min-h-11 items-center justify-center rounded-btn bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
           >
-            <MovementIcon />
             {texts.dashboard.treasury_role.movement_modal_cta}
           </button>
         )}
@@ -336,19 +492,29 @@ function QuickActions({
           <button
             type="button"
             onClick={onFx}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+            className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
           >
-            <FxIcon />
             {texts.dashboard.treasury_role.fx_modal_cta}
           </button>
         )}
         <button
           type="button"
           onClick={onConciliacion}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+          className="relative flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
         >
-          <ConsolidationIcon />
           {texts.dashboard.treasury_role.consolidation_cta}
+          {pendingConciliationCount > 0 && (
+            <span className="absolute right-3 flex size-5 items-center justify-center rounded-full bg-amber-100 text-eyebrow font-bold text-amber-700">
+              {pendingConciliationCount}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={onMovements}
+          className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+        >
+          {texts.dashboard.treasury_role.view_movements_cta}
         </button>
       </div>
     </div>
@@ -398,7 +564,7 @@ function TreasuryRoleMovementGroups({
                 <ModalTriggerButton
                   onClick={() => onEditMovement(movement)}
                   aria-label={texts.dashboard.treasury_role.edit_movement_cta}
-                  className="cursor-pointer border-0 bg-transparent p-0 text-[11px] font-semibold text-slate-500 hover:text-foreground"
+                  className="cursor-pointer border-0 bg-transparent p-0 text-meta font-semibold text-slate-500 hover:text-foreground"
                 >
                   {texts.dashboard.treasury.movements_edit_cta}
                 </ModalTriggerButton>
@@ -413,64 +579,111 @@ function TreasuryRoleMovementGroups({
 
 // ─── Cuentas tab ─────────────────────────────────────────────────────────────
 
+function EditAccountButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="inline-flex size-8 items-center justify-center rounded-btn border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+    >
+      <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+        />
+      </svg>
+    </button>
+  );
+}
+
 function CuentasTab({
   accounts,
-  detailHref
+  dashboardAccounts,
+  totalBalances,
+  isAdmin,
+  onCreateAccount,
+  onEditAccount
 }: {
   accounts: TreasuryAccount[];
-  detailHref: string | null;
+  dashboardAccounts: TreasuryRoleDashboard["accounts"];
+  totalBalances: TotalBalance[];
+  isAdmin: boolean;
+  onCreateAccount: () => void;
+  onEditAccount: (account: TreasuryAccount) => void;
 }) {
-  if (accounts.length === 0) {
-    return (
-      <div className="rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-        {texts.dashboard.treasury_role.empty_accounts}
-      </div>
-    );
-  }
+  const enrichedAccounts: EnrichedDashboardAccount[] = accounts.map((account) => {
+    const dashAccount = dashboardAccounts.find((d) => d.accountId === account.id);
+    if (dashAccount) {
+      return { ...dashAccount, accountType: account.accountType };
+    }
+    return {
+      accountId: account.id,
+      name: account.name,
+      balances: account.currencies.map((currencyCode) => ({ currencyCode, amount: 0 })),
+      hasPendingMovements: false,
+      hasConciliatedMovements: false,
+      accountType: account.accountType
+    };
+  });
+
+  const subtitleParts = [
+    `${accounts.length} ${texts.dashboard.treasury_role.accounts_tab_active_label}`,
+    ...totalBalances.map(
+      (b) =>
+        `${b.currencyCode} ${b.currencyCode === "ARS" ? "$" : "US$"} ${formatLocalizedAmount(b.amount)}`
+    )
+  ];
 
   return (
-    <div className="rounded-[10px] border border-border bg-card">
+    <div className="rounded-card border border-border bg-card">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-semibold tracking-tight text-foreground">
             {texts.dashboard.treasury_role.tab_cuentas}
           </p>
-          <p className="text-[11px] text-muted-foreground">
-            {texts.dashboard.treasury_role.accounts_tab_description}
+          <p className="text-meta text-muted-foreground">
+            {subtitleParts.join(" · ")}
           </p>
         </div>
-        {detailHref && (
-          <NavigationLinkWithLoader
-            href={detailHref}
-            className="shrink-0 rounded-[8px] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={onCreateAccount}
+            className="shrink-0 rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black"
           >
-            {texts.dashboard.treasury_role.detail_accounts_cta}
-          </NavigationLinkWithLoader>
+            {texts.dashboard.treasury_role.accounts_tab_create_cta}
+          </button>
         )}
       </div>
-      <div className="px-4">
-        {accounts.map((account) => (
-          <div
-            key={account.id}
-            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-dashed border-slate-200 py-3 last:border-b-0"
-          >
-            <AccountTypeIcon accountType={account.accountType} />
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
-                {account.name}
-              </p>
-              <p className="mt-0.5 text-[11px] text-slate-500">
-                {account.accountType === "bancaria"
-                  ? texts.dashboard.treasury_role.account_type_bancaria
-                  : account.accountType === "billetera_virtual"
-                    ? texts.dashboard.treasury_role.account_type_billetera
-                    : texts.dashboard.treasury_role.account_type_efectivo}
-                {account.currencies.length > 0 && ` · ${account.currencies.join(", ")}`}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+
+      {accounts.length === 0 ? (
+        <div className="px-4 py-5 text-sm text-muted-foreground">
+          {texts.dashboard.treasury_role.empty_accounts}
+        </div>
+      ) : (
+        <div className="px-4">
+          {enrichedAccounts.map((enriched) => {
+            const fullAccount = accounts.find((a) => a.id === enriched.accountId);
+            return (
+              <AccountRow
+                key={enriched.accountId}
+                account={enriched}
+                action={
+                  isAdmin && fullAccount ? (
+                    <EditAccountButton
+                      onClick={() => onEditAccount(fullAccount)}
+                      label={texts.dashboard.treasury_role.accounts_tab_edit_cta_label}
+                    />
+                  ) : undefined
+                }
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -504,7 +717,7 @@ function MovimientosTab({
             type="button"
             onClick={() => onSelectAccount(null)}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-[11px] font-semibold transition whitespace-nowrap",
+              "rounded-full border px-3 py-1.5 text-meta font-semibold transition whitespace-nowrap",
               selectedAccountId === null
                 ? "border-slate-900 bg-slate-900 text-white"
                 : "border-transparent bg-slate-100 text-slate-600 hover:text-foreground"
@@ -518,7 +731,7 @@ function MovimientosTab({
               type="button"
               onClick={() => onSelectAccount(account.accountId)}
               className={cn(
-                "rounded-full border px-3 py-1.5 text-[11px] font-semibold transition whitespace-nowrap",
+                "rounded-full border px-3 py-1.5 text-meta font-semibold transition whitespace-nowrap",
                 account.accountId === selectedAccountId
                   ? "border-slate-900 bg-slate-900 text-white"
                   : "border-transparent bg-slate-100 text-slate-600 hover:text-foreground"
@@ -531,7 +744,7 @@ function MovimientosTab({
       )}
 
       {isEmpty ? (
-        <div className="rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+        <div className="rounded-dialog border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
           {texts.dashboard.treasury_role.movements_empty}
         </div>
       ) : (
@@ -545,7 +758,7 @@ function MovimientosTab({
 
 function ConciliacionTab() {
   return (
-    <div className="rounded-[10px] border border-border bg-card p-5">
+    <div className="rounded-card border border-border bg-card p-5">
       <div className="flex items-start gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500">
           <ConsolidationIcon />
@@ -554,7 +767,7 @@ function ConciliacionTab() {
           <p className="text-sm font-semibold tracking-tight text-foreground">
             {texts.dashboard.treasury_role.consolidation_cta}
           </p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-0.5 text-meta leading-relaxed text-muted-foreground">
             {texts.dashboard.treasury_role.conciliacion_tab_description}
           </p>
         </div>
@@ -562,7 +775,7 @@ function ConciliacionTab() {
       <div className="mt-4">
         <NavigationLinkWithLoader
           href="/dashboard/treasury/consolidation"
-          className="flex min-h-11 w-full items-center justify-center rounded-[8px] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
+          className="flex min-h-11 w-full items-center justify-center rounded-btn bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
           loadingLabel={texts.dashboard.treasury_role.navigation_loading}
         >
           {texts.dashboard.treasury_role.conciliacion_tab_cta}
@@ -576,55 +789,71 @@ function ConciliacionTab() {
 
 function ResumenTab({
   dashboard,
+  accounts,
   totalBalances,
   canCreateMovement,
   canCreateFxOperation,
   onMovement,
   onFx,
   onConciliacion,
-  detailHref
+  onMovements,
+  onViewAllAccounts
 }: {
   dashboard: TreasuryRoleDashboard;
+  accounts: TreasuryAccount[];
   totalBalances: TotalBalance[];
   canCreateMovement: boolean;
   canCreateFxOperation: boolean;
   onMovement: () => void;
   onFx: () => void;
   onConciliacion: () => void;
-  detailHref: string | null;
+  onMovements: () => void;
+  onViewAllAccounts: () => void;
 }) {
+  // Enrich dashboard accounts with accountType; hide zero-balance accounts
+  const enrichedAccounts: EnrichedDashboardAccount[] = dashboard.accounts
+    .filter((a) => a.balances.some((b) => b.amount !== 0))
+    .map((dashAccount) => {
+      const full = accounts.find((a) => a.id === dashAccount.accountId);
+      return { ...dashAccount, accountType: full?.accountType };
+    });
+
   return (
     <div className="space-y-3">
-      <KpiGrid totalBalances={totalBalances} accountCount={dashboard.accounts.length} />
+      <KpiGrid
+        totalBalances={totalBalances}
+        accountCount={dashboard.accounts.length}
+        monthlyStats={dashboard.monthlyStats}
+        pendingConciliationCount={dashboard.pendingConciliationCount}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {/* Account balances card */}
-        <div className="rounded-[10px] border border-border bg-card">
+        <div className="rounded-card border border-border bg-card">
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
             <div>
               <p className="text-sm font-semibold tracking-tight text-foreground">
-                {texts.dashboard.treasury_role.tab_cuentas}
+                {texts.dashboard.treasury_role.balances_section_title}
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                {texts.dashboard.treasury_role.balances_total_label}
+              <p className="text-meta text-muted-foreground">
+                {texts.dashboard.treasury_role.balances_section_description}
               </p>
             </div>
-            {detailHref && (
-              <NavigationLinkWithLoader
-                href={detailHref}
-                className="shrink-0 rounded-[8px] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
-              >
-                {texts.dashboard.treasury_role.detail_accounts_cta}
-              </NavigationLinkWithLoader>
-            )}
+            <button
+              type="button"
+              onClick={onViewAllAccounts}
+              className="shrink-0 rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+            >
+              {texts.dashboard.treasury_role.detail_accounts_cta}
+            </button>
           </div>
           <div className="px-4">
-            {dashboard.accounts.length === 0 ? (
+            {enrichedAccounts.length === 0 ? (
               <p className="py-4 text-sm text-muted-foreground">
                 {texts.dashboard.treasury_role.empty_accounts}
               </p>
             ) : (
-              dashboard.accounts.map((account) => (
+              enrichedAccounts.map((account) => (
                 <AccountRow key={account.accountId} account={account} />
               ))
             )}
@@ -635,9 +864,11 @@ function ResumenTab({
         <QuickActions
           canCreateMovement={canCreateMovement}
           canCreateFxOperation={canCreateFxOperation}
+          pendingConciliationCount={dashboard.pendingConciliationCount}
           onMovement={onMovement}
           onFx={onFx}
           onConciliacion={onConciliacion}
+          onMovements={onMovements}
         />
       </div>
     </div>
@@ -657,24 +888,29 @@ export function TreasuryRoleCard({
   receiptFormats,
   createTreasuryRoleMovementAction,
   updateTreasuryRoleMovementAction,
-  createFxOperationAction
+  createFxOperationAction,
+  createTreasuryAccountAction,
+  updateTreasuryAccountAction,
+  allAccounts,
+  isAdmin
 }: TreasuryRoleCardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<SubTab>("resumen");
-  const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "fx" | null>(null);
+  const [activeModal, setActiveModal] = useState<
+    "movement" | "edit_movement" | "fx" | "create_account" | "edit_account" | null
+  >(null);
   const [selectedMovement, setSelectedMovement] = useState<TreasuryDashboardMovement | null>(null);
+  const [editingAccount, setEditingAccount] = useState<TreasuryAccount | null>(null);
   const [selectedMovementAccountId, setSelectedMovementAccountId] = useState<string | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
   const [isFxSubmissionPending, setIsFxSubmissionPending] = useState(false);
+  const [isAccountSubmissionPending, setIsAccountSubmissionPending] = useState(false);
 
   const totalBalances = getTotalBalances(dashboard.accounts);
-  const detailHref = dashboard.accounts[0]
-    ? `/dashboard/treasury/accounts/${dashboard.accounts[0].accountId}`
-    : null;
   const canCreateMovement = dashboard.availableActions.includes("create_movement");
   const canCreateFxOperation = dashboard.availableActions.includes("create_fx_operation");
 
@@ -684,7 +920,9 @@ export function TreasuryRoleCard({
       ? texts.dashboard.treasury_role.update_loading
       : isFxSubmissionPending
         ? texts.dashboard.treasury_role.fx_create_loading
-        : null;
+        : isAccountSubmissionPending
+          ? texts.settings.club.treasury.save_account_loading
+          : null;
 
   useEffect(() => {
     const nextSelectedAccountId = dashboard.accounts[0]?.accountId ?? null;
@@ -771,6 +1009,49 @@ export function TreasuryRoleCard({
     }
   }
 
+  async function handleCreateAccount(formData: FormData) {
+    setIsAccountSubmissionPending(true);
+    setActiveModal(null);
+
+    try {
+      const result = await createTreasuryAccountAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } finally {
+      setIsAccountSubmissionPending(false);
+    }
+  }
+
+  async function handleUpdateAccount(formData: FormData) {
+    setIsAccountSubmissionPending(true);
+    setActiveModal(null);
+    setEditingAccount(null);
+
+    try {
+      const result = await updateTreasuryAccountAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("feedback", result.code);
+      nextParams.delete("movement_id");
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } finally {
+      setIsAccountSubmissionPending(false);
+    }
+  }
+
   function handleEditMovement(movement: TreasuryDashboardMovement) {
     if (!movement.canEdit) return;
     setSelectedMovement(movement);
@@ -791,18 +1072,30 @@ export function TreasuryRoleCard({
         {activeTab === "resumen" && (
           <ResumenTab
             dashboard={dashboard}
+            accounts={accounts}
             totalBalances={totalBalances}
             canCreateMovement={canCreateMovement}
             canCreateFxOperation={canCreateFxOperation}
             onMovement={() => setActiveModal("movement")}
             onFx={() => setActiveModal("fx")}
             onConciliacion={handleConciliacion}
-            detailHref={detailHref}
+            onMovements={() => setActiveTab("movimientos")}
+            onViewAllAccounts={() => setActiveTab("cuentas")}
           />
         )}
 
         {activeTab === "cuentas" && (
-          <CuentasTab accounts={accounts} detailHref={detailHref} />
+          <CuentasTab
+            accounts={allAccounts}
+            dashboardAccounts={dashboard.accounts}
+            totalBalances={totalBalances}
+            isAdmin={isAdmin}
+            onCreateAccount={() => setActiveModal("create_account")}
+            onEditAccount={(account) => {
+              setEditingAccount(account);
+              setActiveModal("edit_account");
+            }}
+          />
         )}
 
         {activeTab === "movimientos" && (
@@ -824,6 +1117,8 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.movement_form_title}
         description={texts.dashboard.treasury_role.movement_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
+        hideCloseButton
+        panelClassName="max-w-xl"
       >
         <TreasuryRoleMovementForm
           accounts={accounts}
@@ -836,6 +1131,7 @@ export function TreasuryRoleCard({
           submitLabel={texts.dashboard.treasury_role.create_cta}
           pendingLabel={texts.dashboard.treasury_role.create_loading}
           sessionDate={dashboard.sessionDate}
+          onCancel={() => setActiveModal(null)}
         />
       </Modal>
 
@@ -872,13 +1168,50 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.fx_form_title}
         description={texts.dashboard.treasury_role.fx_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
+        hideCloseButton
+        panelClassName="max-w-xl"
       >
         <TreasuryRoleFxForm
           accounts={accounts}
-          currencies={currencies}
           submitAction={handleCreateFxOperation}
           sessionDate={dashboard.sessionDate}
+          onCancel={() => setActiveModal(null)}
         />
+      </Modal>
+
+      <Modal
+        open={activeModal === "create_account"}
+        onClose={() => setActiveModal(null)}
+        title={texts.dashboard.treasury_role.accounts_tab_create_title}
+        description={texts.dashboard.treasury_role.accounts_tab_create_description}
+        closeDisabled={isAccountSubmissionPending}
+      >
+        <TreasuryAccountForm
+          action={handleCreateAccount}
+          submitLabel={texts.settings.club.treasury.save_account_cta}
+          pendingLabel={texts.settings.club.treasury.save_account_loading}
+        />
+      </Modal>
+
+      <Modal
+        open={activeModal === "edit_account" && editingAccount !== null}
+        onClose={() => {
+          setActiveModal(null);
+          setEditingAccount(null);
+        }}
+        title={texts.dashboard.treasury_role.accounts_tab_edit_title}
+        description={texts.dashboard.treasury_role.accounts_tab_edit_description}
+        closeDisabled={isAccountSubmissionPending}
+      >
+        {editingAccount ? (
+          <TreasuryAccountForm
+            key={editingAccount.id}
+            action={handleUpdateAccount}
+            submitLabel={texts.settings.club.treasury.update_account_cta}
+            pendingLabel={texts.settings.club.treasury.update_account_loading}
+            defaultAccount={editingAccount}
+          />
+        ) : null}
       </Modal>
     </>
   );
