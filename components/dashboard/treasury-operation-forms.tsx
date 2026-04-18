@@ -6,6 +6,7 @@ import {
   formatLocalizedAmount,
   formatLocalizedAmountInputOnBlur,
   formatLocalizedAmountInputOnFocus,
+  parseLocalizedAmount,
   sanitizeLocalizedAmountInput
 } from "@/lib/amounts";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
@@ -2114,23 +2115,21 @@ export function TreasuryRoleMovementForm({
 }
 
 type FxFormState = {
+  operationType: "compra" | "venta";
   sourceAccountId: string;
-  sourceCurrencyCode: string;
-  sourceAmount: string;
   targetAccountId: string;
-  targetCurrencyCode: string;
-  targetAmount: string;
+  sourceAmount: string;
+  exchangeRate: string;
   concept: string;
 };
 
 function buildEmptyFxFormState(): FxFormState {
   return {
+    operationType: "compra",
     sourceAccountId: "",
-    sourceCurrencyCode: "",
-    sourceAmount: "",
     targetAccountId: "",
-    targetCurrencyCode: "",
-    targetAmount: "",
+    sourceAmount: "",
+    exchangeRate: "",
     concept: ""
   };
 }
@@ -2150,276 +2149,249 @@ function isPositiveAmount(value: string) {
 function isFxFormValid(formState: FxFormState) {
   return Boolean(
     formState.sourceAccountId &&
-      formState.sourceCurrencyCode &&
-      isPositiveAmount(formState.sourceAmount) &&
       formState.targetAccountId &&
-      formState.targetCurrencyCode &&
-      isPositiveAmount(formState.targetAmount) &&
-      formState.sourceCurrencyCode !== formState.targetCurrencyCode
+      isPositiveAmount(formState.sourceAmount) &&
+      isPositiveAmount(formState.exchangeRate)
   );
 }
 
 export function TreasuryRoleFxForm({
   accounts,
-  currencies,
   submitAction,
-  sessionDate
+  sessionDate,
+  onCancel
 }: {
   accounts: TreasuryAccount[];
-  currencies: TreasuryCurrencyConfig[];
   submitAction: (formData: FormData) => Promise<unknown>;
   sessionDate: string;
+  onCancel: () => void;
 }) {
   const [formState, setFormState] = useState<FxFormState>(buildEmptyFxFormState);
 
-  const selectedSourceAccount = useMemo(
-    () => accounts.find((account) => account.id === formState.sourceAccountId),
-    [accounts, formState.sourceAccountId]
-  );
-  const selectedTargetAccount = useMemo(
-    () => accounts.find((account) => account.id === formState.targetAccountId),
-    [accounts, formState.targetAccountId]
-  );
+  const sourceCurrencyCode = formState.operationType === "compra" ? "ARS" : "USD";
+  const targetCurrencyCode = formState.operationType === "compra" ? "USD" : "ARS";
 
-  const availableSourceCurrencies = useMemo(() => {
-    if (!selectedSourceAccount) {
-      return [];
-    }
+  const computedTargetAmount = useMemo(() => {
+    const parsedSource = parseLocalizedAmount(formState.sourceAmount);
+    const parsedRate = parseLocalizedAmount(formState.exchangeRate);
+    if (!parsedSource || !parsedRate || parsedRate === 0) return null;
+    return formState.operationType === "compra"
+      ? parsedSource / parsedRate
+      : parsedSource * parsedRate;
+  }, [formState.operationType, formState.sourceAmount, formState.exchangeRate]);
 
-    return currencies.filter((currency) => selectedSourceAccount.currencies.includes(currency.currencyCode));
-  }, [currencies, selectedSourceAccount]);
-
-  const availableTargetCurrencies = useMemo(() => {
-    if (!selectedTargetAccount) {
-      return [];
-    }
-
-    return currencies.filter((currency) => selectedTargetAccount.currencies.includes(currency.currencyCode));
-  }, [currencies, selectedTargetAccount]);
-
-  useEffect(() => {
-    const nextCurrencyCode = getDefaultCurrencyCode(selectedSourceAccount, currencies);
-
-    if (!selectedSourceAccount && formState.sourceCurrencyCode) {
-      setFormState((current) => ({ ...current, sourceCurrencyCode: "" }));
-      return;
-    }
-
-    if (
-      selectedSourceAccount &&
-      nextCurrencyCode &&
-      !selectedSourceAccount.currencies.includes(formState.sourceCurrencyCode)
-    ) {
-      setFormState((current) => ({ ...current, sourceCurrencyCode: nextCurrencyCode }));
-    }
-  }, [currencies, formState.sourceCurrencyCode, selectedSourceAccount]);
-
-  useEffect(() => {
-    const nextCurrencyCode = getDefaultCurrencyCode(selectedTargetAccount, currencies);
-
-    if (!selectedTargetAccount && formState.targetCurrencyCode) {
-      setFormState((current) => ({ ...current, targetCurrencyCode: "" }));
-      return;
-    }
-
-    if (
-      selectedTargetAccount &&
-      nextCurrencyCode &&
-      !selectedTargetAccount.currencies.includes(formState.targetCurrencyCode)
-    ) {
-      setFormState((current) => ({ ...current, targetCurrencyCode: nextCurrencyCode }));
-    }
-  }, [currencies, formState.targetCurrencyCode, selectedTargetAccount]);
-
-  const currenciesMustBeDistinct =
-    formState.sourceCurrencyCode.length > 0 &&
-    formState.targetCurrencyCode.length > 0 &&
-    formState.sourceCurrencyCode === formState.targetCurrencyCode;
+  const computedTargetAmountForSubmit = computedTargetAmount !== null
+    ? formatLocalizedAmount(computedTargetAmount)
+    : "";
 
   const handleReset = () => setFormState(buildEmptyFxFormState());
+
+  const LABEL_CLASSNAME = "text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground";
 
   return (
     <form
       action={async (formData) => {
         await submitAction(formData);
       }}
-      className="grid gap-4"
-      onReset={handleReset}
+      className="flex flex-col gap-4"
       onSubmit={(event: FormEvent<HTMLFormElement>) => {
         if (!isFxFormValid(formState)) {
           event.preventDefault();
           return;
         }
-
         window.setTimeout(handleReset, 0);
       }}
     >
-      <PendingFieldset className={FORM_GRID_CLASSNAME}>
-        <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.date_label}</span>
-          <input
-            type="text"
-            value={sessionDate}
-            disabled
-            className={DISABLED_CONTROL_CLASSNAME}
-          />
-        </FormField>
+      {/* Hidden inputs for backend */}
+      <input type="hidden" name="source_currency_code" value={sourceCurrencyCode} />
+      <input type="hidden" name="target_currency_code" value={targetCurrencyCode} />
+      <input type="hidden" name="target_amount" value={computedTargetAmountForSubmit} />
 
-        <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_source_account_label, texts.dashboard.treasury_role)}</span>
-          <select
-            name="source_account_id"
-            value={formState.sourceAccountId}
-            onChange={(event) => setFormState((current) => ({ ...current, sourceAccountId: event.target.value }))}
-            className={CONTROL_CLASSNAME}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury_role.fx_source_account_placeholder}
-            </option>
-            {accounts.map((account) => (
-              <option key={`fx-source-${account.id}`} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-        </FormField>
+      <PendingFieldset className="flex flex-col gap-4">
+        {/* FECHA */}
+        <div className="flex flex-col gap-1.5">
+          <p className={LABEL_CLASSNAME}>{texts.dashboard.treasury_role.date_label}</p>
+          <div className="min-h-11 rounded-card border border-border bg-secondary/40 px-3 py-2 text-sm font-medium text-foreground">
+            {formatSessionDateLong(sessionDate)}
+          </div>
+        </div>
 
-        <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_source_currency_label, texts.dashboard.treasury_role)}</span>
-          <select
-            name="source_currency_code"
-            value={formState.sourceCurrencyCode}
-            onChange={(event) => setFormState((current) => ({ ...current, sourceCurrencyCode: event.target.value }))}
-            disabled={availableSourceCurrencies.length === 0}
-            aria-invalid={currenciesMustBeDistinct ? "true" : undefined}
-            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground", currenciesMustBeDistinct && "border-destructive/25")}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury_role.fx_source_currency_placeholder}
-            </option>
-            {availableSourceCurrencies.map((currency) => (
-              <option key={`fx-source-currency-${currency.currencyCode}`} value={currency.currencyCode}>
-                {currency.currencyCode}
-              </option>
-            ))}
-          </select>
-        </FormField>
+        {/* OPERACIÓN */}
+        <div className="flex flex-col gap-1.5">
+          <p className={LABEL_CLASSNAME}>
+            {texts.dashboard.treasury_role.fx_operation_label}
+            <span className="text-destructive" aria-hidden="true"> *</span>
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {(["compra", "venta"] as const).map((op) => {
+              const isSelected = formState.operationType === op;
+              return (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => setFormState((s) => ({ ...s, operationType: op }))}
+                  className={cn(
+                    "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
+                    isSelected
+                      ? "border-blue-200 bg-blue-50 text-blue-700"
+                      : "border-border bg-card text-muted-foreground hover:bg-secondary"
+                  )}
+                >
+                  <span className="text-sm font-semibold">
+                    {op === "compra"
+                      ? texts.dashboard.treasury_role.fx_operation_compra
+                      : texts.dashboard.treasury_role.fx_operation_venta}
+                  </span>
+                  <span className="text-eyebrow font-medium opacity-70">
+                    {op === "compra"
+                      ? texts.dashboard.treasury_role.fx_operation_compra_sublabel
+                      : texts.dashboard.treasury_role.fx_operation_venta_sublabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_source_amount_label, texts.dashboard.treasury_role)}</span>
-          <input
-            type="text"
-            name="source_amount"
-            inputMode="decimal"
-            value={formState.sourceAmount}
-            onChange={(event) => setFormState((current) => ({ ...current, sourceAmount: sanitizeAmountInput(event.target.value) }))}
-            onBlur={(event) =>
-              setFormState((current) => ({ ...current, sourceAmount: normalizeAmountInputOnBlur(event.target.value) }))
-            }
-            onFocus={(event) =>
-              setFormState((current) => ({ ...current, sourceAmount: normalizeAmountInputOnFocus(event.target.value) }))
-            }
-            onKeyDown={(event) => {
-              if (event.key === "-") {
-                event.preventDefault();
-              }
-            }}
-            className={CONTROL_CLASSNAME}
-          />
-        </FormField>
+        {/* CUENTA ORIGEN + MONTO ENTREGADO */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <p className={LABEL_CLASSNAME}>
+              {texts.dashboard.treasury_role.fx_source_account_label}
+              <span className="text-destructive" aria-hidden="true"> *</span>
+            </p>
+            <select
+              name="source_account_id"
+              value={formState.sourceAccountId}
+              onChange={(e) => setFormState((s) => ({ ...s, sourceAccountId: e.target.value }))}
+              className={cn(CONTROL_CLASSNAME, "px-3 py-2")}
+            >
+              <option value="" disabled>{texts.dashboard.treasury_role.fx_source_account_placeholder}</option>
+              {accounts.map((account) => (
+                <option key={`fx-source-${account.id}`} value={account.id}>{account.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <p className={LABEL_CLASSNAME}>
+              {texts.dashboard.treasury_role.fx_source_amount_label}
+              <span className="text-destructive" aria-hidden="true"> *</span>
+            </p>
+            <div className="flex overflow-hidden rounded-card border border-border bg-card focus-within:ring-2 focus-within:ring-foreground/10">
+              <span className="flex shrink-0 items-center border-r border-border bg-secondary/50 px-3 text-sm font-semibold text-muted-foreground">
+                {sourceCurrencyCode}
+              </span>
+              <input
+                type="text"
+                name="source_amount"
+                inputMode="decimal"
+                value={formState.sourceAmount}
+                onChange={(e) => setFormState((s) => ({ ...s, sourceAmount: sanitizeAmountInput(e.target.value) }))}
+                onBlur={(e) => setFormState((s) => ({ ...s, sourceAmount: normalizeAmountInputOnBlur(e.target.value) }))}
+                onFocus={(e) => setFormState((s) => ({ ...s, sourceAmount: normalizeAmountInputOnFocus(e.target.value) }))}
+                onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
+                placeholder="0,00"
+                className="min-h-11 flex-1 bg-transparent px-3 py-2 text-right text-sm tabular-nums text-foreground focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
 
-        <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_target_account_label, texts.dashboard.treasury_role)}</span>
-          <select
-            name="target_account_id"
-            value={formState.targetAccountId}
-            onChange={(event) => setFormState((current) => ({ ...current, targetAccountId: event.target.value }))}
-            className={CONTROL_CLASSNAME}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury_role.fx_target_account_placeholder}
-            </option>
-            {accounts.map((account) => (
-              <option key={`fx-target-${account.id}`} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-        </FormField>
+        {/* TIPO DE CAMBIO */}
+        <div className="flex flex-col gap-1.5">
+          <p className={LABEL_CLASSNAME}>
+            {texts.dashboard.treasury_role.fx_exchange_rate_label}
+            <span className="text-destructive" aria-hidden="true"> *</span>
+          </p>
+          <div className="flex overflow-hidden rounded-card border border-border bg-card focus-within:ring-2 focus-within:ring-foreground/10">
+            <span className="flex shrink-0 items-center border-r border-border bg-secondary/50 px-3 text-sm font-semibold text-muted-foreground">
+              1 USD =
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={formState.exchangeRate}
+              onChange={(e) => setFormState((s) => ({ ...s, exchangeRate: sanitizeAmountInput(e.target.value) }))}
+              onBlur={(e) => setFormState((s) => ({ ...s, exchangeRate: normalizeAmountInputOnBlur(e.target.value) }))}
+              onFocus={(e) => setFormState((s) => ({ ...s, exchangeRate: normalizeAmountInputOnFocus(e.target.value) }))}
+              onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
+              placeholder="1.040,00"
+              className="min-h-11 flex-1 bg-transparent px-3 py-2 text-right text-sm tabular-nums text-foreground focus:outline-none"
+            />
+          </div>
+          <p className="text-meta text-muted-foreground">{texts.dashboard.treasury_role.fx_exchange_rate_helper}</p>
+        </div>
 
-        <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_target_currency_label, texts.dashboard.treasury_role)}</span>
-          <select
-            name="target_currency_code"
-            value={formState.targetCurrencyCode}
-            onChange={(event) => setFormState((current) => ({ ...current, targetCurrencyCode: event.target.value }))}
-            disabled={availableTargetCurrencies.length === 0}
-            aria-invalid={currenciesMustBeDistinct ? "true" : undefined}
-            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground", currenciesMustBeDistinct && "border-destructive/25")}
-          >
-            <option value="" disabled>
-              {texts.dashboard.treasury_role.fx_target_currency_placeholder}
-            </option>
-            {availableTargetCurrencies.map((currency) => (
-              <option key={`fx-target-currency-${currency.currencyCode}`} value={currency.currencyCode}>
-                {currency.currencyCode}
-              </option>
-            ))}
-          </select>
-        </FormField>
+        {/* CUENTA DESTINO + MONTO RECIBIDO */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <p className={LABEL_CLASSNAME}>
+              {texts.dashboard.treasury_role.fx_target_account_label}
+              <span className="text-destructive" aria-hidden="true"> *</span>
+            </p>
+            <select
+              name="target_account_id"
+              value={formState.targetAccountId}
+              onChange={(e) => setFormState((s) => ({ ...s, targetAccountId: e.target.value }))}
+              className={cn(CONTROL_CLASSNAME, "px-3 py-2")}
+            >
+              <option value="" disabled>{texts.dashboard.treasury_role.fx_target_account_placeholder}</option>
+              {accounts.map((account) => (
+                <option key={`fx-target-${account.id}`} value={account.id}>{account.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <p className={LABEL_CLASSNAME}>{texts.dashboard.treasury_role.fx_target_amount_label}</p>
+            <div className="flex overflow-hidden rounded-card border border-border bg-secondary/40">
+              <span className="flex shrink-0 items-center border-r border-border bg-secondary/60 px-3 text-sm font-semibold text-muted-foreground">
+                {targetCurrencyCode}
+              </span>
+              <span className="flex min-h-11 flex-1 items-center justify-end px-3 text-sm tabular-nums text-muted-foreground">
+                {computedTargetAmount !== null
+                  ? formatLocalizedAmount(computedTargetAmount)
+                  : "0,00"}
+              </span>
+            </div>
+            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury_role.fx_target_amount_helper}</p>
+          </div>
+        </div>
 
-        <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_target_amount_label, texts.dashboard.treasury_role)}</span>
-          <input
-            type="text"
-            name="target_amount"
-            inputMode="decimal"
-            value={formState.targetAmount}
-            onChange={(event) => setFormState((current) => ({ ...current, targetAmount: sanitizeAmountInput(event.target.value) }))}
-            onBlur={(event) =>
-              setFormState((current) => ({ ...current, targetAmount: normalizeAmountInputOnBlur(event.target.value) }))
-            }
-            onFocus={(event) =>
-              setFormState((current) => ({ ...current, targetAmount: normalizeAmountInputOnFocus(event.target.value) }))
-            }
-            onKeyDown={(event) => {
-              if (event.key === "-") {
-                event.preventDefault();
-              }
-            }}
-            className={CONTROL_CLASSNAME}
-          />
-        </FormField>
-
-        <FormField fullWidth>
-          <span className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.concept_label}</span>
+        {/* CONCEPTO */}
+        <div className="flex flex-col gap-1.5">
+          <p className={LABEL_CLASSNAME}>{texts.dashboard.treasury_role.concept_label}</p>
           <input
             type="text"
             name="concept"
             value={formState.concept}
-            onChange={(event) => setFormState((current) => ({ ...current, concept: event.target.value }))}
-            className={CONTROL_CLASSNAME}
+            onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
+            placeholder={texts.dashboard.treasury_role.fx_concept_placeholder}
+            className={cn(CONTROL_CLASSNAME, "px-3 py-2")}
           />
-          {currenciesMustBeDistinct ? (
-            <span aria-live="polite" className="text-xs leading-5 text-destructive">
-              {texts.dashboard.treasury_role.fx_distinct_currencies_error}
-            </span>
-          ) : null}
-        </FormField>
+        </div>
 
-        <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+        {/* BANNER INFO */}
+        <div className="rounded-card border border-blue-200 bg-blue-50 px-3 py-2.5">
+          <p className="text-[12px] leading-[1.5] text-blue-800">
+            {texts.dashboard.treasury_role.fx_info_banner}
+          </p>
+        </div>
+
+        {/* BOTONES */}
+        <div className="flex gap-2 border-t border-border pt-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="min-h-11 flex-1 rounded-card border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary"
+          >
+            {texts.dashboard.treasury_role.reset_cta}
+          </button>
           <PendingSubmitButton
             idleLabel={texts.dashboard.treasury_role.fx_create_cta}
             pendingLabel={texts.dashboard.treasury_role.fx_create_loading}
             disabled={!isFxFormValid(formState)}
-            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className="min-h-11 flex-1 rounded-card bg-foreground px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           />
-          <button
-            type="reset"
-            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {texts.dashboard.treasury_role.reset_cta}
-          </button>
         </div>
       </PendingFieldset>
     </form>
