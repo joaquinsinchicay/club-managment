@@ -401,17 +401,19 @@ function AccountRow({ account }: { account: EnrichedDashboardAccount }) {
           <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
             {account.name}
           </p>
-          <div className="mt-0.5 flex items-center gap-1">
-            <span className={cn(
-              "inline-flex size-1.5 rounded-full",
-              account.hasPendingMovements ? "bg-amber-500" : "bg-emerald-500"
-            )} />
-            <span className="text-eyebrow text-slate-500">
-              {account.hasPendingMovements
-                ? texts.dashboard.treasury_role.conciliation_status_pending
-                : texts.dashboard.treasury_role.conciliation_status_ok}
-            </span>
-          </div>
+          {account.hasPendingMovements || account.hasConciliatedMovements ? (
+            <div className="mt-0.5 flex items-center gap-1">
+              <span className={cn(
+                "inline-flex size-1.5 rounded-full",
+                account.hasPendingMovements ? "bg-amber-500" : "bg-emerald-500"
+              )} />
+              <span className="text-eyebrow text-slate-500">
+                {account.hasPendingMovements
+                  ? texts.dashboard.treasury_role.conciliation_status_pending
+                  : texts.dashboard.treasury_role.conciliation_status_ok}
+              </span>
+            </div>
+          ) : null}
         </div>
         {isMulti ? (
           <span className="inline-flex shrink-0 items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold tracking-wider text-slate-500">

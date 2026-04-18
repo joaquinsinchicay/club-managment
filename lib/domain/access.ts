@@ -339,6 +339,7 @@ export type TreasuryRoleDashboard = {
       amount: number;
     }>;
     hasPendingMovements: boolean;
+    hasConciliatedMovements: boolean;
   }>;
   movementGroups: TreasuryRoleDashboardMovementDateGroup[];
   availableActions: Array<"create_movement" | "create_fx_operation">;

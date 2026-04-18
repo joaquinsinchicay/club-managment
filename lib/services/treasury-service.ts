@@ -1333,7 +1333,8 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       accountId: account.id,
       name: account.name,
       balances: buildAccountBalances(account, movements),
-      hasPendingMovements: accountsWithPending.has(account.id)
+      hasPendingMovements: accountsWithPending.has(account.id),
+      hasConciliatedMovements: movements.length > 0
     })),
     movementGroups,
     availableActions: ["create_movement", "create_fx_operation"],
