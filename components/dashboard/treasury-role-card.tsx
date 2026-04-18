@@ -397,9 +397,22 @@ function AccountRow({ account }: { account: EnrichedDashboardAccount }) {
       {/* Header row */}
       <div className="flex items-center gap-3">
         <AccountAvatar name={account.name} accountType={account.accountType} />
-        <p className="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight text-foreground">
-          {account.name}
-        </p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
+            {account.name}
+          </p>
+          <div className="mt-0.5 flex items-center gap-1">
+            <span className={cn(
+              "inline-flex size-1.5 rounded-full",
+              account.hasPendingMovements ? "bg-amber-500" : "bg-emerald-500"
+            )} />
+            <span className="text-eyebrow text-slate-500">
+              {account.hasPendingMovements
+                ? texts.dashboard.treasury_role.conciliation_status_pending
+                : texts.dashboard.treasury_role.conciliation_status_ok}
+            </span>
+          </div>
+        </div>
         {isMulti ? (
           <span className="inline-flex shrink-0 items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold tracking-wider text-slate-500">
             {account.balances.length} {texts.dashboard.treasury_role.multi_currency_label}
@@ -481,12 +494,12 @@ function QuickActions({
         <button
           type="button"
           onClick={onConciliacion}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+          className="relative flex min-h-11 items-center justify-center gap-2 rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
         >
           <ConsolidationIcon />
           <span>{texts.dashboard.treasury_role.consolidation_cta}</span>
           {pendingConciliationCount > 0 && (
-            <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-amber-100 text-eyebrow font-bold text-amber-700">
+            <span className="absolute right-3 flex size-5 items-center justify-center rounded-full bg-amber-100 text-eyebrow font-bold text-amber-700">
               {pendingConciliationCount}
             </span>
           )}
@@ -733,7 +746,7 @@ function ResumenTab({
   onFx,
   onConciliacion,
   onMovements,
-  detailHref
+  onViewAllAccounts
 }: {
   dashboard: TreasuryRoleDashboard;
   accounts: TreasuryAccount[];
@@ -744,13 +757,15 @@ function ResumenTab({
   onFx: () => void;
   onConciliacion: () => void;
   onMovements: () => void;
-  detailHref: string | null;
+  onViewAllAccounts: () => void;
 }) {
-  // Enrich dashboard accounts with accountType from the full accounts list
-  const enrichedAccounts: EnrichedDashboardAccount[] = dashboard.accounts.map((dashAccount) => {
-    const full = accounts.find((a) => a.id === dashAccount.accountId);
-    return { ...dashAccount, accountType: full?.accountType };
-  });
+  // Enrich dashboard accounts with accountType; hide zero-balance accounts
+  const enrichedAccounts: EnrichedDashboardAccount[] = dashboard.accounts
+    .filter((a) => a.balances.some((b) => b.amount !== 0))
+    .map((dashAccount) => {
+      const full = accounts.find((a) => a.id === dashAccount.accountId);
+      return { ...dashAccount, accountType: full?.accountType };
+    });
 
   return (
     <div className="space-y-3">
@@ -767,20 +782,19 @@ function ResumenTab({
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
             <div>
               <p className="text-sm font-semibold tracking-tight text-foreground">
-                {texts.dashboard.treasury_role.tab_cuentas}
+                {texts.dashboard.treasury_role.balances_section_title}
               </p>
               <p className="text-meta text-muted-foreground">
-                {texts.dashboard.treasury_role.balances_total_label}
+                {texts.dashboard.treasury_role.balances_section_description}
               </p>
             </div>
-            {detailHref && (
-              <NavigationLinkWithLoader
-                href={detailHref}
-                className="shrink-0 rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
-              >
-                {texts.dashboard.treasury_role.detail_accounts_cta}
-              </NavigationLinkWithLoader>
-            )}
+            <button
+              type="button"
+              onClick={onViewAllAccounts}
+              className="shrink-0 rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+            >
+              {texts.dashboard.treasury_role.detail_accounts_cta}
+            </button>
           </div>
           <div className="px-4">
             {enrichedAccounts.length === 0 ? (
@@ -965,7 +979,7 @@ export function TreasuryRoleCard({
             onFx={() => setActiveModal("fx")}
             onConciliacion={handleConciliacion}
             onMovements={() => setActiveTab("movimientos")}
-            detailHref={detailHref}
+            onViewAllAccounts={() => setActiveTab("cuentas")}
           />
         )}
 

@@ -338,6 +338,7 @@ export type TreasuryRoleDashboard = {
       currencyCode: string;
       amount: number;
     }>;
+    hasPendingMovements: boolean;
   }>;
   movementGroups: TreasuryRoleDashboardMovementDateGroup[];
   availableActions: Array<"create_movement" | "create_fx_operation">;

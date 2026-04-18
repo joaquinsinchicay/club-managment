@@ -81,8 +81,8 @@ type OperationalFormCopy = {
 const FORM_GRID_CLASSNAME = "grid gap-4 sm:grid-cols-2";
 const FIELD_CLASSNAME = "grid gap-2 text-sm text-foreground";
 const FULL_WIDTH_FIELD_CLASSNAME = "sm:col-span-2";
-const CONTROL_CLASSNAME = "min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground";
-const DISABLED_CONTROL_CLASSNAME = "min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground";
+const CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10";
+const DISABLED_CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-card px-4 py-3 text-sm text-muted-foreground";
 
 type MovementFormState = {
   movementDate?: string;
@@ -234,7 +234,7 @@ function MovementFormFields({
     <>
       {showMovementDateInput ? (
         <FormField>
-          <span className="font-medium">{copy.date_label}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{copy.date_label}</span>
           <input
             type="date"
             name="movement_date"
@@ -246,7 +246,7 @@ function MovementFormFields({
       ) : null}
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(copy.account_label, copy)}</span>
+        <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.account_label, copy)}</span>
         <select
           name="account_id"
           value={formState.accountId}
@@ -265,7 +265,7 @@ function MovementFormFields({
       </FormField>
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(copy.movement_type_label, copy)}</span>
+        <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.movement_type_label, copy)}</span>
         <select
           name="movement_type"
           value={formState.movementType}
@@ -284,7 +284,7 @@ function MovementFormFields({
       </FormField>
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(copy.category_label, copy)}</span>
+        <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.category_label, copy)}</span>
         <select
           name="category_id"
           value={formState.categoryId}
@@ -305,7 +305,7 @@ function MovementFormFields({
 
       {formState.categoryId ? (
         <FormField>
-          <span className="font-medium">{copy.parent_category_label}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{copy.parent_category_label}</span>
           <input
             type="text"
             value={availableCategories.find((c) => c.id === formState.categoryId)?.parentCategory ?? ""}
@@ -318,7 +318,7 @@ function MovementFormFields({
 
       {activities.length > 0 ? (
         <FormField>
-          <span className="font-medium">{copy.activity_label}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
           <select
             name="activity_id"
             value={formState.activityId}
@@ -337,7 +337,7 @@ function MovementFormFields({
 
       {receiptFormats.length > 0 ? (
         <FormField fullWidth>
-          <span className="font-medium">{receiptFormats[0]?.name ?? copy.receipt_label}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
           <input
             type="text"
             name="receipt_number"
@@ -362,7 +362,7 @@ function MovementFormFields({
       ) : null}
 
       <FormField fullWidth>
-        <span className="font-medium">{getRequiredLabel(copy.concept_label, copy)}</span>
+        <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.concept_label, copy)}</span>
         <input
           type="text"
           name="concept"
@@ -373,7 +373,7 @@ function MovementFormFields({
       </FormField>
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(copy.currency_label, copy)}</span>
+        <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.currency_label, copy)}</span>
         <select
           name="currency_code"
           value={formState.currencyCode}
@@ -393,7 +393,7 @@ function MovementFormFields({
       </FormField>
 
       <FormField>
-        <span className="font-medium">{getRequiredLabel(copy.amount_label, copy)}</span>
+        <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.amount_label, copy)}</span>
         <input
           type="text"
           name="amount"
@@ -790,7 +790,7 @@ export function SecretariaMovementForm({
           <button
             type="button"
             onClick={onCancel}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {copy.reset_cta}
           </button>
@@ -798,7 +798,7 @@ export function SecretariaMovementForm({
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
             disabled={!isMovementFormValid(formState)}
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
         </div>
       </PendingFieldset>
@@ -1143,7 +1143,7 @@ export function SecretariaMovementEditForm({
           <button
             type="button"
             onClick={onCancel}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {copy.reset_cta}
           </button>
@@ -1151,7 +1151,7 @@ export function SecretariaMovementEditForm({
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
             disabled={!isMovementFormValid(formState)}
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
         </div>
       </PendingFieldset>
@@ -1355,7 +1355,7 @@ export function AccountTransferEditForm({
           <button
             type="button"
             onClick={onCancel}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {texts.dashboard.treasury.reset_cta}
           </button>
@@ -1363,7 +1363,7 @@ export function AccountTransferEditForm({
             idleLabel={texts.dashboard.treasury.update_cta}
             pendingLabel={texts.dashboard.treasury.update_loading}
             disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
         </div>
       </PendingFieldset>
@@ -1556,7 +1556,7 @@ export function AccountTransferForm({
           <button
             type="button"
             onClick={onCancel}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {texts.dashboard.treasury.reset_cta}
           </button>
@@ -1564,7 +1564,7 @@ export function AccountTransferForm({
             idleLabel={texts.dashboard.treasury.transfer_create_cta}
             pendingLabel={texts.dashboard.treasury.transfer_create_loading}
             disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
         </div>
       </PendingFieldset>
@@ -1653,17 +1653,17 @@ export function ConsolidationTransferEditForm({
 
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury.date_label}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury.date_label}</span>
           <input type="text" value={transfer.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
         </FormField>
 
         <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury.detail_transfer_label}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury.detail_transfer_label}</span>
           <input type="text" value={transfer.transferReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
         </FormField>
 
         <FormField>
-          <span className="font-medium">
+          <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label, texts.dashboard.treasury)}
           </span>
           <select
@@ -1684,7 +1684,7 @@ export function ConsolidationTransferEditForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">
+          <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label, texts.dashboard.treasury)}
           </span>
           <select
@@ -1716,7 +1716,7 @@ export function ConsolidationTransferEditForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">
+          <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.currency_label, texts.dashboard.treasury)}
           </span>
           <select
@@ -1738,7 +1738,7 @@ export function ConsolidationTransferEditForm({
         </FormField>
 
         <FormField fullWidth>
-          <span className="font-medium">
+          <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.concept_label, texts.dashboard.treasury)}
           </span>
           <input
@@ -1751,7 +1751,7 @@ export function ConsolidationTransferEditForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">
+          <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.amount_label, texts.dashboard.treasury)}
           </span>
           <input
@@ -1778,7 +1778,7 @@ export function ConsolidationTransferEditForm({
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
             disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
         </div>
       </PendingFieldset>
@@ -1872,11 +1872,11 @@ export function TreasuryRoleMovementForm({
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
             disabled={!isMovementFormValid(formState)}
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
           <button
             type="reset"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {texts.dashboard.treasury_role.reset_cta}
           </button>
@@ -2029,7 +2029,7 @@ export function TreasuryRoleFxForm({
     >
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
-          <span className="font-medium">{texts.dashboard.treasury_role.date_label}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.date_label}</span>
           <input
             type="text"
             value={sessionDate}
@@ -2039,7 +2039,7 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_source_account_label, texts.dashboard.treasury_role)}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_source_account_label, texts.dashboard.treasury_role)}</span>
           <select
             name="source_account_id"
             value={formState.sourceAccountId}
@@ -2058,7 +2058,7 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_source_currency_label, texts.dashboard.treasury_role)}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_source_currency_label, texts.dashboard.treasury_role)}</span>
           <select
             name="source_currency_code"
             value={formState.sourceCurrencyCode}
@@ -2079,7 +2079,7 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_source_amount_label, texts.dashboard.treasury_role)}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_source_amount_label, texts.dashboard.treasury_role)}</span>
           <input
             type="text"
             name="source_amount"
@@ -2102,7 +2102,7 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_target_account_label, texts.dashboard.treasury_role)}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_target_account_label, texts.dashboard.treasury_role)}</span>
           <select
             name="target_account_id"
             value={formState.targetAccountId}
@@ -2121,7 +2121,7 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_target_currency_label, texts.dashboard.treasury_role)}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_target_currency_label, texts.dashboard.treasury_role)}</span>
           <select
             name="target_currency_code"
             value={formState.targetCurrencyCode}
@@ -2142,7 +2142,7 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField>
-          <span className="font-medium">{getRequiredLabel(texts.dashboard.treasury_role.fx_target_amount_label, texts.dashboard.treasury_role)}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(texts.dashboard.treasury_role.fx_target_amount_label, texts.dashboard.treasury_role)}</span>
           <input
             type="text"
             name="target_amount"
@@ -2165,7 +2165,7 @@ export function TreasuryRoleFxForm({
         </FormField>
 
         <FormField fullWidth>
-          <span className="font-medium">{texts.dashboard.treasury_role.concept_label}</span>
+          <span className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.concept_label}</span>
           <input
             type="text"
             name="concept"
@@ -2185,11 +2185,11 @@ export function TreasuryRoleFxForm({
             idleLabel={texts.dashboard.treasury_role.fx_create_cta}
             pendingLabel={texts.dashboard.treasury_role.fx_create_loading}
             disabled={!isFxFormValid(formState)}
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
           />
           <button
             type="reset"
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {texts.dashboard.treasury_role.reset_cta}
           </button>

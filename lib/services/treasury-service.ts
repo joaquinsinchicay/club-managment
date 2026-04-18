@@ -1320,12 +1320,20 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       .map((m) => m.id)
   ).size;
 
+  // Per-account pending status (used for conciliation chips in ResumenTab)
+  const accountsWithPending = new Set(
+    roleMovements
+      .filter((m) => visibleAccountIds.has(m.accountId) && m.status === "pending_consolidation")
+      .map((m) => m.accountId)
+  );
+
   return {
     sessionDate,
     accounts: movementsByAccount.map(({ account, movements }) => ({
       accountId: account.id,
       name: account.name,
-      balances: buildAccountBalances(account, movements)
+      balances: buildAccountBalances(account, movements),
+      hasPendingMovements: accountsWithPending.has(account.id)
     })),
     movementGroups,
     availableActions: ["create_movement", "create_fx_operation"],
