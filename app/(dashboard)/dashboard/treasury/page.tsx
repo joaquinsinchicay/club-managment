@@ -58,7 +58,7 @@ export default async function TreasuryDashboardPage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
       <PageContentHeader
-        eyebrow={texts.header.navigation.tesoreria}
+        eyebrow={texts.dashboard.treasury_role.eyebrow}
         title={texts.dashboard.treasury_role.title}
         description={texts.dashboard.treasury_role.description}
       />

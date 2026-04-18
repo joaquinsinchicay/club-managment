@@ -341,6 +341,8 @@ export type TreasuryRoleDashboard = {
   }>;
   movementGroups: TreasuryRoleDashboardMovementDateGroup[];
   availableActions: Array<"create_movement" | "create_fx_operation">;
+  monthlyStats: Array<{ currencyCode: string; ingreso: number; egreso: number }>;
+  pendingConciliationCount: number;
 };
 
 export type TreasuryAccountDetail = {

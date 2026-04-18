@@ -1289,6 +1289,37 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
         .sort((left, right) => left.accountName.localeCompare(right.accountName))
     }));
 
+  // Monthly stats: computed from balance-filtered movements for current month
+  const monthPrefix = sessionDate.slice(0, 7);
+  const monthlyStatsMap = new Map<string, { ingreso: number; egreso: number }>();
+  for (const { movements } of movementsByAccount) {
+    for (const movement of movements) {
+      if (!movement.movementDate.startsWith(monthPrefix)) continue;
+      const curr = movement.currencyCode;
+      const stats = monthlyStatsMap.get(curr) ?? { ingreso: 0, egreso: 0 };
+      if (movement.movementType === "ingreso") {
+        stats.ingreso += movement.amount;
+      } else {
+        stats.egreso += movement.amount;
+      }
+      monthlyStatsMap.set(curr, stats);
+    }
+  }
+  const monthlyStats = [...monthlyStatsMap.entries()]
+    .map(([currencyCode, stats]) => ({ currencyCode, ...stats }))
+    .sort((a, b) => {
+      if (a.currencyCode === "ARS") return -1;
+      if (b.currencyCode === "ARS") return 1;
+      return a.currencyCode.localeCompare(b.currencyCode);
+    });
+
+  // Pending conciliation count: secretaría movements on tesorería-visible accounts
+  const pendingConciliationCount = new Set(
+    roleMovements
+      .filter((m) => visibleAccountIds.has(m.accountId) && m.status === "pending_consolidation")
+      .map((m) => m.id)
+  ).size;
+
   return {
     sessionDate,
     accounts: movementsByAccount.map(({ account, movements }) => ({
@@ -1297,7 +1328,9 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       balances: buildAccountBalances(account, movements)
     })),
     movementGroups,
-    availableActions: ["create_movement", "create_fx_operation"]
+    availableActions: ["create_movement", "create_fx_operation"],
+    monthlyStats,
+    pendingConciliationCount
   };
 }
 

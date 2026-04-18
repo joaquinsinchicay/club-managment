@@ -157,6 +157,23 @@ function ConsolidationIcon() {
   );
 }
 
+function MovementsListIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+    >
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12h6M9 16h4" />
+    </svg>
+  );
+}
+
 function AccountTypeIcon({ accountType }: { accountType: TreasuryAccountType }) {
   const initials =
     accountType === "bancaria" ? "BK" : accountType === "billetera_virtual" ? "BV" : "EF";
@@ -222,39 +239,87 @@ function SubTabNav({
 
 function KpiGrid({
   totalBalances,
-  accountCount
+  accountCount,
+  monthlyStats,
+  pendingConciliationCount
 }: {
   totalBalances: TotalBalance[];
   accountCount: number;
+  monthlyStats: TreasuryRoleDashboard["monthlyStats"];
+  pendingConciliationCount: number;
 }) {
-  const primary = totalBalances[0];
+  const primaryMonthly = monthlyStats[0];
 
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      {/* Saldo total */}
       <div className="rounded-[10px] border border-border bg-card px-3.5 py-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           {texts.dashboard.treasury_role.kpi_total_balance_label}
         </p>
-        <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-foreground tabular-nums">
-          {primary ? `$ ${formatLocalizedAmount(primary.amount)}` : "—"}
-        </p>
+        {totalBalances.length === 0 ? (
+          <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-foreground tabular-nums">—</p>
+        ) : (
+          totalBalances.map((b, i) => (
+            <p key={b.currencyCode} className={`tabular-nums font-bold leading-none tracking-tight text-foreground ${i === 0 ? "mt-1 text-[1.25rem]" : "mt-1 text-[13px]"}`}>
+              <span className="mr-0.5 text-[10px] font-medium text-muted-foreground">{b.currencyCode}</span>
+              {formatLocalizedAmount(b.amount)}
+            </p>
+          ))
+        )}
         <p className="mt-1 text-[11px] text-slate-500">
           {accountCount} {texts.dashboard.treasury_role.kpi_accounts_count_label}
-          {primary ? ` · ${primary.currencyCode}` : ""}
         </p>
       </div>
 
-      {totalBalances.slice(1).map((balance) => (
-        <div key={balance.currencyCode} className="rounded-[10px] border border-border bg-card px-3.5 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            {balance.currencyCode}
-          </p>
-          <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-foreground tabular-nums">
-            {formatLocalizedAmount(balance.amount)}
-          </p>
-          <p className="mt-1 text-[11px] text-slate-500">Saldo total</p>
-        </div>
-      ))}
+      {/* Ingresos del mes */}
+      <div className="rounded-[10px] border border-border bg-card px-3.5 py-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          {texts.dashboard.treasury_role.kpi_monthly_income_label}
+        </p>
+        {monthlyStats.length === 0 ? (
+          <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-emerald-700 tabular-nums">—</p>
+        ) : (
+          monthlyStats.map((s, i) => (
+            <p key={s.currencyCode} className={`tabular-nums font-bold leading-none tracking-tight text-emerald-700 ${i === 0 ? "mt-1 text-[1.25rem]" : "mt-1 text-[13px]"}`}>
+              + {formatLocalizedAmount(s.ingreso)}
+              {monthlyStats.length > 1 && <span className="ml-0.5 text-[10px] font-medium">{s.currencyCode}</span>}
+            </p>
+          ))
+        )}
+        <p className="mt-1 text-[11px] text-slate-500">{primaryMonthly?.currencyCode ?? "ARS"}</p>
+      </div>
+
+      {/* Egresos del mes */}
+      <div className="rounded-[10px] border border-border bg-card px-3.5 py-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          {texts.dashboard.treasury_role.kpi_monthly_expenses_label}
+        </p>
+        {monthlyStats.length === 0 ? (
+          <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-red-700 tabular-nums">—</p>
+        ) : (
+          monthlyStats.map((s, i) => (
+            <p key={s.currencyCode} className={`tabular-nums font-bold leading-none tracking-tight text-red-700 ${i === 0 ? "mt-1 text-[1.25rem]" : "mt-1 text-[13px]"}`}>
+              − {formatLocalizedAmount(s.egreso)}
+              {monthlyStats.length > 1 && <span className="ml-0.5 text-[10px] font-medium">{s.currencyCode}</span>}
+            </p>
+          ))
+        )}
+        <p className="mt-1 text-[11px] text-slate-500">{primaryMonthly?.currencyCode ?? "ARS"}</p>
+      </div>
+
+      {/* Sin conciliar */}
+      <div className="rounded-[10px] border border-border bg-card px-3.5 py-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          {texts.dashboard.treasury_role.kpi_pending_conciliation_label}
+        </p>
+        <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-amber-600 tabular-nums">
+          {pendingConciliationCount}
+        </p>
+        <p className="mt-1 text-[11px] text-slate-500">
+          {texts.dashboard.treasury_role.kpi_pending_conciliation_meta}
+        </p>
+      </div>
     </div>
   );
 }
@@ -303,15 +368,19 @@ function AccountRow({
 function QuickActions({
   canCreateMovement,
   canCreateFxOperation,
+  pendingConciliationCount,
   onMovement,
   onFx,
-  onConciliacion
+  onConciliacion,
+  onMovements
 }: {
   canCreateMovement: boolean;
   canCreateFxOperation: boolean;
+  pendingConciliationCount: number;
   onMovement: () => void;
   onFx: () => void;
   onConciliacion: () => void;
+  onMovements: () => void;
 }) {
   return (
     <div className="rounded-[10px] border border-border bg-card p-4">
@@ -348,7 +417,20 @@ function QuickActions({
           className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
         >
           <ConsolidationIcon />
-          {texts.dashboard.treasury_role.consolidation_cta}
+          <span>{texts.dashboard.treasury_role.consolidation_cta}</span>
+          {pendingConciliationCount > 0 && (
+            <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-amber-100 text-[10px] font-bold text-amber-700">
+              {pendingConciliationCount}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={onMovements}
+          className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+        >
+          <MovementsListIcon />
+          {texts.dashboard.treasury_role.view_movements_cta}
         </button>
       </div>
     </div>
@@ -582,6 +664,7 @@ function ResumenTab({
   onMovement,
   onFx,
   onConciliacion,
+  onMovements,
   detailHref
 }: {
   dashboard: TreasuryRoleDashboard;
@@ -591,11 +674,17 @@ function ResumenTab({
   onMovement: () => void;
   onFx: () => void;
   onConciliacion: () => void;
+  onMovements: () => void;
   detailHref: string | null;
 }) {
   return (
     <div className="space-y-3">
-      <KpiGrid totalBalances={totalBalances} accountCount={dashboard.accounts.length} />
+      <KpiGrid
+        totalBalances={totalBalances}
+        accountCount={dashboard.accounts.length}
+        monthlyStats={dashboard.monthlyStats}
+        pendingConciliationCount={dashboard.pendingConciliationCount}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {/* Account balances card */}
@@ -635,9 +724,11 @@ function ResumenTab({
         <QuickActions
           canCreateMovement={canCreateMovement}
           canCreateFxOperation={canCreateFxOperation}
+          pendingConciliationCount={dashboard.pendingConciliationCount}
           onMovement={onMovement}
           onFx={onFx}
           onConciliacion={onConciliacion}
+          onMovements={onMovements}
         />
       </div>
     </div>
@@ -797,6 +888,7 @@ export function TreasuryRoleCard({
             onMovement={() => setActiveModal("movement")}
             onFx={() => setActiveModal("fx")}
             onConciliacion={handleConciliacion}
+            onMovements={() => setActiveTab("movimientos")}
             detailHref={detailHref}
           />
         )}
