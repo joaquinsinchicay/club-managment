@@ -19,6 +19,7 @@ import type {
   ClubCalendarEvent,
   ReceiptFormat,
   TreasuryAccount,
+  TreasuryAccountType,
   TreasuryCategory,
   TreasuryCurrencyConfig,
   TreasuryDashboardMovement,
@@ -43,6 +44,8 @@ type TreasuryRoleCardProps = {
   createFxOperationAction: (formData: FormData) => Promise<TreasuryActionResponse>;
 };
 
+type SubTab = "resumen" | "cuentas" | "movimientos" | "conciliacion";
+
 type TotalBalance = {
   currencyCode: string;
   amount: number;
@@ -58,200 +61,307 @@ function getTotalBalances(accounts: TreasuryRoleDashboard["accounts"]): TotalBal
   });
 
   return [...totals.entries()]
-    .map(([currencyCode, amount]) => ({
-      currencyCode,
-      amount
-    }))
+    .map(([currencyCode, amount]) => ({ currencyCode, amount }))
     .sort((left, right) => {
-      if (left.currencyCode === "ARS") {
-        return -1;
-      }
-
-      if (right.currencyCode === "ARS") {
-        return 1;
-      }
-
+      if (left.currencyCode === "ARS") return -1;
+      if (right.currencyCode === "ARS") return 1;
       return left.currencyCode.localeCompare(right.currencyCode);
     });
-}
-
-function ManagementActionIcon({
-  kind,
-  className
-}: {
-  kind: "consolidation" | "movement" | "fx";
-  className?: string;
-}) {
-  const sharedProps = {
-    className: cn("size-6", className),
-    fill: "none",
-    stroke: "currentColor",
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    strokeWidth: 2
-  };
-
-  if (kind === "movement") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" {...sharedProps}>
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <path d="M7 8h10" />
-        <path d="M7 12h10" />
-        <path d="M12 16v-5" />
-        <path d="M9.5 13.5h5" />
-      </svg>
-    );
-  }
-
-  if (kind === "fx") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" {...sharedProps}>
-        <path d="M6 7h11" />
-        <path d="m13 4 4 3-4 3" />
-        <path d="M18 17H7" />
-        <path d="m11 14-4 3 4 3" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...sharedProps}>
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-      <path d="M8 2v4" />
-      <path d="M16 2v4" />
-      <path d="M4 10h16" />
-      <path d="M12 13v4" />
-      <path d="M10 15h4" />
-    </svg>
-  );
-}
-
-function ManagementActionChevron() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      aria-hidden="true"
-      className="size-5 text-slate-300 transition group-hover:text-slate-400"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-    >
-      <path d="m7 4 6 6-6 6" />
-    </svg>
-  );
-}
-
-function EditMovementIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={cn("size-4", className)}
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
-
-function ManagementCardHeader() {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="space-y-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-          {texts.dashboard.treasury_role.actions_card_eyebrow}
-        </p>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight text-card-foreground">
-            {texts.dashboard.treasury_role.actions_card_title}
-          </h2>
-          <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-            {texts.dashboard.treasury_role.actions_card_description}
-          </p>
-        </div>
-      </div>
-      <div className="mt-1 hidden rounded-2xl border border-border bg-secondary/30 p-3 text-muted-foreground sm:flex">
-        <ManagementActionIcon kind="consolidation" className="size-5" />
-      </div>
-    </div>
-  );
-}
-
-function SummaryBalance({
-  balance,
-  prominent = false
-}: {
-  balance: TotalBalance;
-  prominent?: boolean;
-}) {
-  return (
-    <div>
-      <p
-        className={cn(
-          "flex flex-wrap items-baseline gap-x-2 gap-y-1 font-semibold tracking-tight text-foreground",
-          prominent ? "text-[3.25rem] leading-none sm:text-[3.5rem]" : "text-[2rem] leading-none"
-        )}
-      >
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {balance.currencyCode}
-        </span>
-        <span>{formatLocalizedAmount(balance.amount)}</span>
-      </p>
-    </div>
-  );
-}
-
-function formatMovementGroupDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "long"
-  }).format(date);
 }
 
 function getMovementGroupsForAccount(
   groups: TreasuryRoleDashboardMovementDateGroup[],
   accountId: string | null
 ) {
-  if (!accountId) {
-    return [];
-  }
+  if (!accountId) return [];
 
   return groups
     .map((group) => {
       const accountGroup = group.accounts.find((entry) => entry.accountId === accountId);
-
-      if (!accountGroup) {
-        return null;
-      }
-
-      return {
-        movementDate: group.movementDate,
-        movements: accountGroup.movements
-      };
+      if (!accountGroup) return null;
+      return { movementDate: group.movementDate, movements: accountGroup.movements };
     })
-    .filter((group): group is { movementDate: string; movements: TreasuryDashboardMovement[] } => group !== null);
+    .filter(
+      (group): group is { movementDate: string; movements: TreasuryDashboardMovement[] } =>
+        group !== null
+    );
 }
+
+function getAllMovementGroups(groups: TreasuryRoleDashboardMovementDateGroup[]) {
+  return groups.map((group) => ({
+    movementDate: group.movementDate,
+    movements: group.accounts.flatMap((a) => a.movements)
+  }));
+}
+
+function formatMovementGroupDate(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("es-AR", { dateStyle: "long" }).format(date);
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+
+
+function MovementIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+    >
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M7 8h10M7 12h10M12 16v-5M9.5 13.5h5" />
+    </svg>
+  );
+}
+
+function FxIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+    >
+      <path d="M6 7h11m-4-3 4 3-4 3M18 17H7m4 3-4-3 4-3" />
+    </svg>
+  );
+}
+
+function ConsolidationIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+    >
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M8 2v4M16 2v4M4 10h16M12 13v4M10 15h4" />
+    </svg>
+  );
+}
+
+function AccountTypeIcon({ accountType }: { accountType: TreasuryAccountType }) {
+  const initials =
+    accountType === "bancaria" ? "BK" : accountType === "billetera_virtual" ? "BV" : "EF";
+
+  const colorClass =
+    accountType === "bancaria"
+      ? "bg-blue-50 text-blue-700"
+      : accountType === "billetera_virtual"
+        ? "bg-amber-50 text-amber-700"
+        : "bg-slate-100 text-slate-700";
+
+  return (
+    <div
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold tracking-wide",
+        colorClass
+      )}
+    >
+      {initials}
+    </div>
+  );
+}
+
+// ─── Sub-tab navigation ───────────────────────────────────────────────────────
+
+function SubTabNav({
+  active,
+  onChange
+}: {
+  active: SubTab;
+  onChange: (tab: SubTab) => void;
+}) {
+  const tabs: { id: SubTab; label: string }[] = [
+    { id: "resumen", label: texts.dashboard.treasury_role.tab_resumen },
+    { id: "cuentas", label: texts.dashboard.treasury_role.tab_cuentas },
+    { id: "movimientos", label: texts.dashboard.treasury_role.tab_movimientos },
+    { id: "conciliacion", label: texts.dashboard.treasury_role.tab_conciliacion }
+  ];
+
+  return (
+    <div className="flex gap-0.5 rounded-[10px] bg-slate-100 p-[3px]">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => onChange(tab.id)}
+          aria-pressed={tab.id === active}
+          className={cn(
+            "flex-1 rounded-[7px] px-2.5 py-2 text-xs font-semibold tracking-tight transition whitespace-nowrap",
+            tab.id === active
+              ? "bg-white text-foreground shadow-sm"
+              : "text-slate-600 hover:text-foreground"
+          )}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── KPI grid ────────────────────────────────────────────────────────────────
+
+function KpiGrid({
+  totalBalances,
+  accountCount
+}: {
+  totalBalances: TotalBalance[];
+  accountCount: number;
+}) {
+  const primary = totalBalances[0];
+
+  return (
+    <div className="grid grid-cols-2 gap-2.5">
+      <div className="rounded-[10px] border border-border bg-card px-3.5 py-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          {texts.dashboard.treasury_role.kpi_total_balance_label}
+        </p>
+        <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-foreground tabular-nums">
+          {primary ? `$ ${formatLocalizedAmount(primary.amount)}` : "—"}
+        </p>
+        <p className="mt-1 text-[11px] text-slate-500">
+          {accountCount} {texts.dashboard.treasury_role.kpi_accounts_count_label}
+          {primary ? ` · ${primary.currencyCode}` : ""}
+        </p>
+      </div>
+
+      {totalBalances.slice(1).map((balance) => (
+        <div key={balance.currencyCode} className="rounded-[10px] border border-border bg-card px-3.5 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            {balance.currencyCode}
+          </p>
+          <p className="mt-1 text-[1.25rem] font-bold leading-none tracking-tight text-foreground tabular-nums">
+            {formatLocalizedAmount(balance.amount)}
+          </p>
+          <p className="mt-1 text-[11px] text-slate-500">Saldo total</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Accounts summary list ────────────────────────────────────────────────────
+
+function AccountRow({
+  account
+}: {
+  account: TreasuryRoleDashboard["accounts"][number] & { accountType?: TreasuryAccountType };
+}) {
+  return (
+    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-dashed border-slate-200 py-3 last:border-b-0">
+      <div
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold tracking-wide",
+          "bg-slate-100 text-slate-700"
+        )}
+      >
+        {account.name.slice(0, 2).toUpperCase()}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
+          {account.name}
+        </p>
+      </div>
+      <div className="text-right">
+        {account.balances.map((b) => (
+          <p
+            key={b.currencyCode}
+            className="text-[15px] font-bold tabular-nums tracking-tight text-foreground"
+          >
+            <span className="mr-0.5 text-[10px] font-medium text-muted-foreground">
+              {b.currencyCode}
+            </span>
+            {formatLocalizedAmount(b.amount)}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Quick actions ────────────────────────────────────────────────────────────
+
+function QuickActions({
+  canCreateMovement,
+  canCreateFxOperation,
+  onMovement,
+  onFx,
+  onConciliacion
+}: {
+  canCreateMovement: boolean;
+  canCreateFxOperation: boolean;
+  onMovement: () => void;
+  onFx: () => void;
+  onConciliacion: () => void;
+}) {
+  return (
+    <div className="rounded-[10px] border border-border bg-card p-4">
+      <p className="text-sm font-semibold tracking-tight text-foreground">
+        {texts.dashboard.treasury_role.quick_actions_title}
+      </p>
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
+        {texts.dashboard.treasury_role.quick_actions_description}
+      </p>
+      <div className="mt-3 flex flex-col gap-2">
+        {canCreateMovement && (
+          <button
+            type="button"
+            onClick={onMovement}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
+          >
+            <MovementIcon />
+            {texts.dashboard.treasury_role.movement_modal_cta}
+          </button>
+        )}
+        {canCreateFxOperation && (
+          <button
+            type="button"
+            onClick={onFx}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+          >
+            <FxIcon />
+            {texts.dashboard.treasury_role.fx_modal_cta}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onConciliacion}
+          className="flex min-h-11 items-center justify-center gap-2 rounded-[8px] border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+        >
+          <ConsolidationIcon />
+          {texts.dashboard.treasury_role.consolidation_cta}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Movement groups ──────────────────────────────────────────────────────────
 
 function TreasuryRoleMovementGroups({
   groups,
   onEditMovement
 }: {
-  groups: Array<{
-    movementDate: string;
-    movements: TreasuryDashboardMovement[];
-  }>;
+  groups: Array<{ movementDate: string; movements: TreasuryDashboardMovement[] }>;
   onEditMovement: (movement: TreasuryDashboardMovement) => void;
 }) {
   return (
@@ -284,23 +394,16 @@ function TreasuryRoleMovementGroups({
               calendarEventTitle: movement.calendarEventTitle,
               transferReference: movement.transferReference,
               fxOperationReference: movement.fxOperationReference,
-              action:
-                movement.canEdit ? (
-                  <ModalTriggerButton
-                    onClick={() => onEditMovement(movement)}
-                    aria-label={texts.dashboard.treasury_role.edit_movement_cta}
-                    className="min-h-11 min-w-11 rounded-[18px] border border-border bg-card px-0 py-0 text-foreground hover:bg-secondary"
-                  >
-                    <EditMovementIcon />
-                  </ModalTriggerButton>
-                ) : undefined
+              action: movement.canEdit ? (
+                <ModalTriggerButton
+                  onClick={() => onEditMovement(movement)}
+                  aria-label={texts.dashboard.treasury_role.edit_movement_cta}
+                  className="cursor-pointer border-0 bg-transparent p-0 text-[11px] font-semibold text-slate-500 hover:text-foreground"
+                >
+                  {texts.dashboard.treasury.movements_edit_cta}
+                </ModalTriggerButton>
+              ) : undefined
             }))}
-            conceptLabel={texts.dashboard.treasury_role.movements_concept_label}
-            accountLabel={texts.dashboard.treasury_role.movements_account_label}
-            detailLabel={texts.dashboard.treasury_role.movements_detail_label}
-            amountLabel={texts.dashboard.treasury_role.movements_amount_label}
-            actionsLabel={texts.dashboard.treasury_role.movements_actions_label}
-            createdByLabel={texts.dashboard.treasury_role.movements_created_by_label}
           />
         </section>
       ))}
@@ -308,84 +411,240 @@ function TreasuryRoleMovementGroups({
   );
 }
 
-type ManagementActionRowProps = {
-  title: string;
-  description: string;
-  iconKind: "consolidation" | "movement" | "fx";
-  toneClassName: string;
-  href?: string;
-  loadingLabel?: string;
-  onClick?: () => void;
-  ariaLabel?: string;
-};
+// ─── Cuentas tab ─────────────────────────────────────────────────────────────
 
-function ManagementActionRow({
-  title,
-  description,
-  iconKind,
-  toneClassName,
-  href,
-  loadingLabel,
-  onClick,
-  ariaLabel
-}: ManagementActionRowProps) {
-  const content = (
-    <>
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-slate-100/70" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-5">
-        <ManagementActionChevron />
-      </div>
-      <div className="flex min-h-[108px] items-center gap-4 px-5 py-4 pr-14 sm:px-6">
-        <div
-          className={cn(
-            "flex size-12 shrink-0 items-center justify-center rounded-2xl border text-current",
-            toneClassName
-          )}
-        >
-          <ManagementActionIcon kind={iconKind} />
-        </div>
-        <div className="min-w-0 space-y-1">
-          <p className="text-base font-semibold leading-tight tracking-tight text-foreground sm:text-[1.1rem]">
-            {title}
-          </p>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-[0.95rem]">
-            {description}
-          </p>
-        </div>
-      </div>
-    </>
-  );
-
-  const sharedClassName =
-    "group relative block overflow-hidden rounded-[20px] border border-border/90 bg-card text-left shadow-[0_6px_20px_rgba(15,23,42,0.04)] transition hover:border-border hover:shadow-[0_10px_26px_rgba(15,23,42,0.08)]";
-
-  if (href) {
+function CuentasTab({
+  accounts,
+  detailHref
+}: {
+  accounts: TreasuryAccount[];
+  detailHref: string | null;
+}) {
+  if (accounts.length === 0) {
     return (
-      <NavigationLinkWithLoader
-        href={href}
-        aria-label={ariaLabel ?? title}
-        className={sharedClassName}
-        loadingLabel={loadingLabel}
-        loadingClassName="flex min-h-[108px] w-full items-center px-5 py-4 sm:px-6"
-        loadingSpinnerClassName="size-5"
-        loadingContentClassName="text-sm font-semibold tracking-tight text-foreground sm:text-base"
-      >
-        {content}
-      </NavigationLinkWithLoader>
+      <div className="rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+        {texts.dashboard.treasury_role.empty_accounts}
+      </div>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={ariaLabel ?? title}
-      className={sharedClassName}
-    >
-      {content}
-    </button>
+    <div className="rounded-[10px] border border-border bg-card">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
+        <div>
+          <p className="text-sm font-semibold tracking-tight text-foreground">
+            {texts.dashboard.treasury_role.tab_cuentas}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            {texts.dashboard.treasury_role.accounts_tab_description}
+          </p>
+        </div>
+        {detailHref && (
+          <NavigationLinkWithLoader
+            href={detailHref}
+            className="shrink-0 rounded-[8px] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+          >
+            {texts.dashboard.treasury_role.detail_accounts_cta}
+          </NavigationLinkWithLoader>
+        )}
+      </div>
+      <div className="px-4">
+        {accounts.map((account) => (
+          <div
+            key={account.id}
+            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-dashed border-slate-200 py-3 last:border-b-0"
+          >
+            <AccountTypeIcon accountType={account.accountType} />
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
+                {account.name}
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500">
+                {account.accountType === "bancaria"
+                  ? texts.dashboard.treasury_role.account_type_bancaria
+                  : account.accountType === "billetera_virtual"
+                    ? texts.dashboard.treasury_role.account_type_billetera
+                    : texts.dashboard.treasury_role.account_type_efectivo}
+                {account.currencies.length > 0 && ` · ${account.currencies.join(", ")}`}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
+
+// ─── Movimientos tab ──────────────────────────────────────────────────────────
+
+function MovimientosTab({
+  dashboard,
+  selectedAccountId,
+  onSelectAccount,
+  onEditMovement
+}: {
+  dashboard: TreasuryRoleDashboard;
+  selectedAccountId: string | null;
+  onSelectAccount: (id: string | null) => void;
+  onEditMovement: (movement: TreasuryDashboardMovement) => void;
+}) {
+  const allMovementGroups = getAllMovementGroups(dashboard.movementGroups);
+  const filteredGroups =
+    selectedAccountId === null
+      ? allMovementGroups
+      : getMovementGroupsForAccount(dashboard.movementGroups, selectedAccountId);
+
+  const isEmpty = filteredGroups.length === 0;
+
+  return (
+    <div className="space-y-3">
+      {dashboard.accounts.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 overflow-x-auto pb-1">
+          <button
+            type="button"
+            onClick={() => onSelectAccount(null)}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-[11px] font-semibold transition whitespace-nowrap",
+              selectedAccountId === null
+                ? "border-slate-900 bg-slate-900 text-white"
+                : "border-transparent bg-slate-100 text-slate-600 hover:text-foreground"
+            )}
+          >
+            {texts.dashboard.treasury_role.all_accounts_filter}
+          </button>
+          {dashboard.accounts.map((account) => (
+            <button
+              key={account.accountId}
+              type="button"
+              onClick={() => onSelectAccount(account.accountId)}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-[11px] font-semibold transition whitespace-nowrap",
+                account.accountId === selectedAccountId
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-transparent bg-slate-100 text-slate-600 hover:text-foreground"
+              )}
+            >
+              {account.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isEmpty ? (
+        <div className="rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+          {texts.dashboard.treasury_role.movements_empty}
+        </div>
+      ) : (
+        <TreasuryRoleMovementGroups groups={filteredGroups} onEditMovement={onEditMovement} />
+      )}
+    </div>
+  );
+}
+
+// ─── Conciliación tab ─────────────────────────────────────────────────────────
+
+function ConciliacionTab() {
+  return (
+    <div className="rounded-[10px] border border-border bg-card p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500">
+          <ConsolidationIcon />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold tracking-tight text-foreground">
+            {texts.dashboard.treasury_role.consolidation_cta}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+            {texts.dashboard.treasury_role.conciliacion_tab_description}
+          </p>
+        </div>
+      </div>
+      <div className="mt-4">
+        <NavigationLinkWithLoader
+          href="/dashboard/treasury/consolidation"
+          className="flex min-h-11 w-full items-center justify-center rounded-[8px] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
+          loadingLabel={texts.dashboard.treasury_role.navigation_loading}
+        >
+          {texts.dashboard.treasury_role.conciliacion_tab_cta}
+        </NavigationLinkWithLoader>
+      </div>
+    </div>
+  );
+}
+
+// ─── Resumen tab ──────────────────────────────────────────────────────────────
+
+function ResumenTab({
+  dashboard,
+  totalBalances,
+  canCreateMovement,
+  canCreateFxOperation,
+  onMovement,
+  onFx,
+  onConciliacion,
+  detailHref
+}: {
+  dashboard: TreasuryRoleDashboard;
+  totalBalances: TotalBalance[];
+  canCreateMovement: boolean;
+  canCreateFxOperation: boolean;
+  onMovement: () => void;
+  onFx: () => void;
+  onConciliacion: () => void;
+  detailHref: string | null;
+}) {
+  return (
+    <div className="space-y-3">
+      <KpiGrid totalBalances={totalBalances} accountCount={dashboard.accounts.length} />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {/* Account balances card */}
+        <div className="rounded-[10px] border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
+            <div>
+              <p className="text-sm font-semibold tracking-tight text-foreground">
+                {texts.dashboard.treasury_role.tab_cuentas}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {texts.dashboard.treasury_role.balances_total_label}
+              </p>
+            </div>
+            {detailHref && (
+              <NavigationLinkWithLoader
+                href={detailHref}
+                className="shrink-0 rounded-[8px] border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+              >
+                {texts.dashboard.treasury_role.detail_accounts_cta}
+              </NavigationLinkWithLoader>
+            )}
+          </div>
+          <div className="px-4">
+            {dashboard.accounts.length === 0 ? (
+              <p className="py-4 text-sm text-muted-foreground">
+                {texts.dashboard.treasury_role.empty_accounts}
+              </p>
+            ) : (
+              dashboard.accounts.map((account) => (
+                <AccountRow key={account.accountId} account={account} />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <QuickActions
+          canCreateMovement={canCreateMovement}
+          canCreateFxOperation={canCreateFxOperation}
+          onMovement={onMovement}
+          onFx={onFx}
+          onConciliacion={onConciliacion}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function TreasuryRoleCard({
   dashboard,
@@ -403,19 +662,22 @@ export function TreasuryRoleCard({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const [activeTab, setActiveTab] = useState<SubTab>("resumen");
   const [activeModal, setActiveModal] = useState<"movement" | "edit_movement" | "fx" | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<TreasuryDashboardMovement | null>(null);
-  const [selectedMovementAccountId, setSelectedMovementAccountId] = useState<string | null>(
-    dashboard.accounts[0]?.accountId ?? null
-  );
+  const [selectedMovementAccountId, setSelectedMovementAccountId] = useState<string | null>(null);
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
   const [isFxSubmissionPending, setIsFxSubmissionPending] = useState(false);
+
   const totalBalances = getTotalBalances(dashboard.accounts);
-  const detailHref = dashboard.accounts[0] ? `/dashboard/treasury/accounts/${dashboard.accounts[0].accountId}` : null;
+  const detailHref = dashboard.accounts[0]
+    ? `/dashboard/treasury/accounts/${dashboard.accounts[0].accountId}`
+    : null;
   const canCreateMovement = dashboard.availableActions.includes("create_movement");
   const canCreateFxOperation = dashboard.availableActions.includes("create_fx_operation");
-  const filteredMovementGroups = getMovementGroupsForAccount(dashboard.movementGroups, selectedMovementAccountId);
+
   const pendingOverlayLabel = isMovementSubmissionPending
     ? texts.dashboard.treasury_role.create_loading
     : isMovementUpdatePending
@@ -426,16 +688,11 @@ export function TreasuryRoleCard({
 
   useEffect(() => {
     const nextSelectedAccountId = dashboard.accounts[0]?.accountId ?? null;
-
     setSelectedMovementAccountId((currentAccountId) => {
-      if (!nextSelectedAccountId) {
-        return null;
-      }
-
-      if (currentAccountId && dashboard.accounts.some((account) => account.accountId === currentAccountId)) {
+      if (!nextSelectedAccountId) return null;
+      if (currentAccountId && dashboard.accounts.some((a) => a.accountId === currentAccountId)) {
         return currentAccountId;
       }
-
       return nextSelectedAccountId;
     });
   }, [dashboard.accounts]);
@@ -514,179 +771,53 @@ export function TreasuryRoleCard({
     }
   }
 
+  function handleEditMovement(movement: TreasuryDashboardMovement) {
+    if (!movement.canEdit) return;
+    setSelectedMovement(movement);
+    setActiveModal("edit_movement");
+  }
+
+  function handleConciliacion() {
+    setActiveTab("conciliacion");
+  }
+
   return (
     <>
       <BlockingStatusOverlay open={pendingOverlayLabel !== null} label={pendingOverlayLabel ?? ""} />
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.95fr)]">
-        <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
-          <div className="space-y-1.5">
-            <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
-              {texts.dashboard.treasury_role.title}
-            </h2>
-            <p className="text-sm leading-5 text-muted-foreground">
-              {texts.dashboard.treasury_role.description}
-            </p>
-          </div>
+      <div className="space-y-4">
+        <SubTabNav active={activeTab} onChange={setActiveTab} />
 
-          {dashboard.accounts.length === 0 ? (
-            <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-              {texts.dashboard.treasury_role.empty_accounts}
-            </div>
-          ) : (
-            <div className="mt-5 space-y-6">
-              <div className="space-y-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {texts.dashboard.treasury_role.balances_total_label}
-                </p>
-
-                {totalBalances[0] ? <SummaryBalance balance={totalBalances[0]} prominent /> : null}
-
-                {totalBalances.length > 1 ? (
-                  <div className="grid gap-4 border-t border-border/70 pt-4 sm:grid-cols-2">
-                    {totalBalances.slice(1).map((balance) => (
-                      <SummaryBalance key={balance.currencyCode} balance={balance} />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="grid gap-4 border-t border-border/70 pt-4 sm:grid-cols-2">
-                {dashboard.accounts.map((account) => (
-                  <article key={account.accountId} className="space-y-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      {account.name}
-                    </p>
-
-                    <div className="space-y-3">
-                      {account.balances.map((balance) => (
-                        <p
-                          key={`${account.accountId}-${balance.currencyCode}`}
-                          className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[2rem] font-semibold leading-none tracking-tight text-foreground"
-                        >
-                          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                            {balance.currencyCode}
-                          </span>
-                          <span>
-                            {formatLocalizedAmount(balance.amount)}
-                          </span>
-                        </p>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {detailHref ? (
-            <div className="mt-5">
-              <NavigationLinkWithLoader
-                href={detailHref}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-[12px] bg-secondary/35 px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-              >
-                {texts.dashboard.treasury_role.detail_accounts_cta}
-              </NavigationLinkWithLoader>
-            </div>
-          ) : null}
-        </section>
-
-        <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
-          <ManagementCardHeader />
-
-          <div className="mt-6 grid gap-4">
-            <ManagementActionRow
-              title={texts.dashboard.treasury_role.consolidation_cta}
-              description={texts.dashboard.treasury_role.consolidation_description}
-              iconKind="consolidation"
-              toneClassName="border-slate-200/90 bg-slate-50 text-slate-500"
-              href="/dashboard/treasury/consolidation"
-              loadingLabel={texts.dashboard.treasury_role.navigation_loading}
-              ariaLabel={texts.dashboard.treasury_role.consolidation_cta}
-            />
-
-            {canCreateMovement ? (
-              <ManagementActionRow
-                title={texts.dashboard.treasury_role.movement_modal_cta}
-                description={texts.dashboard.treasury_role.movement_modal_description}
-                iconKind="movement"
-                toneClassName="border-emerald-200/80 bg-emerald-50 text-emerald-600"
-                onClick={() => setActiveModal("movement")}
-                ariaLabel={texts.dashboard.treasury_role.movement_modal_cta}
-              />
-            ) : null}
-
-            {canCreateFxOperation ? (
-              <ManagementActionRow
-                title={texts.dashboard.treasury_role.fx_modal_cta}
-                description={texts.dashboard.treasury_role.fx_modal_description}
-                iconKind="fx"
-                toneClassName="border-amber-200/80 bg-amber-50 text-amber-600"
-                onClick={() => setActiveModal("fx")}
-                ariaLabel={texts.dashboard.treasury_role.fx_modal_cta}
-              />
-            ) : null}
-          </div>
-        </section>
-      </section>
-
-      <section className="rounded-[20px] border border-border bg-card p-5 sm:p-6">
-        <div className="space-y-1.5">
-          <h2 className="text-xl font-semibold tracking-tight text-card-foreground">
-            {texts.dashboard.treasury_role.movements_card_title}
-          </h2>
-          <p className="text-sm leading-5 text-muted-foreground">
-            {texts.dashboard.treasury_role.movements_card_description}
-          </p>
-        </div>
-
-        {dashboard.accounts.length > 0 ? (
-          <div className="mt-5 grid gap-2">
-            <p className="text-sm font-medium text-foreground">
-              {texts.dashboard.treasury.account_switch_label}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {dashboard.accounts.map((account) => (
-                <button
-                  key={account.accountId}
-                  type="button"
-                  onClick={() => setSelectedMovementAccountId(account.accountId)}
-                  className={cn(
-                    "rounded-full border px-3 py-2 text-sm font-medium transition",
-                    account.accountId === selectedMovementAccountId
-                      ? "border-foreground bg-foreground text-primary-foreground"
-                      : "border-border bg-card text-foreground hover:bg-secondary"
-                  )}
-                  aria-pressed={account.accountId === selectedMovementAccountId}
-                >
-                  {account.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {filteredMovementGroups.length === 0 ? (
-          <div className="mt-5 rounded-[20px] border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-            {texts.dashboard.treasury_role.movements_empty}
-          </div>
-        ) : (
-          <div className="mt-5">
-            <TreasuryRoleMovementGroups
-              groups={filteredMovementGroups}
-              onEditMovement={(movement) => {
-                if (!movement.canEdit) {
-                  return;
-                }
-
-                setSelectedMovement(movement);
-                setActiveModal("edit_movement");
-              }}
-            />
-          </div>
+        {activeTab === "resumen" && (
+          <ResumenTab
+            dashboard={dashboard}
+            totalBalances={totalBalances}
+            canCreateMovement={canCreateMovement}
+            canCreateFxOperation={canCreateFxOperation}
+            onMovement={() => setActiveModal("movement")}
+            onFx={() => setActiveModal("fx")}
+            onConciliacion={handleConciliacion}
+            detailHref={detailHref}
+          />
         )}
-      </section>
 
+        {activeTab === "cuentas" && (
+          <CuentasTab accounts={accounts} detailHref={detailHref} />
+        )}
+
+        {activeTab === "movimientos" && (
+          <MovimientosTab
+            dashboard={dashboard}
+            selectedAccountId={selectedMovementAccountId}
+            onSelectAccount={setSelectedMovementAccountId}
+            onEditMovement={handleEditMovement}
+          />
+        )}
+
+        {activeTab === "conciliacion" && <ConciliacionTab />}
+      </div>
+
+      {/* Modals */}
       <Modal
         open={activeModal === "movement"}
         onClose={() => setActiveModal(null)}

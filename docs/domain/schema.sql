@@ -205,6 +205,7 @@ opened_at timestamp not null default now(),
 closed_at timestamp,
 opened_by_user_id uuid references users(id),
 closed_by_user_id uuid references users(id),
+notes text,
 unique (club_id, session_date)
 );
 

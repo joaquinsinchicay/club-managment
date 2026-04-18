@@ -283,11 +283,13 @@ Atributos:
 * closed_at
 * opened_by_user_id
 * closed_by_user_id
+* notes (text, nullable): observación libre registrada por el operador al cierre de la jornada
 
 Reglas:
 
 * Solo una jornada por día y club.
 * Requiere jornada abierta para operar.
+* El saldo declarado (saldo real) al cierre no puede ser negativo. La diferencia entre saldo declarado y esperado sí puede ser negativa (representa un faltante de arqueo).
 
 ---
 

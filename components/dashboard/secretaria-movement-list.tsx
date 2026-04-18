@@ -5,7 +5,6 @@ import { type ReactNode } from "react";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import type { TreasuryMovementType } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
-import { cn } from "@/lib/utils";
 
 type SecretariaMovementListItem = {
   movementId: string;
@@ -28,28 +27,35 @@ type SecretariaMovementListItem = {
 
 type SecretariaMovementListProps = {
   items: SecretariaMovementListItem[];
-  conceptLabel: string;
-  accountLabel: string;
-  detailLabel: string;
-  amountLabel: string;
-  actionsLabel: string;
-  createdByLabel: string;
 };
 
-function getMovementAmountClassName(movementType: TreasuryMovementType) {
-  return movementType === "ingreso" ? "text-success" : "text-destructive";
+function getBulletColor(type: TreasuryMovementType): string {
+  if (type === "ingreso") return "var(--green)";
+  if (type === "egreso") return "var(--red)";
+  return "var(--slate-400)";
+}
+
+function getAmountColor(type: TreasuryMovementType): string {
+  if (type === "ingreso") return "var(--green-700)";
+  if (type === "egreso") return "var(--red-700)";
+  return "var(--slate-700)";
+}
+
+function formatAmount(type: TreasuryMovementType, currencyCode: string, amount: number): string {
+  const sign = type === "ingreso" ? "+" : type === "egreso" ? "-" : "";
+  const symbol = currencyCode === "ARS" ? "$" : "US$";
+  return `${sign}${symbol} ${formatLocalizedAmount(amount)}`;
 }
 
 function formatMovementDateTime(value: string) {
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
+  if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short"
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
   }).format(date);
 }
 
@@ -57,133 +63,87 @@ function getReferenceSuffix(value: string) {
   return value.slice(-6);
 }
 
-export function SecretariaMovementList({
-  items,
-  conceptLabel,
-  accountLabel,
-  detailLabel,
-  amountLabel,
-  actionsLabel,
-  createdByLabel
-}: SecretariaMovementListProps) {
+const chipStyle: React.CSSProperties = {
+  background: "var(--slate-100)",
+  color: "var(--slate-600)",
+  borderRadius: 4,
+  fontSize: 10,
+  fontWeight: 600,
+  padding: "2px 6px",
+  lineHeight: "16px"
+};
+
+export function SecretariaMovementList({ items }: SecretariaMovementListProps) {
   return (
-    <div className="overflow-hidden rounded-[18px] border border-border">
-      <div className="hidden bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(170px,0.8fr)_88px] md:items-center md:gap-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {conceptLabel}
-        </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {accountLabel}
-        </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {detailLabel}
-        </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
-          {amountLabel}
-        </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
-          {actionsLabel}
-        </p>
-      </div>
+    <div className="divide-y divide-border">
+      {items.map((item) => {
+        const meta = [
+          item.movementDisplayId,
+          item.createdByUserName,
+          item.receiptNumber ? `${texts.dashboard.treasury.detail_receipt_label} ${item.receiptNumber}` : null,
+          item.transferReference
+            ? `${texts.dashboard.treasury.detail_transfer_label} ${getReferenceSuffix(item.transferReference)}`
+            : null,
+          item.fxOperationReference
+            ? `${texts.dashboard.treasury.detail_fx_label} ${getReferenceSuffix(item.fxOperationReference)}`
+            : null,
+          item.calendarEventTitle
+        ]
+          .filter(Boolean)
+          .join(" · ");
 
-      <div className="grid gap-3 bg-card p-3 md:gap-0 md:bg-transparent md:p-0">
-        {items.map((item, index) => (
-          <article
-            key={item.movementId}
-            className={cn(
-              "rounded-[18px] border border-border bg-card p-4 shadow-soft md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(180px,0.8fr)_minmax(220px,1fr)_minmax(170px,0.8fr)_88px] md:items-start md:gap-4 md:rounded-none md:border-x-0 md:border-b-0 md:p-5 md:shadow-none",
-              index === items.length - 1 && "md:last:rounded-b-[18px]"
-            )}
-          >
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                {item.movementDisplayId}
-              </p>
-              <p
-                className="mt-1 overflow-hidden text-pretty text-base font-semibold leading-6 text-foreground"
-                style={{
-                  display: "-webkit-box",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 2
-                }}
-              >
-                {item.concept}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {formatMovementDateTime(item.createdAt)} · {createdByLabel} {item.createdByUserName}
-              </p>
-            </div>
+        return (
+          <article key={item.movementId} className="group px-4 py-3 transition-colors hover:bg-slate-50">
+            <div className="flex items-start gap-3">
+              <span
+                className="mt-1.5 size-2 shrink-0 rounded-full"
+                style={{ background: getBulletColor(item.movementType) }}
+                aria-hidden="true"
+              />
 
-            <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                {accountLabel}
-              </p>
-              <p className="font-medium text-foreground">{item.accountName}</p>
-            </div>
+              <div className="min-w-0 flex-1">
+                {/* Concept + amount */}
+                <div className="flex items-start justify-between gap-3">
+                  <p
+                    className="overflow-hidden text-[14px] font-semibold leading-snug text-foreground"
+                    style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2 }}
+                  >
+                    {item.concept}
+                  </p>
+                  <p
+                    className="shrink-0 text-[14px] font-semibold tabular-nums"
+                    style={{ color: getAmountColor(item.movementType) }}
+                  >
+                    {formatAmount(item.movementType, item.currencyCode, item.amount)}
+                  </p>
+                </div>
 
-            <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:mt-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                {detailLabel}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  {item.categoryName || texts.dashboard.treasury.detail_uncategorized_category}
-                </span>
-                {item.activityName ? (
-                  <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                    {item.activityName}
-                  </span>
-                ) : null}
+                {/* Tags + datetime */}
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap gap-1">
+                    <span style={chipStyle}>{item.accountName}</span>
+                    {item.categoryName ? <span style={chipStyle}>{item.categoryName}</span> : null}
+                    {item.activityName ? <span style={chipStyle}>{item.activityName}</span> : null}
+                  </div>
+                  <p className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                    {formatMovementDateTime(item.createdAt)}
+                  </p>
+                </div>
+
+                {/* Meta row + edit button */}
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="text-[11px] text-muted-foreground">{meta}</p>
+                  {item.action ? (
+                    <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                      {item.action}
+                    </div>
+                  ) : null}
+                </div>
               </div>
-              {item.transferReference ? (
-                <p>
-                  <span className="font-medium text-foreground">{texts.dashboard.treasury.detail_transfer_label}</span>{" "}
-                  {getReferenceSuffix(item.transferReference)}
-                </p>
-              ) : null}
-              {item.fxOperationReference ? (
-                <p>
-                  <span className="font-medium text-foreground">{texts.dashboard.treasury.detail_fx_label}</span>{" "}
-                  {getReferenceSuffix(item.fxOperationReference)}
-                </p>
-              ) : null}
-              {item.receiptNumber ? (
-                <p>
-                  <span className="font-medium text-foreground">{texts.dashboard.treasury.detail_receipt_label}</span>{" "}
-                  {item.receiptNumber}
-                </p>
-              ) : null}
-              {item.calendarEventTitle ? (
-                <p>
-                  <span className="font-medium text-foreground">{texts.dashboard.treasury.detail_calendar_label}</span>{" "}
-                  {item.calendarEventTitle}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="mt-4 md:mt-0 md:text-right">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                {amountLabel}
-              </p>
-              <p
-                className={cn(
-                  "text-2xl font-semibold tracking-tight md:text-[1.75rem]",
-                  getMovementAmountClassName(item.movementType)
-                )}
-              >
-                {item.movementType === "egreso" ? "-" : "+"} {item.currencyCode} {formatLocalizedAmount(item.amount)}
-              </p>
-            </div>
-
-            <div className="mt-4 flex min-h-10 items-center justify-start md:mt-0 md:justify-end">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground md:hidden">
-                {actionsLabel}
-              </p>
-              {item.action ?? <span aria-hidden="true" className="text-xs font-medium text-muted-foreground">-</span>}
             </div>
           </article>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

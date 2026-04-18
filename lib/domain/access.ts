@@ -201,6 +201,7 @@ export type DailyCashSession = {
   closedAt: string | null;
   openedByUserId: string | null;
   closedByUserId: string | null;
+  notes?: string | null;
 };
 
 export type TreasuryMovement = {
@@ -278,6 +279,9 @@ export type DashboardTreasuryCard = {
   movementDataStatus: "resolved" | "unresolved";
   sessionDate: string;
   sessionId: string | null;
+  sessionOpenedAt: string | null;
+  sessionOpenedByUserName: string | null;
+  sessionClosedAt: string | null;
   accounts: Array<{
     accountId: string;
     name: string;
@@ -445,6 +449,7 @@ export type SessionBalanceDraft = {
   declaredBalance: number;
   differenceAmount: number;
   adjustmentType: TreasuryMovementType | null;
+  openingDeclaredBalance?: number;
 };
 
 export type DailyCashSessionValidation = {

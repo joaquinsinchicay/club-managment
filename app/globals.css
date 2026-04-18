@@ -3,22 +3,90 @@
 @tailwind utilities;
 
 :root {
-  --background: 210 20% 98%;
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
+  /* ============================================================
+     CLUB MANAGEMENT · DESIGN TOKENS v2
+     Fuente: design_handoff_club_management/tokens.css
+     ============================================================ */
+
+  /* Semantic colors */
+  --green: #10B981; --green-050: #ECFDF5; --green-100: #D1FAE5; --green-700: #047857;
+  --red:   #EF4444; --red-050:   #FEF2F2; --red-700:   #B91C1C;
+  --amber: #F59E0B; --amber-050: #FFFBEB; --amber-100: #FEF3C7; --amber-700: #B45309;
+  --blue:  #3B82F6; --blue-050:  #EFF6FF; --blue-700:  #1D4ED8;
+  --purple:#8B5CF6; --purple-050:#F5F3FF; --purple-700:#6D28D9;
+  --indigo:#6366F1; --indigo-050:#EEF2FF; --indigo-700:#4338CA;
+  --teal:  #14B8A6; --teal-050:  #F0FDFA; --teal-700:  #0F766E;
+  --pink:  #EC4899; --pink-050:  #FDF2F8; --pink-700:  #BE185D;
+
+  /* Slate scale */
+  --slate-050: #F8FAFC;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-500: #64748B;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
+
+  /* Surface */
+  --bg:        #F6F7F9;
+  --surface:   #FFFFFF;
+  --ink:       var(--slate-900);
+  --ink-muted: var(--slate-500);
+  --cm-border: var(--slate-200);
+
+  /* Module accents */
+  --accent-dashboard:  var(--green);
+  --accent-secretaria: var(--green);
+  --accent-tesoreria:  var(--blue);
+  --accent-config:     var(--indigo);
+  --accent-modulos:    var(--indigo);
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius:    8px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+
+  /* Shadows */
+  --shadow-xs:  0 1px 0   rgba(15,23,42,0.04);
+  --shadow-sm:  0 1px 2px rgba(15,23,42,0.06);
+  --shadow-md:  0 8px 40px -12px rgba(15,23,42,0.12);
+  --shadow-pop: 0 12px 40px -8px rgba(15,23,42,0.18);
+
+  /* Touch target */
+  --touch: 44px;
+
+  /* ============================================================
+     Tailwind compatibility — HSL channel format
+     Valores actualizados para coincidir con el nuevo DS.
+     Las clases utilitarias existentes (bg-background, etc.)
+     continúan funcionando sin cambios.
+     ============================================================ */
+  --background: 220 14% 97%;     /* ≈ --bg #F6F7F9 */
+  --foreground: 222 47% 11%;     /* ≈ --ink #0F172A */
+  --card: 0 0% 100%;             /* ≈ --surface #FFFFFF */
   --card-foreground: 222 47% 11%;
   --primary: 222 47% 11%;
   --primary-foreground: 210 40% 98%;
-  --secondary: 210 24% 96%;
+  --secondary: 214 32% 91%;      /* ≈ --slate-200 */
   --secondary-foreground: 222 47% 11%;
-  --border: 214 24% 88%;
-  --muted: 210 24% 96%;
-  --muted-foreground: 215 14% 42%;
-  --accent: 142 84% 39%;
+  --border: 214 32% 91%;         /* ≈ --slate-200 #E2E8F0 */
+  --outline: 215 16% 47%;        /* ≈ --slate-500 */
+  --muted: 214 32% 91%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 160 84% 39%;         /* ≈ --green */
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;
+  --destructive: 0 84% 60%;      /* ≈ --red */
+  --destructive-foreground: 0 0% 100%;
   --success: 160 84% 39%;
-  --warning: 38 92% 50%;
+  --warning: 38 92% 50%;         /* ≈ --amber */
+  --surface-container-low: 220 14% 97%;
+  --surface-container: 214 32% 91%;
+  --surface-container-high: 214 32% 91%;
+  --surface-dim: 214 20% 86%;
 }
 
 * {
@@ -32,12 +100,23 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background: #f8fafc;
-  color: hsl(var(--foreground));
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Montos — tabular-nums con alineación correcta */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.015em;
 }

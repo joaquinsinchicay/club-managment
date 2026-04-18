@@ -14,6 +14,7 @@ type ModalProps = {
   children: ReactNode;
   panelClassName?: string;
   closeDisabled?: boolean;
+  hideCloseButton?: boolean;
 };
 
 export function Modal({
@@ -23,7 +24,8 @@ export function Modal({
   onClose,
   children,
   panelClassName,
-  closeDisabled = false
+  closeDisabled = false,
+  hideCloseButton = false
 }: ModalProps) {
   if (!open) {
     return null;
@@ -51,28 +53,30 @@ export function Modal({
         onPointerDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <h2 id="app-modal-title" className="text-xl font-semibold tracking-tight text-card-foreground">
+          <div className="space-y-1">
+            <h2 id="app-modal-title" className="text-[18px] font-semibold tracking-tight text-card-foreground">
               {title}
             </h2>
             {description ? (
-              <p id="app-modal-description" className="text-sm leading-6 text-muted-foreground">
+              <p id="app-modal-description" className="text-[13px] leading-5 text-muted-foreground">
                 {description}
               </p>
             ) : null}
           </div>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onClose();
-            }}
-            disabled={closeDisabled}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-            aria-label={texts.app.modal_close_cta}
-          >
-            {texts.app.modal_close_cta}
-          </button>
+          {!hideCloseButton ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onClose();
+              }}
+              disabled={closeDisabled}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+              aria-label={texts.app.modal_close_cta}
+            >
+              {texts.app.modal_close_cta}
+            </button>
+          ) : null}
         </div>
 
         <div className="mt-5">{children}</div>
