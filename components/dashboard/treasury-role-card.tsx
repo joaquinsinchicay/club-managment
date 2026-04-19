@@ -119,20 +119,30 @@ function formatLastMovementDate(value: string) {
 }
 
 function formatAccountSubtitle(account: TreasuryAccount, isMulti: boolean): string | null {
+  const parts: Array<string | null | undefined> = [];
+
   if (account.accountType === "bancaria") {
-    const subtype = account.bankAccountSubtype
-      ? texts.settings.club.treasury.bank_account_subtypes[account.bankAccountSubtype]
-      : null;
-    return [account.bankEntity, subtype].filter(Boolean).join(" · ") || null;
-  }
-
-  if (account.accountType === "billetera_virtual") {
-    const parts = [account.bankEntity];
+    parts.push(account.bankEntity);
+    if (account.bankAccountSubtype) {
+      parts.push(texts.settings.club.treasury.bank_account_subtypes[account.bankAccountSubtype]);
+    }
+  } else if (account.accountType === "billetera_virtual") {
+    parts.push(account.bankEntity);
     if (isMulti) parts.push(texts.dashboard.treasury_role.multi_wallet_label);
-    return parts.filter(Boolean).join(" · ") || null;
+  } else {
+    parts.push(texts.dashboard.treasury_role.cash_account_label);
   }
 
-  return texts.dashboard.treasury_role.cash_account_label;
+  if (!isMulti && account.currencies.length === 1) {
+    parts.push(account.currencies[0]);
+  }
+
+  if (account.visibleForSecretaria && !account.visibleForTesoreria) {
+    parts.push(texts.dashboard.treasury_role.operated_by_secretaria);
+  }
+
+  const cleaned = parts.filter((part): part is string => Boolean(part));
+  return cleaned.length ? cleaned.join(" · ") : null;
 }
 
 function formatAccountIdentifier(account: TreasuryAccount): string | null {
