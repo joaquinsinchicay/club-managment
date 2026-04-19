@@ -19,10 +19,13 @@ import {
   updateTreasuryCategoryForActiveClub
 } from "@/lib/services/treasury-settings-service";
 import { clearStoredActiveClubId, storeCurrentActiveClubId } from "@/lib/auth/session";
+import { resolveFeedback } from "@/lib/feedback-catalog";
+import { flashToast } from "@/lib/toast-server";
 
 function redirectToSettings(code: string, tab = "members") {
   revalidatePath("/settings");
-  redirect(`/settings?feedback=${encodeURIComponent(code)}&tab=${encodeURIComponent(tab)}`);
+  flashToast(resolveFeedback("settings", code));
+  redirect(`/settings?tab=${encodeURIComponent(tab)}`);
 }
 
 export async function approveClubMembershipAction(formData: FormData) {

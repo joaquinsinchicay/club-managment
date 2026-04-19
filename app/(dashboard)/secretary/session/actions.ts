@@ -3,10 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
+import { resolveFeedback } from "@/lib/feedback-catalog";
 import {
   closeDailyCashSessionWithDeclaredBalances,
   openDailyCashSessionWithDeclaredBalances
 } from "@/lib/services/treasury-service";
+import { flashToast } from "@/lib/toast-server";
 
 function mapDeclaredBalances(formData: FormData) {
   const accountIds = formData.getAll("account_id");
@@ -23,7 +25,8 @@ function mapDeclaredBalances(formData: FormData) {
 function redirectToSecretary(code: string) {
   revalidatePath("/dashboard");
   revalidatePath("/secretary");
-  redirect(`/secretary?feedback=${code}`);
+  flashToast(resolveFeedback("dashboard", code));
+  redirect("/secretary");
 }
 
 export async function openDailyCashSessionWithBalancesAction(formData: FormData) {

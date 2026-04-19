@@ -62,6 +62,33 @@ CORRECTO:
 - El toast debe ser reutilizable y consistente con el design system.
 - El mensaje debe ser breve, visible y no depender del scroll de la página.
 
+### API de toasts
+
+**Desde client components** — llamada imperativa:
+
+```tsx
+import { showToast, showSuccess, showError, showWarning, showInfo } from "@/lib/toast";
+
+showToast({
+  kind: "success",
+  title: "Movimiento registrado",
+  desc: "Ingreso de $ 185.000,00 en Caja Pesos.",
+  meta: "N° 004812 · 17/04 14:32"
+});
+```
+
+**Desde server actions** — helper `flashToast()` + redirect:
+
+```ts
+import { flashToast } from "@/lib/toast-server";
+import { resolveFeedback } from "@/lib/feedback-catalog";
+
+flashToast(resolveFeedback("settings", result.code));
+redirect("/settings");
+```
+
+La cookie flash `__toast` se consume una sola vez al rehidratar en el cliente. Nunca volver al patrón `?feedback=CODE` en la URL.
+
 ### Excepciones válidas
 - Validación inline de campos dentro de formularios.
 - Estados persistentes que forman parte principal de una pantalla.

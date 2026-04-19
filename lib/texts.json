@@ -5,6 +5,18 @@
     "badge": "Acceso",
     "modal_close_cta": "Cerrar"
   },
+  "common": {
+    "actions": {
+      "close": "Cerrar",
+      "retry": "Reintentar",
+      "view": "Ver",
+      "undo": "Deshacer"
+    },
+    "toast": {
+      "generic_error_title": "No se pudo completar la accion",
+      "generic_error_desc": "Revisa los datos e intenta nuevamente."
+    }
+  },
   "auth": {
     "login": {
       "title": "Iniciar sesion con Google",

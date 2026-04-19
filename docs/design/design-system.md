@@ -320,6 +320,62 @@ Pause:      hover en cualquier toast pausa el timer de TODOS
 API:        showToast({ kind, title, desc?, meta?, action?, duration? })
 ```
 
+### Uso en código
+
+#### Desde client components (imperativo)
+
+```tsx
+"use client";
+import { showToast } from "@/lib/toast";
+
+showToast({
+  kind: "success",
+  title: "Movimiento registrado",
+  desc: "Ingreso de $ 185.000,00 en Caja Pesos.",
+  meta: "N° 004812 · 17/04 14:32",
+  action: { label: "Ver", onClick: () => router.push(`/secretary/movements/${id}`) }
+});
+```
+
+Helpers ergonómicos: `showSuccess(opts)`, `showError(opts)`, `showWarning(opts)`, `showInfo(opts)`. Siempre que haya catálogo, leer title/desc desde `lib/texts.json`.
+
+#### Desde server actions (cookie flash)
+
+Un server action que redirecciona no puede llamar a `showToast()` directamente. El patrón es setear una cookie flash `__toast` con el payload y el `ToastProvider` la consume al rehidratar.
+
+```ts
+// app/(dashboard)/settings/actions.ts
+"use server";
+import { flashToast } from "@/lib/toast/server";
+import { texts } from "@/lib/texts";
+
+export async function approveMembership(formData: FormData) {
+  // ... lógica ...
+  flashToast({
+    kind: "success",
+    title: texts.settings.club.members.feedback.membership_approved.title,
+    desc: texts.settings.club.members.feedback.membership_approved.desc
+  });
+  redirect("/settings");
+}
+```
+
+- Cookie: `__toast`, path `/`, `maxAge: 10s`, `httpOnly: false`, `sameSite: lax`.
+- El `ToastProvider` la lee una sola vez al montar y la borra.
+- Si el action no redirige y el form puede manejar la respuesta, preferir `return { toast: payload }` + `useActionState` y llamar a `showToast()` desde el cliente.
+
+### Mount
+
+`<ToastProvider />` se monta una sola vez en `app/layout.tsx` (root). No requiere `Suspense` porque no lee `useSearchParams`.
+
+### Archivos de referencia
+
+- `lib/toast.ts` — API pública, store, tipos (`ToastKind`, `ToastPayload`).
+- `lib/toast/server.ts` — helper `flashToast()` para server actions.
+- `components/ui/toast/toast-provider.tsx` — provider que monta viewport y consume cookie flash.
+- `components/ui/toast/toast-viewport.tsx` — stack + motion + hover-pause.
+- `components/ui/toast/toast.tsx` — `ToastItem` con anatomía completa.
+
 ### Reglas de contenido
 
 **HACER**

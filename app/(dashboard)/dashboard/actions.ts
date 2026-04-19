@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { storeCurrentActiveClubId } from "@/lib/auth/session";
+import { resolveFeedback } from "@/lib/feedback-catalog";
 import { setActiveClubForCurrentUser } from "@/lib/services/active-club-service";
+import { flashToast } from "@/lib/toast-server";
 
 export async function setActiveClubAction(formData: FormData) {
   const clubId = String(formData.get("club_id") ?? "");
@@ -19,9 +21,8 @@ export async function setActiveClubAction(formData: FormData) {
   revalidatePath("/treasury");
   revalidatePath("/settings");
 
-  if (!result.ok) {
-    redirect(`/dashboard?feedback=${result.code}`);
-  }
+  const code = result.ok ? "active_club_updated" : result.code;
+  flashToast(resolveFeedback("dashboard", code));
 
-  redirect("/dashboard?feedback=active_club_updated");
+  redirect("/dashboard");
 }
