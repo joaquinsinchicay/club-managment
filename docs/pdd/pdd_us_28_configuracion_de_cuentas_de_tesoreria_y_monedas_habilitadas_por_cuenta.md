@@ -31,14 +31,18 @@ Un usuario `admin` debe poder crear y editar cuentas del club definiendo un úni
 - Extensión de la configuración de cuentas dentro de `Tesorería`.
 - Campo `Visibilidad` multiselect con `Secretaría` y `Tesorería`.
 - Selección obligatoria de una o más monedas por cuenta entre `ARS` y `USD`.
+- Saldo inicial por cada moneda habilitada de la cuenta (default 0).
+- Campos bancarios opcionales para cuentas tipo `Banco`: entidad bancaria, tipo de cuenta bancaria (cuenta corriente / caja de ahorro), número de cuenta, CBU / CVU.
+- Campo CBU/CVU opcional para tipo `Billetera virtual`.
 - Visualización de la visibilidad compuesta y monedas configuradas en el listado.
-- Validación de nombre obligatorio y al menos una moneda por cuenta.
+- Validación de nombre obligatorio, al menos una moneda por cuenta y formato de CBU/CVU (22 dígitos numéricos) cuando se completa.
 - Consumo operativo por rol según visibilidad configurada.
 
 ### No incluye
 - Pantalla operativa nueva para usuarios `tesoreria`.
 - Transferencias, cambio de moneda o movimientos propios de Tesorería fuera de las historias ya definidas.
 - Baja de cuentas.
+- Auditoría de última modificación de cuenta (usuario / fecha).
 
 ---
 
@@ -74,11 +78,16 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - Una cuenta puede quedar sin roles seleccionados en `Visibilidad`; en ese caso permanece oculta para ambos roles.
 - Debe existir al menos una moneda habilitada para la cuenta.
 - Las monedas de la cuenta solo pueden ser `ARS` y/o `USD`.
+- Cada moneda habilitada lleva un `saldo inicial` numérico ≥ 0 (default 0).
 - No puede existir otra cuenta con el mismo nombre en el mismo club.
 - Si la cuenta tiene visibilidad `secretaria`, Secretaría la ve en formularios y dashboard con todas sus monedas.
 - Si la cuenta tiene visibilidad `tesoreria`, Tesorería la ve en sus formularios y en su card del dashboard `/dashboard` con todas sus monedas.
 - Si la cuenta tiene ambas visibilidades, ambos roles la visualizan.
 - La representación persistida puede conservar `account_scope` como dato legacy no funcional, pero la fuente de verdad de negocio pasa a ser la visibilidad por rol.
+- Campos bancarios (`bank_entity`, `bank_account_subtype`, `account_number`, `cbu_cvu`) son opcionales. Solo son relevantes si `accountType = bancaria`; si el tipo cambia a `efectivo`, se persisten en `null`.
+- `cbu_cvu` también puede completarse para `billetera_virtual`. Para `efectivo` siempre queda en `null`.
+- `bank_account_subtype` solo admite los valores `cuenta_corriente` o `caja_ahorro`.
+- Cuando se informa `cbu_cvu`, el valor debe ser exactamente 22 dígitos numéricos.
 
 ---
 
@@ -166,8 +175,8 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 ## 13. Persistencia
 
 ### Entidades afectadas
-- `treasury_accounts`: READ, INSERT y UPDATE usando `visible_for_secretaria` y `visible_for_tesoreria` como fuente de verdad funcional.
-- `treasury_account_currencies`: READ, INSERT y UPDATE por cuenta.
+- `treasury_accounts`: READ, INSERT y UPDATE usando `visible_for_secretaria` y `visible_for_tesoreria` como fuente de verdad funcional. Incluye columnas opcionales `bank_entity`, `bank_account_subtype`, `account_number`, `cbu_cvu`.
+- `treasury_account_currencies`: READ, INSERT y UPDATE por cuenta. Incluye columna `initial_balance` (numeric(18,2)) con saldo inicial por moneda habilitada.
 
 Do not reference current code files.
 

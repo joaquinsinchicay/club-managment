@@ -238,7 +238,11 @@ type AccessRepository = {
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
-    currencies: string[];
+    currencies: Array<{ currencyCode: TreasuryCurrencyCode; initialBalance: number }>;
+    bankEntity: string | null;
+    bankAccountSubtype: TreasuryAccount["bankAccountSubtype"];
+    accountNumber: string | null;
+    cbuCvu: string | null;
   }): Promise<TreasuryAccount | null>;
   updateTreasuryAccount(input: {
     accountId: string;
@@ -248,7 +252,11 @@ type AccessRepository = {
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
-    currencies: string[];
+    currencies: Array<{ currencyCode: TreasuryCurrencyCode; initialBalance: number }>;
+    bankEntity: string | null;
+    bankAccountSubtype: TreasuryAccount["bankAccountSubtype"];
+    accountNumber: string | null;
+    cbuCvu: string | null;
   }): Promise<TreasuryAccount | null>;
   createTreasuryCategory(input: {
     clubId: string;
@@ -728,8 +736,40 @@ function createStore(): MockStore {
 
   const invitations: ClubInvitation[] = [];
 
+  const buildMockAccount = (seed: {
+    id: string;
+    clubId: string;
+    name: string;
+    accountType: TreasuryAccount["accountType"];
+    visibleForSecretaria: boolean;
+    visibleForTesoreria: boolean;
+    emoji: string | null;
+    currencies: TreasuryCurrencyCode[];
+    bankEntity?: string | null;
+    bankAccountSubtype?: TreasuryAccount["bankAccountSubtype"];
+    accountNumber?: string | null;
+    cbuCvu?: string | null;
+  }): TreasuryAccount => ({
+    id: seed.id,
+    clubId: seed.clubId,
+    name: seed.name,
+    accountType: seed.accountType,
+    visibleForSecretaria: seed.visibleForSecretaria,
+    visibleForTesoreria: seed.visibleForTesoreria,
+    emoji: seed.emoji,
+    currencies: seed.currencies,
+    currencyDetails: seed.currencies.map((currencyCode) => ({
+      currencyCode,
+      initialBalance: 0
+    })),
+    bankEntity: seed.bankEntity ?? null,
+    bankAccountSubtype: seed.bankAccountSubtype ?? null,
+    accountNumber: seed.accountNumber ?? null,
+    cbuCvu: seed.cbuCvu ?? null
+  });
+
   const treasuryAccounts: TreasuryAccount[] = [
-    {
+    buildMockAccount({
       id: "account-secretaria-caja-001",
       clubId: CLUB_ID,
       name: "Caja principal",
@@ -738,8 +778,8 @@ function createStore(): MockStore {
       visibleForTesoreria: false,
       emoji: "💵",
       currencies: ["ARS"]
-    },
-    {
+    }),
+    buildMockAccount({
       id: "account-secretaria-banco-001",
       clubId: CLUB_ID,
       name: "Banco operativo",
@@ -748,8 +788,8 @@ function createStore(): MockStore {
       visibleForTesoreria: false,
       emoji: "🏦",
       currencies: ["ARS"]
-    },
-    {
+    }),
+    buildMockAccount({
       id: "account-secretaria-sur-001",
       clubId: CLUB_SUR_ID,
       name: "Caja Sur",
@@ -758,8 +798,8 @@ function createStore(): MockStore {
       visibleForTesoreria: false,
       emoji: "💼",
       currencies: ["ARS"]
-    },
-    {
+    }),
+    buildMockAccount({
       id: "account-tesoreria-inversion-001",
       clubId: CLUB_ID,
       name: "Caja de inversion",
@@ -768,8 +808,8 @@ function createStore(): MockStore {
       visibleForTesoreria: true,
       emoji: "📈",
       currencies: ["USD"]
-    },
-    {
+    }),
+    buildMockAccount({
       id: "account-tesoreria-reserva-001",
       clubId: CLUB_ID,
       name: "Reserva institucional",
@@ -778,7 +818,7 @@ function createStore(): MockStore {
       visibleForTesoreria: true,
       emoji: "🏛️",
       currencies: ["USD"]
-    }
+    })
   ];
 
   const treasuryCategories: TreasuryCategory[] = [
@@ -1256,9 +1296,14 @@ function mapTreasuryAccountRow(
     visible_for_secretaria: boolean | null;
     visible_for_tesoreria: boolean | null;
     emoji: string | null;
+    bank_entity?: string | null;
+    bank_account_subtype?: string | null;
+    account_number?: string | null;
+    cbu_cvu?: string | null;
   },
-  currencies: string[]
+  currencyDetails: Array<{ currencyCode: TreasuryCurrencyCode; initialBalance: number }>
 ): TreasuryAccount {
+  const subtype = row.bank_account_subtype;
   return {
     id: row.id,
     clubId: row.club_id,
@@ -1267,7 +1312,13 @@ function mapTreasuryAccountRow(
     visibleForSecretaria: row.visible_for_secretaria ?? true,
     visibleForTesoreria: row.visible_for_tesoreria ?? true,
     emoji: row.emoji,
-    currencies
+    currencies: currencyDetails.map((entry) => entry.currencyCode),
+    currencyDetails,
+    bankEntity: row.bank_entity ?? null,
+    bankAccountSubtype:
+      subtype === "cuenta_corriente" || subtype === "caja_ahorro" ? subtype : null,
+    accountNumber: row.account_number ?? null,
+    cbuCvu: row.cbu_cvu ?? null
   };
 }
 
@@ -2089,11 +2140,29 @@ async function listRealTreasuryAccountsForClub(clubId: string, client?: AccessRe
       visible_for_secretaria: boolean | null;
       visible_for_tesoreria: boolean | null;
       emoji: string | null;
-      currencies: string[] | null;
+      bank_entity: string | null;
+      bank_account_subtype: string | null;
+      account_number: string | null;
+      cbu_cvu: string | null;
+      currencies: Array<{ currency_code: string; initial_balance: number | string }> | null;
     }>
   >("get_treasury_accounts_for_current_club", clubId, client);
 
-  return rows.map((row) => mapTreasuryAccountRow(row, row.currencies ?? []));
+  return rows.map((row) => {
+    const currencyDetails = (row.currencies ?? [])
+      .map((entry) => {
+        const code = entry.currency_code?.toUpperCase();
+        if (code !== "ARS" && code !== "USD") return null;
+        const raw = entry.initial_balance;
+        const numeric = typeof raw === "number" ? raw : Number(raw ?? 0);
+        return {
+          currencyCode: code as TreasuryCurrencyCode,
+          initialBalance: Number.isFinite(numeric) ? numeric : 0
+        };
+      })
+      .filter((entry): entry is { currencyCode: TreasuryCurrencyCode; initialBalance: number } => entry !== null);
+    return mapTreasuryAccountRow(row, currencyDetails);
+  });
 }
 
 async function listRealTreasuryCategoriesForClub(clubId: string, client?: AccessRepositoryClient) {
@@ -3650,7 +3719,11 @@ async function createRealTreasuryAccount(
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
-    currencies: string[];
+    currencies: Array<{ currencyCode: TreasuryCurrencyCode; initialBalance: number }>;
+    bankEntity: string | null;
+    bankAccountSubtype: TreasuryAccount["bankAccountSubtype"];
+    accountNumber: string | null;
+    cbuCvu: string | null;
   },
   client?: AccessRepositoryClient
 ) {
@@ -3668,9 +3741,15 @@ async function createRealTreasuryAccount(
       status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
-      emoji: input.emoji
+      emoji: input.emoji,
+      bank_entity: input.bankEntity,
+      bank_account_subtype: input.bankAccountSubtype,
+      account_number: input.accountNumber,
+      cbu_cvu: input.cbuCvu
     })
-    .select("id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji")
+    .select(
+      "id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji,bank_entity,bank_account_subtype,account_number,cbu_cvu"
+    )
     .single();
 
   if (error || !data) {
@@ -3679,9 +3758,10 @@ async function createRealTreasuryAccount(
 
   if (input.currencies.length > 0) {
     const { error: currenciesError } = await supabase.from("treasury_account_currencies").insert(
-      input.currencies.map((currencyCode) => ({
+      input.currencies.map((currency) => ({
         account_id: data.id,
-        currency_code: currencyCode
+        currency_code: currency.currencyCode,
+        initial_balance: currency.initialBalance
       }))
     );
 
@@ -3706,7 +3786,11 @@ async function updateRealTreasuryAccount(
     visibleForSecretaria: boolean;
     visibleForTesoreria: boolean;
     emoji: string | null;
-    currencies: string[];
+    currencies: Array<{ currencyCode: TreasuryCurrencyCode; initialBalance: number }>;
+    bankEntity: string | null;
+    bankAccountSubtype: TreasuryAccount["bankAccountSubtype"];
+    accountNumber: string | null;
+    cbuCvu: string | null;
   },
   client?: AccessRepositoryClient
 ) {
@@ -3724,11 +3808,17 @@ async function updateRealTreasuryAccount(
       status: "active",
       visible_for_secretaria: input.visibleForSecretaria,
       visible_for_tesoreria: input.visibleForTesoreria,
-      emoji: input.emoji
+      emoji: input.emoji,
+      bank_entity: input.bankEntity,
+      bank_account_subtype: input.bankAccountSubtype,
+      account_number: input.accountNumber,
+      cbu_cvu: input.cbuCvu
     })
     .eq("id", input.accountId)
     .eq("club_id", input.clubId)
-    .select("id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji")
+    .select(
+      "id,club_id,name,account_type,account_scope,status,visible_for_secretaria,visible_for_tesoreria,emoji,bank_entity,bank_account_subtype,account_number,cbu_cvu"
+    )
     .maybeSingle();
 
   if (error || !data) {
@@ -3754,9 +3844,10 @@ async function updateRealTreasuryAccount(
 
   if (input.currencies.length > 0) {
     const { error: currenciesError } = await supabase.from("treasury_account_currencies").insert(
-      input.currencies.map((currencyCode) => ({
+      input.currencies.map((currency) => ({
         account_id: input.accountId,
-        currency_code: currencyCode
+        currency_code: currency.currencyCode,
+        initial_balance: currency.initialBalance
       }))
     );
 
@@ -4641,7 +4732,12 @@ export const accessRepository: AccessRepository = {
       visibleForSecretaria: input.visibleForSecretaria,
       visibleForTesoreria: input.visibleForTesoreria,
       emoji: input.emoji,
-      currencies: input.currencies
+      currencies: input.currencies.map((c) => c.currencyCode),
+      currencyDetails: input.currencies,
+      bankEntity: input.bankEntity,
+      bankAccountSubtype: input.bankAccountSubtype,
+      accountNumber: input.accountNumber,
+      cbuCvu: input.cbuCvu
     };
 
     getStore().treasuryAccounts.push(account);
@@ -4666,7 +4762,12 @@ export const accessRepository: AccessRepository = {
     account.visibleForSecretaria = input.visibleForSecretaria;
     account.visibleForTesoreria = input.visibleForTesoreria;
     account.emoji = input.emoji;
-    account.currencies = input.currencies;
+    account.currencies = input.currencies.map((c) => c.currencyCode);
+    account.currencyDetails = input.currencies;
+    account.bankEntity = input.bankEntity;
+    account.bankAccountSubtype = input.bankAccountSubtype;
+    account.accountNumber = input.accountNumber;
+    account.cbuCvu = input.cbuCvu;
 
     return account;
   },

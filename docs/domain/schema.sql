@@ -115,6 +115,10 @@ status text not null,
 visible_for_secretaria boolean default true,
 visible_for_tesoreria boolean default true,
 emoji text,
+bank_entity text,
+bank_account_subtype text,
+account_number text,
+cbu_cvu text,
 created_at timestamp default now(),
 unique (club_id, name)
 );
@@ -122,7 +126,8 @@ unique (club_id, name)
 create table treasury_account_currencies (
 id uuid primary key default uuid_generate_v4(),
 account_id uuid references treasury_accounts(id),
-currency_code text not null
+currency_code text not null,
+initial_balance numeric(18, 2) not null default 0
 );
 
 create table treasury_categories (

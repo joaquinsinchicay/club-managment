@@ -206,13 +206,29 @@ export async function createAccountTransferAction(formData: FormData) {
   } satisfies TreasuryActionResponse;
 }
 
+function extractInitialBalancesFromFormData(formData: FormData): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    const match = key.match(/^initial_balance\[(.+)\]$/);
+    if (match) {
+      result[match[1]] = String(value);
+    }
+  }
+  return result;
+}
+
 export async function createTreasuryAccountFromTreasuryAction(formData: FormData) {
   const result = await createTreasuryAccountForActiveClub({
     name: String(formData.get("name") ?? ""),
     accountType: String(formData.get("account_type") ?? ""),
     visibility: formData.getAll("visibility").map((value) => String(value)),
     currencies: formData.getAll("currencies").map((value) => String(value)),
-    emoji: String(formData.get("emoji") ?? "")
+    emoji: String(formData.get("emoji") ?? ""),
+    bankEntity: String(formData.get("bank_entity") ?? ""),
+    bankAccountSubtype: String(formData.get("bank_account_subtype") ?? ""),
+    accountNumber: String(formData.get("account_number") ?? ""),
+    cbuCvu: String(formData.get("cbu_cvu") ?? ""),
+    initialBalances: extractInitialBalancesFromFormData(formData)
   });
 
   revalidatePath("/dashboard/treasury");
@@ -230,7 +246,12 @@ export async function updateTreasuryAccountFromTreasuryAction(formData: FormData
     accountType: String(formData.get("account_type") ?? ""),
     visibility: formData.getAll("visibility").map((value) => String(value)),
     currencies: formData.getAll("currencies").map((value) => String(value)),
-    emoji: String(formData.get("emoji") ?? "")
+    emoji: String(formData.get("emoji") ?? ""),
+    bankEntity: String(formData.get("bank_entity") ?? ""),
+    bankAccountSubtype: String(formData.get("bank_account_subtype") ?? ""),
+    accountNumber: String(formData.get("account_number") ?? ""),
+    cbuCvu: String(formData.get("cbu_cvu") ?? ""),
+    initialBalances: extractInitialBalancesFromFormData(formData)
   });
 
   revalidatePath("/dashboard/treasury");

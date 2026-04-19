@@ -48,6 +48,9 @@ type TreasurySettingsActionCode =
   | "account_visibility_required"
   | "invalid_emoji_option"
   | "invalid_account_currency"
+  | "invalid_cbu"
+  | "invalid_initial_balance"
+  | "invalid_bank_account_subtype"
   | "invalid_config_status"
   | "invalid_receipt_validation_type"
   | "account_not_found"
@@ -72,6 +75,49 @@ const TREASURY_ACCOUNT_TYPES: Array<TreasuryAccount["accountType"]> = [
   "bancaria",
   "billetera_virtual"
 ];
+const TREASURY_BANK_ACCOUNT_SUBTYPES = ["cuenta_corriente", "caja_ahorro"] as const;
+const CBU_CVU_REGEX = /^\d{22}$/;
+
+function normalizeOptionalText(value: unknown, maxLength: number): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+}
+
+function normalizeBankAccountSubtype(value: unknown): TreasuryAccount["bankAccountSubtype"] | "invalid" | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return TREASURY_BANK_ACCOUNT_SUBTYPES.includes(trimmed as (typeof TREASURY_BANK_ACCOUNT_SUBTYPES)[number])
+    ? (trimmed as TreasuryAccount["bankAccountSubtype"])
+    : "invalid";
+}
+
+function normalizeCbuCvu(value: unknown): { ok: boolean; value: string | null } {
+  if (typeof value !== "string") return { ok: true, value: null };
+  const trimmed = value.trim();
+  if (!trimmed) return { ok: true, value: null };
+  if (!CBU_CVU_REGEX.test(trimmed)) return { ok: false, value: null };
+  return { ok: true, value: trimmed };
+}
+
+function parseInitialBalances(
+  rawBalances: Record<string, string>,
+  selectedCurrencies: TreasuryCurrencyCode[]
+): { ok: true; details: Array<{ currencyCode: TreasuryCurrencyCode; initialBalance: number }> } | { ok: false } {
+  const details: Array<{ currencyCode: TreasuryCurrencyCode; initialBalance: number }> = [];
+  for (const currencyCode of selectedCurrencies) {
+    const raw = rawBalances[currencyCode] ?? "0";
+    const normalized = String(raw).replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+    const parsed = normalized === "" ? 0 : Number(normalized);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return { ok: false };
+    }
+    details.push({ currencyCode, initialBalance: Math.round(parsed * 100) / 100 });
+  }
+  return { ok: true, details };
+}
 const TREASURY_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_ACCOUNT_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.accounts;
 const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
@@ -347,13 +393,57 @@ export async function updateCalendarEventTreasuryAvailabilityForActiveClub(input
   return { ok: true, code: "calendar_event_updated" };
 }
 
-export async function createTreasuryAccountForActiveClub(input: {
+export type TreasuryAccountMutationInput = {
   name: string;
   accountType: string;
   visibility: string[];
   currencies: string[];
   emoji: string;
-}): Promise<TreasurySettingsActionResult> {
+  bankEntity?: string;
+  bankAccountSubtype?: string;
+  accountNumber?: string;
+  cbuCvu?: string;
+  initialBalances?: Record<string, string>;
+};
+
+function buildAccountBankFields(
+  input: TreasuryAccountMutationInput,
+  accountType: TreasuryAccount["accountType"]
+):
+  | {
+      ok: true;
+      bankEntity: string | null;
+      bankAccountSubtype: TreasuryAccount["bankAccountSubtype"];
+      accountNumber: string | null;
+      cbuCvu: string | null;
+    }
+  | { ok: false; code: TreasurySettingsActionCode } {
+  const bankEntity = accountType === "bancaria" ? normalizeOptionalText(input.bankEntity, 100) : null;
+  const accountNumber = accountType === "bancaria" ? normalizeOptionalText(input.accountNumber, 40) : null;
+
+  const subtypeRaw = accountType === "bancaria" ? normalizeBankAccountSubtype(input.bankAccountSubtype) : null;
+  if (subtypeRaw === "invalid") {
+    return { ok: false, code: "invalid_bank_account_subtype" };
+  }
+
+  const allowsCbu = accountType === "bancaria" || accountType === "billetera_virtual";
+  const cbu = allowsCbu ? normalizeCbuCvu(input.cbuCvu) : { ok: true, value: null };
+  if (!cbu.ok) {
+    return { ok: false, code: "invalid_cbu" };
+  }
+
+  return {
+    ok: true,
+    bankEntity,
+    bankAccountSubtype: (subtypeRaw as TreasuryAccount["bankAccountSubtype"]) ?? null,
+    accountNumber,
+    cbuCvu: cbu.value
+  };
+}
+
+export async function createTreasuryAccountForActiveClub(
+  input: TreasuryAccountMutationInput
+): Promise<TreasurySettingsActionResult> {
   const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
@@ -374,6 +464,7 @@ export async function createTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "invalid_account_type" };
   }
 
+  const accountType = input.accountType as TreasuryAccount["accountType"];
   const selectedVisibility = normalizeAccountVisibility(input.visibility);
 
   const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
@@ -399,6 +490,16 @@ export async function createTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "invalid_account_currency" };
   }
 
+  const balances = parseInitialBalances(input.initialBalances ?? {}, selectedCurrencies);
+  if (!balances.ok) {
+    return { ok: false, code: "invalid_initial_balance" };
+  }
+
+  const bankFields = buildAccountBankFields(input, accountType);
+  if (!bankFields.ok) {
+    return { ok: false, code: bankFields.code };
+  }
+
   const resolvedEmoji = resolveConfiguredEmoji(input.emoji, TREASURY_ACCOUNT_EMOJI_OPTIONS);
 
   if (!resolvedEmoji.valid) {
@@ -411,11 +512,15 @@ export async function createTreasuryAccountForActiveClub(input: {
     created = await accessRepository.createTreasuryAccount({
       clubId: context.activeClub.id,
       name,
-      accountType: input.accountType as TreasuryAccount["accountType"],
+      accountType,
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji,
-      currencies: selectedCurrencies
+      currencies: balances.details,
+      bankEntity: bankFields.bankEntity,
+      bankAccountSubtype: bankFields.bankAccountSubtype,
+      accountNumber: bankFields.accountNumber,
+      cbuCvu: bankFields.cbuCvu
     });
   } catch (error) {
     return resolveTreasurySettingsMutationError(error, "create_treasury_account_for_active_club", context.activeClub.id);
@@ -428,14 +533,9 @@ export async function createTreasuryAccountForActiveClub(input: {
   return { ok: true, code: "account_created" };
 }
 
-export async function updateTreasuryAccountForActiveClub(input: {
-  accountId: string;
-  name: string;
-  accountType: string;
-  visibility: string[];
-  currencies: string[];
-  emoji: string;
-}): Promise<TreasurySettingsActionResult> {
+export async function updateTreasuryAccountForActiveClub(
+  input: TreasuryAccountMutationInput & { accountId: string }
+): Promise<TreasurySettingsActionResult> {
   const context = await getTreasurySettingsAdminContext();
 
   if (!context?.activeClub) {
@@ -456,6 +556,7 @@ export async function updateTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "invalid_account_type" };
   }
 
+  const accountType = input.accountType as TreasuryAccount["accountType"];
   const selectedVisibility = normalizeAccountVisibility(input.visibility);
 
   const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
@@ -486,6 +587,16 @@ export async function updateTreasuryAccountForActiveClub(input: {
     return { ok: false, code: "invalid_account_currency" };
   }
 
+  const balances = parseInitialBalances(input.initialBalances ?? {}, selectedCurrencies);
+  if (!balances.ok) {
+    return { ok: false, code: "invalid_initial_balance" };
+  }
+
+  const bankFields = buildAccountBankFields(input, accountType);
+  if (!bankFields.ok) {
+    return { ok: false, code: bankFields.code };
+  }
+
   const resolvedEmoji = resolveConfiguredEmoji(
     input.emoji,
     TREASURY_ACCOUNT_EMOJI_OPTIONS,
@@ -503,11 +614,15 @@ export async function updateTreasuryAccountForActiveClub(input: {
       accountId: input.accountId,
       clubId: context.activeClub.id,
       name,
-      accountType: input.accountType as TreasuryAccount["accountType"],
+      accountType,
       visibleForSecretaria: selectedVisibility.includes("secretaria"),
       visibleForTesoreria: selectedVisibility.includes("tesoreria"),
       emoji: resolvedEmoji.emoji,
-      currencies: selectedCurrencies
+      currencies: balances.details,
+      bankEntity: bankFields.bankEntity,
+      bankAccountSubtype: bankFields.bankAccountSubtype,
+      accountNumber: bankFields.accountNumber,
+      cbuCvu: bankFields.cbuCvu
     });
   } catch (error) {
     return resolveTreasurySettingsMutationError(error, "update_treasury_account_for_active_club", context.activeClub.id);

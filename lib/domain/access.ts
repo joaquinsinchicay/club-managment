@@ -67,6 +67,7 @@ export type PendingClubInvitation = {
 };
 
 export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
+export type TreasuryBankAccountSubtype = "cuenta_corriente" | "caja_ahorro";
 export type TreasuryConfigStatus = "active" | "inactive";
 export type TreasuryCurrencyCode = "ARS" | "USD";
 export type TreasuryMovementType = "ingreso" | "egreso";
@@ -91,6 +92,11 @@ export type TreasuryCurrencyConfig = {
   isPrimary: boolean;
 };
 
+export type TreasuryAccountCurrency = {
+  currencyCode: TreasuryCurrencyCode;
+  initialBalance: number;
+};
+
 export type TreasuryAccount = {
   id: string;
   clubId: string;
@@ -100,6 +106,11 @@ export type TreasuryAccount = {
   visibleForTesoreria: boolean;
   emoji: string | null;
   currencies: string[];
+  currencyDetails: TreasuryAccountCurrency[];
+  bankEntity: string | null;
+  bankAccountSubtype: TreasuryBankAccountSubtype | null;
+  accountNumber: string | null;
+  cbuCvu: string | null;
 };
 
 export type TreasuryCategory = {

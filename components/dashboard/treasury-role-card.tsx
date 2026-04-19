@@ -398,7 +398,7 @@ function AccountRow({ account, action }: { account: EnrichedDashboardAccount; ac
   const isMulti = account.balances.length > 1;
 
   return (
-    <div className="border-b border-dashed border-slate-200 py-3 last:border-b-0">
+    <div className="group border-b border-dashed border-slate-200 py-3 last:border-b-0">
       {/* Header row */}
       <div className="flex items-center gap-3">
         <AccountAvatar name={account.name} accountType={account.accountType} />
@@ -430,7 +430,11 @@ function AccountRow({ account, action }: { account: EnrichedDashboardAccount; ac
             {formatLocalizedAmount(account.balances[0]?.amount ?? 0)}
           </p>
         )}
-        {action ? <div className="shrink-0">{action}</div> : null}
+        {action ? (
+          <div className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+            {action}
+          </div>
+        ) : null}
       </div>
 
       {/* Multi-currency breakdown */}
@@ -1183,8 +1187,9 @@ export function TreasuryRoleCard({
         open={activeModal === "create_account"}
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury_role.accounts_tab_create_title}
-        description={texts.dashboard.treasury_role.accounts_tab_create_description}
+        description={texts.settings.club.treasury.create_account_description}
         closeDisabled={isAccountSubmissionPending}
+        panelClassName="max-w-xl"
       >
         <TreasuryAccountForm
           action={handleCreateAccount}
@@ -1200,8 +1205,9 @@ export function TreasuryRoleCard({
           setEditingAccount(null);
         }}
         title={texts.dashboard.treasury_role.accounts_tab_edit_title}
-        description={texts.dashboard.treasury_role.accounts_tab_edit_description}
+        description={texts.settings.club.treasury.edit_account_description}
         closeDisabled={isAccountSubmissionPending}
+        panelClassName="max-w-xl"
       >
         {editingAccount ? (
           <TreasuryAccountForm
