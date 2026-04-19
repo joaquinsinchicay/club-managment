@@ -5,6 +5,7 @@ import { startTransition, useEffect, useState, type ReactNode } from "react";
 
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import {
+  AccountTransferForm,
   SecretariaMovementEditForm,
   TreasuryRoleFxForm,
   TreasuryRoleMovementForm
@@ -44,6 +45,7 @@ type TreasuryRoleCardProps = {
   createTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createFxOperationAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   allAccounts: TreasuryAccount[];
@@ -676,12 +678,22 @@ function MovimientosTab({
   dashboard,
   selectedAccountId,
   onSelectAccount,
-  onEditMovement
+  onEditMovement,
+  canCreateMovement,
+  canCreateFxOperation,
+  onCreateMovement,
+  onCreateTransfer,
+  onCreateFx
 }: {
   dashboard: TreasuryRoleDashboard;
   selectedAccountId: string | null;
   onSelectAccount: (id: string | null) => void;
   onEditMovement: (movement: TreasuryDashboardMovement) => void;
+  canCreateMovement: boolean;
+  canCreateFxOperation: boolean;
+  onCreateMovement: () => void;
+  onCreateTransfer: () => void;
+  onCreateFx: () => void;
 }) {
   const allMovementGroups = getAllMovementGroups(dashboard.movementGroups);
   const filteredGroups =
@@ -690,9 +702,40 @@ function MovimientosTab({
       : getMovementGroupsForAccount(dashboard.movementGroups, selectedAccountId);
 
   const isEmpty = filteredGroups.length === 0;
+  const hasMultipleAccounts = dashboard.accounts.length >= 2;
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {canCreateMovement && (
+          <button
+            type="button"
+            onClick={onCreateMovement}
+            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+          >
+            {texts.dashboard.treasury_role.movements_cta_movement}
+          </button>
+        )}
+        {canCreateMovement && hasMultipleAccounts && (
+          <button
+            type="button"
+            onClick={onCreateTransfer}
+            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+          >
+            {texts.dashboard.treasury_role.movements_cta_transfer}
+          </button>
+        )}
+        {canCreateFxOperation && (
+          <button
+            type="button"
+            onClick={onCreateFx}
+            className="rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black"
+          >
+            {texts.dashboard.treasury_role.movements_cta_fx}
+          </button>
+        )}
+      </div>
+
       {dashboard.accounts.length > 0 && (
         <div className="flex flex-wrap gap-1.5 overflow-x-auto pb-1">
           <button
@@ -871,6 +914,7 @@ export function TreasuryRoleCard({
   createTreasuryRoleMovementAction,
   updateTreasuryRoleMovementAction,
   createFxOperationAction,
+  createAccountTransferAction,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
   allAccounts,
@@ -882,7 +926,7 @@ export function TreasuryRoleCard({
 
   const [activeTab, setActiveTab] = useState<SubTab>("resumen");
   const [activeModal, setActiveModal] = useState<
-    "movement" | "edit_movement" | "fx" | "create_account" | "edit_account" | null
+    "movement" | "edit_movement" | "fx" | "transfer" | "create_account" | "edit_account" | null
   >(null);
   const [selectedMovement, setSelectedMovement] = useState<TreasuryDashboardMovement | null>(null);
   const [editingAccount, setEditingAccount] = useState<TreasuryAccount | null>(null);
@@ -890,6 +934,7 @@ export function TreasuryRoleCard({
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
   const [isFxSubmissionPending, setIsFxSubmissionPending] = useState(false);
+  const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
   const [isAccountSubmissionPending, setIsAccountSubmissionPending] = useState(false);
 
   const totalBalances = getTotalBalances(dashboard.accounts);
@@ -902,18 +947,18 @@ export function TreasuryRoleCard({
       ? texts.dashboard.treasury_role.update_loading
       : isFxSubmissionPending
         ? texts.dashboard.treasury_role.fx_create_loading
-        : isAccountSubmissionPending
-          ? texts.settings.club.treasury.save_account_loading
-          : null;
+        : isTransferSubmissionPending
+          ? texts.dashboard.treasury_role.transfer_create_loading
+          : isAccountSubmissionPending
+            ? texts.settings.club.treasury.save_account_loading
+            : null;
 
   useEffect(() => {
-    const nextSelectedAccountId = dashboard.accounts[0]?.accountId ?? null;
     setSelectedMovementAccountId((currentAccountId) => {
-      if (!nextSelectedAccountId) return null;
       if (currentAccountId && dashboard.accounts.some((a) => a.accountId === currentAccountId)) {
         return currentAccountId;
       }
-      return nextSelectedAccountId;
+      return null;
     });
   }, [dashboard.accounts]);
 
@@ -966,6 +1011,32 @@ export function TreasuryRoleCard({
       }
     } finally {
       setIsMovementUpdatePending(false);
+    }
+  }
+
+  async function handleCreateAccountTransfer(formData: FormData) {
+    setIsTransferSubmissionPending(true);
+    setActiveModal(null);
+
+    try {
+      const result = await createAccountTransferAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+      if (result.movementDisplayId) {
+        nextParams.set("movement_id", result.movementDisplayId);
+      } else {
+        nextParams.delete("movement_id");
+      }
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } finally {
+      setIsTransferSubmissionPending(false);
     }
   }
 
@@ -1086,6 +1157,11 @@ export function TreasuryRoleCard({
             selectedAccountId={selectedMovementAccountId}
             onSelectAccount={setSelectedMovementAccountId}
             onEditMovement={handleEditMovement}
+            canCreateMovement={canCreateMovement}
+            canCreateFxOperation={canCreateFxOperation}
+            onCreateMovement={() => setActiveModal("movement")}
+            onCreateTransfer={() => setActiveModal("transfer")}
+            onCreateFx={() => setActiveModal("fx")}
           />
         )}
 
@@ -1162,11 +1238,36 @@ export function TreasuryRoleCard({
       </Modal>
 
       <Modal
+        open={activeModal === "transfer"}
+        onClose={() => setActiveModal(null)}
+        title={texts.dashboard.treasury_role.transfer_form_title}
+        description={texts.dashboard.treasury_role.transfer_form_description}
+        closeDisabled={
+          isMovementSubmissionPending ||
+          isMovementUpdatePending ||
+          isFxSubmissionPending ||
+          isTransferSubmissionPending
+        }
+        hideCloseButton
+        panelClassName="max-w-xl"
+      >
+        <AccountTransferForm
+          sourceAccounts={accounts}
+          targetAccounts={accounts}
+          currencies={currencies}
+          submitAction={handleCreateAccountTransfer}
+          sessionDate={dashboard.sessionDate}
+          onCancel={() => setActiveModal(null)}
+        />
+      </Modal>
+
+      <Modal
         open={activeModal === "create_account"}
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury_role.accounts_tab_create_title}
         description={texts.settings.club.treasury.create_account_description}
         closeDisabled={isAccountSubmissionPending}
+        hideCloseButton
         panelClassName="max-w-xl"
       >
         <TreasuryAccountForm
@@ -1187,6 +1288,7 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.accounts_tab_edit_title}
         description={texts.settings.club.treasury.edit_account_description}
         closeDisabled={isAccountSubmissionPending}
+        hideCloseButton
         panelClassName="max-w-xl"
       >
         {editingAccount ? (

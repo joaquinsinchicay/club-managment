@@ -122,6 +122,10 @@ export function TreasuryAccountForm({
     alias?: string;
   }>({});
 
+  // En edición, tipo de cuenta y monedas quedan bloqueados para no romper la
+  // consistencia de movimientos ya registrados contra esta cuenta.
+  const isEditMode = Boolean(defaultAccount);
+
   function toggleCurrency(code: TreasuryCurrencyCode) {
     setSelectedCurrencies((current) =>
       current.includes(code) ? current.filter((c) => c !== code) : [...current, code]
@@ -183,13 +187,17 @@ export function TreasuryAccountForm({
                   key={type}
                   type="button"
                   aria-pressed={selected}
+                  disabled={isEditMode}
                   onClick={() => {
+                    if (isEditMode) return;
                     setAccountType(type);
                     setFormErrors((prev) => ({ ...prev, accountType: undefined }));
                   }}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 text-small font-semibold transition",
-                    selected ? palette.selected : palette.base
+                    selected ? palette.selected : palette.base,
+                    isEditMode && !selected && "opacity-60",
+                    isEditMode && "cursor-not-allowed"
                   )}
                 >
                   <span aria-hidden="true" className="text-2xl leading-none">
@@ -243,12 +251,18 @@ export function TreasuryAccountForm({
                   key={code}
                   type="button"
                   aria-pressed={selected}
-                  onClick={() => toggleCurrency(code)}
+                  disabled={isEditMode}
+                  onClick={() => {
+                    if (isEditMode) return;
+                    toggleCurrency(code);
+                  }}
                   className={cn(
                     "inline-flex min-h-10 items-center gap-2 rounded-full border px-5 text-small font-semibold transition",
                     selected
                       ? "border-ds-blue-700 bg-ds-blue-050 text-ds-blue-700"
-                      : "border-border bg-card text-muted-foreground hover:bg-secondary/60"
+                      : "border-border bg-card text-muted-foreground hover:bg-secondary/60",
+                    isEditMode && !selected && "opacity-60",
+                    isEditMode && "cursor-not-allowed"
                   )}
                 >
                   {selected ? (
@@ -378,11 +392,7 @@ export function TreasuryAccountForm({
               />
               {formErrors.alias ? (
                 <span className="text-small text-destructive" aria-live="polite">{formErrors.alias}</span>
-              ) : (
-                <span className="text-meta text-muted-foreground">
-                  {texts.settings.club.treasury.alias_helper}
-                </span>
-              )}
+              ) : null}
             </label>
           </div>
         ) : null}

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import {
+  createAccountTransferAction,
   createFxOperationAction,
   createTreasuryAccountFromTreasuryAction,
   createTreasuryRoleMovementAction,
@@ -96,6 +97,7 @@ export default async function TreasuryDashboardPage() {
         createTreasuryRoleMovementAction={createTreasuryRoleMovementAction}
         updateTreasuryRoleMovementAction={updateTreasuryRoleMovementAction}
         createFxOperationAction={createFxOperationAction}
+        createAccountTransferAction={createAccountTransferAction}
         createTreasuryAccountAction={createTreasuryAccountFromTreasuryAction}
         updateTreasuryAccountAction={updateTreasuryAccountFromTreasuryAction}
         allAccounts={allAccounts}

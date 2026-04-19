@@ -84,6 +84,8 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - Si `accountType = bancaria`: se habilitan campos `bank_entity`, `bank_account_subtype`, `account_number`, `cbu_cvu`. `bank_account_subtype` solo admite `cuenta_corriente` o `caja_ahorro`. Si se informa `cbu_cvu`, debe ser exactamente 22 dígitos numéricos.
 - Si `accountType = billetera_virtual`: se habilitan `wallet_provider` (persistido en la columna `bank_entity`) y `alias` (persistido en la columna `cbu_cvu`). El alias acepta letras, números y `.` como único carácter especial.
 - Si `accountType = efectivo`: todos los campos bancarios se fuerzan a `null` antes de persistir.
+- En **edición**, el `tipo de cuenta` y las `monedas habilitadas` quedan bloqueados (read-only). Los movimientos ya registrados contra la cuenta referencian ambos datos; modificar el tipo o quitar una moneda en uso invalidaría esos movimientos. Para cambiar tipo o monedas hay que dar de alta una nueva cuenta y archivar la anterior.
+- El modal de creación y edición no expone botón de cerrar en la esquina superior derecha; el cierre se realiza desde el CTA `Cancelar` del footer.
 
 ---
 
