@@ -66,6 +66,7 @@ type TreasuryActionCode =
   | "forbidden"
   | "session_already_exists"
   | "session_not_open"
+  | "previous_session_still_open"
   | "session_required"
   | "account_required"
   | "category_required"
@@ -793,6 +794,17 @@ async function validateDeclaredBalances(
 
   if (mode === "open" && base.sessionId) {
     return { ok: false, code: "session_already_exists" };
+  }
+
+  if (mode === "open") {
+    const previousOpenSession = await accessRepository.getLastOpenDailyCashSessionBeforeDate(
+      context.activeClub.id,
+      base.sessionDate
+    );
+
+    if (previousOpenSession) {
+      return { ok: false, code: "previous_session_still_open" };
+    }
   }
 
   if (mode === "close" && !base.sessionId) {

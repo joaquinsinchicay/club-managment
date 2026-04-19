@@ -83,6 +83,7 @@
       "consolidation_completed": "La fecha seleccionada fue consolidada correctamente.",
       "session_already_exists": "La jornada del dia ya fue abierta.",
       "session_not_open": "No hay una jornada abierta para cerrar.",
+      "previous_session_still_open": "Existe una jornada anterior sin cerrar. Cerrala antes de abrir una nueva.",
       "session_required": "Debes abrir la jornada antes de registrar movimientos.",
       "movement_not_editable": "No encontramos un movimiento editable en la jornada abierta.",
       "movement_date_required": "Debes seleccionar una fecha para el movimiento.",
