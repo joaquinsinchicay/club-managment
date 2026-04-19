@@ -1337,7 +1337,7 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       hasConciliatedMovements: movements.length > 0
     })),
     movementGroups,
-    availableActions: ["create_movement", "create_fx_operation"],
+    availableActions: ["create_movement", "create_fx_operation", "create_transfer"],
     monthlyStats,
     pendingConciliationCount
   };
@@ -1772,32 +1772,43 @@ export async function createAccountTransfer(input: {
   currencyCode: string;
   amount: string;
   concept: string;
+  originRole?: "secretaria" | "tesoreria";
 }): Promise<TreasuryActionResult> {
-  const context = await getSecretariaSession();
+  const requestedRole: "secretaria" | "tesoreria" = input.originRole ?? "secretaria";
+  const context =
+    requestedRole === "tesoreria"
+      ? await getTesoreriaSession()
+      : await getSecretariaSession();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
   }
 
-  let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
+  let sessionId: string | null = null;
 
-  try {
-    await reconcileStaleOpenDailyCashSessionForActiveClub({
-      activeClub: { id: context.activeClub.id },
-      user: { id: context.user.id }
-    });
-    session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
-  } catch (error) {
-    console.error("[create-account-transfer-session-resolution-failed]", {
-      clubId: context.activeClub.id,
-      sessionDate: getTodayDate(),
-      error
-    });
-    return { ok: false, code: "forbidden" };
-  }
+  if (requestedRole === "secretaria") {
+    let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
 
-  if (!session || session.status !== "open") {
-    return { ok: false, code: "session_required" };
+    try {
+      await reconcileStaleOpenDailyCashSessionForActiveClub({
+        activeClub: { id: context.activeClub.id },
+        user: { id: context.user.id }
+      });
+      session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+    } catch (error) {
+      console.error("[create-account-transfer-session-resolution-failed]", {
+        clubId: context.activeClub.id,
+        sessionDate: getTodayDate(),
+        error
+      });
+      return { ok: false, code: "forbidden" };
+    }
+
+    if (!session || session.status !== "open") {
+      return { ok: false, code: "session_required" };
+    }
+
+    sessionId = session.id;
   }
 
   if (!input.sourceAccountId) {
@@ -1827,10 +1838,22 @@ export async function createAccountTransfer(input: {
   }
 
   const allAccounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
-  const sourceAccount = getAccountsVisibleForRole(allAccounts, "secretaria").find(
+
+  const eligibleSourceAccounts =
+    requestedRole === "tesoreria"
+      ? getAccountsVisibleForRole(allAccounts, "tesoreria")
+      : getAccountsVisibleForRole(allAccounts, "secretaria");
+
+  const sourceAccount = eligibleSourceAccounts.find(
     (account) => account.id === input.sourceAccountId
   );
-  const targetAccount = getTransferTargetAccountsForSecretaria(allAccounts).find(
+
+  const eligibleTargetAccounts =
+    requestedRole === "tesoreria"
+      ? allAccounts.filter((account) => account.id !== input.sourceAccountId)
+      : getTransferTargetAccountsForSecretaria(allAccounts);
+
+  const targetAccount = eligibleTargetAccounts.find(
     (account) => account.id === input.targetAccountId
   );
 
@@ -1865,7 +1888,7 @@ export async function createAccountTransfer(input: {
   );
   const transfer = await accessRepository.createAccountTransfer({
     clubId: context.activeClub.id,
-    dailyCashSessionId: session.id,
+    dailyCashSessionId: sessionId,
     sourceAccountId: sourceAccount.id,
     targetAccountId: targetAccount.id,
     currencyCode: input.currencyCode,
@@ -1874,7 +1897,8 @@ export async function createAccountTransfer(input: {
     sourceMovementDisplayId,
     targetMovementDisplayId,
     movementDate: getTodayDate(),
-    createdByUserId: context.user.id
+    createdByUserId: context.user.id,
+    originRole: requestedRole
   });
 
   if (!transfer) {

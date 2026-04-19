@@ -353,7 +353,7 @@ export type TreasuryRoleDashboard = {
     hasConciliatedMovements: boolean;
   }>;
   movementGroups: TreasuryRoleDashboardMovementDateGroup[];
-  availableActions: Array<"create_movement" | "create_fx_operation">;
+  availableActions: Array<"create_movement" | "create_fx_operation" | "create_transfer">;
   monthlyStats: Array<{ currencyCode: string; ingreso: number; egreso: number }>;
   pendingConciliationCount: number;
 };

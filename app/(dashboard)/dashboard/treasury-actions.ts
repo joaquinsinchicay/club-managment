@@ -188,16 +188,22 @@ export async function updateSecretariaTransferAction(formData: FormData) {
 }
 
 export async function createAccountTransferAction(formData: FormData) {
+  const rawOriginRole = String(formData.get("origin_role") ?? "secretaria");
+  const originRole: "secretaria" | "tesoreria" =
+    rawOriginRole === "tesoreria" ? "tesoreria" : "secretaria";
+
   const result = await createAccountTransfer({
     sourceAccountId: String(formData.get("source_account_id") ?? ""),
     targetAccountId: String(formData.get("target_account_id") ?? ""),
     currencyCode: String(formData.get("currency_code") ?? ""),
     amount: String(formData.get("amount") ?? ""),
-    concept: String(formData.get("concept") ?? "")
+    concept: String(formData.get("concept") ?? ""),
+    originRole
   });
 
   revalidatePath("/dashboard");
   revalidatePath("/secretary");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,

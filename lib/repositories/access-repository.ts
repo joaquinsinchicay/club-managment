@@ -460,7 +460,7 @@ type AccessRepository = {
   }): Promise<MovementAuditLog | null>;
   createAccountTransfer(input: {
     clubId: string;
-    dailyCashSessionId: string;
+    dailyCashSessionId: string | null;
     sourceAccountId: string;
     targetAccountId: string;
     currencyCode: string;
@@ -470,6 +470,7 @@ type AccessRepository = {
     targetMovementDisplayId: string;
     movementDate: string;
     createdByUserId: string;
+    originRole: TreasuryMovementOriginRole;
   }): Promise<AccountTransferMutationResult | null>;
   createFxOperation(input: {
     clubId: string;
@@ -3329,7 +3330,7 @@ async function createRealTreasuryMovement(
 async function createRealAccountTransfer(
   input: {
     clubId: string;
-    dailyCashSessionId: string;
+    dailyCashSessionId: string | null;
     sourceAccountId: string;
     targetAccountId: string;
     currencyCode: string;
@@ -3339,6 +3340,7 @@ async function createRealAccountTransfer(
     targetMovementDisplayId: string;
     movementDate: string;
     createdByUserId: string;
+    originRole: TreasuryMovementOriginRole;
   },
   client?: AccessRepositoryClient
 ) {
@@ -3351,7 +3353,8 @@ async function createRealAccountTransfer(
       details: {
         sourceAccountId: input.sourceAccountId,
         targetAccountId: input.targetAccountId,
-        movementDate: input.movementDate
+        movementDate: input.movementDate,
+        originRole: input.originRole
       },
       params: {
         p_daily_cash_session_id: input.dailyCashSessionId,
@@ -3363,7 +3366,8 @@ async function createRealAccountTransfer(
         p_source_movement_display_id: input.sourceMovementDisplayId,
         p_target_movement_display_id: input.targetMovementDisplayId,
         p_movement_date: input.movementDate,
-        p_created_by_user_id: input.createdByUserId
+        p_created_by_user_id: input.createdByUserId,
+        p_origin_role: input.originRole
       }
     }
   );

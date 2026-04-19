@@ -7,7 +7,7 @@
 | Campo | Valor |
 |---|---|
 | Epic | E03 · Tesorería |
-| User Story | Como Secretaria del club, quiero registrar transferencias entre cuentas de la misma moneda, para reflejar correctamente traspasos internos sin cargar movimientos duplicados manualmente. |
+| User Story | Como Secretaria o Tesorería del club, quiero registrar transferencias entre cuentas de la misma moneda, para reflejar correctamente traspasos internos sin cargar movimientos duplicados manualmente. |
 | Prioridad | Alta |
 | Objetivo de negocio | Permitir registrar transferencias internas con trazabilidad común y sin tratarlas como ingresos o egresos externos del club. |
 
@@ -15,18 +15,22 @@
 
 ## 2. Objetivo funcional
 
-Secretaría debe disponer de un formulario específico para registrar una transferencia interna entre dos cuentas del club activo en una misma moneda. Al confirmar, el sistema debe generar automáticamente un egreso en la cuenta origen y un ingreso en la cuenta destino, ambos asociados a la misma referencia de transferencia.
+Secretaría y Tesorería deben disponer de un formulario específico para registrar una transferencia interna entre dos cuentas del club activo en una misma moneda. Al confirmar, el sistema debe generar automáticamente un egreso en la cuenta origen y un ingreso en la cuenta destino, ambos asociados a la misma referencia de transferencia.
 
 ---
 
 ## 3. Alcance
 
 ### Incluye
-- Modal específico de transferencia abierto desde el dashboard de Secretaría.
-- Validaciones de jornada abierta, cuentas distintas, moneda compatible e importe positivo.
-- Filtrado diferenciado de cuentas:
-  - cuenta origen: visible para `secretaria`
-  - cuenta destino: visible para otros roles operativos y no visible para `secretaria`
+- Modal específico de transferencia abierto desde el dashboard de Secretaría y desde el dashboard de Tesorería.
+- Validaciones de cuentas distintas, moneda compatible e importe positivo. Jornada abierta requerida sólo cuando el rol operador es `secretaria`.
+- Filtrado de cuentas dependiente del rol operador:
+  - `secretaria`:
+    - cuenta origen: visible para `secretaria`
+    - cuenta destino: visible para otros roles operativos y no visible para `secretaria`
+  - `tesoreria`:
+    - cuenta origen: visible para `tesoreria`
+    - cuenta destino: cualquier cuenta del club distinta a la cuenta origen
 - Control cliente del formulario:
   - campos obligatorios marcados
   - CTA de creación deshabilitada hasta completar obligatorios
@@ -48,11 +52,13 @@ Secretaría debe disponer de un formulario específico para registrar una transf
 
 ## 4. Reglas de negocio
 
-- Solo `secretaria` puede registrar transferencias.
-- Requiere jornada abierta.
+- `secretaria` y `tesoreria` pueden registrar transferencias.
+- Requiere jornada abierta únicamente si el rol operador es `secretaria`. `tesoreria` no depende de jornada.
 - La cuenta origen y la cuenta destino deben pertenecer al club activo.
-- La cuenta origen debe estar configurada como visible para `secretaria`.
-- La cuenta destino debe estar configurada como visible para otros roles operativos y no visible para `secretaria`.
+- Reglas de visibilidad de cuentas por rol operador:
+  - `secretaria`: la cuenta origen debe ser visible para `secretaria`; la cuenta destino debe ser visible para otros roles operativos y no visible para `secretaria`.
+  - `tesoreria`: la cuenta origen debe ser visible para `tesoreria`; la cuenta destino puede ser cualquier cuenta del club distinta a la cuenta origen.
+- El campo `origin_role` de los movimientos generados refleja el rol que ejecutó la transferencia (`secretaria` o `tesoreria`).
 - Las cuentas deben ser distintas.
 - La moneda seleccionada debe ser válida para ambas cuentas.
 - La moneda debe autocompletarse a partir de la cuenta origen con la misma regla usada en el alta de movimientos.
@@ -82,7 +88,6 @@ Do not reference current code files.
 
 ## 6. Dependencias
 
-- jornada diaria abierta
-- cuentas visibles para Secretaría como origen
-- cuentas visibles para otros roles y no visibles para Secretaría como destino
+- jornada diaria abierta (sólo cuando el rol operador es `secretaria`)
+- reglas de visibilidad de cuentas dependientes del rol operador (ver §4)
 - contratos `Create account transfer`

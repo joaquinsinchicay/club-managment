@@ -463,17 +463,21 @@ function AccountRow({ account, action }: { account: EnrichedDashboardAccount; ac
 function QuickActions({
   canCreateMovement,
   canCreateFxOperation,
+  canCreateTransfer,
   pendingConciliationCount,
   onMovement,
   onFx,
+  onTransfer,
   onConciliacion,
   onMovements
 }: {
   canCreateMovement: boolean;
   canCreateFxOperation: boolean;
+  canCreateTransfer: boolean;
   pendingConciliationCount: number;
   onMovement: () => void;
   onFx: () => void;
+  onTransfer: () => void;
   onConciliacion: () => void;
   onMovements: () => void;
 }) {
@@ -502,6 +506,15 @@ function QuickActions({
             className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
           >
             {texts.dashboard.treasury_role.fx_modal_cta}
+          </button>
+        )}
+        {canCreateTransfer && (
+          <button
+            type="button"
+            onClick={onTransfer}
+            className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+          >
+            {texts.dashboard.treasury_role.movements_cta_transfer}
           </button>
         )}
         <button
@@ -681,6 +694,7 @@ function MovimientosTab({
   onEditMovement,
   canCreateMovement,
   canCreateFxOperation,
+  canCreateTransfer,
   onCreateMovement,
   onCreateTransfer,
   onCreateFx
@@ -691,6 +705,7 @@ function MovimientosTab({
   onEditMovement: (movement: TreasuryDashboardMovement) => void;
   canCreateMovement: boolean;
   canCreateFxOperation: boolean;
+  canCreateTransfer: boolean;
   onCreateMovement: () => void;
   onCreateTransfer: () => void;
   onCreateFx: () => void;
@@ -716,7 +731,7 @@ function MovimientosTab({
             {texts.dashboard.treasury_role.movements_cta_movement}
           </button>
         )}
-        {canCreateMovement && hasMultipleAccounts && (
+        {canCreateTransfer && hasMultipleAccounts && (
           <button
             type="button"
             onClick={onCreateTransfer}
@@ -818,8 +833,10 @@ function ResumenTab({
   totalBalances,
   canCreateMovement,
   canCreateFxOperation,
+  canCreateTransfer,
   onMovement,
   onFx,
+  onTransfer,
   onConciliacion,
   onMovements,
   onViewAllAccounts
@@ -829,8 +846,10 @@ function ResumenTab({
   totalBalances: TotalBalance[];
   canCreateMovement: boolean;
   canCreateFxOperation: boolean;
+  canCreateTransfer: boolean;
   onMovement: () => void;
   onFx: () => void;
+  onTransfer: () => void;
   onConciliacion: () => void;
   onMovements: () => void;
   onViewAllAccounts: () => void;
@@ -889,9 +908,11 @@ function ResumenTab({
         <QuickActions
           canCreateMovement={canCreateMovement}
           canCreateFxOperation={canCreateFxOperation}
+          canCreateTransfer={canCreateTransfer}
           pendingConciliationCount={dashboard.pendingConciliationCount}
           onMovement={onMovement}
           onFx={onFx}
+          onTransfer={onTransfer}
           onConciliacion={onConciliacion}
           onMovements={onMovements}
         />
@@ -940,6 +961,8 @@ export function TreasuryRoleCard({
   const totalBalances = getTotalBalances(dashboard.accounts);
   const canCreateMovement = dashboard.availableActions.includes("create_movement");
   const canCreateFxOperation = dashboard.availableActions.includes("create_fx_operation");
+  const canCreateTransfer =
+    dashboard.availableActions.includes("create_transfer") && allAccounts.length >= 2;
 
   const pendingOverlayLabel = isMovementSubmissionPending
     ? texts.dashboard.treasury_role.create_loading
@@ -1017,6 +1040,8 @@ export function TreasuryRoleCard({
   async function handleCreateAccountTransfer(formData: FormData) {
     setIsTransferSubmissionPending(true);
     setActiveModal(null);
+
+    formData.set("origin_role", "tesoreria");
 
     try {
       const result = await createAccountTransferAction(formData);
@@ -1129,8 +1154,10 @@ export function TreasuryRoleCard({
             totalBalances={totalBalances}
             canCreateMovement={canCreateMovement}
             canCreateFxOperation={canCreateFxOperation}
+            canCreateTransfer={canCreateTransfer}
             onMovement={() => setActiveModal("movement")}
             onFx={() => setActiveModal("fx")}
+            onTransfer={() => setActiveModal("transfer")}
             onConciliacion={handleConciliacion}
             onMovements={() => setActiveTab("movimientos")}
             onViewAllAccounts={() => setActiveTab("cuentas")}
@@ -1159,6 +1186,7 @@ export function TreasuryRoleCard({
             onEditMovement={handleEditMovement}
             canCreateMovement={canCreateMovement}
             canCreateFxOperation={canCreateFxOperation}
+            canCreateTransfer={canCreateTransfer}
             onCreateMovement={() => setActiveModal("movement")}
             onCreateTransfer={() => setActiveModal("transfer")}
             onCreateFx={() => setActiveModal("fx")}
@@ -1253,7 +1281,7 @@ export function TreasuryRoleCard({
       >
         <AccountTransferForm
           sourceAccounts={accounts}
-          targetAccounts={accounts}
+          targetAccounts={allAccounts}
           currencies={currencies}
           submitAction={handleCreateAccountTransfer}
           sessionDate={dashboard.sessionDate}
