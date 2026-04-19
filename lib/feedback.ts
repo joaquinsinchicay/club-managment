@@ -121,8 +121,7 @@ export function resolveFeedbackToast(
     (
       pathname === "/dashboard" ||
       pathname === "/secretary" ||
-      pathname === "/treasury" ||
-      pathname === "/treasury/consolidation"
+      pathname === "/treasury"
     ) &&
     feedbackCode
   ) {

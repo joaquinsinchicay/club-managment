@@ -8,6 +8,11 @@ import {
   updateTreasuryAccountFromTreasuryAction,
   updateTreasuryRoleMovementAction
 } from "@/app/(dashboard)/dashboard/treasury-actions";
+import {
+  executeDailyConsolidationAction,
+  updateMovementBeforeConsolidationAction,
+  updateTransferBeforeConsolidationAction
+} from "@/app/(dashboard)/treasury/actions";
 import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
@@ -19,6 +24,7 @@ import {
   getActiveReceiptFormatsForTesoreria,
   getActiveTreasuryCurrenciesForTesoreria,
   getEnabledMovementTypesForTesoreria,
+  getTreasuryConsolidationDashboard,
   getTreasuryRoleDashboardForActiveClub
 } from "@/lib/services/treasury-service";
 import { texts } from "@/lib/texts";
@@ -36,7 +42,14 @@ function formatSessionDateLabel(sessionDate: string): string {
   return `${cap} · ${dateStr}`;
 }
 
-export default async function TreasuryDashboardPage() {
+type TreasuryDashboardPageProps = {
+  searchParams?: {
+    tab?: string;
+    date?: string;
+  };
+};
+
+export default async function TreasuryDashboardPage({ searchParams }: TreasuryDashboardPageProps) {
   const context = await getAuthenticatedSessionContext();
 
   if (!context) {
@@ -51,7 +64,10 @@ export default async function TreasuryDashboardPage() {
     redirect("/dashboard");
   }
 
-  const dashboard = await getTreasuryRoleDashboardForActiveClub();
+  const [dashboard, consolidationDashboard] = await Promise.all([
+    getTreasuryRoleDashboardForActiveClub(),
+    getTreasuryConsolidationDashboard(searchParams?.date)
+  ]);
 
   if (!dashboard) {
     redirect("/dashboard");
@@ -70,6 +86,10 @@ export default async function TreasuryDashboardPage() {
   ]);
 
   const accounts = allAccounts.filter((account) => account.visibleForTesoreria);
+  const transferSourceAccounts = allAccounts.filter((account) => account.visibleForSecretaria);
+  const transferTargetAccounts = allAccounts.filter(
+    (account) => !account.visibleForSecretaria && account.visibleForTesoreria
+  );
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
@@ -102,6 +122,12 @@ export default async function TreasuryDashboardPage() {
         updateTreasuryAccountAction={updateTreasuryAccountFromTreasuryAction}
         allAccounts={allAccounts}
         isAdmin={canMutateTreasurySettings(context.activeMembership)}
+        consolidationDashboard={consolidationDashboard}
+        transferSourceAccounts={transferSourceAccounts}
+        transferTargetAccounts={transferTargetAccounts}
+        updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
+        updateTransferBeforeConsolidationAction={updateTransferBeforeConsolidationAction}
+        executeDailyConsolidationAction={executeDailyConsolidationAction}
       />
     </main>
   );

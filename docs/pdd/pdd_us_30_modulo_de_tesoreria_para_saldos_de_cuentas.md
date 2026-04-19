@@ -39,7 +39,7 @@ El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol
 
 ### No incluye
 - Apertura o cierre de jornada.
-- Consolidación diaria.
+- Operatoria de consolidación dentro de las pestañas Resumen, Cuentas o Movimientos (la conciliación vive en su propia pestaña — ver US-29).
 - Operatoria de Secretaría dentro de esta vista.
 
 ---
@@ -126,6 +126,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 ### Reglas
 - La vista debe ser mobile-first.
+- El dashboard de Tesorería expone 4 pestañas: **Resumen**, **Cuentas**, **Movimientos** y **Conciliación**. La pestaña Conciliación implementa US-29 y convive al mismo nivel que las demás.
 - Debe sentirse coherente con la card de Secretaría, evitando una UX puente.
 - Debe mostrar saldos acumulados de forma escaneable por cuenta y moneda.
 - Debe ofrecer acceso al detalle, formulario inline y edición de movimientos en la misma pantalla.

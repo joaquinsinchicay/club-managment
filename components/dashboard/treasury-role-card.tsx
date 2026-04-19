@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState, type ReactNode } from "react";
 
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
+import { TreasuryConciliacionTab } from "@/components/dashboard/treasury-conciliacion-tab";
 import {
   AccountTransferForm,
   SecretariaMovementEditForm,
@@ -13,7 +14,6 @@ import {
 import { TreasuryAccountForm } from "@/components/treasury/account-form";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
-import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
@@ -24,6 +24,7 @@ import type {
   TreasuryAccount,
   TreasuryAccountType,
   TreasuryCategory,
+  TreasuryConsolidationDashboard,
   TreasuryCurrencyConfig,
   TreasuryDashboardMovement,
   TreasuryMovementType,
@@ -50,6 +51,12 @@ type TreasuryRoleCardProps = {
   updateTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   allAccounts: TreasuryAccount[];
   isAdmin: boolean;
+  consolidationDashboard: TreasuryConsolidationDashboard | null;
+  transferSourceAccounts: TreasuryAccount[];
+  transferTargetAccounts: TreasuryAccount[];
+  updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
+  updateTransferBeforeConsolidationAction: (formData: FormData) => Promise<void>;
+  executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
 };
 
 type SubTab = "resumen" | "cuentas" | "movimientos" | "conciliacion";
@@ -890,37 +897,6 @@ function MovimientosTab({
   );
 }
 
-// ─── Conciliación tab ─────────────────────────────────────────────────────────
-
-function ConciliacionTab() {
-  return (
-    <div className="rounded-card border border-border bg-card p-5">
-      <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500">
-          <ConsolidationIcon />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold tracking-tight text-foreground">
-            {texts.dashboard.treasury_role.consolidation_cta}
-          </p>
-          <p className="mt-0.5 text-meta leading-relaxed text-muted-foreground">
-            {texts.dashboard.treasury_role.conciliacion_tab_description}
-          </p>
-        </div>
-      </div>
-      <div className="mt-4">
-        <NavigationLinkWithLoader
-          href="/treasury/consolidation"
-          className="flex min-h-11 w-full items-center justify-center rounded-btn bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
-          loadingLabel={texts.dashboard.treasury_role.navigation_loading}
-        >
-          {texts.dashboard.treasury_role.conciliacion_tab_cta}
-        </NavigationLinkWithLoader>
-      </div>
-    </div>
-  );
-}
-
 // ─── Resumen tab ──────────────────────────────────────────────────────────────
 
 function ResumenTab({
@@ -1035,13 +1011,24 @@ export function TreasuryRoleCard({
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
   allAccounts,
-  isAdmin
+  isAdmin,
+  consolidationDashboard,
+  transferSourceAccounts,
+  transferTargetAccounts,
+  updateMovementBeforeConsolidationAction,
+  updateTransferBeforeConsolidationAction,
+  executeDailyConsolidationAction
 }: TreasuryRoleCardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<SubTab>("resumen");
+  const initialTab = ((): SubTab => {
+    const raw = searchParams.get("tab");
+    if (raw === "cuentas" || raw === "movimientos" || raw === "conciliacion") return raw;
+    return "resumen";
+  })();
+  const [activeTab, setActiveTab] = useState<SubTab>(initialTab);
   const [activeModal, setActiveModal] = useState<
     "movement" | "edit_movement" | "fx" | "transfer" | "create_account" | "edit_account" | null
   >(null);
@@ -1291,7 +1278,23 @@ export function TreasuryRoleCard({
           />
         )}
 
-        {activeTab === "conciliacion" && <ConciliacionTab />}
+        {activeTab === "conciliacion" && consolidationDashboard && (
+          <TreasuryConciliacionTab
+            dashboard={consolidationDashboard}
+            accounts={accounts}
+            transferSourceAccounts={transferSourceAccounts}
+            transferTargetAccounts={transferTargetAccounts}
+            categories={categories}
+            activities={activities}
+            calendarEvents={calendarEvents}
+            currencies={currencies}
+            movementTypes={movementTypes}
+            receiptFormats={receiptFormats}
+            updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
+            updateTransferBeforeConsolidationAction={updateTransferBeforeConsolidationAction}
+            executeDailyConsolidationAction={executeDailyConsolidationAction}
+          />
+        )}
       </div>
 
       {/* Modals */}
