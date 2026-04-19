@@ -108,6 +108,60 @@ function formatMovementGroupDate(value: string) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "long" }).format(date);
 }
 
+function formatLastMovementDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}/${month} ${hours}:${minutes}`;
+}
+
+function formatAccountSubtitle(account: TreasuryAccount, isMulti: boolean): string | null {
+  if (account.accountType === "bancaria") {
+    const subtype = account.bankAccountSubtype
+      ? texts.settings.club.treasury.bank_account_subtypes[account.bankAccountSubtype]
+      : null;
+    return [account.bankEntity, subtype].filter(Boolean).join(" · ") || null;
+  }
+
+  if (account.accountType === "billetera_virtual") {
+    const parts = [account.bankEntity];
+    if (isMulti) parts.push(texts.dashboard.treasury_role.multi_wallet_label);
+    return parts.filter(Boolean).join(" · ") || null;
+  }
+
+  return texts.dashboard.treasury_role.cash_account_label;
+}
+
+function formatAccountIdentifier(account: TreasuryAccount): string | null {
+  if (!account.cbuCvu && !account.accountNumber) return null;
+  const identifier = account.cbuCvu ?? account.accountNumber ?? "";
+  if (!identifier) return null;
+
+  if (account.accountType === "bancaria") return `CBU ${identifier}`;
+  if (account.accountType === "billetera_virtual") return `CVU ${identifier}`;
+  return identifier;
+}
+
+function buildLastMovementByAccountId(
+  groups: TreasuryRoleDashboardMovementDateGroup[]
+): Record<string, string> {
+  const latest: Record<string, string> = {};
+  for (const group of groups) {
+    for (const accountGroup of group.accounts) {
+      for (const movement of accountGroup.movements) {
+        const current = latest[accountGroup.accountId];
+        if (!current || movement.createdAt > current) {
+          latest[accountGroup.accountId] = movement.createdAt;
+        }
+      }
+    }
+  }
+  return latest;
+}
+
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 
@@ -397,8 +451,21 @@ type EnrichedDashboardAccount = TreasuryRoleDashboard["accounts"][number] & {
   accountType?: TreasuryAccountType;
 };
 
-function AccountRow({ account, action }: { account: EnrichedDashboardAccount; action?: ReactNode }) {
+function AccountRow({
+  account,
+  action,
+  fullAccount,
+  lastMovementAt
+}: {
+  account: EnrichedDashboardAccount;
+  action?: ReactNode;
+  fullAccount?: TreasuryAccount;
+  lastMovementAt?: string | null;
+}) {
   const isMulti = account.balances.length > 1;
+  const subtitleLine = fullAccount ? formatAccountSubtitle(fullAccount, isMulti) : null;
+  const accountNumberLine = fullAccount ? formatAccountIdentifier(fullAccount) : null;
+  const lastMovementLabel = lastMovementAt ? formatLastMovementDate(lastMovementAt) : null;
 
   return (
     <div className="group border-b border-dashed border-slate-200 py-3 last:border-b-0">
@@ -409,6 +476,21 @@ function AccountRow({ account, action }: { account: EnrichedDashboardAccount; ac
           <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
             {account.name}
           </p>
+          {subtitleLine ? (
+            <p className="mt-0.5 truncate text-meta text-muted-foreground">{subtitleLine}</p>
+          ) : null}
+          {accountNumberLine ? (
+            <p className="mt-0.5 truncate text-eyebrow font-medium tracking-wide text-slate-500">
+              {accountNumberLine}
+            </p>
+          ) : null}
+          {lastMovementLabel !== null && fullAccount ? (
+            <p className="mt-0.5 truncate text-eyebrow text-slate-400">
+              {lastMovementLabel
+                ? `${texts.dashboard.treasury_role.last_movement_label}: ${lastMovementLabel}`
+                : texts.dashboard.treasury_role.no_movements_yet}
+            </p>
+          ) : null}
           {account.hasPendingMovements || account.hasConciliatedMovements ? (
             <div className="mt-0.5 flex items-center gap-1">
               <span className={cn(
@@ -601,6 +683,7 @@ function CuentasTab({
   dashboardAccounts,
   totalBalances,
   isAdmin,
+  lastMovementByAccountId,
   onCreateAccount,
   onEditAccount
 }: {
@@ -608,6 +691,7 @@ function CuentasTab({
   dashboardAccounts: TreasuryRoleDashboard["accounts"];
   totalBalances: TotalBalance[];
   isAdmin: boolean;
+  lastMovementByAccountId: Record<string, string>;
   onCreateAccount: () => void;
   onEditAccount: (account: TreasuryAccount) => void;
 }) {
@@ -668,6 +752,8 @@ function CuentasTab({
               <AccountRow
                 key={enriched.accountId}
                 account={enriched}
+                fullAccount={fullAccount}
+                lastMovementAt={lastMovementByAccountId[enriched.accountId] ?? null}
                 action={
                   isAdmin && fullAccount ? (
                     <EditIconButton
@@ -963,6 +1049,7 @@ export function TreasuryRoleCard({
   const canCreateFxOperation = dashboard.availableActions.includes("create_fx_operation");
   const canCreateTransfer =
     dashboard.availableActions.includes("create_transfer") && allAccounts.length >= 2;
+  const lastMovementByAccountId = buildLastMovementByAccountId(dashboard.movementGroups);
 
   const pendingOverlayLabel = isMovementSubmissionPending
     ? texts.dashboard.treasury_role.create_loading
@@ -1170,6 +1257,7 @@ export function TreasuryRoleCard({
             dashboardAccounts={dashboard.accounts}
             totalBalances={totalBalances}
             isAdmin={isAdmin}
+            lastMovementByAccountId={lastMovementByAccountId}
             onCreateAccount={() => setActiveModal("create_account")}
             onEditAccount={(account) => {
               setEditingAccount(account);
