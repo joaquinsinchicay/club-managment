@@ -4,7 +4,7 @@ import { DailySessionBalanceCard } from "@/components/dashboard/daily-session-ba
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateSecretaria } from "@/lib/domain/authorization";
 import { getDailyCashSessionValidationForActiveClub } from "@/lib/services/treasury-service";
-import { openDailyCashSessionWithBalancesAction } from "@/app/(dashboard)/dashboard/session/actions";
+import { openDailyCashSessionWithBalancesAction } from "@/app/(dashboard)/secretary/session/actions";
 
 export default async function OpenDailyCashSessionPage() {
   const context = await getAuthenticatedSessionContext();
@@ -24,11 +24,11 @@ export default async function OpenDailyCashSessionPage() {
   const validation = await getDailyCashSessionValidationForActiveClub("open");
 
   if (!validation) {
-    redirect("/dashboard/secretaria?feedback=session_open_failed");
+    redirect("/secretary?feedback=session_open_failed");
   }
 
   if (validation.sessionStatus !== "not_started") {
-    redirect("/dashboard/secretaria?feedback=session_already_exists");
+    redirect("/secretary?feedback=session_already_exists");
   }
 
   return (

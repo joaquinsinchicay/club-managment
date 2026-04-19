@@ -490,7 +490,7 @@ export function TreasuryConsolidationCard({
         eyebrow={texts.dashboard.consolidation.eyebrow}
         title={texts.dashboard.consolidation.title}
         description={texts.dashboard.consolidation.description}
-        backHref="/dashboard/treasury"
+        backHref="/treasury"
         backLabel={texts.dashboard.consolidation.back_to_treasury_cta}
       />
 

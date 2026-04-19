@@ -5,7 +5,7 @@ import {
   integrateMatchingMovementAction,
   updateMovementBeforeConsolidationAction,
   updateTransferBeforeConsolidationAction
-} from "@/app/(dashboard)/dashboard/treasury/actions";
+} from "@/app/(dashboard)/treasury/actions";
 import { TreasuryConsolidationCard } from "@/components/dashboard/treasury-consolidation-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateTesoreria } from "@/lib/domain/authorization";

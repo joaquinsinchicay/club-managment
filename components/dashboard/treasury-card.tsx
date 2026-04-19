@@ -385,7 +385,7 @@ function MovementsCard({
   })();
 
   const detailHref = !isDataUnresolved && card.accounts.length > 0
-    ? `/dashboard/accounts/${activeFilter ?? card.accounts[0]?.accountId}`
+    ? `/secretary/accounts/${activeFilter ?? card.accounts[0]?.accountId}`
     : null;
 
   return (

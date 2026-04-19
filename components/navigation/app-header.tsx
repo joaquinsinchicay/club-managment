@@ -31,14 +31,10 @@ const TAB_ACCENT: Record<TabKey, { color: string; underline: string }> = {
 };
 
 function getActiveTab(pathname: string): TabKey {
-  if (pathname.startsWith("/settings/club")) return "settings";
+  if (pathname.startsWith("/settings")) return "settings";
   if (pathname.startsWith("/modules")) return "modules";
-  if (pathname.startsWith("/dashboard/treasury")) return "tesoreria";
-  if (
-    pathname.startsWith("/dashboard/secretaria") ||
-    pathname.startsWith("/dashboard/accounts") ||
-    pathname.startsWith("/dashboard/session")
-  ) return "secretaria";
+  if (pathname.startsWith("/treasury")) return "tesoreria";
+  if (pathname.startsWith("/secretary")) return "secretaria";
   return "dashboard";
 }
 
@@ -71,10 +67,10 @@ export function AppHeader({ context }: AppHeaderProps) {
   }, [activeTab]);
 
   const tabs = [
-    canDashboard  && { key: "dashboard"  as TabKey, href: "/dashboard",          label: texts.header.navigation.dashboard },
-    canSecretaria && { key: "secretaria" as TabKey, href: "/dashboard/secretaria", label: texts.header.navigation.secretaria },
-    canTesoreria  && { key: "tesoreria"  as TabKey, href: "/dashboard/treasury",   label: texts.header.navigation.tesoreria },
-    canSettings   && { key: "settings"   as TabKey, href: "/settings/club",        label: texts.header.navigation.settings },
+    canDashboard  && { key: "dashboard"  as TabKey, href: "/dashboard",  label: texts.header.navigation.dashboard },
+    canSecretaria && { key: "secretaria" as TabKey, href: "/secretary",  label: texts.header.navigation.secretaria },
+    canTesoreria  && { key: "tesoreria"  as TabKey, href: "/treasury",   label: texts.header.navigation.tesoreria },
+    canSettings   && { key: "settings"   as TabKey, href: "/settings",   label: texts.header.navigation.settings },
     { key: "modules" as TabKey, href: "/modules", label: "Módulos" },
   ].filter(Boolean) as { key: TabKey; href: string; label: string }[];
 

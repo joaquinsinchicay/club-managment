@@ -40,7 +40,7 @@ export async function openDailyCashSessionModalAction(formData: FormData) {
   );
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -65,7 +65,7 @@ export async function closeDailyCashSessionModalAction(formData: FormData) {
   );
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -87,7 +87,7 @@ export async function createTreasuryMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -112,7 +112,7 @@ export async function createTreasuryRoleMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,
@@ -136,7 +136,7 @@ export async function updateTreasuryRoleMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,
@@ -160,7 +160,7 @@ export async function updateSecretariaMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -179,7 +179,7 @@ export async function updateSecretariaTransferAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -197,7 +197,7 @@ export async function createAccountTransferAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -233,7 +233,7 @@ export async function createTreasuryAccountFromTreasuryAction(formData: FormData
     initialBalances: extractInitialBalancesFromFormData(formData)
   });
 
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,
@@ -258,7 +258,7 @@ export async function updateTreasuryAccountFromTreasuryAction(formData: FormData
     initialBalances: extractInitialBalancesFromFormData(formData)
   });
 
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,
@@ -278,7 +278,7 @@ export async function createFxOperationAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,

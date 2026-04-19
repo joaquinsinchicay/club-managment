@@ -16,7 +16,7 @@ import {
   updateClubMembershipRoleAction,
   updateReceiptFormatAction,
   updateTreasuryCategoryAction
-} from "@/app/(dashboard)/settings/club/actions";
+} from "@/app/(dashboard)/settings/actions";
 import { redirect } from "next/navigation";
 
 type ClubSettingsPageProps = {

@@ -756,7 +756,7 @@ function ConciliacionTab() {
       </div>
       <div className="mt-4">
         <NavigationLinkWithLoader
-          href="/dashboard/treasury/consolidation"
+          href="/treasury/consolidation"
           className="flex min-h-11 w-full items-center justify-center rounded-btn bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
           loadingLabel={texts.dashboard.treasury_role.navigation_loading}
         >

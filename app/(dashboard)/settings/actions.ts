@@ -21,8 +21,8 @@ import {
 import { clearStoredActiveClubId, storeCurrentActiveClubId } from "@/lib/auth/session";
 
 function redirectToSettings(code: string, tab = "members") {
-  revalidatePath("/settings/club");
-  redirect(`/settings/club?feedback=${encodeURIComponent(code)}&tab=${encodeURIComponent(tab)}`);
+  revalidatePath("/settings");
+  redirect(`/settings?feedback=${encodeURIComponent(code)}&tab=${encodeURIComponent(tab)}`);
 }
 
 export async function approveClubMembershipAction(formData: FormData) {

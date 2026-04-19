@@ -51,10 +51,10 @@ export default async function AccountDetailPage({ params, searchParams }: Accoun
       detail={accountDetailData.detail}
       accounts={accountDetailData.accounts}
       currentAccountId={params.accountId}
-      accountHrefBase="/dashboard/accounts"
-      detailPageHref={`/dashboard/accounts/${params.accountId}`}
+      accountHrefBase="/secretary/accounts"
+      detailPageHref={`/secretary/accounts/${params.accountId}`}
       currentPage={getCurrentPage(searchParams)}
-      secondaryActionHref="/dashboard/secretaria"
+      secondaryActionHref="/secretary"
       secondaryActionLabel={texts.dashboard.treasury.back_to_secretaria_cta}
     />
   );

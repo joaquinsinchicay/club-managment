@@ -29,7 +29,7 @@ Un usuario con rol `tesoreria` en el club activo debe poder consultar saldos de 
 - Validaciones server-side de cuenta, tipo, subcategoría, moneda e importe.
 - Registro del usuario responsable y fecha/hora de creación.
 - Reseteo del formulario luego de crear exitosamente.
-- Feedback de éxito mediante toast dentro del módulo `/dashboard/treasury`, interpolando el ID visible del movimiento creado.
+- Feedback de éxito mediante toast dentro del módulo `/treasury`, interpolando el ID visible del movimiento creado.
 - Persistencia del movimiento únicamente en el club activo.
 
 ### No incluye
@@ -54,7 +54,7 @@ Un usuario con rol `tesoreria` en el club activo debe poder consultar saldos de 
 - El movimiento debe registrar `created_at` y `created_by_user_id`.
 - El movimiento creado por Tesorería queda con estado `posted`.
 - La operación afecta solo el club activo y nunca debe tocar cuentas de otros clubes.
-- Tras un alta exitosa, la navegación permanece en `/dashboard/treasury`; no debe volver al overview general de `/dashboard`.
+- Tras un alta exitosa, la navegación permanece en `/treasury`; no debe volver al overview general de `/dashboard`.
 
 ---
 

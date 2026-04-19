@@ -111,7 +111,7 @@ export function resolveFeedbackToast(
   const feedbackCode = searchParams.get("feedback");
   const errorCode = searchParams.get("error");
 
-  if (pathname === "/settings/club" && feedbackCode) {
+  if (pathname === "/settings" && feedbackCode) {
     const toast = resolveSettingsFeedback(feedbackCode);
 
     return toast ? { toast, consumedKeys: ["feedback"] } : null;
@@ -120,9 +120,9 @@ export function resolveFeedbackToast(
   if (
     (
       pathname === "/dashboard" ||
-      pathname === "/dashboard/secretaria" ||
-      pathname === "/dashboard/treasury" ||
-      pathname === "/dashboard/treasury/consolidation"
+      pathname === "/secretary" ||
+      pathname === "/treasury" ||
+      pathname === "/treasury/consolidation"
     ) &&
     feedbackCode
   ) {

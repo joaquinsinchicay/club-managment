@@ -24,9 +24,9 @@ function redirectToTreasury(code: string, consolidationDate: string, selectedMov
   params.set("feedback", code);
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/treasury");
-  revalidatePath("/dashboard/treasury/consolidation");
-  redirect(`/dashboard/treasury/consolidation?${params.toString()}`);
+  revalidatePath("/treasury");
+  revalidatePath("/treasury/consolidation");
+  redirect(`/treasury/consolidation?${params.toString()}`);
 }
 
 export async function updateMovementBeforeConsolidationAction(formData: FormData) {
