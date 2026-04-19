@@ -514,7 +514,7 @@ function QuickActions({
             onClick={onTransfer}
             className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
           >
-            {texts.dashboard.treasury_role.movements_cta_transfer}
+            {texts.dashboard.treasury_role.transfer_modal_cta}
           </button>
         )}
         <button

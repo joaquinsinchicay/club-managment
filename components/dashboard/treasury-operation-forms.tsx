@@ -1322,9 +1322,11 @@ export function AccountTransferEditForm({
               className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
             >
               <option value="" disabled>{texts.dashboard.treasury.transfer_target_account_placeholder}</option>
-              {targetAccounts.map((account) => (
-                <option key={`target-${account.id}`} value={account.id}>{account.name}</option>
-              ))}
+              {targetAccounts
+                .filter((account) => account.id !== formState.sourceAccountId)
+                .map((account) => (
+                  <option key={`target-${account.id}`} value={account.id}>{account.name}</option>
+                ))}
             </select>
           </label>
           {targetAccountCurrencyError ? (
@@ -1523,9 +1525,11 @@ export function AccountTransferForm({
               className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
             >
               <option value="" disabled>{texts.dashboard.treasury.transfer_target_account_placeholder}</option>
-              {targetAccounts.map((account) => (
-                <option key={`target-${account.id}`} value={account.id}>{account.name}</option>
-              ))}
+              {targetAccounts
+                .filter((account) => account.id !== formState.sourceAccountId)
+                .map((account) => (
+                  <option key={`target-${account.id}`} value={account.id}>{account.name}</option>
+                ))}
             </select>
           </label>
           {targetAccountCurrencyError ? (

@@ -427,6 +427,7 @@
       "movements_cta_movement": "+ Movimiento",
       "movements_cta_transfer": "+ Transferencia",
       "movements_cta_fx": "+ Compra/Venta",
+      "transfer_modal_cta": "Cargar transferencia",
       "transfer_form_title": "Registrar transferencia",
       "transfer_form_description": "Movimiento entre cuentas del club",
       "transfer_create_loading": "Registrando transferencia...",
