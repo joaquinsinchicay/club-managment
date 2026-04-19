@@ -55,6 +55,13 @@ id uuid primary key default uuid_generate_v4(),
 name text not null,
 slug text not null unique,
 status text default 'active',
+cuit text,
+tipo text check (
+  tipo is null or tipo in ('asociacion_civil', 'fundacion', 'sociedad_civil')
+),
+logo_url text,
+color_primary text,
+color_secondary text,
 created_at timestamp default now(),
 updated_at timestamp default now()
 );

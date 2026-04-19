@@ -11,6 +11,7 @@ import type {
   ClubCalendarEvent,
   ClubInvitation,
   ClubMember,
+  ClubType,
   DailyCashSessionBalance,
   DailyConsolidationBatch,
   GoogleProfile,
@@ -202,6 +203,18 @@ type AccessRepository = {
   listMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   listActiveMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   findClubById(clubId: string, client?: AccessRepositoryClient): Promise<Club | null>;
+  updateClubIdentity(
+    clubId: string,
+    fields: {
+      name?: string;
+      cuit?: string | null;
+      tipo?: ClubType | null;
+      logoUrl?: string | null;
+      colorPrimary?: string | null;
+      colorSecondary?: string | null;
+    },
+    client?: AccessRepositoryClient
+  ): Promise<Club | null>;
   listClubMembers(clubId: string, client?: AccessRepositoryClient): Promise<ClubMember[]>;
   listPendingInvitationsForClub(clubId: string, client?: AccessRepositoryClient): Promise<PendingClubInvitation[]>;
   listPendingInvitationsByEmail(email: string, client?: AccessRepositoryClient): Promise<ClubInvitation[]>;
@@ -661,13 +674,23 @@ function createStore(): MockStore {
       id: CLUB_ID,
       name: "Club Atletico Ejemplo",
       slug: "club-atletico-ejemplo",
-      status: "active"
+      status: "active",
+      cuit: null,
+      tipo: null,
+      logoUrl: null,
+      colorPrimary: null,
+      colorSecondary: null
     },
     {
       id: CLUB_SUR_ID,
       name: "Club Social del Sur",
       slug: "club-social-del-sur",
-      status: "active"
+      status: "active",
+      cuit: null,
+      tipo: null,
+      logoUrl: null,
+      colorPrimary: null,
+      colorSecondary: null
     }
   ];
 
@@ -1202,13 +1225,27 @@ function mapClubRow(row: {
   name: string;
   slug: string;
   status: string | null;
+  cuit?: string | null;
+  tipo?: string | null;
+  logo_url?: string | null;
+  color_primary?: string | null;
+  color_secondary?: string | null;
 }): Club {
   return {
     id: row.id,
     name: row.name,
     slug: row.slug,
-    status: "active"
+    status: "active",
+    cuit: row.cuit ?? null,
+    tipo: isClubType(row.tipo) ? row.tipo : null,
+    logoUrl: row.logo_url ?? null,
+    colorPrimary: row.color_primary ?? null,
+    colorSecondary: row.color_secondary ?? null
   };
+}
+
+function isClubType(value: unknown): value is ClubType {
+  return value === "asociacion_civil" || value === "fundacion" || value === "sociedad_civil";
 }
 
 function mapClubMemberFromMembership(membership: Membership, user: User): ClubMember {
@@ -1937,8 +1974,54 @@ async function findRealClubById(clubId: string, client?: AccessRepositoryClient)
 
   const { data, error } = await supabase
     .from("clubs")
-    .select("id,name,slug,status")
+    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary")
     .eq("id", clubId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapClubRow(data);
+}
+
+type UpdateClubIdentityFields = {
+  name?: string;
+  cuit?: string | null;
+  tipo?: ClubType | null;
+  logoUrl?: string | null;
+  colorPrimary?: string | null;
+  colorSecondary?: string | null;
+};
+
+async function updateRealClubIdentity(
+  clubId: string,
+  fields: UpdateClubIdentityFields,
+  client?: AccessRepositoryClient
+) {
+  const supabase = client ?? createAdminSupabaseClient() ?? createAccessSupabaseClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const payload: Record<string, unknown> = {};
+  if (fields.name !== undefined) payload.name = fields.name;
+  if (fields.cuit !== undefined) payload.cuit = fields.cuit;
+  if (fields.tipo !== undefined) payload.tipo = fields.tipo;
+  if (fields.logoUrl !== undefined) payload.logo_url = fields.logoUrl;
+  if (fields.colorPrimary !== undefined) payload.color_primary = fields.colorPrimary;
+  if (fields.colorSecondary !== undefined) payload.color_secondary = fields.colorSecondary;
+
+  if (Object.keys(payload).length === 0) {
+    return findRealClubById(clubId, client);
+  }
+
+  const { data, error } = await supabase
+    .from("clubs")
+    .update(payload)
+    .eq("id", clubId)
+    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary")
     .maybeSingle();
 
   if (error || !data) {
@@ -4538,6 +4621,33 @@ export const accessRepository: AccessRepository = {
     }
 
     return getStore().clubs.find((club) => club.id === clubId) ?? null;
+  },
+  async updateClubIdentity(clubId, fields, client) {
+    if (shouldUseSupabaseDatabase()) {
+      return updateRealClubIdentity(clubId, fields, client);
+    }
+
+    const store = getStore();
+    const index = store.clubs.findIndex((club) => club.id === clubId);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const current = store.clubs[index];
+    const updated: Club = {
+      ...current,
+      name: fields.name ?? current.name,
+      cuit: fields.cuit !== undefined ? fields.cuit : current.cuit,
+      tipo: fields.tipo !== undefined ? fields.tipo : current.tipo,
+      logoUrl: fields.logoUrl !== undefined ? fields.logoUrl : current.logoUrl,
+      colorPrimary: fields.colorPrimary !== undefined ? fields.colorPrimary : current.colorPrimary,
+      colorSecondary:
+        fields.colorSecondary !== undefined ? fields.colorSecondary : current.colorSecondary
+    };
+
+    store.clubs[index] = updated;
+    return updated;
   },
   async listClubMembers(clubId, client) {
     if (shouldUseSupabaseDatabase()) {

@@ -18,6 +18,9 @@ const SUCCESS_CODES = new Set<string>([
   "receipt_format_created",
   "receipt_format_updated",
 
+  // Settings · datos del club
+  "club_identity_updated",
+
   // Dashboard · session/movements/consolidation
   "active_club_updated",
   "session_opened",
@@ -46,7 +49,8 @@ function lookupMessage(domain: FeedbackDomain, code: string): string | undefined
     const merged: Record<string, string> = {
       ...(texts.settings.club.members.feedback as Record<string, string>),
       ...(texts.settings.club.invitations.feedback as Record<string, string>),
-      ...(texts.settings.club.treasury.feedback as Record<string, string>)
+      ...(texts.settings.club.treasury.feedback as Record<string, string>),
+      ...(texts.settings.club.identity.feedback as Record<string, string>)
     };
     return merged[code];
   }

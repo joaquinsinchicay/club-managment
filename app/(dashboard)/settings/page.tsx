@@ -13,6 +13,7 @@ import {
   inviteClubUserAction,
   removeClubMembershipAction,
   updateClubActivityAction,
+  updateClubIdentityAction,
   updateClubMembershipRoleAction,
   updateReceiptFormatAction,
   updateTreasuryCategoryAction
@@ -66,6 +67,7 @@ export default async function ClubSettingsPage({ searchParams }: ClubSettingsPag
       createClubActivityAction={createClubActivityAction}
       updateClubActivityAction={updateClubActivityAction}
       updateReceiptFormatAction={updateReceiptFormatAction}
+      updateClubIdentityAction={updateClubIdentityAction}
     />
   );
 }

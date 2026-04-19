@@ -4,11 +4,13 @@ import { PageContentHeader } from "@/components/ui/page-content-header";
 import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
 import { ActivitiesTab } from "@/components/settings/tabs/activities-tab";
 import { CategoriesTab } from "@/components/settings/tabs/categories-tab";
+import { ClubDataTab } from "@/components/settings/tabs/club-data-tab";
 import { MembersTab } from "@/components/settings/tabs/members-tab";
 import { MembershipSystemsTab } from "@/components/settings/tabs/membership-systems-tab";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { ClubMember, PendingClubInvitation, TreasurySettings } from "@/lib/domain/access";
+import { getClubSettingsPermissions } from "@/lib/domain/authorization";
 
 type ClubSettingsCardProps = {
   context: SessionContext;
@@ -24,6 +26,7 @@ type ClubSettingsCardProps = {
   createClubActivityAction: (formData: FormData) => Promise<void>;
   updateClubActivityAction: (formData: FormData) => Promise<void>;
   updateReceiptFormatAction: (formData: FormData) => Promise<void>;
+  updateClubIdentityAction: (formData: FormData) => Promise<void>;
 };
 
 export function ClubSettingsCard({
@@ -39,11 +42,28 @@ export function ClubSettingsCard({
   updateTreasuryCategoryAction,
   createClubActivityAction,
   updateClubActivityAction,
-  updateReceiptFormatAction
+  updateReceiptFormatAction,
+  updateClubIdentityAction
 }: ClubSettingsCardProps) {
-  const activeClubName = context.activeClub?.name ?? "";
+  const activeClub = context.activeClub;
+  const activeClubName = activeClub?.name ?? "";
+  const clubInitial = activeClubName.charAt(0).toUpperCase() || "?";
+  const permissions = getClubSettingsPermissions(context.activeMembership);
 
   const tabs = [
+    activeClub
+      ? {
+          id: "datos-del-club",
+          label: texts.settings.club.tabs.club_data,
+          content: (
+            <ClubDataTab
+              club={activeClub}
+              canEdit={permissions.canManageMembers}
+              updateClubIdentityAction={updateClubIdentityAction}
+            />
+          )
+        }
+      : null,
     {
       id: "miembros",
       label: texts.settings.club.tabs.members,
@@ -91,7 +111,10 @@ export function ClubSettingsCard({
         />
       )
     }
-  ];
+  ].filter((tab): tab is NonNullable<typeof tab> => Boolean(tab));
+
+  const primaryColor = activeClub?.colorPrimary ?? undefined;
+  const logoUrl = activeClub?.logoUrl ?? null;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
@@ -102,24 +125,24 @@ export function ClubSettingsCard({
       />
 
       <section className="rounded-dialog border border-border bg-card p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
-              {activeClubName.charAt(0).toUpperCase()}
-            </div>
-            <p className="text-xl font-semibold tracking-tight text-foreground">{activeClubName}</p>
+        <div className="flex items-center gap-4">
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-primary/10 text-lg font-semibold text-primary"
+            style={primaryColor ? { borderColor: primaryColor } : undefined}
+          >
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={activeClubName} className="h-full w-full object-cover" />
+            ) : (
+              <span>{clubInitial}</span>
+            )}
           </div>
-
-          <div className="flex items-center gap-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-6 w-6 rounded-full bg-border" />
-            ))}
-          </div>
+          <p className="text-xl font-semibold tracking-tight text-foreground">{activeClubName}</p>
         </div>
       </section>
 
       <section className="rounded-dialog border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
-        <SettingsPageLayout tabs={tabs} defaultTabId="miembros" />
+        <SettingsPageLayout tabs={tabs} defaultTabId="datos-del-club" />
       </section>
     </main>
   );

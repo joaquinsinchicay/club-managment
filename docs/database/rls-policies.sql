@@ -169,6 +169,102 @@ using (
   )
 );
 
+drop policy if exists "Admins can update their club identity" on clubs;
+
+create policy "Admins can update their club identity"
+on clubs
+for update
+to authenticated
+using (
+  exists (
+    select 1
+    from memberships m
+    join membership_roles mr on mr.membership_id = m.id
+    where m.user_id = auth.uid()
+      and m.club_id = clubs.id
+      and m.status = 'activo'
+      and mr.role = 'admin'
+  )
+)
+with check (
+  exists (
+    select 1
+    from memberships m
+    join membership_roles mr on mr.membership_id = m.id
+    where m.user_id = auth.uid()
+      and m.club_id = clubs.id
+      and m.status = 'activo'
+      and mr.role = 'admin'
+  )
+);
+
+-- =========================================
+-- STORAGE · bucket club-logos
+-- =========================================
+-- Lectura publica del logo del club; la escritura solo la permite un admin
+-- cuyo club_id coincida con el primer segmento del path del objeto.
+
+drop policy if exists "club_logos_public_read" on storage.objects;
+create policy "club_logos_public_read"
+on storage.objects
+for select
+to public
+using (bucket_id = 'club-logos');
+
+drop policy if exists "club_logos_admin_insert" on storage.objects;
+create policy "club_logos_admin_insert"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'club-logos'
+  and exists (
+    select 1
+    from memberships m
+    join membership_roles mr on mr.membership_id = m.id
+    where m.user_id = auth.uid()
+      and m.status = 'activo'
+      and mr.role = 'admin'
+      and m.club_id::text = split_part(storage.objects.name, '/', 1)
+  )
+);
+
+drop policy if exists "club_logos_admin_update" on storage.objects;
+create policy "club_logos_admin_update"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'club-logos'
+  and exists (
+    select 1
+    from memberships m
+    join membership_roles mr on mr.membership_id = m.id
+    where m.user_id = auth.uid()
+      and m.status = 'activo'
+      and mr.role = 'admin'
+      and m.club_id::text = split_part(storage.objects.name, '/', 1)
+  )
+);
+
+drop policy if exists "club_logos_admin_delete" on storage.objects;
+create policy "club_logos_admin_delete"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'club-logos'
+  and exists (
+    select 1
+    from memberships m
+    join membership_roles mr on mr.membership_id = m.id
+    where m.user_id = auth.uid()
+      and m.status = 'activo'
+      and mr.role = 'admin'
+      and m.club_id::text = split_part(storage.objects.name, '/', 1)
+  )
+);
+
 -- =========================================
 -- MEMBERSHIPS
 -- =========================================

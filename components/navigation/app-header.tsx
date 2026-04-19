@@ -14,6 +14,7 @@ import {
 } from "@/lib/domain/authorization";
 import { formatMembershipRoles } from "@/lib/domain/membership-roles";
 import { texts } from "@/lib/texts";
+import { cn } from "@/lib/utils";
 
 type AppHeaderProps = {
   context: SessionContext;
@@ -22,12 +23,20 @@ type AppHeaderProps = {
 
 type TabKey = "dashboard" | "secretaria" | "tesoreria" | "settings" | "modules";
 
-const TAB_ACCENT: Record<TabKey, { color: string; underline: string }> = {
-  dashboard:  { color: "var(--green-700)",  underline: "var(--green)" },
-  secretaria: { color: "var(--green-700)",  underline: "var(--green)" },
-  tesoreria:  { color: "#3B82F6",            underline: "#3B82F6" },
-  settings:   { color: "var(--indigo-700)", underline: "var(--indigo)" },
-  modules:    { color: "var(--indigo-700)", underline: "var(--indigo)" },
+const TAB_COLOR_CLASS: Record<TabKey, string> = {
+  dashboard:  "text-ds-green-700",
+  secretaria: "text-ds-green-700",
+  tesoreria:  "text-ds-blue-700",
+  settings:   "text-ds-indigo-700",
+  modules:    "text-ds-indigo-700",
+};
+
+const TAB_UNDERLINE_CLASS: Record<TabKey, string> = {
+  dashboard:  "bg-ds-green",
+  secretaria: "bg-ds-green",
+  tesoreria:  "bg-ds-blue",
+  settings:   "bg-ds-indigo",
+  modules:    "bg-ds-indigo",
 };
 
 function getActiveTab(pathname: string): TabKey {
@@ -56,6 +65,8 @@ export function AppHeader({ context }: AppHeaderProps) {
     : texts.dashboard.role_pending;
   const clubLabel = context.activeClub?.name ?? texts.header.pending_club_label;
   const clubInitials = getClubInitials(clubLabel);
+  const clubLogoUrl = context.activeClub?.logoUrl ?? null;
+  const clubPrimaryColor = context.activeClub?.colorPrimary ?? null;
 
   const canDashboard  = canAccessDashboardSummary(context.activeMembership);
   const canSecretaria = canOperateSecretaria(context.activeMembership);
@@ -71,84 +82,44 @@ export function AppHeader({ context }: AppHeaderProps) {
     canSecretaria && { key: "secretaria" as TabKey, href: "/secretary",  label: texts.header.navigation.secretaria },
     canTesoreria  && { key: "tesoreria"  as TabKey, href: "/treasury",   label: texts.header.navigation.tesoreria },
     canSettings   && { key: "settings"   as TabKey, href: "/settings",   label: texts.header.navigation.settings },
-    { key: "modules" as TabKey, href: "/modules", label: "Módulos" },
+    { key: "modules" as TabKey, href: "/modules", label: texts.header.navigation.modules },
   ].filter(Boolean) as { key: TabKey; href: string; label: string }[];
 
   return (
-    <header style={{
-      position: "sticky",
-      top: 0,
-      zIndex: 40,
-      background: "var(--surface)",
-      borderBottom: "1px solid var(--cm-border)",
-    }}>
+    <header className="sticky top-0 z-40 bg-surface border-b border-border">
       {/* Brand + Identity */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 12,
-        padding: "12px 14px 10px",
-      }}>
+      <div className="flex items-center justify-between gap-3 px-3.5 pt-3 pb-2.5">
         {/* Brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <div
             aria-hidden="true"
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "var(--radius)",
-              background: "var(--slate-900)",
-              color: "#fff",
-              display: "grid",
-              placeItems: "center",
-              fontWeight: 700,
-              fontSize: 13,
-              letterSpacing: "-0.02em",
-              flexShrink: 0,
-            }}
+            className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-btn bg-ds-slate-900 text-mono font-bold tracking-tight text-white"
+            style={clubPrimaryColor ? { backgroundColor: clubPrimaryColor } : undefined}
           >
-            {clubInitials}
+            {clubLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={clubLogoUrl} alt={clubLabel} className="h-full w-full object-cover" />
+            ) : (
+              clubInitials
+            )}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", minWidth: 0, lineHeight: 1.15 }}>
-            <span
-              className="text-eyebrow uppercase"
-              style={{ color: "var(--ink-muted)" }}
-            >
-              Club activo
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span className="text-eyebrow uppercase text-muted-foreground">
+              {texts.header.active_club_label}
             </span>
-            <span style={{
-              fontWeight: 600,
-              fontSize: 14,
-              color: "var(--ink)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              letterSpacing: "-0.01em",
-            }}>
+            <span className="truncate text-body font-semibold leading-tight tracking-tight text-foreground">
               {clubLabel}
             </span>
           </div>
         </div>
 
         {/* Identity */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            lineHeight: 1.15,
-          }}>
-            <span
-              className="text-eyebrow uppercase"
-              style={{ color: "var(--ink-muted)" }}
-            >
-              Rol
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="flex flex-col items-end leading-tight">
+            <span className="text-eyebrow uppercase text-muted-foreground">
+              {texts.header.role_label}
             </span>
-            <span
-              className="text-small font-semibold"
-              style={{ color: "var(--slate-700)" }}
-            >
+            <span className="text-small font-semibold text-ds-slate-700">
               {roleLabel}
             </span>
           </div>
@@ -164,50 +135,30 @@ export function AppHeader({ context }: AppHeaderProps) {
       {tabs.length > 0 && (
         <nav
           aria-label={texts.header.navigation.aria_label}
-          style={{
-            display: "flex",
-            gap: 4,
-            padding: "0 6px",
-            overflowX: "auto",
-            scrollbarWidth: "none",
-          }}
+          className="flex gap-1 overflow-x-auto px-1.5 [scrollbar-width:none]"
         >
           {tabs.map((tab) => {
             const isActive = tab.key === activeTab;
-            const accent = TAB_ACCENT[tab.key];
             return (
               <Link
                 key={tab.key}
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
-                style={{
-                  position: "relative",
-                  padding: "12px 10px",
-                  minHeight: "var(--touch)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  fontSize: 13,
-                  fontWeight: isActive ? 600 : 500,
-                  color: isActive ? accent.color : "var(--slate-500)",
-                  background: "transparent",
-                  whiteSpace: "nowrap",
-                  textDecoration: "none",
-                  transition: "color 0.12s",
-                }}
+                className={cn(
+                  "relative inline-flex min-h-11 items-center whitespace-nowrap bg-transparent px-2.5 py-3 text-mono transition-colors",
+                  isActive
+                    ? cn("font-semibold", TAB_COLOR_CLASS[tab.key])
+                    : "font-medium text-ds-slate-500",
+                )}
               >
                 {tab.label}
                 {isActive && (
                   <span
                     aria-hidden="true"
-                    style={{
-                      position: "absolute",
-                      left: 8,
-                      right: 8,
-                      bottom: 0,
-                      height: 2,
-                      background: accent.underline,
-                      borderRadius: "2px 2px 0 0",
-                    }}
+                    className={cn(
+                      "absolute inset-x-2 bottom-0 h-0.5 rounded-t-[2px]",
+                      TAB_UNDERLINE_CLASS[tab.key],
+                    )}
                   />
                 )}
               </Link>

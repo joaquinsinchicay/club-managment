@@ -32,6 +32,7 @@ const config: Config = {
         destructive:                "hsl(var(--destructive))",
         success:                    "hsl(var(--success))",
         warning:                    "hsl(var(--warning))",
+        surface:                    "var(--surface)",
         "surface-container-low":    "hsl(var(--surface-container-low))",
         "surface-container":        "hsl(var(--surface-container))",
         "surface-container-high":   "hsl(var(--surface-container-high))",
@@ -97,6 +98,20 @@ const config: Config = {
       // ── DS shadows ──────────────────────────────────────────────────────
       // shadow-xs | shadow-sm | shadow-md | shadow-pop | shadow-soft
       boxShadow: { ...dsShadow },
+
+      // ── DS spacing — finezas sub-4px ───────────────────────────────────
+      // p-0.75 | m-0.75 → 3px (sub-tab insets, chip paddings)
+      spacing: {
+        "0.75": "3px",
+      },
+
+      // ── DS gradient backgrounds ────────────────────────────────────────
+      // bg-gradient-warning-soft | bg-gradient-surface-soft
+      backgroundImage: {
+        "gradient-warning-soft": "linear-gradient(180deg, rgb(251 191 36 / 0.10) 0%, rgb(255 255 255 / 0.98) 100%)",
+        "gradient-surface-soft": "linear-gradient(180deg, rgb(248 250 252 / 0.88) 0%, rgb(255 255 255 / 0.98) 100%)",
+        "gradient-surface-92":   "linear-gradient(180deg, rgb(248 250 252 / 0.92) 0%, rgb(255 255 255 / 0.98) 100%)",
+      },
     }
   },
   plugins: []

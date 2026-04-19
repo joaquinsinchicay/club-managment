@@ -1,23 +1,13 @@
+import { texts } from "@/lib/texts";
+
 export default function ModulesPage() {
   return (
-    <main style={{ padding: "24px 14px" }}>
-      <span style={{
-        fontSize: 10,
-        fontWeight: 600,
-        textTransform: "uppercase",
-        letterSpacing: "0.1em",
-        color: "var(--ink-muted)",
-      }}>
-        Plan y módulos
+    <main className="px-3.5 py-6">
+      <span className="text-eyebrow uppercase text-muted-foreground">
+        {texts.modules.eyebrow}
       </span>
-      <h1 style={{
-        fontSize: 22,
-        fontWeight: 600,
-        letterSpacing: "-0.02em",
-        color: "var(--ink)",
-        margin: "4px 0 0",
-      }}>
-        Módulos
+      <h1 className="mt-1 text-h2 font-semibold tracking-tight text-foreground">
+        {texts.modules.title}
       </h1>
     </main>
   );

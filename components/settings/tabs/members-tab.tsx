@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { buttonClass } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import { SettingsTabShell } from "@/components/settings/settings-tab-shell";
@@ -116,7 +117,7 @@ export function MembersTab({
             {filteredInvitations.map((invitation) => (
               <article
                 key={invitation.invitationId}
-                className="rounded-toast border border-warning/35 bg-[linear-gradient(180deg,rgba(251,191,36,0.10)_0%,rgba(255,255,255,0.98)_100%)] p-5 shadow-soft"
+                className="rounded-toast border border-warning/35 bg-gradient-warning-soft p-5 shadow-soft"
               >
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
@@ -151,8 +152,8 @@ export function MembersTab({
               const initials = getInitials(member.fullName, member.email);
               const memberToneClass =
                 member.status === "pendiente_aprobacion"
-                  ? "border-warning/35 bg-[linear-gradient(180deg,rgba(251,191,36,0.10)_0%,rgba(255,255,255,0.98)_100%)]"
-                  : "border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.88)_0%,rgba(255,255,255,0.98)_100%)]";
+                  ? "border-warning/35 bg-gradient-warning-soft"
+                  : "border-border/70 bg-gradient-surface-soft";
 
               return (
                 <article
@@ -239,7 +240,7 @@ export function MembersTab({
                           <PendingSubmitButton
                             idleLabel={texts.settings.club.members.approve_cta}
                             pendingLabel={texts.settings.club.members.approve_loading}
-                            className="min-h-11 w-full rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                            className={buttonClass({ fullWidth: true })}
                           />
                         </PendingFieldset>
                       </form>
@@ -292,7 +293,7 @@ export function MembersTab({
             <PendingSubmitButton
               idleLabel={texts.settings.club.invitations.invite_cta}
               pendingLabel={texts.settings.club.invitations.invite_loading}
-              className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+              className={buttonClass()}
             />
           </PendingFieldset>
         </form>

@@ -12,6 +12,7 @@ import {
   TreasuryRoleMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
 import { TreasuryAccountForm } from "@/components/treasury/account-form";
+import { Button } from "@/components/ui/button";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
@@ -271,8 +272,8 @@ function AccountAvatar({
     accountType === "bancaria"
       ? "bg-ds-blue-050 text-ds-blue-700"
       : accountType === "billetera_virtual"
-        ? "bg-amber-50 text-amber-700"
-        : "bg-emerald-50 text-emerald-700"; // efectivo
+        ? "bg-ds-amber-050 text-ds-amber-700"
+        : "bg-ds-green-050 text-ds-green-700"; // efectivo
 
   return (
     <div
@@ -303,7 +304,7 @@ function SubTabNav({
   ];
 
   return (
-    <div className="flex gap-0.5 rounded-card bg-slate-100 p-[3px]">
+    <div className="flex gap-0.5 rounded-card bg-slate-100 p-0.75">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -370,7 +371,7 @@ function KpiGrid({
                 )}
               >
                 <CurrencyChip code={b.currencyCode} />
-                <span className="text-[17px] font-bold tabular-nums tracking-tight text-foreground">
+                <span className="text-h4 tabular-nums tracking-tight text-foreground">
                   {b.currencyCode === "ARS" ? "$ " : "US$ "}
                   {formatLocalizedAmount(b.amount)}
                 </span>
@@ -402,7 +403,7 @@ function KpiGrid({
               >
                 <span className={cn(
                   "font-bold tabular-nums tracking-tight text-ds-green-700",
-                  i === 0 ? "text-[17px]" : "text-small"
+                  i === 0 ? "text-h4" : "text-small"
                 )}>
                   + {s.currencyCode === "ARS" ? "$ " : "US$ "}
                   {formatLocalizedAmount(s.ingreso)}
@@ -433,7 +434,7 @@ function KpiGrid({
               >
                 <span className={cn(
                   "font-bold tabular-nums tracking-tight text-ds-red-700",
-                  i === 0 ? "text-[17px]" : "text-small"
+                  i === 0 ? "text-h4" : "text-small"
                 )}>
                   − {s.currencyCode === "ARS" ? "$ " : "US$ "}
                   {formatLocalizedAmount(s.egreso)}
@@ -490,7 +491,7 @@ function AccountRow({
       <div className="flex items-center gap-3">
         <AccountAvatar name={account.name} accountType={account.accountType} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
+          <p className="truncate text-label tracking-tight text-foreground">
             {account.name}
           </p>
           {subtitleLine ? (
@@ -569,51 +570,31 @@ function QuickActions({
       </p>
       <div className="mt-3 flex flex-col gap-2">
         {canCreateMovement && (
-          <button
-            type="button"
-            onClick={onMovement}
-            className="flex min-h-11 items-center justify-center rounded-btn bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
-          >
+          <Button variant="dark" radius="btn" onClick={onMovement}>
             {texts.dashboard.treasury_role.movement_modal_cta}
-          </button>
+          </Button>
         )}
         {canCreateFxOperation && (
-          <button
-            type="button"
-            onClick={onFx}
-            className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
-          >
+          <Button variant="secondary" radius="btn" onClick={onFx}>
             {texts.dashboard.treasury_role.fx_modal_cta}
-          </button>
+          </Button>
         )}
         {canCreateTransfer && (
-          <button
-            type="button"
-            onClick={onTransfer}
-            className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
-          >
+          <Button variant="secondary" radius="btn" onClick={onTransfer}>
             {texts.dashboard.treasury_role.transfer_modal_cta}
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
-          onClick={onConciliacion}
-          className="relative flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
-        >
+        <Button variant="secondary" radius="btn" onClick={onConciliacion} className="relative">
           {texts.dashboard.treasury_role.consolidation_cta}
           {pendingConciliationCount > 0 && (
-            <span className="absolute right-3 flex size-5 items-center justify-center rounded-full bg-amber-100 text-eyebrow font-bold text-amber-700">
+            <span className="absolute right-3 flex size-5 items-center justify-center rounded-full bg-ds-amber-050 text-eyebrow font-bold text-ds-amber-700">
               {pendingConciliationCount}
             </span>
           )}
-        </button>
-        <button
-          type="button"
-          onClick={onMovements}
-          className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
-        >
+        </Button>
+        <Button variant="secondary" radius="btn" onClick={onMovements}>
           {texts.dashboard.treasury_role.view_movements_cta}
-        </button>
+        </Button>
       </div>
     </div>
   );

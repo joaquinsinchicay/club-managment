@@ -18,6 +18,7 @@ import {
   updateReceiptFormatForActiveClub,
   updateTreasuryCategoryForActiveClub
 } from "@/lib/services/treasury-settings-service";
+import { updateClubIdentityForActiveClub } from "@/lib/services/club-identity-service";
 import { clearStoredActiveClubId, storeCurrentActiveClubId } from "@/lib/auth/session";
 import { resolveFeedback } from "@/lib/feedback-catalog";
 import { flashToast } from "@/lib/toast-server";
@@ -141,6 +142,24 @@ export async function createReceiptFormatAction(formData: FormData) {
   });
 
   redirectToSettings(result.code, "treasury");
+}
+
+export async function updateClubIdentityAction(formData: FormData) {
+  const logoEntry = formData.get("logo");
+  const logoFile = logoEntry instanceof File && logoEntry.size > 0 ? logoEntry : null;
+  const removeLogo = formData.get("remove_logo") === "on";
+
+  const result = await updateClubIdentityForActiveClub({
+    name: String(formData.get("name") ?? ""),
+    cuit: String(formData.get("cuit") ?? ""),
+    tipo: String(formData.get("tipo") ?? ""),
+    colorPrimary: String(formData.get("color_primary") ?? ""),
+    colorSecondary: String(formData.get("color_secondary") ?? ""),
+    logoFile,
+    removeLogo
+  });
+
+  redirectToSettings(result.code, "datos-del-club");
 }
 
 export async function updateReceiptFormatAction(formData: FormData) {

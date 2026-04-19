@@ -14,6 +14,7 @@ import {
   SecretariaMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
+import { Button } from "@/components/ui/button";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
@@ -75,30 +76,30 @@ type SessionConfig = {
 function getSessionConfig(sessionStatus: DashboardTreasuryCardData["sessionStatus"]): SessionConfig {
   if (sessionStatus === "open") {
     return {
-      borderColor: "border-l-emerald-500",
-      iconBg: "bg-emerald-50",
-      iconColor: "text-emerald-700",
+      borderColor: "border-l-ds-green",
+      iconBg: "bg-ds-green-050",
+      iconColor: "text-ds-green-700",
       iconText: "●",
-      badgeClass: "bg-emerald-50 text-emerald-700",
+      badgeClass: "bg-ds-green-050 text-ds-green-700",
       badgeText: texts.dashboard.treasury.session_open
     };
   }
   if (sessionStatus === "closed") {
     return {
-      borderColor: "border-l-rose-500",
-      iconBg: "bg-rose-50",
-      iconColor: "text-rose-700",
+      borderColor: "border-l-ds-red",
+      iconBg: "bg-ds-red-050",
+      iconColor: "text-ds-red-700",
       iconText: "✕",
-      badgeClass: "bg-rose-50 text-rose-700",
+      badgeClass: "bg-ds-red-050 text-ds-red-700",
       badgeText: texts.dashboard.treasury.session_closed
     };
   }
   return {
-    borderColor: "border-l-amber-400",
-    iconBg: "bg-amber-50",
-    iconColor: "text-amber-700",
+    borderColor: "border-l-ds-amber",
+    iconBg: "bg-ds-amber-050",
+    iconColor: "text-ds-amber-700",
     iconText: "!",
-    badgeClass: "bg-amber-50 text-amber-700",
+    badgeClass: "bg-ds-amber-050 text-ds-amber-700",
     badgeText: texts.dashboard.treasury.session_not_started
   };
 }
@@ -189,7 +190,7 @@ function SessionCard({
   return (
     <section
       className={cn(
-        "rounded-[14px] border border-border bg-card border-l-[3px]",
+        "rounded-xl border border-border bg-card border-l-[3px]",
         isUnresolved ? "border-l-slate-300" : cfg.borderColor
       )}
       aria-label={texts.dashboard.treasury.session_card_label}
@@ -236,7 +237,7 @@ function SessionCard({
               <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {item.label}
               </span>
-              <span className="truncate text-[13px] font-semibold tabular-nums text-foreground">{item.value}</span>
+              <span className="truncate text-label tabular-nums text-foreground">{item.value}</span>
             </div>
           ))}
         </div>
@@ -259,40 +260,24 @@ function SessionCard({
       {/* CTAs */}
       {canOpenSession ? (
         <div className="px-4 pb-4">
-          <button
-            type="button"
-            onClick={onOpenSession}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-background transition hover:opacity-90"
-          >
+          <Button onClick={onOpenSession} fullWidth>
             {texts.dashboard.treasury.open_session_flow_cta}
-          </button>
+          </Button>
         </div>
       ) : null}
 
       {canCreateMovement ? (
         <div className="grid grid-cols-2 gap-2 px-4 pb-4">
-          <button
-            type="button"
-            onClick={onOpenMovement}
-            className="min-h-11 rounded-xl bg-foreground px-3 py-2.5 text-sm font-semibold text-background transition hover:opacity-90"
-          >
+          <Button onClick={onOpenMovement} className="px-3">
             {texts.dashboard.treasury.movement_modal_cta}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenTransfer}
-            className="min-h-11 rounded-xl border border-border bg-card px-3 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
+          </Button>
+          <Button variant="secondary" onClick={onOpenTransfer} className="px-3">
             {texts.dashboard.treasury.transfer_modal_cta}
-          </button>
+          </Button>
           {canCloseSession ? (
-            <button
-              type="button"
-              onClick={onOpenCloseSession}
-              className="col-span-2 min-h-11 rounded-xl bg-destructive px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-            >
+            <Button variant="destructive" onClick={onOpenCloseSession} className="col-span-2">
               {texts.dashboard.treasury.close_session_flow_cta}
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : null}
@@ -305,12 +290,12 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
 
   return (
     <section
-      className="rounded-[14px] border border-border bg-card"
+      className="rounded-xl border border-border bg-card"
       aria-label={texts.dashboard.treasury.balances_visible_title}
     >
       <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-[14px] font-semibold tracking-tight text-foreground">
+          <h2 className="text-body font-semibold leading-tight tracking-tight text-foreground">
             {texts.dashboard.treasury.balances_visible_title}
           </h2>
           <p className="text-meta font-medium text-muted-foreground">
@@ -332,9 +317,9 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
             {card.accounts.map((account) => (
               <div key={account.accountId} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="truncate text-[13px] font-medium text-foreground">{account.name}</span>
+                  <span className="truncate text-label font-medium text-foreground">{account.name}</span>
                   <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                    Efectivo
+                    {texts.dashboard.treasury_role.cash_account_label}
                   </span>
                 </div>
                 <div className="shrink-0 text-right">
@@ -392,12 +377,12 @@ function MovementsCard({
 
   return (
     <section
-      className="rounded-[14px] border border-border bg-card sm:col-span-2"
+      className="rounded-xl border border-border bg-card sm:col-span-2"
       aria-label={texts.dashboard.treasury.movements_card_title}
     >
       <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-2">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-[14px] font-semibold tracking-tight text-foreground">
+          <h2 className="text-body font-semibold leading-tight tracking-tight text-foreground">
             {texts.dashboard.treasury.movements_card_title}
           </h2>
           <p className="text-meta font-medium text-muted-foreground">

@@ -44,6 +44,8 @@
   },
   "header": {
     "pending_club_label": "Sin club activo",
+    "active_club_label": "Club activo",
+    "role_label": "Rol",
     "welcome_message_single": "Bienvenido/a {name}, tu rol es {role}",
     "welcome_message_multiple": "Bienvenido/a {name}, tus roles son {role}",
     "club_switcher_chevron": "▾",
@@ -52,7 +54,8 @@
       "dashboard": "Dashboard",
       "secretaria": "Secretaria",
       "tesoreria": "Tesoreria",
-      "settings": "Configuracion"
+      "settings": "Configuracion",
+      "modules": "Módulos"
     },
     "avatar_menu": {
       "sign_out": "Cerrar sesion",
@@ -588,18 +591,58 @@
       "forbidden_description": "Solo un usuario con rol Admin del club activo puede acceder a esta pagina.",
       "back_to_dashboard_cta": "Volver al dashboard",
       "club_summary_title": "Club activo",
-      "club_summary_description": "Resumen del contexto operativo actual del club. La edicion de identidad visual quedara disponible en una proxima iteracion.",
+      "club_summary_description": "Identidad institucional y visual del club. Los cambios se reflejan en el header y en toda la aplicacion.",
       "club_summary_status_label": "Contexto",
       "club_summary_status_value": "Club operativo",
       "club_summary_roles_empty": "Sin roles operativos visibles",
-      "club_summary_future_fields_label": "Proximamente editable",
-      "club_summary_future_fields_value": "Nombre del club, icono y colores identificatorios.",
       "tabs": {
+        "club_data": "Datos del club",
         "members": "Miembros",
         "accounts": "Cuentas",
         "categories": "Categorías",
         "activities": "Actividades",
         "membership_systems": "Sistema de Socios"
+      },
+      "identity": {
+        "section_title": "Identidad",
+        "section_description": "Datos institucionales del club. Se usan en el header, comprobantes y comunicaciones.",
+        "name_label": "Nombre del club",
+        "name_placeholder": "ej. Club Atletico Primera Junta",
+        "cuit_label": "CUIT",
+        "cuit_placeholder": "30-12345678-9",
+        "cuit_helper": "Formato: XX-XXXXXXXX-X",
+        "tipo_label": "Tipo",
+        "tipo_placeholder": "Selecciona un tipo",
+        "tipo_options": {
+          "asociacion_civil": "Asociacion civil",
+          "fundacion": "Fundacion",
+          "sociedad_civil": "Sociedad civil"
+        },
+        "logo_label": "Logo del club",
+        "logo_description": "PNG, JPG, SVG o WEBP. Maximo 2 MB. Fondo transparente recomendado.",
+        "logo_upload_cta": "Subir nuevo logo",
+        "logo_remove_cta": "Quitar logo",
+        "logo_replace_cta": "Reemplazar logo",
+        "colors_section_title": "Colores identificatorios",
+        "colors_section_description": "Define la paleta institucional del club. Se usara para acentos visuales.",
+        "color_primary_label": "Color primario",
+        "color_secondary_label": "Color secundario",
+        "color_preview_label": "Vista previa",
+        "save_cta": "Guardar cambios",
+        "save_loading": "Guardando...",
+        "cancel_cta": "Cancelar",
+        "feedback": {
+          "club_identity_updated": "Los datos del club se actualizaron correctamente.",
+          "invalid_name": "El nombre del club debe tener al menos 2 caracteres.",
+          "invalid_cuit": "Revisa el formato del CUIT (XX-XXXXXXXX-X).",
+          "invalid_tipo": "El tipo seleccionado no es valido.",
+          "invalid_color": "Los colores deben ser codigos hexadecimales validos (ej. #0EA5E9).",
+          "invalid_logo": "El logo debe ser PNG, JPG, SVG o WEBP y pesar menos de 2 MB.",
+          "logo_upload_failed": "No pudimos subir el logo. Vuelve a intentarlo.",
+          "club_not_found": "No encontramos el club activo. Vuelve a ingresar.",
+          "forbidden": "No tienes permisos para editar los datos del club.",
+          "unknown_error": "No pudimos guardar los cambios. Vuelve a intentarlo."
+        }
       },
       "invitations": {
         "section_title": "Invitar usuario",
@@ -910,5 +953,9 @@
         }
       }
     }
+  },
+  "modules": {
+    "eyebrow": "Plan y módulos",
+    "title": "Módulos"
   }
 }

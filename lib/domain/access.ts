@@ -10,11 +10,18 @@ export type User = {
   updatedAt: string;
 };
 
+export type ClubType = "asociacion_civil" | "fundacion" | "sociedad_civil";
+
 export type Club = {
   id: string;
   name: string;
   slug: string;
   status: "active";
+  cuit: string | null;
+  tipo: ClubType | null;
+  logoUrl: string | null;
+  colorPrimary: string | null;
+  colorSecondary: string | null;
 };
 
 export type AvailableClub = {
