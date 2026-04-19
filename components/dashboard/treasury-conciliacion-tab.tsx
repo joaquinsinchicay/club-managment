@@ -128,7 +128,6 @@ export function TreasuryConciliacionTab({
 
   const [selectedDate, setSelectedDate] = useState(dashboard.consolidationDate);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
-  const [selectedMovementIds, setSelectedMovementIds] = useState<Set<string>>(new Set());
   const [editingMovement, setEditingMovement] = useState<ConsolidationMovement | null>(null);
   const [editingTransfer, setEditingTransfer] = useState<ConsolidationTransferEdit | null>(null);
   const [isEditSubmissionPending, setIsEditSubmissionPending] = useState(false);
@@ -230,8 +229,10 @@ export function TreasuryConciliacionTab({
     ? dashboard.pendingMovements.filter((movement) => movement.accountId === selectedAccountId)
     : dashboard.pendingMovements;
 
+  const isSessionOpen = dashboard.sessionStatus === "open";
   const hasPending = pendingCount > 0;
-  const canApprove = hasPending && dashboard.pendingMovements.every((movement) => movement.isValid);
+  const canApprove =
+    !isSessionOpen && hasPending && dashboard.pendingMovements.every((movement) => movement.isValid);
 
   return (
     <div className="space-y-4">
@@ -319,7 +320,7 @@ export function TreasuryConciliacionTab({
         </form>
 
         {/* Account filter chips */}
-        {accountChips.length > 0 ? (
+        {!isSessionOpen && accountChips.length > 0 ? (
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
@@ -353,37 +354,28 @@ export function TreasuryConciliacionTab({
 
         {/* Movement list */}
         <div className="mt-4">
-          {visibleMovements.length === 0 ? (
+          {isSessionOpen ? (
+            <div className="rounded-dialog border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
+              <p className="font-semibold text-foreground">
+                {texts.dashboard.treasury_role.conciliacion_session_open_title}
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                {texts.dashboard.treasury_role.conciliacion_session_open_description}
+              </p>
+            </div>
+          ) : visibleMovements.length === 0 ? (
             <div className="rounded-dialog border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
               {texts.dashboard.treasury_role.conciliacion_empty_pending}
             </div>
           ) : (
             <ul className="space-y-2.5">
               {visibleMovements.map((movement) => {
-                const isSelected = selectedMovementIds.has(movement.movementId);
                 return (
                   <li
                     key={movement.movementId}
                     className="group rounded-dialog border border-border bg-card p-3.5 transition hover:border-slate-300"
                   >
                     <div className="flex items-start gap-3">
-                      <label className="mt-0.5 inline-flex cursor-pointer items-center">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(event) => {
-                            setSelectedMovementIds((current) => {
-                              const next = new Set(current);
-                              if (event.target.checked) next.add(movement.movementId);
-                              else next.delete(movement.movementId);
-                              return next;
-                            });
-                          }}
-                          className="size-4 cursor-pointer rounded border-border text-slate-900 focus:ring-slate-900"
-                          aria-label={movement.concept}
-                        />
-                      </label>
-
                       <div className="flex min-w-0 flex-1 items-start gap-3">
                         <span
                           aria-hidden="true"
@@ -397,35 +389,41 @@ export function TreasuryConciliacionTab({
                             {movement.concept}
                           </p>
                           <div className="flex flex-wrap gap-1.5">
-                            <span className="inline-flex items-center rounded-chip bg-slate-900 px-2 py-0.5 text-eyebrow font-semibold text-white">
+                            <span className="inline-flex items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold text-slate-600">
                               {movement.accountName}
                             </span>
                             {movement.categoryName ? (
-                              <span className="inline-flex items-center rounded-chip border border-border bg-card px-2 py-0.5 text-eyebrow font-semibold text-muted-foreground">
+                              <span className="inline-flex items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold text-slate-600">
                                 {movement.categoryName}
                               </span>
                             ) : null}
                             {movement.activityName ? (
-                              <span className="inline-flex items-center rounded-chip border border-border bg-card px-2 py-0.5 text-eyebrow font-semibold text-muted-foreground">
+                              <span className="inline-flex items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold text-slate-600">
                                 {movement.activityName}
                               </span>
                             ) : null}
                             {movement.calendarEventTitle ? (
-                              <span className="inline-flex items-center rounded-chip border border-border bg-card px-2 py-0.5 text-eyebrow font-semibold text-muted-foreground">
+                              <span className="inline-flex items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold text-slate-600">
                                 {movement.calendarEventTitle}
                               </span>
                             ) : null}
                           </div>
                           <p className="text-eyebrow text-slate-500">
-                            {movement.movementDisplayId}
-                            <span className="px-1 text-border">·</span>
-                            {movement.createdByUserName}
-                            {movement.receiptNumber ? (
-                              <>
-                                <span className="px-1 text-border">·</span>
-                                {texts.dashboard.treasury_role.receipt_label} {movement.receiptNumber}
-                              </>
-                            ) : null}
+                            {[
+                              movement.movementDisplayId,
+                              movement.createdByUserName,
+                              movement.receiptNumber
+                                ? `${texts.dashboard.treasury.detail_receipt_label} ${movement.receiptNumber}`
+                                : null,
+                              movement.transferReference
+                                ? `${texts.dashboard.treasury.detail_transfer_label} ${movement.transferReference.slice(-6)}`
+                                : null,
+                              movement.fxOperationReference
+                                ? `${texts.dashboard.treasury.detail_fx_label} ${movement.fxOperationReference.slice(-6)}`
+                                : null
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </p>
                         </div>
                       </div>

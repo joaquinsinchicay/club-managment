@@ -2688,6 +2688,7 @@ async function buildConsolidationMovement(
     calendarEventId: movement.calendarEventId ?? null,
     calendarEventTitle,
     transferReference: movement.transferGroupId ?? null,
+    fxOperationReference: movement.fxOperationGroupId ?? null,
     concept: movement.concept,
     currencyCode: movement.currencyCode,
     amount: movement.amount,
@@ -2733,6 +2734,25 @@ export async function getTreasuryConsolidationDashboard(
     );
   }
 
+  const dailyCashSession = await accessRepository.getDailyCashSessionByDate(clubId, selectedDate);
+  const sessionStatus: TreasuryConsolidationDashboard["sessionStatus"] =
+    dailyCashSession?.status ?? "not_started";
+
+  if (sessionStatus === "open") {
+    return {
+      consolidationDate: selectedDate,
+      defaultDate: getDefaultConsolidationDate(),
+      hasLoadedDate: Boolean(consolidationDate?.trim()),
+      sessionStatus,
+      batch,
+      pendingMovements: [],
+      integratedMovements: [],
+      totalPendingCount: 0,
+      totalPendingArsNet: 0,
+      approvedTodayCount: 0
+    };
+  }
+
   const integratedMovementIds = new Set(integrations.map((entry) => entry.tesoreriaMovementId));
   const postedMovements = movements.filter((movement) => movement.status === "posted");
   const relevantMovements = movements.filter(
@@ -2763,6 +2783,7 @@ export async function getTreasuryConsolidationDashboard(
     consolidationDate: selectedDate,
     defaultDate: getDefaultConsolidationDate(),
     hasLoadedDate: Boolean(consolidationDate?.trim()),
+    sessionStatus,
     batch,
     pendingMovements: mapped.filter((movement) => movement.status === "pending_consolidation"),
     integratedMovements: mapped.filter((movement) => movement.status === "integrated"),

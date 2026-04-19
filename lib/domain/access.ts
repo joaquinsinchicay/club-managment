@@ -416,6 +416,7 @@ export type ConsolidationMovement = {
   calendarEventId: string | null;
   calendarEventTitle: string | null;
   transferReference: string | null;
+  fxOperationReference: string | null;
   concept: string;
   currencyCode: string;
   amount: number;
@@ -451,6 +452,7 @@ export type TreasuryConsolidationDashboard = {
   consolidationDate: string;
   defaultDate: string;
   hasLoadedDate: boolean;
+  sessionStatus: "open" | "closed" | "not_started";
   batch: DailyConsolidationBatch | null;
   pendingMovements: ConsolidationMovement[];
   integratedMovements: ConsolidationMovement[];

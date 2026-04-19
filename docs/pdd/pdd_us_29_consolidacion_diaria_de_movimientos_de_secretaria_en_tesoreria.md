@@ -54,6 +54,7 @@ Tesorería debe contar con una **pestaña Conciliación** embebida dentro del da
 - Los movimientos ya integrados conservan estado `integrated`.
 - No se permite consolidar la misma fecha dos veces.
 - No se permite consolidar mientras existan pendientes inválidos.
+- No se permite operar la conciliación de una fecha cuya jornada de Secretaría esté `open`. La pestaña debe ocultar el listado y los KPIs (mostrarlos en cero) y reemplazar el contenido por un mensaje explicando que se debe esperar al cierre de jornada.
 - Toda edición, integración y consolidación debe generar auditoría con fecha, hora y usuario responsable.
 - El historial debe conservar la imputación original cargada por Secretaría.
 
@@ -93,7 +94,8 @@ Do not reference current code files.
 - Bloque "Movimientos a conciliar" con subtítulo y CTA "Aprobar todos" alineado a la derecha.
 - Selector "Fecha de jornada" con `<input type="date">` y botón "Buscar" que actualiza `?date=` en la URL sin perder la pestaña.
 - Chips de filtro por cuenta: `Todas las cuentas` + una chip por cuenta visible con pendientes. Filtro client-side.
-- Cada fila muestra: checkbox, concepto, tags (cuenta, categoría, actividad o evento), código `PJ-MOV-…`, responsable, recibo, monto en color según ingreso/egreso, timestamp, badge de estado (`Pendiente` / `Integrado` / `Inválido`) y CTA "Editar".
+- Cada fila muestra: concepto, tags consistentes (cuenta, categoría, actividad o evento) con la misma jerarquía visual, código `PJ-MOV-…`, responsable, referencia de recibo / transferencia / cambio de moneda cuando exista, monto en color según ingreso/egreso, timestamp, badge de estado (`Pendiente` / `Integrado` / `Inválido`) y CTA "Editar".
+- Cuando la jornada de Secretaría para la fecha seleccionada esté `open`, los chips de cuenta y el listado se reemplazan por un mensaje informativo y los KPIs muestran cero hasta que la jornada cierre.
 - La edición abre un modal con el formulario existente de corrección (movimiento o transferencia según corresponda).
 - No deben existir textos hardcodeados.
 
@@ -126,3 +128,5 @@ Do not reference current code files.
 | label | `dashboard.treasury_role.conciliacion_filter_all_accounts` | Chip "Todas las cuentas". |
 | status | `dashboard.treasury_role.conciliacion_status_pending` | Badge de estado pendiente. |
 | action | `dashboard.treasury_role.conciliacion_edit_cta` | CTA editar movimiento desde la fila. |
+| title | `dashboard.treasury_role.conciliacion_session_open_title` | Título del bloqueo cuando la jornada está abierta. |
+| body | `dashboard.treasury_role.conciliacion_session_open_description` | Descripción del bloqueo cuando la jornada está abierta. |

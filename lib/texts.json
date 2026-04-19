@@ -462,7 +462,9 @@
       "conciliacion_status_integrated": "Integrado",
       "conciliacion_status_invalid": "Invalido",
       "conciliacion_edit_cta": "Editar",
-      "conciliacion_empty_pending": "No hay movimientos pendientes para la fecha seleccionada."
+      "conciliacion_empty_pending": "No hay movimientos pendientes para la fecha seleccionada.",
+      "conciliacion_session_open_title": "La jornada todavia esta abierta",
+      "conciliacion_session_open_description": "Espera a que Secretaria cierre la jornada para poder conciliar los movimientos de la fecha seleccionada."
     },
     "consolidation": {
       "eyebrow": "Consolidacion",
