@@ -151,16 +151,28 @@ Roles disponibles:
 
 | Acción              | Admin | Secretaria | Tesoreria |
 | ------------------- | ----- | ---------- | --------- |
-| Crear transferencia | ❌     | ✅          | ❌         |
+| Crear transferencia | ❌     | ✅          | ✅         |
 
-### Reglas
+### Reglas comunes
 
-* Requiere jornada abierta
-* La cuenta origen debe ser visible para `Secretaria`
-* La cuenta destino debe ser visible para otros roles operativos y no visible para `Secretaria`
+* La cuenta origen y la cuenta destino deben pertenecer al club activo
+* Las cuentas deben ser distintas
 * La cuenta origen debe tener saldo disponible suficiente en la moneda seleccionada
+* La moneda seleccionada debe ser válida para ambas cuentas
 * Genera dos movimientos
 * Debe ser transaccional
+* El campo `origin_role` de los movimientos refleja el rol que ejecutó la transferencia
+
+### Reglas por rol
+
+* `Secretaria`:
+  * Requiere jornada abierta
+  * Cuenta origen: visible para `Secretaria`
+  * Cuenta destino: visible para otros roles operativos y no visible para `Secretaria`
+* `Tesoreria`:
+  * No requiere jornada abierta
+  * Cuenta origen: visible para `Tesoreria`
+  * Cuenta destino: cualquier cuenta del club distinta a la cuenta origen
 
 ---
 
@@ -234,6 +246,7 @@ Roles disponibles:
 * Control financiero
 * Revisión
 * Consolidación
+* Transferencias
 * Operaciones FX
 * Auditoría
 * No navega el módulo Configuración salvo que también tenga rol `admin`

@@ -45,14 +45,14 @@ export function Modal({
     >
       <div
         className={cn(
-          "w-full max-w-3xl rounded-toast border border-border bg-card p-5 shadow-soft sm:p-6",
+          "flex max-h-[calc(100dvh-24px)] w-full max-w-3xl flex-col rounded-toast border border-border bg-card shadow-soft sm:max-h-[calc(100dvh-48px)]",
           panelClassName
         )}
         onClick={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border/60 p-5 sm:p-6">
           <div className="space-y-1">
             <h2 id="app-modal-title" className="text-[18px] font-semibold tracking-tight text-card-foreground">
               {title}
@@ -79,7 +79,7 @@ export function Modal({
           ) : null}
         </div>
 
-        <div className="mt-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">{children}</div>
       </div>
     </BlockingOverlay>
   );

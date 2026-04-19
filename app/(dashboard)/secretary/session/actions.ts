@@ -20,18 +20,18 @@ function mapDeclaredBalances(formData: FormData) {
   }));
 }
 
-function redirectToDashboard(code: string) {
+function redirectToSecretary(code: string) {
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
-  redirect(`/dashboard/secretaria?feedback=${code}`);
+  revalidatePath("/secretary");
+  redirect(`/secretary?feedback=${code}`);
 }
 
 export async function openDailyCashSessionWithBalancesAction(formData: FormData) {
   const result = await openDailyCashSessionWithDeclaredBalances(mapDeclaredBalances(formData));
-  redirectToDashboard(result.code);
+  redirectToSecretary(result.code);
 }
 
 export async function closeDailyCashSessionWithBalancesAction(formData: FormData) {
   const result = await closeDailyCashSessionWithDeclaredBalances(mapDeclaredBalances(formData));
-  redirectToDashboard(result.code);
+  redirectToSecretary(result.code);
 }

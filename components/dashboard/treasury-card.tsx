@@ -12,7 +12,8 @@ import {
   SecretariaMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
-import { Modal, ModalTriggerButton } from "@/components/ui/modal";
+import { EditIconButton } from "@/components/ui/edit-icon-button";
+import { Modal } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
@@ -52,24 +53,6 @@ type TreasuryCardProps = {
   closeDailyCashSessionModalAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   openDailyCashSessionModalAction: (formData: FormData) => Promise<TreasuryActionResponse>;
 };
-
-function EditMovementIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={cn("size-4", className)}
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-    >
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
 
 function formatSessionTime(isoString: string | null): string | null {
   if (!isoString) return null;
@@ -402,7 +385,7 @@ function MovementsCard({
   })();
 
   const detailHref = !isDataUnresolved && card.accounts.length > 0
-    ? `/dashboard/accounts/${activeFilter ?? card.accounts[0]?.accountId}`
+    ? `/secretary/accounts/${activeFilter ?? card.accounts[0]?.accountId}`
     : null;
 
   return (
@@ -487,13 +470,10 @@ function MovementsCard({
               transferReference: movement.transferReference,
               fxOperationReference: movement.fxOperationReference,
               action: movement.canEdit ? (
-                <ModalTriggerButton
+                <EditIconButton
                   onClick={() => onEditMovement(movement)}
-                  aria-label={texts.dashboard.treasury.edit_movement_cta}
-                  className="cursor-pointer border-0 bg-transparent p-0 text-meta font-semibold text-slate-500 hover:text-foreground"
-                >
-                  {texts.dashboard.treasury.movements_edit_cta}
-                </ModalTriggerButton>
+                  label={texts.dashboard.treasury.edit_movement_cta}
+                />
               ) : undefined
             }))}
           />

@@ -21,7 +21,7 @@ El dashboard actual concentra la operatoria diaria de Secretaría. Cuando un usu
 
 ## 3. Objetivo funcional
 
-El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol `tesoreria`, usando la misma estructura visual base de Secretaría pero sin estado de jornada ni acciones de apertura/cierre, con listado de cuentas visibles, saldos por moneda, acceso al detalle, formulario inline de movimientos y edición directa de movimientos visibles.
+El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol `tesoreria`, usando la misma estructura visual base de Secretaría pero sin estado de jornada ni acciones de apertura/cierre, con listado de cuentas visibles, saldo de la moneda operativa de cada cuenta, acceso al detalle, formulario inline de movimientos y edición directa de movimientos visibles.
 
 ---
 
@@ -30,7 +30,7 @@ El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol
 ### Incluye
 - Card operativa de Tesorería dentro de `/dashboard`.
 - Listado de cuentas visibles para Tesorería en el club activo.
-- Visualización de saldos acumulados por moneda para cada cuenta.
+- Visualización del saldo acumulado de la única moneda operativa de cada cuenta.
 - Estado vacío cuando no existen cuentas visibles para Tesorería.
 - Navegación al detalle de cuenta desde el dashboard.
 - Formulario inline para registrar movimientos de Tesorería.
@@ -39,7 +39,7 @@ El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol
 
 ### No incluye
 - Apertura o cierre de jornada.
-- Consolidación diaria.
+- Operatoria de consolidación dentro de las pestañas Resumen, Cuentas o Movimientos (la conciliación vive en su propia pestaña — ver US-29).
 - Operatoria de Secretaría dentro de esta vista.
 
 ---
@@ -76,7 +76,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - Solo `tesoreria` puede ver esta card dentro de `/dashboard`.
 - Si el usuario también tiene `secretaria`, el dashboard prioriza la variante de Secretaría.
 - La card usa únicamente cuentas con `visible_for_tesoreria = true`.
-- Cada cuenta visible muestra sus saldos acumulados por todas las monedas habilitadas.
+- Cada cuenta visible muestra su saldo acumulado en su única moneda operativa. Si un admin quiere operar en dos monedas sobre la misma entidad, crea dos cuentas independientes.
 - El saldo visible de Tesorería se calcula con el historial acumulado de movimientos elegibles de la cuenta.
 - Para Tesorería impactan saldo los movimientos con estado `posted` y `consolidated`.
 - Para Tesorería no impactan saldo los movimientos con estado `pending_consolidation`, `integrated` ni `cancelled`.
@@ -126,8 +126,9 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 
 ### Reglas
 - La vista debe ser mobile-first.
+- El dashboard de Tesorería expone 4 pestañas: **Resumen**, **Cuentas**, **Movimientos** y **Conciliación**. La pestaña Conciliación implementa US-29 y convive al mismo nivel que las demás.
 - Debe sentirse coherente con la card de Secretaría, evitando una UX puente.
-- Debe mostrar saldos acumulados de forma escaneable por cuenta y moneda.
+- Debe mostrar saldos acumulados de forma escaneable por cuenta, sin desglose por moneda (cada cuenta opera en una única moneda).
 - Debe ofrecer acceso al detalle, formulario inline y edición de movimientos en la misma pantalla.
 - El bloque de movimientos debe reutilizar la densidad informativa de Secretaría para `Concepto`, `Cuenta`, `Detalle del movimiento`, `Monto` y `Acciones`.
 - El bloque de movimientos debe mostrar una ventana de 5 dias operativos agrupada por fecha y luego por cuenta.

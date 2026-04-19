@@ -66,6 +66,7 @@ type TreasuryActionCode =
   | "forbidden"
   | "session_already_exists"
   | "session_not_open"
+  | "previous_session_still_open"
   | "session_required"
   | "account_required"
   | "category_required"
@@ -795,6 +796,17 @@ async function validateDeclaredBalances(
     return { ok: false, code: "session_already_exists" };
   }
 
+  if (mode === "open") {
+    const previousOpenSession = await accessRepository.getLastOpenDailyCashSessionBeforeDate(
+      context.activeClub.id,
+      base.sessionDate
+    );
+
+    if (previousOpenSession) {
+      return { ok: false, code: "previous_session_still_open" };
+    }
+  }
+
   if (mode === "close" && !base.sessionId) {
     return { ok: false, code: "session_not_open" };
   }
@@ -1337,7 +1349,7 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       hasConciliatedMovements: movements.length > 0
     })),
     movementGroups,
-    availableActions: ["create_movement", "create_fx_operation"],
+    availableActions: ["create_movement", "create_fx_operation", "create_transfer"],
     monthlyStats,
     pendingConciliationCount
   };
@@ -1772,32 +1784,43 @@ export async function createAccountTransfer(input: {
   currencyCode: string;
   amount: string;
   concept: string;
+  originRole?: "secretaria" | "tesoreria";
 }): Promise<TreasuryActionResult> {
-  const context = await getSecretariaSession();
+  const requestedRole: "secretaria" | "tesoreria" = input.originRole ?? "secretaria";
+  const context =
+    requestedRole === "tesoreria"
+      ? await getTesoreriaSession()
+      : await getSecretariaSession();
 
   if (!context?.activeClub) {
     return { ok: false, code: "forbidden" };
   }
 
-  let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
+  let sessionId: string | null = null;
 
-  try {
-    await reconcileStaleOpenDailyCashSessionForActiveClub({
-      activeClub: { id: context.activeClub.id },
-      user: { id: context.user.id }
-    });
-    session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
-  } catch (error) {
-    console.error("[create-account-transfer-session-resolution-failed]", {
-      clubId: context.activeClub.id,
-      sessionDate: getTodayDate(),
-      error
-    });
-    return { ok: false, code: "forbidden" };
-  }
+  if (requestedRole === "secretaria") {
+    let session: Awaited<ReturnType<typeof accessRepository.getDailyCashSessionByDate>> = null;
 
-  if (!session || session.status !== "open") {
-    return { ok: false, code: "session_required" };
+    try {
+      await reconcileStaleOpenDailyCashSessionForActiveClub({
+        activeClub: { id: context.activeClub.id },
+        user: { id: context.user.id }
+      });
+      session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
+    } catch (error) {
+      console.error("[create-account-transfer-session-resolution-failed]", {
+        clubId: context.activeClub.id,
+        sessionDate: getTodayDate(),
+        error
+      });
+      return { ok: false, code: "forbidden" };
+    }
+
+    if (!session || session.status !== "open") {
+      return { ok: false, code: "session_required" };
+    }
+
+    sessionId = session.id;
   }
 
   if (!input.sourceAccountId) {
@@ -1827,10 +1850,22 @@ export async function createAccountTransfer(input: {
   }
 
   const allAccounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
-  const sourceAccount = getAccountsVisibleForRole(allAccounts, "secretaria").find(
+
+  const eligibleSourceAccounts =
+    requestedRole === "tesoreria"
+      ? getAccountsVisibleForRole(allAccounts, "tesoreria")
+      : getAccountsVisibleForRole(allAccounts, "secretaria");
+
+  const sourceAccount = eligibleSourceAccounts.find(
     (account) => account.id === input.sourceAccountId
   );
-  const targetAccount = getTransferTargetAccountsForSecretaria(allAccounts).find(
+
+  const eligibleTargetAccounts =
+    requestedRole === "tesoreria"
+      ? allAccounts.filter((account) => account.id !== input.sourceAccountId)
+      : getTransferTargetAccountsForSecretaria(allAccounts);
+
+  const targetAccount = eligibleTargetAccounts.find(
     (account) => account.id === input.targetAccountId
   );
 
@@ -1865,7 +1900,7 @@ export async function createAccountTransfer(input: {
   );
   const transfer = await accessRepository.createAccountTransfer({
     clubId: context.activeClub.id,
-    dailyCashSessionId: session.id,
+    dailyCashSessionId: sessionId,
     sourceAccountId: sourceAccount.id,
     targetAccountId: targetAccount.id,
     currencyCode: input.currencyCode,
@@ -1874,7 +1909,8 @@ export async function createAccountTransfer(input: {
     sourceMovementDisplayId,
     targetMovementDisplayId,
     movementDate: getTodayDate(),
-    createdByUserId: context.user.id
+    createdByUserId: context.user.id,
+    originRole: requestedRole
   });
 
   if (!transfer) {
@@ -2664,6 +2700,7 @@ async function buildConsolidationMovement(
     calendarEventId: movement.calendarEventId ?? null,
     calendarEventTitle,
     transferReference: movement.transferGroupId ?? null,
+    fxOperationReference: movement.fxOperationGroupId ?? null,
     concept: movement.concept,
     currencyCode: movement.currencyCode,
     amount: movement.amount,
@@ -2687,9 +2724,15 @@ export async function getTreasuryConsolidationDashboard(
 
   const clubId = context.activeClub.id;
   const selectedDate = consolidationDate?.trim() || getDefaultConsolidationDate();
-  const [movements, integrations] = await Promise.all([
+  const today = getTodayDate();
+  const allAccounts = await accessRepository.listTreasuryAccountsForClub(clubId);
+  const allAccountIds = allAccounts.map((account) => account.id);
+  const [movements, integrations, allClubMovements] = await Promise.all([
     accessRepository.listTreasuryMovementsByDate(clubId, selectedDate),
-    accessRepository.listMovementIntegrations()
+    accessRepository.listMovementIntegrations(),
+    allAccountIds.length > 0
+      ? accessRepository.listTreasuryMovementsHistoryByAccounts(clubId, allAccountIds)
+      : Promise.resolve([] as TreasuryMovement[])
   ]);
   let batch: TreasuryConsolidationDashboard["batch"] = null;
 
@@ -2703,6 +2746,25 @@ export async function getTreasuryConsolidationDashboard(
     );
   }
 
+  const dailyCashSession = await accessRepository.getDailyCashSessionByDate(clubId, selectedDate);
+  const sessionStatus: TreasuryConsolidationDashboard["sessionStatus"] =
+    dailyCashSession?.status ?? "not_started";
+
+  if (sessionStatus === "open") {
+    return {
+      consolidationDate: selectedDate,
+      defaultDate: getDefaultConsolidationDate(),
+      hasLoadedDate: Boolean(consolidationDate?.trim()),
+      sessionStatus,
+      batch,
+      pendingMovements: [],
+      integratedMovements: [],
+      totalPendingCount: 0,
+      totalPendingArsNet: 0,
+      approvedTodayCount: 0
+    };
+  }
+
   const integratedMovementIds = new Set(integrations.map((entry) => entry.tesoreriaMovementId));
   const postedMovements = movements.filter((movement) => movement.status === "posted");
   const relevantMovements = movements.filter(
@@ -2714,13 +2776,32 @@ export async function getTreasuryConsolidationDashboard(
     )
   );
 
+  const clubPendingMovements = allClubMovements.filter(
+    (movement) => movement.status === "pending_consolidation"
+  );
+  const totalPendingCount = clubPendingMovements.length;
+  const totalPendingArsNet = clubPendingMovements.reduce((total, movement) => {
+    if (movement.currencyCode !== "ARS") return total;
+    const signed = movement.movementType === "egreso" ? -movement.amount : movement.amount;
+    return total + signed;
+  }, 0);
+  const approvedTodayCount = allClubMovements.filter(
+    (movement) =>
+      movement.movementDate === today &&
+      (movement.status === "consolidated" || movement.status === "integrated")
+  ).length;
+
   return {
     consolidationDate: selectedDate,
     defaultDate: getDefaultConsolidationDate(),
     hasLoadedDate: Boolean(consolidationDate?.trim()),
+    sessionStatus,
     batch,
     pendingMovements: mapped.filter((movement) => movement.status === "pending_consolidation"),
-    integratedMovements: mapped.filter((movement) => movement.status === "integrated")
+    integratedMovements: mapped.filter((movement) => movement.status === "integrated"),
+    totalPendingCount,
+    totalPendingArsNet,
+    approvedTodayCount
   };
 }
 

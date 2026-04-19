@@ -40,7 +40,7 @@ export async function openDailyCashSessionModalAction(formData: FormData) {
   );
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -65,7 +65,7 @@ export async function closeDailyCashSessionModalAction(formData: FormData) {
   );
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -87,7 +87,7 @@ export async function createTreasuryMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -112,7 +112,7 @@ export async function createTreasuryRoleMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,
@@ -136,7 +136,7 @@ export async function updateTreasuryRoleMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,
@@ -160,7 +160,7 @@ export async function updateSecretariaMovementAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -179,7 +179,7 @@ export async function updateSecretariaTransferAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
 
   return {
     ok: result.ok,
@@ -188,16 +188,22 @@ export async function updateSecretariaTransferAction(formData: FormData) {
 }
 
 export async function createAccountTransferAction(formData: FormData) {
+  const rawOriginRole = String(formData.get("origin_role") ?? "secretaria");
+  const originRole: "secretaria" | "tesoreria" =
+    rawOriginRole === "tesoreria" ? "tesoreria" : "secretaria";
+
   const result = await createAccountTransfer({
     sourceAccountId: String(formData.get("source_account_id") ?? ""),
     targetAccountId: String(formData.get("target_account_id") ?? ""),
     currencyCode: String(formData.get("currency_code") ?? ""),
     amount: String(formData.get("amount") ?? ""),
-    concept: String(formData.get("concept") ?? "")
+    concept: String(formData.get("concept") ?? ""),
+    originRole
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
+  revalidatePath("/secretary");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,
@@ -206,16 +212,34 @@ export async function createAccountTransferAction(formData: FormData) {
   } satisfies TreasuryActionResponse;
 }
 
+function extractInitialBalancesFromFormData(formData: FormData): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    const match = key.match(/^initial_balance\[(.+)\]$/);
+    if (match) {
+      result[match[1]] = String(value);
+    }
+  }
+  return result;
+}
+
 export async function createTreasuryAccountFromTreasuryAction(formData: FormData) {
   const result = await createTreasuryAccountForActiveClub({
     name: String(formData.get("name") ?? ""),
     accountType: String(formData.get("account_type") ?? ""),
-    visibility: formData.getAll("visibility").map((value) => String(value)),
+    availableForSecretaria: formData.get("available_for_secretaria") === "on",
     currencies: formData.getAll("currencies").map((value) => String(value)),
-    emoji: String(formData.get("emoji") ?? "")
+    emoji: String(formData.get("emoji") ?? ""),
+    bankEntity: String(formData.get("bank_entity") ?? ""),
+    walletProvider: String(formData.get("wallet_provider") ?? ""),
+    bankAccountSubtype: String(formData.get("bank_account_subtype") ?? ""),
+    accountNumber: String(formData.get("account_number") ?? ""),
+    cbuCvu: String(formData.get("cbu_cvu") ?? ""),
+    alias: String(formData.get("alias") ?? ""),
+    initialBalances: extractInitialBalancesFromFormData(formData)
   });
 
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,
@@ -228,12 +252,19 @@ export async function updateTreasuryAccountFromTreasuryAction(formData: FormData
     accountId: String(formData.get("account_id") ?? ""),
     name: String(formData.get("name") ?? ""),
     accountType: String(formData.get("account_type") ?? ""),
-    visibility: formData.getAll("visibility").map((value) => String(value)),
+    availableForSecretaria: formData.get("available_for_secretaria") === "on",
     currencies: formData.getAll("currencies").map((value) => String(value)),
-    emoji: String(formData.get("emoji") ?? "")
+    emoji: String(formData.get("emoji") ?? ""),
+    bankEntity: String(formData.get("bank_entity") ?? ""),
+    walletProvider: String(formData.get("wallet_provider") ?? ""),
+    bankAccountSubtype: String(formData.get("bank_account_subtype") ?? ""),
+    accountNumber: String(formData.get("account_number") ?? ""),
+    cbuCvu: String(formData.get("cbu_cvu") ?? ""),
+    alias: String(formData.get("alias") ?? ""),
+    initialBalances: extractInitialBalancesFromFormData(formData)
   });
 
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,
@@ -253,7 +284,7 @@ export async function createFxOperationAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/treasury");
+  revalidatePath("/treasury");
 
   return {
     ok: result.ok,

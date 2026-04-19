@@ -113,7 +113,7 @@ export function DailySessionBalanceCard({
         eyebrow={pageCopy.eyebrow}
         title={pageCopy.title}
         description={pageCopy.description}
-        backHref="/dashboard/secretaria"
+        backHref="/secretary"
         backLabel={texts.dashboard.treasury.back_to_secretaria_cta}
       />
 
@@ -129,7 +129,7 @@ export function DailySessionBalanceCard({
                 {texts.dashboard.treasury.session_validation_empty}
               </p>
               <NavigationLinkWithLoader
-                href="/dashboard/secretaria"
+                href="/secretary"
                 className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
               >
                 {texts.dashboard.treasury.back_to_secretaria_cta}
@@ -279,7 +279,7 @@ export function DailySessionBalanceCard({
                     className="min-h-11 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
                   />
                   <NavigationLinkWithLoader
-                    href="/dashboard/secretaria"
+                    href="/secretary"
                     className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
                   >
                     {texts.dashboard.treasury.cancel_session_cta}

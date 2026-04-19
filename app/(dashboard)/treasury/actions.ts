@@ -13,6 +13,8 @@ import {
 function redirectToTreasury(code: string, consolidationDate: string, selectedMovementId?: string) {
   const params = new URLSearchParams();
 
+  params.set("tab", "conciliacion");
+
   if (consolidationDate) {
     params.set("date", consolidationDate);
   }
@@ -24,9 +26,8 @@ function redirectToTreasury(code: string, consolidationDate: string, selectedMov
   params.set("feedback", code);
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/treasury");
-  revalidatePath("/dashboard/treasury/consolidation");
-  redirect(`/dashboard/treasury/consolidation?${params.toString()}`);
+  revalidatePath("/treasury");
+  redirect(`/treasury?${params.toString()}`);
 }
 
 export async function updateMovementBeforeConsolidationAction(formData: FormData) {

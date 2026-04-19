@@ -157,7 +157,7 @@ export function MembersTab({
               return (
                 <article
                   key={member.membershipId}
-                  className={`rounded-toast border p-5 shadow-soft ${memberToneClass}`}
+                  className={`group rounded-toast border p-5 shadow-soft ${memberToneClass}`}
                 >
                   <div className="flex items-start gap-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
@@ -203,7 +203,7 @@ export function MembersTab({
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
                       {member.status !== "pendiente_aprobacion" ? (
                         <button
                           type="button"

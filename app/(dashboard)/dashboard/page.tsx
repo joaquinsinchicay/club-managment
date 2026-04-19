@@ -53,7 +53,7 @@ export default async function DashboardPage() {
   }
 
   if (!canAccessDashboardSummary(context.activeMembership)) {
-    redirect("/dashboard/secretaria");
+    redirect("/secretary");
   }
 
   const canOperateSecretariaRole = canOperateSecretaria(context.activeMembership);
@@ -123,7 +123,7 @@ export default async function DashboardPage() {
               </div>
 
               <Link
-                href="/dashboard/secretaria"
+                href="/secretary"
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
               >
                 {texts.dashboard.overview.open_module_cta}
@@ -178,7 +178,7 @@ export default async function DashboardPage() {
               </div>
 
               <Link
-                href="/dashboard/treasury"
+                href="/treasury"
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
               >
                 {texts.dashboard.overview.open_module_cta}
@@ -204,7 +204,7 @@ export default async function DashboardPage() {
               </p>
 
               <Link
-                href="/settings/club"
+                href="/settings"
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
               >
                 {texts.dashboard.overview.open_settings_cta}

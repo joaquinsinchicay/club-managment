@@ -4,14 +4,16 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState, type ReactNode } from "react";
 
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
+import { TreasuryConciliacionTab } from "@/components/dashboard/treasury-conciliacion-tab";
 import {
+  AccountTransferForm,
   SecretariaMovementEditForm,
   TreasuryRoleFxForm,
   TreasuryRoleMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
 import { TreasuryAccountForm } from "@/components/treasury/account-form";
-import { Modal, ModalTriggerButton } from "@/components/ui/modal";
-import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
+import { EditIconButton } from "@/components/ui/edit-icon-button";
+import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
@@ -22,6 +24,7 @@ import type {
   TreasuryAccount,
   TreasuryAccountType,
   TreasuryCategory,
+  TreasuryConsolidationDashboard,
   TreasuryCurrencyConfig,
   TreasuryDashboardMovement,
   TreasuryMovementType,
@@ -43,10 +46,17 @@ type TreasuryRoleCardProps = {
   createTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createFxOperationAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   allAccounts: TreasuryAccount[];
   isAdmin: boolean;
+  consolidationDashboard: TreasuryConsolidationDashboard | null;
+  transferSourceAccounts: TreasuryAccount[];
+  transferTargetAccounts: TreasuryAccount[];
+  updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
+  updateTransferBeforeConsolidationAction: (formData: FormData) => Promise<void>;
+  executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
 };
 
 type SubTab = "resumen" | "cuentas" | "movimientos" | "conciliacion";
@@ -103,6 +113,69 @@ function formatMovementGroupDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "long" }).format(date);
+}
+
+function formatLastMovementDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}/${month} ${hours}:${minutes}`;
+}
+
+function formatAccountSubtitle(account: TreasuryAccount): string | null {
+  const parts: Array<string | null | undefined> = [];
+
+  if (account.accountType === "bancaria") {
+    parts.push(account.bankEntity);
+    if (account.bankAccountSubtype) {
+      parts.push(texts.settings.club.treasury.bank_account_subtypes[account.bankAccountSubtype]);
+    }
+  } else if (account.accountType === "billetera_virtual") {
+    parts.push(account.bankEntity);
+  } else {
+    parts.push(texts.dashboard.treasury_role.cash_account_label);
+  }
+
+  if (account.currencies.length === 1) {
+    parts.push(account.currencies[0]);
+  }
+
+  if (account.visibleForSecretaria && !account.visibleForTesoreria) {
+    parts.push(texts.dashboard.treasury_role.operated_by_secretaria);
+  }
+
+  const cleaned = parts.filter((part): part is string => Boolean(part));
+  return cleaned.length ? cleaned.join(" · ") : null;
+}
+
+function formatAccountIdentifier(account: TreasuryAccount): string | null {
+  if (!account.cbuCvu && !account.accountNumber) return null;
+  const identifier = account.cbuCvu ?? account.accountNumber ?? "";
+  if (!identifier) return null;
+
+  if (account.accountType === "bancaria") return `CBU ${identifier}`;
+  if (account.accountType === "billetera_virtual") return `CVU ${identifier}`;
+  return identifier;
+}
+
+function buildLastMovementByAccountId(
+  groups: TreasuryRoleDashboardMovementDateGroup[]
+): Record<string, string> {
+  const latest: Record<string, string> = {};
+  for (const group of groups) {
+    for (const accountGroup of group.accounts) {
+      for (const movement of accountGroup.movements) {
+        const current = latest[accountGroup.accountId];
+        if (!current || movement.createdAt > current) {
+          latest[accountGroup.accountId] = movement.createdAt;
+        }
+      }
+    }
+  }
+  return latest;
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -394,11 +467,24 @@ type EnrichedDashboardAccount = TreasuryRoleDashboard["accounts"][number] & {
   accountType?: TreasuryAccountType;
 };
 
-function AccountRow({ account, action }: { account: EnrichedDashboardAccount; action?: ReactNode }) {
-  const isMulti = account.balances.length > 1;
+function AccountRow({
+  account,
+  action,
+  fullAccount,
+  lastMovementAt
+}: {
+  account: EnrichedDashboardAccount;
+  action?: ReactNode;
+  fullAccount?: TreasuryAccount;
+  lastMovementAt?: string | null;
+}) {
+  const subtitleLine = fullAccount ? formatAccountSubtitle(fullAccount) : null;
+  const accountNumberLine = fullAccount ? formatAccountIdentifier(fullAccount) : null;
+  const lastMovementLabel = lastMovementAt ? formatLastMovementDate(lastMovementAt) : null;
+  const primaryBalance = account.balances[0];
 
   return (
-    <div className="border-b border-dashed border-slate-200 py-3 last:border-b-0">
+    <div className="group border-b border-dashed border-slate-200 py-3 last:border-b-0">
       {/* Header row */}
       <div className="flex items-center gap-3">
         <AccountAvatar name={account.name} accountType={account.accountType} />
@@ -406,6 +492,21 @@ function AccountRow({ account, action }: { account: EnrichedDashboardAccount; ac
           <p className="truncate text-[13px] font-semibold tracking-tight text-foreground">
             {account.name}
           </p>
+          {subtitleLine ? (
+            <p className="mt-0.5 truncate text-meta text-muted-foreground">{subtitleLine}</p>
+          ) : null}
+          {accountNumberLine ? (
+            <p className="mt-0.5 truncate text-eyebrow font-medium tracking-wide text-slate-500">
+              {accountNumberLine}
+            </p>
+          ) : null}
+          {lastMovementLabel !== null && fullAccount ? (
+            <p className="mt-0.5 truncate text-eyebrow text-slate-400">
+              {lastMovementLabel
+                ? `${texts.dashboard.treasury_role.last_movement_label}: ${lastMovementLabel}`
+                : texts.dashboard.treasury_role.no_movements_yet}
+            </p>
+          ) : null}
           {account.hasPendingMovements || account.hasConciliatedMovements ? (
             <div className="mt-0.5 flex items-center gap-1">
               <span className={cn(
@@ -420,33 +521,16 @@ function AccountRow({ account, action }: { account: EnrichedDashboardAccount; ac
             </div>
           ) : null}
         </div>
-        {isMulti ? (
-          <span className="inline-flex shrink-0 items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold tracking-wider text-slate-500">
-            {account.balances.length} {texts.dashboard.treasury_role.multi_currency_label}
-          </span>
-        ) : (
-          <p className="shrink-0 text-card-title font-bold tabular-nums tracking-tight text-foreground">
-            {account.balances[0]?.currencyCode === "ARS" ? "$ " : "US$ "}
-            {formatLocalizedAmount(account.balances[0]?.amount ?? 0)}
-          </p>
-        )}
-        {action ? <div className="shrink-0">{action}</div> : null}
+        <p className="shrink-0 text-card-title font-bold tabular-nums tracking-tight text-foreground">
+          {primaryBalance?.currencyCode === "USD" ? "US$ " : "$ "}
+          {formatLocalizedAmount(primaryBalance?.amount ?? 0)}
+        </p>
+        {action ? (
+          <div className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+            {action}
+          </div>
+        ) : null}
       </div>
-
-      {/* Multi-currency breakdown */}
-      {isMulti && (
-        <div className="ml-12 mt-2 flex flex-col gap-1.5 border-l-2 border-slate-100 pl-3">
-          {account.balances.map((b) => (
-            <div key={b.currencyCode} className="flex items-center justify-between gap-3">
-              <span className="text-eyebrow font-semibold text-slate-400">{b.currencyCode}</span>
-              <span className="text-small font-semibold tabular-nums text-foreground">
-                {b.currencyCode === "ARS" ? "$ " : "US$ "}
-                {formatLocalizedAmount(b.amount)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -456,17 +540,21 @@ function AccountRow({ account, action }: { account: EnrichedDashboardAccount; ac
 function QuickActions({
   canCreateMovement,
   canCreateFxOperation,
+  canCreateTransfer,
   pendingConciliationCount,
   onMovement,
   onFx,
+  onTransfer,
   onConciliacion,
   onMovements
 }: {
   canCreateMovement: boolean;
   canCreateFxOperation: boolean;
+  canCreateTransfer: boolean;
   pendingConciliationCount: number;
   onMovement: () => void;
   onFx: () => void;
+  onTransfer: () => void;
   onConciliacion: () => void;
   onMovements: () => void;
 }) {
@@ -495,6 +583,15 @@ function QuickActions({
             className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
           >
             {texts.dashboard.treasury_role.fx_modal_cta}
+          </button>
+        )}
+        {canCreateTransfer && (
+          <button
+            type="button"
+            onClick={onTransfer}
+            className="flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+          >
+            {texts.dashboard.treasury_role.transfer_modal_cta}
           </button>
         )}
         <button
@@ -561,13 +658,10 @@ function TreasuryRoleMovementGroups({
               transferReference: movement.transferReference,
               fxOperationReference: movement.fxOperationReference,
               action: movement.canEdit ? (
-                <ModalTriggerButton
+                <EditIconButton
                   onClick={() => onEditMovement(movement)}
-                  aria-label={texts.dashboard.treasury_role.edit_movement_cta}
-                  className="cursor-pointer border-0 bg-transparent p-0 text-meta font-semibold text-slate-500 hover:text-foreground"
-                >
-                  {texts.dashboard.treasury.movements_edit_cta}
-                </ModalTriggerButton>
+                  label={texts.dashboard.treasury_role.edit_movement_cta}
+                />
               ) : undefined
             }))}
           />
@@ -579,31 +673,12 @@ function TreasuryRoleMovementGroups({
 
 // ─── Cuentas tab ─────────────────────────────────────────────────────────────
 
-function EditAccountButton({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="inline-flex size-8 items-center justify-center rounded-btn border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-    >
-      <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-        />
-      </svg>
-    </button>
-  );
-}
-
 function CuentasTab({
   accounts,
   dashboardAccounts,
   totalBalances,
   isAdmin,
+  lastMovementByAccountId,
   onCreateAccount,
   onEditAccount
 }: {
@@ -611,6 +686,7 @@ function CuentasTab({
   dashboardAccounts: TreasuryRoleDashboard["accounts"];
   totalBalances: TotalBalance[];
   isAdmin: boolean;
+  lastMovementByAccountId: Record<string, string>;
   onCreateAccount: () => void;
   onEditAccount: (account: TreasuryAccount) => void;
 }) {
@@ -671,9 +747,11 @@ function CuentasTab({
               <AccountRow
                 key={enriched.accountId}
                 account={enriched}
+                fullAccount={fullAccount}
+                lastMovementAt={lastMovementByAccountId[enriched.accountId] ?? null}
                 action={
                   isAdmin && fullAccount ? (
-                    <EditAccountButton
+                    <EditIconButton
                       onClick={() => onEditAccount(fullAccount)}
                       label={texts.dashboard.treasury_role.accounts_tab_edit_cta_label}
                     />
@@ -694,12 +772,24 @@ function MovimientosTab({
   dashboard,
   selectedAccountId,
   onSelectAccount,
-  onEditMovement
+  onEditMovement,
+  canCreateMovement,
+  canCreateFxOperation,
+  canCreateTransfer,
+  onCreateMovement,
+  onCreateTransfer,
+  onCreateFx
 }: {
   dashboard: TreasuryRoleDashboard;
   selectedAccountId: string | null;
   onSelectAccount: (id: string | null) => void;
   onEditMovement: (movement: TreasuryDashboardMovement) => void;
+  canCreateMovement: boolean;
+  canCreateFxOperation: boolean;
+  canCreateTransfer: boolean;
+  onCreateMovement: () => void;
+  onCreateTransfer: () => void;
+  onCreateFx: () => void;
 }) {
   const allMovementGroups = getAllMovementGroups(dashboard.movementGroups);
   const filteredGroups =
@@ -708,9 +798,40 @@ function MovimientosTab({
       : getMovementGroupsForAccount(dashboard.movementGroups, selectedAccountId);
 
   const isEmpty = filteredGroups.length === 0;
+  const hasMultipleAccounts = dashboard.accounts.length >= 2;
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {canCreateMovement && (
+          <button
+            type="button"
+            onClick={onCreateMovement}
+            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+          >
+            {texts.dashboard.treasury_role.movements_cta_movement}
+          </button>
+        )}
+        {canCreateTransfer && hasMultipleAccounts && (
+          <button
+            type="button"
+            onClick={onCreateTransfer}
+            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+          >
+            {texts.dashboard.treasury_role.movements_cta_transfer}
+          </button>
+        )}
+        {canCreateFxOperation && (
+          <button
+            type="button"
+            onClick={onCreateFx}
+            className="rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black"
+          >
+            {texts.dashboard.treasury_role.movements_cta_fx}
+          </button>
+        )}
+      </div>
+
       {dashboard.accounts.length > 0 && (
         <div className="flex flex-wrap gap-1.5 overflow-x-auto pb-1">
           <button
@@ -754,37 +875,6 @@ function MovimientosTab({
   );
 }
 
-// ─── Conciliación tab ─────────────────────────────────────────────────────────
-
-function ConciliacionTab() {
-  return (
-    <div className="rounded-card border border-border bg-card p-5">
-      <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500">
-          <ConsolidationIcon />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold tracking-tight text-foreground">
-            {texts.dashboard.treasury_role.consolidation_cta}
-          </p>
-          <p className="mt-0.5 text-meta leading-relaxed text-muted-foreground">
-            {texts.dashboard.treasury_role.conciliacion_tab_description}
-          </p>
-        </div>
-      </div>
-      <div className="mt-4">
-        <NavigationLinkWithLoader
-          href="/dashboard/treasury/consolidation"
-          className="flex min-h-11 w-full items-center justify-center rounded-btn bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
-          loadingLabel={texts.dashboard.treasury_role.navigation_loading}
-        >
-          {texts.dashboard.treasury_role.conciliacion_tab_cta}
-        </NavigationLinkWithLoader>
-      </div>
-    </div>
-  );
-}
-
 // ─── Resumen tab ──────────────────────────────────────────────────────────────
 
 function ResumenTab({
@@ -793,8 +883,10 @@ function ResumenTab({
   totalBalances,
   canCreateMovement,
   canCreateFxOperation,
+  canCreateTransfer,
   onMovement,
   onFx,
+  onTransfer,
   onConciliacion,
   onMovements,
   onViewAllAccounts
@@ -804,8 +896,10 @@ function ResumenTab({
   totalBalances: TotalBalance[];
   canCreateMovement: boolean;
   canCreateFxOperation: boolean;
+  canCreateTransfer: boolean;
   onMovement: () => void;
   onFx: () => void;
+  onTransfer: () => void;
   onConciliacion: () => void;
   onMovements: () => void;
   onViewAllAccounts: () => void;
@@ -864,9 +958,11 @@ function ResumenTab({
         <QuickActions
           canCreateMovement={canCreateMovement}
           canCreateFxOperation={canCreateFxOperation}
+          canCreateTransfer={canCreateTransfer}
           pendingConciliationCount={dashboard.pendingConciliationCount}
           onMovement={onMovement}
           onFx={onFx}
+          onTransfer={onTransfer}
           onConciliacion={onConciliacion}
           onMovements={onMovements}
         />
@@ -889,18 +985,30 @@ export function TreasuryRoleCard({
   createTreasuryRoleMovementAction,
   updateTreasuryRoleMovementAction,
   createFxOperationAction,
+  createAccountTransferAction,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
   allAccounts,
-  isAdmin
+  isAdmin,
+  consolidationDashboard,
+  transferSourceAccounts,
+  transferTargetAccounts,
+  updateMovementBeforeConsolidationAction,
+  updateTransferBeforeConsolidationAction,
+  executeDailyConsolidationAction
 }: TreasuryRoleCardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<SubTab>("resumen");
+  const initialTab = ((): SubTab => {
+    const raw = searchParams.get("tab");
+    if (raw === "cuentas" || raw === "movimientos" || raw === "conciliacion") return raw;
+    return "resumen";
+  })();
+  const [activeTab, setActiveTab] = useState<SubTab>(initialTab);
   const [activeModal, setActiveModal] = useState<
-    "movement" | "edit_movement" | "fx" | "create_account" | "edit_account" | null
+    "movement" | "edit_movement" | "fx" | "transfer" | "create_account" | "edit_account" | null
   >(null);
   const [selectedMovement, setSelectedMovement] = useState<TreasuryDashboardMovement | null>(null);
   const [editingAccount, setEditingAccount] = useState<TreasuryAccount | null>(null);
@@ -908,11 +1016,15 @@ export function TreasuryRoleCard({
   const [isMovementSubmissionPending, setIsMovementSubmissionPending] = useState(false);
   const [isMovementUpdatePending, setIsMovementUpdatePending] = useState(false);
   const [isFxSubmissionPending, setIsFxSubmissionPending] = useState(false);
+  const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
   const [isAccountSubmissionPending, setIsAccountSubmissionPending] = useState(false);
 
   const totalBalances = getTotalBalances(dashboard.accounts);
   const canCreateMovement = dashboard.availableActions.includes("create_movement");
   const canCreateFxOperation = dashboard.availableActions.includes("create_fx_operation");
+  const canCreateTransfer =
+    dashboard.availableActions.includes("create_transfer") && allAccounts.length >= 2;
+  const lastMovementByAccountId = buildLastMovementByAccountId(dashboard.movementGroups);
 
   const pendingOverlayLabel = isMovementSubmissionPending
     ? texts.dashboard.treasury_role.create_loading
@@ -920,18 +1032,18 @@ export function TreasuryRoleCard({
       ? texts.dashboard.treasury_role.update_loading
       : isFxSubmissionPending
         ? texts.dashboard.treasury_role.fx_create_loading
-        : isAccountSubmissionPending
-          ? texts.settings.club.treasury.save_account_loading
-          : null;
+        : isTransferSubmissionPending
+          ? texts.dashboard.treasury_role.transfer_create_loading
+          : isAccountSubmissionPending
+            ? texts.settings.club.treasury.save_account_loading
+            : null;
 
   useEffect(() => {
-    const nextSelectedAccountId = dashboard.accounts[0]?.accountId ?? null;
     setSelectedMovementAccountId((currentAccountId) => {
-      if (!nextSelectedAccountId) return null;
       if (currentAccountId && dashboard.accounts.some((a) => a.accountId === currentAccountId)) {
         return currentAccountId;
       }
-      return nextSelectedAccountId;
+      return null;
     });
   }, [dashboard.accounts]);
 
@@ -984,6 +1096,34 @@ export function TreasuryRoleCard({
       }
     } finally {
       setIsMovementUpdatePending(false);
+    }
+  }
+
+  async function handleCreateAccountTransfer(formData: FormData) {
+    setIsTransferSubmissionPending(true);
+    setActiveModal(null);
+
+    formData.set("origin_role", "tesoreria");
+
+    try {
+      const result = await createAccountTransferAction(formData);
+      const nextParams = new URLSearchParams(searchParams.toString());
+
+      nextParams.set("feedback", result.code);
+      if (result.movementDisplayId) {
+        nextParams.set("movement_id", result.movementDisplayId);
+      } else {
+        nextParams.delete("movement_id");
+      }
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+      if (result.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } finally {
+      setIsTransferSubmissionPending(false);
     }
   }
 
@@ -1076,8 +1216,10 @@ export function TreasuryRoleCard({
             totalBalances={totalBalances}
             canCreateMovement={canCreateMovement}
             canCreateFxOperation={canCreateFxOperation}
+            canCreateTransfer={canCreateTransfer}
             onMovement={() => setActiveModal("movement")}
             onFx={() => setActiveModal("fx")}
+            onTransfer={() => setActiveModal("transfer")}
             onConciliacion={handleConciliacion}
             onMovements={() => setActiveTab("movimientos")}
             onViewAllAccounts={() => setActiveTab("cuentas")}
@@ -1090,6 +1232,7 @@ export function TreasuryRoleCard({
             dashboardAccounts={dashboard.accounts}
             totalBalances={totalBalances}
             isAdmin={isAdmin}
+            lastMovementByAccountId={lastMovementByAccountId}
             onCreateAccount={() => setActiveModal("create_account")}
             onEditAccount={(account) => {
               setEditingAccount(account);
@@ -1104,10 +1247,32 @@ export function TreasuryRoleCard({
             selectedAccountId={selectedMovementAccountId}
             onSelectAccount={setSelectedMovementAccountId}
             onEditMovement={handleEditMovement}
+            canCreateMovement={canCreateMovement}
+            canCreateFxOperation={canCreateFxOperation}
+            canCreateTransfer={canCreateTransfer}
+            onCreateMovement={() => setActiveModal("movement")}
+            onCreateTransfer={() => setActiveModal("transfer")}
+            onCreateFx={() => setActiveModal("fx")}
           />
         )}
 
-        {activeTab === "conciliacion" && <ConciliacionTab />}
+        {activeTab === "conciliacion" && consolidationDashboard && (
+          <TreasuryConciliacionTab
+            dashboard={consolidationDashboard}
+            accounts={accounts}
+            transferSourceAccounts={transferSourceAccounts}
+            transferTargetAccounts={transferTargetAccounts}
+            categories={categories}
+            activities={activities}
+            calendarEvents={calendarEvents}
+            currencies={currencies}
+            movementTypes={movementTypes}
+            receiptFormats={receiptFormats}
+            updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
+            updateTransferBeforeConsolidationAction={updateTransferBeforeConsolidationAction}
+            executeDailyConsolidationAction={executeDailyConsolidationAction}
+          />
+        )}
       </div>
 
       {/* Modals */}
@@ -1180,16 +1345,44 @@ export function TreasuryRoleCard({
       </Modal>
 
       <Modal
+        open={activeModal === "transfer"}
+        onClose={() => setActiveModal(null)}
+        title={texts.dashboard.treasury_role.transfer_form_title}
+        description={texts.dashboard.treasury_role.transfer_form_description}
+        closeDisabled={
+          isMovementSubmissionPending ||
+          isMovementUpdatePending ||
+          isFxSubmissionPending ||
+          isTransferSubmissionPending
+        }
+        hideCloseButton
+        panelClassName="max-w-xl"
+      >
+        <AccountTransferForm
+          sourceAccounts={accounts}
+          targetAccounts={allAccounts}
+          currencies={currencies}
+          submitAction={handleCreateAccountTransfer}
+          sessionDate={dashboard.sessionDate}
+          onCancel={() => setActiveModal(null)}
+        />
+      </Modal>
+
+      <Modal
         open={activeModal === "create_account"}
         onClose={() => setActiveModal(null)}
         title={texts.dashboard.treasury_role.accounts_tab_create_title}
-        description={texts.dashboard.treasury_role.accounts_tab_create_description}
+        description={texts.settings.club.treasury.create_account_description}
         closeDisabled={isAccountSubmissionPending}
+        hideCloseButton
+        panelClassName="max-w-xl"
       >
         <TreasuryAccountForm
           action={handleCreateAccount}
           submitLabel={texts.settings.club.treasury.save_account_cta}
           pendingLabel={texts.settings.club.treasury.save_account_loading}
+          cancelLabel={texts.settings.club.treasury.cancel_cta}
+          onCancel={() => setActiveModal(null)}
         />
       </Modal>
 
@@ -1200,8 +1393,10 @@ export function TreasuryRoleCard({
           setEditingAccount(null);
         }}
         title={texts.dashboard.treasury_role.accounts_tab_edit_title}
-        description={texts.dashboard.treasury_role.accounts_tab_edit_description}
+        description={texts.settings.club.treasury.edit_account_description}
         closeDisabled={isAccountSubmissionPending}
+        hideCloseButton
+        panelClassName="max-w-xl"
       >
         {editingAccount ? (
           <TreasuryAccountForm
@@ -1209,6 +1404,11 @@ export function TreasuryRoleCard({
             action={handleUpdateAccount}
             submitLabel={texts.settings.club.treasury.update_account_cta}
             pendingLabel={texts.settings.club.treasury.update_account_loading}
+            cancelLabel={texts.settings.club.treasury.cancel_cta}
+            onCancel={() => {
+              setActiveModal(null);
+              setEditingAccount(null);
+            }}
             defaultAccount={editingAccount}
           />
         ) : null}

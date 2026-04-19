@@ -67,6 +67,7 @@ export type PendingClubInvitation = {
 };
 
 export type TreasuryAccountType = "efectivo" | "bancaria" | "billetera_virtual";
+export type TreasuryBankAccountSubtype = "cuenta_corriente" | "caja_ahorro";
 export type TreasuryConfigStatus = "active" | "inactive";
 export type TreasuryCurrencyCode = "ARS" | "USD";
 export type TreasuryMovementType = "ingreso" | "egreso";
@@ -91,6 +92,11 @@ export type TreasuryCurrencyConfig = {
   isPrimary: boolean;
 };
 
+export type TreasuryAccountCurrency = {
+  currencyCode: TreasuryCurrencyCode;
+  initialBalance: number;
+};
+
 export type TreasuryAccount = {
   id: string;
   clubId: string;
@@ -100,6 +106,11 @@ export type TreasuryAccount = {
   visibleForTesoreria: boolean;
   emoji: string | null;
   currencies: string[];
+  currencyDetails: TreasuryAccountCurrency[];
+  bankEntity: string | null;
+  bankAccountSubtype: TreasuryBankAccountSubtype | null;
+  accountNumber: string | null;
+  cbuCvu: string | null;
 };
 
 export type TreasuryCategory = {
@@ -342,7 +353,7 @@ export type TreasuryRoleDashboard = {
     hasConciliatedMovements: boolean;
   }>;
   movementGroups: TreasuryRoleDashboardMovementDateGroup[];
-  availableActions: Array<"create_movement" | "create_fx_operation">;
+  availableActions: Array<"create_movement" | "create_fx_operation" | "create_transfer">;
   monthlyStats: Array<{ currencyCode: string; ingreso: number; egreso: number }>;
   pendingConciliationCount: number;
 };
@@ -405,6 +416,7 @@ export type ConsolidationMovement = {
   calendarEventId: string | null;
   calendarEventTitle: string | null;
   transferReference: string | null;
+  fxOperationReference: string | null;
   concept: string;
   currencyCode: string;
   amount: number;
@@ -440,9 +452,13 @@ export type TreasuryConsolidationDashboard = {
   consolidationDate: string;
   defaultDate: string;
   hasLoadedDate: boolean;
+  sessionStatus: "open" | "closed" | "not_started";
   batch: DailyConsolidationBatch | null;
   pendingMovements: ConsolidationMovement[];
   integratedMovements: ConsolidationMovement[];
+  totalPendingCount: number;
+  totalPendingArsNet: number;
+  approvedTodayCount: number;
 };
 
 export type SessionBalanceDraft = {

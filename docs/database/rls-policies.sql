@@ -731,13 +731,20 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Secretaria can insert movements in current club"
+create policy "Secretaria or tesoreria can insert movements in current club"
 on treasury_movements
 for insert
 to authenticated
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('secretaria'))
+  and (
+    (select current_user_has_role('secretaria'))
+    or (
+      (select current_user_has_role('tesoreria'))
+      and origin_source = 'transfer'
+      and origin_role = 'tesoreria'
+    )
+  )
 );
 
 create policy "Secretaria and tesoreria can update movements in current club"
@@ -788,13 +795,16 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Secretaria can insert account transfers in current club"
+create policy "Secretaria or tesoreria can insert account transfers in current club"
 on account_transfers
 for insert
 to authenticated
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('secretaria'))
+  and (
+    (select current_user_has_role('secretaria'))
+    or (select current_user_has_role('tesoreria'))
+  )
   and exists (
     select 1
     from treasury_accounts source_account

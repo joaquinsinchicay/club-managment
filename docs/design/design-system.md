@@ -459,3 +459,40 @@ Reglas duras. Romperlas requiere justificación por escrito.
 | **Validar datos en es-AR** — Separador de miles `.`, decimal `,`. Fechas `DD/MM/YYYY`. Timezone Argentina. | **Emojis en UI** — No. Nunca. Ni uno. A menos que el usuario los introduzca en un campo. |
 | **Consistencia entre páginas** — Si el header tiene brand + role-stack + avatar + menu, todas las páginas lo tienen igual. | **Scrolls horizontales ocultos** — Excepto en `.app-tabs`, `.sub-tabs` y `.filter-row` (con scrollbar oculta intencional), evitar `overflow-x`. |
 | **44px touch** — Botones, inputs, tabs, filas clickeables: todo 44px de altura mínima. No hacer UI de escritorio en móvil. | **Sombras por decoración** — Sombra sólo para elevar elementos flotantes o separar cards del fondo. |
+
+---
+
+## 17 · Acciones por fila (hover-only)
+
+En tablas o listados donde cada fila expone acciones secundarias (editar, eliminar), los íconos de acción deben permanecer **ocultos por defecto** y aparecer al hacer hover sobre la fila o al recibir foco por teclado. Esto mantiene el listado limpio en reposo y reserva la jerarquía visual para el contenido principal.
+
+**Patrón**:
+
+```tsx
+<article className="group ...">
+  <div className="...">{/* contenido principal */}</div>
+  <div className="opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+    {/* botones de editar / eliminar */}
+  </div>
+</article>
+```
+
+- `group` en el contenedor de la fila.
+- `opacity-0` estado de reposo.
+- `group-hover:opacity-100` reveal al pasar el mouse sobre cualquier punto de la fila.
+- `focus-within:opacity-100` reveal al navegar con teclado (clave para accesibilidad).
+- `transition-opacity` para que el reveal sea suave (no flash).
+
+**Componente compartido**: `components/ui/edit-icon-button.tsx` (`EditIconButton`) encapsula el botón-ícono de lápiz con borde y hover. Usarlo en cualquier fila que exponga una acción de edición; nunca reemplazarlo por texto ("Editar") en listados.
+
+**Tablas que aplican** (referencia):
+- `components/dashboard/treasury-role-card.tsx` — Cuentas y Movimientos (Tesorería).
+- `components/dashboard/treasury-card.tsx` — Movimientos de la jornada (Secretaría).
+- `components/dashboard/secretaria-movement-list.tsx` — lista base reutilizada por los dos anteriores (Secretaría, Tesorería, Consolidación).
+- `components/settings/tabs/categories-tab.tsx` — Categorías.
+- `components/settings/tabs/activities-tab.tsx` — Actividades.
+- `components/settings/tabs/members-tab.tsx` — Miembros.
+
+**No aplica** para:
+- Acciones primarias siempre presentes (por ejemplo, un CTA único por fila que es la acción principal).
+- Badges informativos o chips de estado — son contenido, no acciones.

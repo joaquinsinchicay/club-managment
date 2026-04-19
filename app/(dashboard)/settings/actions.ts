@@ -12,19 +12,17 @@ import { inviteUserToActiveClub } from "@/lib/services/club-invitations-service"
 import {
   createClubActivityForActiveClub,
   createReceiptFormatForActiveClub,
-  createTreasuryAccountForActiveClub,
   createTreasuryCategoryForActiveClub,
   updateCalendarEventTreasuryAvailabilityForActiveClub,
   updateClubActivityForActiveClub,
   updateReceiptFormatForActiveClub,
-  updateTreasuryAccountForActiveClub,
   updateTreasuryCategoryForActiveClub
 } from "@/lib/services/treasury-settings-service";
 import { clearStoredActiveClubId, storeCurrentActiveClubId } from "@/lib/auth/session";
 
 function redirectToSettings(code: string, tab = "members") {
-  revalidatePath("/settings/club");
-  redirect(`/settings/club?feedback=${encodeURIComponent(code)}&tab=${encodeURIComponent(tab)}`);
+  revalidatePath("/settings");
+  redirect(`/settings?feedback=${encodeURIComponent(code)}&tab=${encodeURIComponent(tab)}`);
 }
 
 export async function approveClubMembershipAction(formData: FormData) {
@@ -70,31 +68,6 @@ export async function inviteClubUserAction(formData: FormData) {
   const result = await inviteUserToActiveClub(email, role);
 
   redirectToSettings(result.code, "members");
-}
-
-export async function createTreasuryAccountAction(formData: FormData) {
-  const result = await createTreasuryAccountForActiveClub({
-    name: String(formData.get("name") ?? ""),
-    accountType: String(formData.get("account_type") ?? ""),
-    visibility: formData.getAll("visibility").map((value) => String(value)),
-    currencies: formData.getAll("currencies").map((value) => String(value)),
-    emoji: String(formData.get("emoji") ?? "")
-  });
-
-  redirectToSettings(result.code, "cuentas");
-}
-
-export async function updateTreasuryAccountAction(formData: FormData) {
-  const result = await updateTreasuryAccountForActiveClub({
-    accountId: String(formData.get("account_id") ?? ""),
-    name: String(formData.get("name") ?? ""),
-    accountType: String(formData.get("account_type") ?? ""),
-    visibility: formData.getAll("visibility").map((value) => String(value)),
-    currencies: formData.getAll("currencies").map((value) => String(value)),
-    emoji: String(formData.get("emoji") ?? "")
-  });
-
-  redirectToSettings(result.code, "cuentas");
 }
 
 export async function createTreasuryCategoryAction(formData: FormData) {

@@ -15,10 +15,9 @@ export async function setActiveClubAction(formData: FormData) {
   }
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/secretaria");
-  revalidatePath("/dashboard/treasury");
-  revalidatePath("/dashboard/treasury/consolidation");
-  revalidatePath("/settings/club");
+  revalidatePath("/secretary");
+  revalidatePath("/treasury");
+  revalidatePath("/settings");
 
   if (!result.ok) {
     redirect(`/dashboard?feedback=${result.code}`);

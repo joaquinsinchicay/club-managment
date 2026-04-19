@@ -35,7 +35,9 @@ const dashboardSuccessFeedbackCodes = new Set([
   "movement_integrated",
   "transfer_created",
   "fx_operation_created",
-  "consolidation_completed"
+  "consolidation_completed",
+  "account_created",
+  "account_updated"
 ]);
 
 const loginErrorMessages = {
@@ -63,7 +65,10 @@ function resolveSettingsFeedback(code: string): FeedbackToast | null {
 }
 
 function resolveDashboardFeedback(code: string, searchParams: URLSearchParams): FeedbackToast | null {
-  const feedbackMessages = texts.dashboard.feedback as Record<string, string>;
+  const feedbackMessages: Record<string, string> = {
+    ...(texts.dashboard.feedback as Record<string, string>),
+    ...(texts.settings.club.treasury.feedback as Record<string, string>)
+  };
   let message = feedbackMessages[code];
 
   if (code === "movement_created") {
@@ -106,7 +111,7 @@ export function resolveFeedbackToast(
   const feedbackCode = searchParams.get("feedback");
   const errorCode = searchParams.get("error");
 
-  if (pathname === "/settings/club" && feedbackCode) {
+  if (pathname === "/settings" && feedbackCode) {
     const toast = resolveSettingsFeedback(feedbackCode);
 
     return toast ? { toast, consumedKeys: ["feedback"] } : null;
@@ -115,9 +120,8 @@ export function resolveFeedbackToast(
   if (
     (
       pathname === "/dashboard" ||
-      pathname === "/dashboard/secretaria" ||
-      pathname === "/dashboard/treasury" ||
-      pathname === "/dashboard/treasury/consolidation"
+      pathname === "/secretary" ||
+      pathname === "/treasury"
     ) &&
     feedbackCode
   ) {

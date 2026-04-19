@@ -82,6 +82,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 - No puede persistir una jornada `open` de un día anterior cuando el sistema empieza a operar un nuevo día; debe cerrarse automáticamente en backend antes de resolver la jornada actual.
 - El autocierre toma los saldos acumulados reales de la fecha de la jornada vencida y los registra como cierre sin diferencias ni ajustes adicionales.
 - El autocierre usa la misma zona horaria operativa `America/Argentina/Buenos_Aires` que la resolución del día actual.
+- Si por cualquier motivo el autocierre no logra cerrar la jornada anterior, la apertura de una nueva jornada queda bloqueada hasta que la jornada previa se cierre. Nunca pueden coexistir dos jornadas `open` en el mismo club.
 
 ---
 
@@ -170,6 +171,7 @@ Usuario autenticado con membership `activo` y rol `secretaria` en el club activo
 | feedback | `dashboard.feedback.session_closed` | Cierre exitoso. |
 | feedback | `dashboard.feedback.session_already_exists` | Error de doble apertura. |
 | feedback | `dashboard.feedback.session_not_open` | Error de cierre sin jornada abierta. |
+| feedback | `dashboard.feedback.previous_session_still_open` | Error al abrir jornada cuando una jornada anterior sigue `open`. |
 
 ---
 
