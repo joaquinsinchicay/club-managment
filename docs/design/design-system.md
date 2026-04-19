@@ -483,9 +483,12 @@ En tablas o listados donde cada fila expone acciones secundarias (editar, elimin
 - `focus-within:opacity-100` reveal al navegar con teclado (clave para accesibilidad).
 - `transition-opacity` para que el reveal sea suave (no flash).
 
+**Componente compartido**: `components/ui/edit-icon-button.tsx` (`EditIconButton`) encapsula el botón-ícono de lápiz con borde y hover. Usarlo en cualquier fila que exponga una acción de edición; nunca reemplazarlo por texto ("Editar") en listados.
+
 **Tablas que aplican** (referencia):
-- `components/dashboard/treasury-role-card.tsx` — Cuentas (Tesorería).
-- `components/dashboard/secretaria-movement-list.tsx` — Movimientos (Secretaría, Tesorería, Consolidación).
+- `components/dashboard/treasury-role-card.tsx` — Cuentas y Movimientos (Tesorería).
+- `components/dashboard/treasury-card.tsx` — Movimientos de la jornada (Secretaría).
+- `components/dashboard/secretaria-movement-list.tsx` — lista base reutilizada por los dos anteriores (Secretaría, Tesorería, Consolidación).
 - `components/settings/tabs/categories-tab.tsx` — Categorías.
 - `components/settings/tabs/activities-tab.tsx` — Actividades.
 - `components/settings/tabs/members-tab.tsx` — Miembros.

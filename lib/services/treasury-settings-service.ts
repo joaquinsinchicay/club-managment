@@ -49,6 +49,7 @@ type TreasurySettingsActionCode =
   | "invalid_emoji_option"
   | "invalid_account_currency"
   | "invalid_cbu"
+  | "invalid_alias"
   | "invalid_initial_balance"
   | "invalid_bank_account_subtype"
   | "invalid_config_status"
@@ -77,6 +78,7 @@ const TREASURY_ACCOUNT_TYPES: Array<TreasuryAccount["accountType"]> = [
 ];
 const TREASURY_BANK_ACCOUNT_SUBTYPES = ["cuenta_corriente", "caja_ahorro"] as const;
 const CBU_CVU_REGEX = /^\d{22}$/;
+const ALIAS_REGEX = /^[A-Za-z0-9.]+$/;
 
 function normalizeOptionalText(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
@@ -99,6 +101,14 @@ function normalizeCbuCvu(value: unknown): { ok: boolean; value: string | null } 
   const trimmed = value.trim();
   if (!trimmed) return { ok: true, value: null };
   if (!CBU_CVU_REGEX.test(trimmed)) return { ok: false, value: null };
+  return { ok: true, value: trimmed };
+}
+
+function normalizeAlias(value: unknown): { ok: boolean; value: string | null } {
+  if (typeof value !== "string") return { ok: true, value: null };
+  const trimmed = value.trim();
+  if (!trimmed) return { ok: true, value: null };
+  if (trimmed.length > 60 || !ALIAS_REGEX.test(trimmed)) return { ok: false, value: null };
   return { ok: true, value: trimmed };
 }
 
@@ -396,13 +406,15 @@ export async function updateCalendarEventTreasuryAvailabilityForActiveClub(input
 export type TreasuryAccountMutationInput = {
   name: string;
   accountType: string;
-  visibility: string[];
+  availableForSecretaria: boolean;
   currencies: string[];
   emoji: string;
   bankEntity?: string;
+  walletProvider?: string;
   bankAccountSubtype?: string;
   accountNumber?: string;
   cbuCvu?: string;
+  alias?: string;
   initialBalances?: Record<string, string>;
 };
 
@@ -418,26 +430,50 @@ function buildAccountBankFields(
       cbuCvu: string | null;
     }
   | { ok: false; code: TreasurySettingsActionCode } {
-  const bankEntity = accountType === "bancaria" ? normalizeOptionalText(input.bankEntity, 100) : null;
-  const accountNumber = accountType === "bancaria" ? normalizeOptionalText(input.accountNumber, 40) : null;
-
-  const subtypeRaw = accountType === "bancaria" ? normalizeBankAccountSubtype(input.bankAccountSubtype) : null;
-  if (subtypeRaw === "invalid") {
-    return { ok: false, code: "invalid_bank_account_subtype" };
+  if (accountType === "bancaria") {
+    const bankEntity = normalizeOptionalText(input.bankEntity, 100);
+    const accountNumber = normalizeOptionalText(input.accountNumber, 40);
+    const subtypeRaw = normalizeBankAccountSubtype(input.bankAccountSubtype);
+    if (subtypeRaw === "invalid") {
+      return { ok: false, code: "invalid_bank_account_subtype" };
+    }
+    const cbu = normalizeCbuCvu(input.cbuCvu);
+    if (!cbu.ok) {
+      return { ok: false, code: "invalid_cbu" };
+    }
+    return {
+      ok: true,
+      bankEntity,
+      bankAccountSubtype: (subtypeRaw as TreasuryAccount["bankAccountSubtype"]) ?? null,
+      accountNumber,
+      cbuCvu: cbu.value
+    };
   }
 
-  const allowsCbu = accountType === "bancaria" || accountType === "billetera_virtual";
-  const cbu = allowsCbu ? normalizeCbuCvu(input.cbuCvu) : { ok: true, value: null };
-  if (!cbu.ok) {
-    return { ok: false, code: "invalid_cbu" };
+  if (accountType === "billetera_virtual") {
+    const walletProvider = normalizeOptionalText(input.walletProvider, 60);
+    const alias = normalizeAlias(input.alias);
+    if (!alias.ok) {
+      return { ok: false, code: "invalid_alias" };
+    }
+    // wallet provider se guarda en la columna `bank_entity` (reutilización semántica).
+    // cbu_cvu guarda el alias.
+    return {
+      ok: true,
+      bankEntity: walletProvider,
+      bankAccountSubtype: null,
+      accountNumber: null,
+      cbuCvu: alias.value
+    };
   }
 
+  // efectivo: nada bancario.
   return {
     ok: true,
-    bankEntity,
-    bankAccountSubtype: (subtypeRaw as TreasuryAccount["bankAccountSubtype"]) ?? null,
-    accountNumber,
-    cbuCvu: cbu.value
+    bankEntity: null,
+    bankAccountSubtype: null,
+    accountNumber: null,
+    cbuCvu: null
   };
 }
 
@@ -465,7 +501,6 @@ export async function createTreasuryAccountForActiveClub(
   }
 
   const accountType = input.accountType as TreasuryAccount["accountType"];
-  const selectedVisibility = normalizeAccountVisibility(input.visibility);
 
   const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
   const selectedCurrencies = Array.from(
@@ -513,8 +548,8 @@ export async function createTreasuryAccountForActiveClub(
       clubId: context.activeClub.id,
       name,
       accountType,
-      visibleForSecretaria: selectedVisibility.includes("secretaria"),
-      visibleForTesoreria: selectedVisibility.includes("tesoreria"),
+      visibleForSecretaria: Boolean(input.availableForSecretaria),
+      visibleForTesoreria: true,
       emoji: resolvedEmoji.emoji,
       currencies: balances.details,
       bankEntity: bankFields.bankEntity,
@@ -557,7 +592,6 @@ export async function updateTreasuryAccountForActiveClub(
   }
 
   const accountType = input.accountType as TreasuryAccount["accountType"];
-  const selectedVisibility = normalizeAccountVisibility(input.visibility);
 
   const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
   const selectedCurrencies = Array.from(
@@ -615,8 +649,8 @@ export async function updateTreasuryAccountForActiveClub(
       clubId: context.activeClub.id,
       name,
       accountType,
-      visibleForSecretaria: selectedVisibility.includes("secretaria"),
-      visibleForTesoreria: selectedVisibility.includes("tesoreria"),
+      visibleForSecretaria: Boolean(input.availableForSecretaria),
+      visibleForTesoreria: true,
       emoji: resolvedEmoji.emoji,
       currencies: balances.details,
       bankEntity: bankFields.bankEntity,

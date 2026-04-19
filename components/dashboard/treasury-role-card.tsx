@@ -10,7 +10,8 @@ import {
   TreasuryRoleMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
 import { TreasuryAccountForm } from "@/components/treasury/account-form";
-import { Modal, ModalTriggerButton } from "@/components/ui/modal";
+import { EditIconButton } from "@/components/ui/edit-icon-button";
+import { Modal } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount } from "@/lib/amounts";
@@ -565,13 +566,10 @@ function TreasuryRoleMovementGroups({
               transferReference: movement.transferReference,
               fxOperationReference: movement.fxOperationReference,
               action: movement.canEdit ? (
-                <ModalTriggerButton
+                <EditIconButton
                   onClick={() => onEditMovement(movement)}
-                  aria-label={texts.dashboard.treasury_role.edit_movement_cta}
-                  className="cursor-pointer border-0 bg-transparent p-0 text-meta font-semibold text-slate-500 hover:text-foreground"
-                >
-                  {texts.dashboard.treasury.movements_edit_cta}
-                </ModalTriggerButton>
+                  label={texts.dashboard.treasury_role.edit_movement_cta}
+                />
               ) : undefined
             }))}
           />
@@ -582,26 +580,6 @@ function TreasuryRoleMovementGroups({
 }
 
 // ─── Cuentas tab ─────────────────────────────────────────────────────────────
-
-function EditAccountButton({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="inline-flex size-8 items-center justify-center rounded-btn border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-    >
-      <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-        />
-      </svg>
-    </button>
-  );
-}
 
 function CuentasTab({
   accounts,
@@ -677,7 +655,7 @@ function CuentasTab({
                 account={enriched}
                 action={
                   isAdmin && fullAccount ? (
-                    <EditAccountButton
+                    <EditIconButton
                       onClick={() => onEditAccount(fullAccount)}
                       label={texts.dashboard.treasury_role.accounts_tab_edit_cta_label}
                     />
@@ -1195,6 +1173,8 @@ export function TreasuryRoleCard({
           action={handleCreateAccount}
           submitLabel={texts.settings.club.treasury.save_account_cta}
           pendingLabel={texts.settings.club.treasury.save_account_loading}
+          cancelLabel={texts.settings.club.treasury.cancel_cta}
+          onCancel={() => setActiveModal(null)}
         />
       </Modal>
 
@@ -1215,6 +1195,11 @@ export function TreasuryRoleCard({
             action={handleUpdateAccount}
             submitLabel={texts.settings.club.treasury.update_account_cta}
             pendingLabel={texts.settings.club.treasury.update_account_loading}
+            cancelLabel={texts.settings.club.treasury.cancel_cta}
+            onCancel={() => {
+              setActiveModal(null);
+              setEditingAccount(null);
+            }}
             defaultAccount={editingAccount}
           />
         ) : null}

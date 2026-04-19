@@ -29,13 +29,12 @@ Un usuario `admin` debe poder crear y editar cuentas del club definiendo un úni
 
 ### Incluye
 - Extensión de la configuración de cuentas dentro de `Tesorería`.
-- Campo `Visibilidad` multiselect con `Secretaría` y `Tesorería`.
+- Visibilidad: Tesorería la ve siempre. Secretaría es un opt-in booleano (`available_for_secretaria`) representado como checkbox único en el formulario.
 - Selección obligatoria de una o más monedas por cuenta entre `ARS` y `USD`.
 - Saldo inicial por cada moneda habilitada de la cuenta (default 0).
-- Campos bancarios opcionales para cuentas tipo `Banco`: entidad bancaria, tipo de cuenta bancaria (cuenta corriente / caja de ahorro), número de cuenta, CBU / CVU.
-- Campo CBU/CVU opcional para tipo `Billetera virtual`.
-- Visualización de la visibilidad compuesta y monedas configuradas en el listado.
-- Validación de nombre obligatorio, al menos una moneda por cuenta y formato de CBU/CVU (22 dígitos numéricos) cuando se completa.
+- Campos bancarios opcionales para cuentas tipo `Banco`: entidad bancaria, tipo de cuenta bancaria (cuenta corriente / caja de ahorro), número de cuenta, CBU / CVU (22 dígitos numéricos).
+- Campos de billetera virtual: selector de `Proveedor` (Mercado Pago, Ualá, Personal Pay, Naranja X, Otro) y campo `Alias` alfanumérico con punto como único separador permitido.
+- Validación de nombre obligatorio, al menos una moneda por cuenta, formato de CBU (22 dígitos numéricos) y formato de Alias (sólo letras, números y `.`).
 - Consumo operativo por rol según visibilidad configurada.
 
 ### No incluye
@@ -74,20 +73,17 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - Solo `admin` puede crear y editar cuentas.
 - Toda cuenta pertenece exclusivamente al club activo.
 - El nombre de cuenta es obligatorio.
-- El tipo de cuenta es obligatorio.
-- Una cuenta puede quedar sin roles seleccionados en `Visibilidad`; en ese caso permanece oculta para ambos roles.
+- El tipo de cuenta es obligatorio y debe ser uno de `bancaria`, `billetera_virtual` o `efectivo`.
+- Tesorería siempre ve la cuenta (`visible_for_tesoreria = true` por regla de sistema). No hay checkbox para desactivarlo.
+- Secretaría es opt-in: `visible_for_secretaria` refleja el checkbox `Disponible para Secretaría`.
 - Debe existir al menos una moneda habilitada para la cuenta.
 - Las monedas de la cuenta solo pueden ser `ARS` y/o `USD`.
 - Cada moneda habilitada lleva un `saldo inicial` numérico ≥ 0 (default 0).
 - No puede existir otra cuenta con el mismo nombre en el mismo club.
-- Si la cuenta tiene visibilidad `secretaria`, Secretaría la ve en formularios y dashboard con todas sus monedas.
-- Si la cuenta tiene visibilidad `tesoreria`, Tesorería la ve en sus formularios y en su card del dashboard `/dashboard` con todas sus monedas.
-- Si la cuenta tiene ambas visibilidades, ambos roles la visualizan.
 - La representación persistida puede conservar `account_scope` como dato legacy no funcional, pero la fuente de verdad de negocio pasa a ser la visibilidad por rol.
-- Campos bancarios (`bank_entity`, `bank_account_subtype`, `account_number`, `cbu_cvu`) son opcionales. Solo son relevantes si `accountType = bancaria`; si el tipo cambia a `efectivo`, se persisten en `null`.
-- `cbu_cvu` también puede completarse para `billetera_virtual`. Para `efectivo` siempre queda en `null`.
-- `bank_account_subtype` solo admite los valores `cuenta_corriente` o `caja_ahorro`.
-- Cuando se informa `cbu_cvu`, el valor debe ser exactamente 22 dígitos numéricos.
+- Si `accountType = bancaria`: se habilitan campos `bank_entity`, `bank_account_subtype`, `account_number`, `cbu_cvu`. `bank_account_subtype` solo admite `cuenta_corriente` o `caja_ahorro`. Si se informa `cbu_cvu`, debe ser exactamente 22 dígitos numéricos.
+- Si `accountType = billetera_virtual`: se habilitan `wallet_provider` (persistido en la columna `bank_entity`) y `alias` (persistido en la columna `cbu_cvu`). El alias acepta letras, números y `.` como único carácter especial.
+- Si `accountType = efectivo`: todos los campos bancarios se fuerzan a `null` antes de persistir.
 
 ---
 

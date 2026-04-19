@@ -221,13 +221,15 @@ export async function createTreasuryAccountFromTreasuryAction(formData: FormData
   const result = await createTreasuryAccountForActiveClub({
     name: String(formData.get("name") ?? ""),
     accountType: String(formData.get("account_type") ?? ""),
-    visibility: formData.getAll("visibility").map((value) => String(value)),
+    availableForSecretaria: formData.get("available_for_secretaria") === "on",
     currencies: formData.getAll("currencies").map((value) => String(value)),
     emoji: String(formData.get("emoji") ?? ""),
     bankEntity: String(formData.get("bank_entity") ?? ""),
+    walletProvider: String(formData.get("wallet_provider") ?? ""),
     bankAccountSubtype: String(formData.get("bank_account_subtype") ?? ""),
     accountNumber: String(formData.get("account_number") ?? ""),
     cbuCvu: String(formData.get("cbu_cvu") ?? ""),
+    alias: String(formData.get("alias") ?? ""),
     initialBalances: extractInitialBalancesFromFormData(formData)
   });
 
@@ -244,13 +246,15 @@ export async function updateTreasuryAccountFromTreasuryAction(formData: FormData
     accountId: String(formData.get("account_id") ?? ""),
     name: String(formData.get("name") ?? ""),
     accountType: String(formData.get("account_type") ?? ""),
-    visibility: formData.getAll("visibility").map((value) => String(value)),
+    availableForSecretaria: formData.get("available_for_secretaria") === "on",
     currencies: formData.getAll("currencies").map((value) => String(value)),
     emoji: String(formData.get("emoji") ?? ""),
     bankEntity: String(formData.get("bank_entity") ?? ""),
+    walletProvider: String(formData.get("wallet_provider") ?? ""),
     bankAccountSubtype: String(formData.get("bank_account_subtype") ?? ""),
     accountNumber: String(formData.get("account_number") ?? ""),
     cbuCvu: String(formData.get("cbu_cvu") ?? ""),
+    alias: String(formData.get("alias") ?? ""),
     initialBalances: extractInitialBalancesFromFormData(formData)
   });
 

@@ -134,7 +134,7 @@ export function SecretariaMovementList({ items }: SecretariaMovementListProps) {
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <p className="text-meta text-muted-foreground">{meta}</p>
                   {item.action ? (
-                    <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
                       {item.action}
                     </div>
                   ) : null}

@@ -13,46 +13,37 @@ import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 const CURRENCY_OPTIONS: TreasuryCurrencyCode[] = ["ARS", "USD"];
-const VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const ACCOUNT_TYPE_OPTIONS: TreasuryAccountType[] = ["bancaria", "billetera_virtual", "efectivo"];
 const SUBTYPE_OPTIONS: TreasuryBankAccountSubtype[] = ["cuenta_corriente", "caja_ahorro"];
 const CBU_REGEX = /^\d{22}$/;
+const ALIAS_REGEX = /^[A-Za-z0-9.]+$/;
+
+const ACCOUNT_TYPE_COLORS: Record<TreasuryAccountType, { base: string; selected: string }> = {
+  bancaria: {
+    base: "border-border bg-card text-foreground hover:bg-ds-blue-050/60",
+    selected: "border-ds-blue-700 bg-ds-blue-050 text-ds-blue-700"
+  },
+  billetera_virtual: {
+    base: "border-border bg-card text-foreground hover:bg-amber-50/60",
+    selected: "border-amber-500 bg-amber-50 text-amber-700"
+  },
+  efectivo: {
+    base: "border-border bg-card text-foreground hover:bg-emerald-50/60",
+    selected: "border-emerald-500 bg-emerald-50 text-emerald-700"
+  }
+};
 
 function formatInitialBalance(value: number): string {
   if (!Number.isFinite(value)) return "0,00";
   return value.toFixed(2).replace(".", ",");
 }
 
-function AccountTypeIcon({ type }: { type: TreasuryAccountType }) {
-  if (type === "bancaria") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden="true" className="size-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10L12 4l9 6M5 10v9h14v-9M9 14v3M12 14v3M15 14v3" />
-      </svg>
-    );
-  }
-  if (type === "billetera_virtual") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden="true" className="size-6">
-        <rect x="3" y="6" width="18" height="13" rx="2" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16 12h3M3 10h18" />
-      </svg>
-    );
-  }
-  // efectivo
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden="true" className="size-6">
-      <rect x="2" y="7" width="20" height="10" rx="2" />
-      <circle cx="12" cy="12" r="2.5" />
-      <path strokeLinecap="round" d="M6 12h.01M18 12h.01" />
-    </svg>
-  );
-}
-
 export type TreasuryAccountFormProps = {
   action: (formData: FormData) => Promise<void> | Promise<unknown>;
   submitLabel: string;
   pendingLabel: string;
+  cancelLabel?: string;
+  onCancel?: () => void;
   defaultAccount?: TreasuryAccount;
 };
 
@@ -60,6 +51,8 @@ export function TreasuryAccountForm({
   action,
   submitLabel,
   pendingLabel,
+  cancelLabel,
+  onCancel,
   defaultAccount
 }: TreasuryAccountFormProps) {
   const [accountType, setAccountType] = useState<TreasuryAccountType | "">(
@@ -78,35 +71,28 @@ export function TreasuryAccountForm({
     return map;
   }, [defaultAccount]);
   const [initialBalances, setInitialBalances] = useState<Record<TreasuryCurrencyCode, string>>(defaultBalances);
-  const [selectedVisibility, setSelectedVisibility] = useState<string[]>(
-    VISIBILITY_OPTIONS.filter((v) =>
-      v === "secretaria"
-        ? (defaultAccount?.visibleForSecretaria ?? true)
-        : (defaultAccount?.visibleForTesoreria ?? true)
-    )
+  const [availableForSecretaria, setAvailableForSecretaria] = useState<boolean>(
+    defaultAccount?.visibleForSecretaria ?? false
   );
-  const [cbuValue, setCbuValue] = useState<string>(defaultAccount?.cbuCvu ?? "");
+  const [cbuValue, setCbuValue] = useState<string>(
+    defaultAccount?.accountType === "bancaria" ? (defaultAccount?.cbuCvu ?? "") : ""
+  );
+  const [aliasValue, setAliasValue] = useState<string>(
+    defaultAccount?.accountType === "billetera_virtual" ? (defaultAccount?.cbuCvu ?? "") : ""
+  );
   const [formErrors, setFormErrors] = useState<{
     name?: string;
     accountType?: string;
     currencies?: string;
     cbu?: string;
+    alias?: string;
   }>({});
 
   function toggleCurrency(code: TreasuryCurrencyCode) {
-    setSelectedCurrencies((current) => {
-      if (current.includes(code)) {
-        return current.filter((c) => c !== code);
-      }
-      return [...current, code];
-    });
-    setFormErrors((prev) => ({ ...prev, currencies: undefined }));
-  }
-
-  function toggleVisibility(visibility: string) {
-    setSelectedVisibility((current) =>
-      current.includes(visibility) ? current.filter((v) => v !== visibility) : [...current, visibility]
+    setSelectedCurrencies((current) =>
+      current.includes(code) ? current.filter((c) => c !== code) : [...current, code]
     );
+    setFormErrors((prev) => ({ ...prev, currencies: undefined }));
   }
 
   function handleBalanceChange(code: TreasuryCurrencyCode, value: string) {
@@ -114,7 +100,7 @@ export function TreasuryAccountForm({
   }
 
   const showBankFields = accountType === "bancaria";
-  const showCbu = accountType === "bancaria" || accountType === "billetera_virtual";
+  const showWalletFields = accountType === "billetera_virtual";
 
   function validateAndSubmit(event: React.FormEvent<HTMLFormElement>) {
     const errors: typeof formErrors = {};
@@ -125,8 +111,11 @@ export function TreasuryAccountForm({
     if (selectedCurrencies.length === 0) {
       errors.currencies = texts.settings.club.treasury.feedback.account_currencies_required;
     }
-    if (showCbu && cbuValue.trim() && !CBU_REGEX.test(cbuValue.trim())) {
+    if (showBankFields && cbuValue.trim() && !CBU_REGEX.test(cbuValue.trim())) {
       errors.cbu = texts.settings.club.treasury.feedback.invalid_cbu;
+    }
+    if (showWalletFields && aliasValue.trim() && !ALIAS_REGEX.test(aliasValue.trim())) {
+      errors.alias = texts.settings.club.treasury.feedback.invalid_alias;
     }
     if (Object.keys(errors).length > 0) {
       event.preventDefault();
@@ -135,10 +124,15 @@ export function TreasuryAccountForm({
   }
 
   return (
-    <form action={action as (formData: FormData) => Promise<void>} onSubmit={validateAndSubmit} className="grid gap-6">
-      <PendingFieldset className="grid gap-6">
+    <form
+      action={action as (formData: FormData) => Promise<void>}
+      onSubmit={validateAndSubmit}
+      className="flex min-h-0 flex-1 flex-col"
+    >
+      <PendingFieldset className="flex min-h-0 flex-1 flex-col gap-5">
         {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
         <input type="hidden" name="account_type" value={accountType} />
+        {availableForSecretaria ? <input type="hidden" name="available_for_secretaria" value="on" /> : null}
 
         {/* Tipo de cuenta */}
         <div className="grid gap-2">
@@ -149,6 +143,7 @@ export function TreasuryAccountForm({
           <div className="grid grid-cols-3 gap-2">
             {ACCOUNT_TYPE_OPTIONS.map((type) => {
               const selected = accountType === type;
+              const palette = ACCOUNT_TYPE_COLORS[type];
               return (
                 <button
                   key={type}
@@ -159,13 +154,13 @@ export function TreasuryAccountForm({
                     setFormErrors((prev) => ({ ...prev, accountType: undefined }));
                   }}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 text-sm font-medium transition",
-                    selected
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-secondary/40 text-foreground hover:bg-secondary"
+                    "flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-4 text-sm font-semibold transition",
+                    selected ? palette.selected : palette.base
                   )}
                 >
-                  <AccountTypeIcon type={type} />
+                  <span aria-hidden="true" className="text-2xl leading-none">
+                    {texts.settings.club.treasury.account_type_emojis[type]}
+                  </span>
                   <span>{texts.settings.club.treasury.account_type_cards[type]}</span>
                 </button>
               );
@@ -216,10 +211,10 @@ export function TreasuryAccountForm({
                   aria-pressed={selected}
                   onClick={() => toggleCurrency(code)}
                   className={cn(
-                    "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition",
+                    "inline-flex min-h-10 items-center gap-2 rounded-full border px-5 text-sm font-semibold transition",
                     selected
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-secondary/40 text-foreground hover:bg-secondary"
+                      ? "border-ds-blue-700 bg-ds-blue-050 text-ds-blue-700"
+                      : "border-border bg-card text-muted-foreground hover:bg-secondary/60"
                   )}
                 >
                   {selected ? (
@@ -232,7 +227,6 @@ export function TreasuryAccountForm({
               );
             })}
           </div>
-          {/* Hidden inputs para el action */}
           {selectedCurrencies.map((code) => (
             <input key={`cur-${code}`} type="hidden" name="currencies" value={code} />
           ))}
@@ -244,9 +238,9 @@ export function TreasuryAccountForm({
           ) : null}
         </div>
 
-        {/* Campos bancarios */}
+        {/* Campos Banco */}
         {showBankFields ? (
-          <div className="grid gap-4">
+          <>
             <label className="grid gap-2 text-sm text-foreground">
               <span className="font-medium">{texts.settings.club.treasury.bank_entity_label}</span>
               <select
@@ -289,29 +283,71 @@ export function TreasuryAccountForm({
                 />
               </label>
             </div>
-          </div>
+
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.cbu_cvu_label}</span>
+              <input
+                type="text"
+                name="cbu_cvu"
+                inputMode="numeric"
+                maxLength={22}
+                value={cbuValue}
+                onChange={(event) => {
+                  setCbuValue(event.target.value.replace(/\D/g, "").slice(0, 22));
+                  setFormErrors((prev) => ({ ...prev, cbu: undefined }));
+                }}
+                placeholder={texts.settings.club.treasury.cbu_cvu_placeholder}
+                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+              />
+              {formErrors.cbu ? (
+                <span className="text-sm text-destructive" aria-live="polite">{formErrors.cbu}</span>
+              ) : null}
+            </label>
+          </>
         ) : null}
 
-        {showCbu ? (
-          <label className="grid gap-2 text-sm text-foreground">
-            <span className="font-medium">{texts.settings.club.treasury.cbu_cvu_label}</span>
-            <input
-              type="text"
-              name="cbu_cvu"
-              inputMode="numeric"
-              maxLength={22}
-              value={cbuValue}
-              onChange={(event) => {
-                setCbuValue(event.target.value.replace(/\D/g, "").slice(0, 22));
-                setFormErrors((prev) => ({ ...prev, cbu: undefined }));
-              }}
-              placeholder={texts.settings.club.treasury.cbu_cvu_placeholder}
-              className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-            />
-            {formErrors.cbu ? (
-              <span className="text-sm text-destructive" aria-live="polite">{formErrors.cbu}</span>
-            ) : null}
-          </label>
+        {/* Campos Billetera */}
+        {showWalletFields ? (
+          <>
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.wallet_provider_label}</span>
+              <select
+                name="wallet_provider"
+                defaultValue={
+                  defaultAccount?.accountType === "billetera_virtual" ? (defaultAccount?.bankEntity ?? "") : ""
+                }
+                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+              >
+                <option value="">{texts.settings.club.treasury.wallet_provider_placeholder}</option>
+                {texts.settings.club.treasury.wallet_providers.map((provider) => (
+                  <option key={provider} value={provider}>{provider}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">{texts.settings.club.treasury.alias_label}</span>
+              <input
+                type="text"
+                name="alias"
+                maxLength={60}
+                value={aliasValue}
+                onChange={(event) => {
+                  const sanitized = event.target.value.replace(/[^A-Za-z0-9.]/g, "").slice(0, 60);
+                  setAliasValue(sanitized);
+                  setFormErrors((prev) => ({ ...prev, alias: undefined }));
+                }}
+                placeholder={texts.settings.club.treasury.alias_placeholder}
+                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+              />
+              <span className="text-meta text-muted-foreground">
+                {texts.settings.club.treasury.alias_helper}
+              </span>
+              {formErrors.alias ? (
+                <span className="text-sm text-destructive" aria-live="polite">{formErrors.alias}</span>
+              ) : null}
+            </label>
+          </>
         ) : null}
 
         {/* Saldo inicial por moneda */}
@@ -324,9 +360,9 @@ export function TreasuryAccountForm({
               {selectedCurrencies.map((code) => (
                 <div
                   key={`bal-${code}`}
-                  className="flex items-center gap-2 rounded-2xl border border-border bg-secondary/40 px-3 py-2"
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-3 py-2"
                 >
-                  <span className="inline-flex min-w-12 justify-center rounded-md bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold tracking-wider text-slate-700">
+                  <span className="inline-flex min-w-14 justify-center rounded-xl bg-card px-3 py-2 text-sm font-semibold tracking-wider text-foreground">
                     {code}
                   </span>
                   <input
@@ -347,37 +383,29 @@ export function TreasuryAccountForm({
         ) : null}
 
         {/* Visibilidad */}
-        <div className="grid gap-2">
-          <span className="text-sm font-medium text-foreground">
-            {texts.settings.club.treasury.account_visibility_label}
+        <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={availableForSecretaria}
+            onChange={(event) => setAvailableForSecretaria(event.target.checked)}
+            className="size-4 rounded border-border"
+          />
+          <span className="font-medium">
+            {texts.settings.club.treasury.visibility_secretaria_checkbox}
           </span>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {VISIBILITY_OPTIONS.map((visibility) => {
-              const selected = selectedVisibility.includes(visibility);
-              return (
-                <label
-                  key={`visibility-${visibility}`}
-                  className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-                >
-                  <input
-                    type="checkbox"
-                    name="visibility"
-                    value={visibility}
-                    checked={selected}
-                    onChange={() => toggleVisibility(visibility)}
-                    className="size-4 rounded border-border"
-                  />
-                  <span className="font-medium">
-                    {texts.settings.club.treasury.account_visibility_options[visibility]}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
+        </label>
 
-        {/* Footer actions */}
-        <div className="-mx-1 flex items-center justify-end gap-2 pt-2">
+        {/* Footer actions (sticky bottom dentro del body scrolleable del modal) */}
+        <div className="sticky bottom-0 -mx-5 -mb-5 mt-auto flex items-center justify-end gap-2 border-t border-border/60 bg-card px-5 py-4 sm:-mx-6 sm:-mb-6 sm:px-6">
+          {onCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="min-h-11 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+            >
+              {cancelLabel ?? texts.settings.club.treasury.cancel_cta}
+            </button>
+          ) : null}
           <PendingSubmitButton
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}

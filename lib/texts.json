@@ -706,6 +706,11 @@
           "billetera_virtual": "Billetera",
           "efectivo": "Efectivo"
         },
+        "account_type_emojis": {
+          "bancaria": "🏦",
+          "billetera_virtual": "📱",
+          "efectivo": "💵"
+        },
         "bank_entity_label": "Entidad bancaria",
         "bank_entity_placeholder": "Selecciona una entidad",
         "bank_entities": [
@@ -721,6 +726,15 @@
           "ICBC",
           "Otro"
         ],
+        "wallet_provider_label": "Proveedor",
+        "wallet_provider_placeholder": "Selecciona un proveedor",
+        "wallet_providers": [
+          "Mercado Pago",
+          "Uala",
+          "Personal Pay",
+          "Naranja X",
+          "Otro"
+        ],
         "bank_account_subtype_label": "Tipo de cuenta bancaria",
         "bank_account_subtype_placeholder": "Selecciona un tipo",
         "bank_account_subtypes": {
@@ -731,11 +745,15 @@
         "account_number_placeholder": "0000-00000000-0",
         "cbu_cvu_label": "CBU / CVU",
         "cbu_cvu_placeholder": "22 digitos",
+        "alias_label": "Alias",
+        "alias_placeholder": "ourclub.tesoreria.mp",
+        "alias_helper": "Solo letras, numeros y puntos.",
         "initial_balance_label": "Saldo inicial",
         "initial_balance_helper": "Se pide un saldo por cada moneda habilitada. Podes dejar en 0.",
         "create_account_description": "Dar de alta una cuenta bancaria, billetera o efectivo.",
         "edit_account_description": "Actualiza los datos de la cuenta.",
         "cancel_cta": "Cancelar",
+        "visibility_secretaria_checkbox": "Disponible para Secretaria",
         "account_type_placeholder": "Selecciona un tipo",
         "receipt_validation_type_label": "Tipo de validacion",
         "receipt_min_label": "Proximo recibo",
@@ -831,6 +849,7 @@
           "invalid_emoji_option": "Debes seleccionar un emoji valido del listado del sistema.",
           "invalid_account_currency": "Las monedas seleccionadas para la cuenta deben ser ARS y/o USD.",
           "invalid_cbu": "Revisa el formato del CBU/CVU (debe tener 22 digitos).",
+          "invalid_alias": "El alias solo puede contener letras, numeros y puntos.",
           "invalid_initial_balance": "El saldo inicial debe ser un numero mayor o igual a 0.",
           "invalid_bank_account_subtype": "El tipo de cuenta bancaria seleccionado no es valido.",
           "invalid_config_status": "El estado seleccionado no es valido.",
