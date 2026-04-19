@@ -2711,9 +2711,15 @@ export async function getTreasuryConsolidationDashboard(
 
   const clubId = context.activeClub.id;
   const selectedDate = consolidationDate?.trim() || getDefaultConsolidationDate();
-  const [movements, integrations] = await Promise.all([
+  const today = getTodayDate();
+  const allAccounts = await accessRepository.listTreasuryAccountsForClub(clubId);
+  const allAccountIds = allAccounts.map((account) => account.id);
+  const [movements, integrations, allClubMovements] = await Promise.all([
     accessRepository.listTreasuryMovementsByDate(clubId, selectedDate),
-    accessRepository.listMovementIntegrations()
+    accessRepository.listMovementIntegrations(),
+    allAccountIds.length > 0
+      ? accessRepository.listTreasuryMovementsHistoryByAccounts(clubId, allAccountIds)
+      : Promise.resolve([] as TreasuryMovement[])
   ]);
   let batch: TreasuryConsolidationDashboard["batch"] = null;
 
@@ -2738,13 +2744,31 @@ export async function getTreasuryConsolidationDashboard(
     )
   );
 
+  const clubPendingMovements = allClubMovements.filter(
+    (movement) => movement.status === "pending_consolidation"
+  );
+  const totalPendingCount = clubPendingMovements.length;
+  const totalPendingArsNet = clubPendingMovements.reduce((total, movement) => {
+    if (movement.currencyCode !== "ARS") return total;
+    const signed = movement.movementType === "egreso" ? -movement.amount : movement.amount;
+    return total + signed;
+  }, 0);
+  const approvedTodayCount = allClubMovements.filter(
+    (movement) =>
+      movement.movementDate === today &&
+      (movement.status === "consolidated" || movement.status === "integrated")
+  ).length;
+
   return {
     consolidationDate: selectedDate,
     defaultDate: getDefaultConsolidationDate(),
     hasLoadedDate: Boolean(consolidationDate?.trim()),
     batch,
     pendingMovements: mapped.filter((movement) => movement.status === "pending_consolidation"),
-    integratedMovements: mapped.filter((movement) => movement.status === "integrated")
+    integratedMovements: mapped.filter((movement) => movement.status === "integrated"),
+    totalPendingCount,
+    totalPendingArsNet,
+    approvedTodayCount
   };
 }
 

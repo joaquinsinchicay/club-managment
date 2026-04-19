@@ -454,6 +454,9 @@ export type TreasuryConsolidationDashboard = {
   batch: DailyConsolidationBatch | null;
   pendingMovements: ConsolidationMovement[];
   integratedMovements: ConsolidationMovement[];
+  totalPendingCount: number;
+  totalPendingArsNet: number;
+  approvedTodayCount: number;
 };
 
 export type SessionBalanceDraft = {

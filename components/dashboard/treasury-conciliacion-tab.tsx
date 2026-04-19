@@ -7,6 +7,7 @@ import {
   ConsolidationTransferEditForm,
   SecretariaMovementEditForm
 } from "@/components/dashboard/treasury-operation-forms";
+import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
@@ -42,8 +43,6 @@ type TreasuryConciliacionTabProps = {
   updateTransferBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
 };
-
-const ARS_CURRENCY = "ARS";
 
 function formatMovementDateTime(value: string) {
   const date = new Date(value);
@@ -129,6 +128,7 @@ export function TreasuryConciliacionTab({
 
   const [selectedDate, setSelectedDate] = useState(dashboard.consolidationDate);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [selectedMovementIds, setSelectedMovementIds] = useState<Set<string>>(new Set());
   const [editingMovement, setEditingMovement] = useState<ConsolidationMovement | null>(null);
   const [editingTransfer, setEditingTransfer] = useState<ConsolidationTransferEdit | null>(null);
   const [isEditSubmissionPending, setIsEditSubmissionPending] = useState(false);
@@ -212,17 +212,9 @@ export function TreasuryConciliacionTab({
     }
   }
 
-  const pendingCount = dashboard.pendingMovements.length;
-
-  const pendingArsNet = dashboard.pendingMovements.reduce((total, movement) => {
-    if (movement.currencyCode !== ARS_CURRENCY) return total;
-    const signed = movement.movementType === "egreso" ? -movement.amount : movement.amount;
-    return total + signed;
-  }, 0);
-
-  const approvedToday = dashboard.batch?.status === "completed"
-    ? dashboard.integratedMovements.length + dashboard.pendingMovements.length
-    : 0;
+  const pendingCount = dashboard.totalPendingCount;
+  const pendingArsNet = dashboard.totalPendingArsNet;
+  const approvedToday = dashboard.approvedTodayCount;
 
   const accountChips = useMemo(() => {
     const seen = new Map<string, string>();
@@ -366,115 +358,136 @@ export function TreasuryConciliacionTab({
               {texts.dashboard.treasury_role.conciliacion_empty_pending}
             </div>
           ) : (
-            <ul className="space-y-3">
-              {visibleMovements.map((movement) => (
-                <li
-                  key={movement.movementId}
-                  className="rounded-dialog border border-border bg-card p-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          "mt-1 size-2 shrink-0 rounded-full",
-                          movement.movementType === "ingreso" ? "bg-success" : "bg-destructive"
-                        )}
-                      />
-                      <div className="min-w-0 space-y-1.5">
-                        <p className="text-base font-semibold leading-6 text-foreground">
-                          {movement.concept}
+            <ul className="space-y-2.5">
+              {visibleMovements.map((movement) => {
+                const isSelected = selectedMovementIds.has(movement.movementId);
+                return (
+                  <li
+                    key={movement.movementId}
+                    className="group rounded-dialog border border-border bg-card p-3.5 transition hover:border-slate-300"
+                  >
+                    <div className="flex items-start gap-3">
+                      <label className="mt-0.5 inline-flex cursor-pointer items-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(event) => {
+                            setSelectedMovementIds((current) => {
+                              const next = new Set(current);
+                              if (event.target.checked) next.add(movement.movementId);
+                              else next.delete(movement.movementId);
+                              return next;
+                            });
+                          }}
+                          className="size-4 cursor-pointer rounded border-border text-slate-900 focus:ring-slate-900"
+                          aria-label={movement.concept}
+                        />
+                      </label>
+
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            "mt-1.5 size-1.5 shrink-0 rounded-full",
+                            movement.movementType === "ingreso" ? "bg-success" : "bg-destructive"
+                          )}
+                        />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <p className="text-small font-semibold leading-5 text-foreground">
+                            {movement.concept}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            <span className="inline-flex items-center rounded-chip bg-slate-900 px-2 py-0.5 text-eyebrow font-semibold text-white">
+                              {movement.accountName}
+                            </span>
+                            {movement.categoryName ? (
+                              <span className="inline-flex items-center rounded-chip border border-border bg-card px-2 py-0.5 text-eyebrow font-semibold text-muted-foreground">
+                                {movement.categoryName}
+                              </span>
+                            ) : null}
+                            {movement.activityName ? (
+                              <span className="inline-flex items-center rounded-chip border border-border bg-card px-2 py-0.5 text-eyebrow font-semibold text-muted-foreground">
+                                {movement.activityName}
+                              </span>
+                            ) : null}
+                            {movement.calendarEventTitle ? (
+                              <span className="inline-flex items-center rounded-chip border border-border bg-card px-2 py-0.5 text-eyebrow font-semibold text-muted-foreground">
+                                {movement.calendarEventTitle}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-eyebrow text-slate-500">
+                            {movement.movementDisplayId}
+                            <span className="px-1 text-border">·</span>
+                            {movement.createdByUserName}
+                            {movement.receiptNumber ? (
+                              <>
+                                <span className="px-1 text-border">·</span>
+                                {texts.dashboard.treasury_role.receipt_label} {movement.receiptNumber}
+                              </>
+                            ) : null}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1 sm:min-w-[140px]">
+                        <p
+                          className={cn(
+                            "text-base font-semibold leading-5 tracking-tight tabular-nums",
+                            movement.movementType === "ingreso" ? "text-success" : "text-destructive"
+                          )}
+                        >
+                          {movement.movementType === "egreso" ? "-" : "+"}$ {formatLocalizedAmount(movement.amount)}
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                          <span className="inline-flex items-center rounded-full bg-slate-900 px-2.5 py-0.5 text-eyebrow font-semibold text-white">
-                            {movement.accountName}
+                        <p className="text-eyebrow text-slate-500">
+                          {formatMovementDateTime(movement.createdAt)}
+                        </p>
+                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-chip px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.06em]",
+                              movement.status === "integrated"
+                                ? "bg-slate-100 text-slate-600"
+                                : "bg-amber-100 text-amber-700"
+                            )}
+                          >
+                            {movement.status === "integrated"
+                              ? texts.dashboard.treasury_role.conciliacion_status_integrated
+                              : texts.dashboard.treasury_role.conciliacion_status_pending}
                           </span>
-                          {movement.categoryName ? (
-                            <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-0.5 text-eyebrow font-semibold text-muted-foreground">
-                              {movement.categoryName}
-                            </span>
-                          ) : null}
-                          {movement.activityName ? (
-                            <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-0.5 text-eyebrow font-semibold text-muted-foreground">
-                              {movement.activityName}
-                            </span>
-                          ) : null}
-                          {movement.calendarEventTitle ? (
-                            <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-0.5 text-eyebrow font-semibold text-muted-foreground">
-                              {movement.calendarEventTitle}
-                            </span>
+                          {!movement.isValid ? (
+                            <StatusBadge
+                              label={texts.dashboard.treasury_role.conciliacion_status_invalid}
+                              tone="danger"
+                            />
                           ) : null}
                         </div>
-                        <p className="text-meta text-muted-foreground">
-                          {movement.movementDisplayId}
-                          <span className="px-1.5 text-border">·</span>
-                          {movement.createdByUserName}
-                          {movement.receiptNumber ? (
-                            <>
-                              <span className="px-1.5 text-border">·</span>
-                              {texts.dashboard.treasury_role.receipt_label} {movement.receiptNumber}
-                            </>
-                          ) : null}
-                        </p>
                       </div>
-                    </div>
 
-                    <div className="flex flex-col items-end gap-1.5 sm:min-w-[160px]">
-                      <p
-                        className={cn(
-                          "text-xl font-semibold tracking-tight",
-                          movement.movementType === "ingreso" ? "text-success" : "text-destructive"
-                        )}
-                      >
-                        {movement.movementType === "egreso" ? "-" : "+"}$ {formatLocalizedAmount(movement.amount)}
-                      </p>
-                      <p className="text-meta text-muted-foreground">
-                        {formatMovementDateTime(movement.createdAt)}
-                      </p>
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        <StatusBadge
-                          label={
-                            movement.status === "integrated"
-                              ? texts.dashboard.treasury_role.conciliacion_status_integrated
-                              : texts.dashboard.treasury_role.conciliacion_status_pending
-                          }
-                          tone={movement.status === "integrated" ? "neutral" : "warning"}
-                        />
-                        {!movement.isValid ? (
-                          <StatusBadge
-                            label={texts.dashboard.treasury_role.conciliacion_status_invalid}
-                            tone="danger"
+                      {movement.status === "pending_consolidation" ? (
+                        <div className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                          <EditIconButton
+                            label={texts.dashboard.treasury_role.conciliacion_edit_cta}
+                            onClick={() => {
+                              const editableTransfer = buildEditableTransfer(movement, [
+                                ...dashboard.pendingMovements,
+                                ...dashboard.integratedMovements
+                              ]);
+                              if (editableTransfer) {
+                                setEditingMovement(null);
+                                setEditingTransfer(editableTransfer);
+                                return;
+                              }
+                              setEditingTransfer(null);
+                              setEditingMovement(movement);
+                            }}
                           />
-                        ) : null}
-                      </div>
+                        </div>
+                      ) : null}
                     </div>
-                  </div>
-
-                  {movement.status === "pending_consolidation" ? (
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const editableTransfer = buildEditableTransfer(movement, [
-                            ...dashboard.pendingMovements,
-                            ...dashboard.integratedMovements
-                          ]);
-                          if (editableTransfer) {
-                            setEditingMovement(null);
-                            setEditingTransfer(editableTransfer);
-                            return;
-                          }
-                          setEditingTransfer(null);
-                          setEditingMovement(movement);
-                        }}
-                        className="inline-flex min-h-9 items-center justify-center rounded-btn border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
-                      >
-                        {texts.dashboard.treasury_role.conciliacion_edit_cta}
-                      </button>
-                    </div>
-                  ) : null}
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
