@@ -18,24 +18,58 @@ const SUBTYPE_OPTIONS: TreasuryBankAccountSubtype[] = ["cuenta_corriente", "caja
 const CBU_REGEX = /^\d{22}$/;
 const ALIAS_REGEX = /^[A-Za-z0-9.]+$/;
 
+// Paletas DS por tipo de cuenta — apunta a tokens semánticos (ds-blue / ds-amber / ds-green)
 const ACCOUNT_TYPE_COLORS: Record<TreasuryAccountType, { base: string; selected: string }> = {
   bancaria: {
     base: "border-border bg-card text-foreground hover:bg-ds-blue-050/60",
     selected: "border-ds-blue-700 bg-ds-blue-050 text-ds-blue-700"
   },
   billetera_virtual: {
-    base: "border-border bg-card text-foreground hover:bg-amber-50/60",
-    selected: "border-amber-500 bg-amber-50 text-amber-700"
+    base: "border-border bg-card text-foreground hover:bg-ds-amber-050/60",
+    selected: "border-ds-amber-700 bg-ds-amber-050 text-ds-amber-700"
   },
   efectivo: {
-    base: "border-border bg-card text-foreground hover:bg-emerald-50/60",
-    selected: "border-emerald-500 bg-emerald-50 text-emerald-700"
+    base: "border-border bg-card text-foreground hover:bg-ds-green-050/60",
+    selected: "border-ds-green-700 bg-ds-green-050 text-ds-green-700"
   }
 };
+
+// Clases compartidas para inputs / selects del formulario — mantiene look & feel.
+const fieldBaseClass =
+  "min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-body text-foreground";
+const labelBlockClass = "grid gap-2";
+const labelTitleClass = "text-small font-medium text-foreground";
 
 function formatInitialBalance(value: number): string {
   if (!Number.isFinite(value)) return "0,00";
   return value.toFixed(2).replace(".", ",");
+}
+
+function InitialBalanceField({
+  code,
+  value,
+  onChange
+}: {
+  code: TreasuryCurrencyCode;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-border bg-secondary/40 py-1.5 pl-1.5 pr-3">
+      <span className="inline-flex min-w-12 justify-center rounded-xl bg-card px-3 py-2 text-eyebrow font-semibold tracking-wider text-muted-foreground">
+        {code}
+      </span>
+      <input
+        type="text"
+        name={`initial_balance[${code}]`}
+        inputMode="decimal"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label={`${texts.settings.club.treasury.initial_balance_label} ${code}`}
+        className="min-h-10 w-full rounded-xl border border-transparent bg-transparent px-2 py-2 text-right text-body tabular-nums text-foreground focus:border-border focus:bg-card"
+      />
+    </label>
+  );
 }
 
 export type TreasuryAccountFormProps = {
@@ -136,7 +170,7 @@ export function TreasuryAccountForm({
 
         {/* Tipo de cuenta */}
         <div className="grid gap-2">
-          <span className="text-sm font-medium text-foreground">
+          <span className={labelTitleClass}>
             {texts.settings.club.treasury.account_type_label}{" "}
             <span aria-hidden="true" className="text-destructive">*</span>
           </span>
@@ -154,7 +188,7 @@ export function TreasuryAccountForm({
                     setFormErrors((prev) => ({ ...prev, accountType: undefined }));
                   }}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-4 text-sm font-semibold transition",
+                    "flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 text-small font-semibold transition",
                     selected ? palette.selected : palette.base
                   )}
                 >
@@ -167,15 +201,15 @@ export function TreasuryAccountForm({
             })}
           </div>
           {formErrors.accountType ? (
-            <p className="text-sm text-destructive" aria-live="polite">
+            <p className="text-small text-destructive" aria-live="polite">
               {formErrors.accountType}
             </p>
           ) : null}
         </div>
 
         {/* Nombre */}
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">
+        <label className={cn(labelBlockClass, "text-body text-foreground")}>
+          <span className={labelTitleClass}>
             {texts.settings.club.treasury.account_name_label}{" "}
             <span aria-hidden="true" className="text-destructive">*</span>
           </span>
@@ -185,19 +219,19 @@ export function TreasuryAccountForm({
             defaultValue={defaultAccount?.name ?? ""}
             placeholder={texts.settings.club.treasury.account_name_placeholder}
             onChange={() => setFormErrors((prev) => ({ ...prev, name: undefined }))}
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+            className={fieldBaseClass}
           />
           <span className="text-meta text-muted-foreground">
             {texts.settings.club.treasury.account_name_helper}
           </span>
           {formErrors.name ? (
-            <span className="text-sm text-destructive" aria-live="polite">{formErrors.name}</span>
+            <span className="text-small text-destructive" aria-live="polite">{formErrors.name}</span>
           ) : null}
         </label>
 
         {/* Monedas */}
         <div className="grid gap-2">
-          <span className="text-sm font-medium text-foreground">
+          <span className={labelTitleClass}>
             {texts.settings.club.treasury.account_currencies_label}{" "}
             <span aria-hidden="true" className="text-destructive">*</span>
           </span>
@@ -211,7 +245,7 @@ export function TreasuryAccountForm({
                   aria-pressed={selected}
                   onClick={() => toggleCurrency(code)}
                   className={cn(
-                    "inline-flex min-h-10 items-center gap-2 rounded-full border px-5 text-sm font-semibold transition",
+                    "inline-flex min-h-10 items-center gap-2 rounded-full border px-5 text-small font-semibold transition",
                     selected
                       ? "border-ds-blue-700 bg-ds-blue-050 text-ds-blue-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary/60"
@@ -234,34 +268,34 @@ export function TreasuryAccountForm({
             {texts.settings.club.treasury.account_currencies_helper}
           </span>
           {formErrors.currencies ? (
-            <span className="text-sm text-destructive" aria-live="polite">{formErrors.currencies}</span>
+            <span className="text-small text-destructive" aria-live="polite">{formErrors.currencies}</span>
           ) : null}
         </div>
 
         {/* Campos Banco */}
         {showBankFields ? (
           <>
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.bank_entity_label}</span>
-              <select
-                name="bank_entity"
-                defaultValue={defaultAccount?.bankEntity ?? ""}
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-              >
-                <option value="">{texts.settings.club.treasury.bank_entity_placeholder}</option>
-                {texts.settings.club.treasury.bank_entities.map((entity) => (
-                  <option key={entity} value={entity}>{entity}</option>
-                ))}
-              </select>
-            </label>
-
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.settings.club.treasury.bank_account_subtype_label}</span>
+              <label className={cn(labelBlockClass, "text-body text-foreground")}>
+                <span className={labelTitleClass}>{texts.settings.club.treasury.bank_entity_label}</span>
+                <select
+                  name="bank_entity"
+                  defaultValue={defaultAccount?.bankEntity ?? ""}
+                  className={fieldBaseClass}
+                >
+                  <option value="">{texts.settings.club.treasury.bank_entity_placeholder}</option>
+                  {texts.settings.club.treasury.bank_entities.map((entity) => (
+                    <option key={entity} value={entity}>{entity}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={cn(labelBlockClass, "text-body text-foreground")}>
+                <span className={labelTitleClass}>{texts.settings.club.treasury.bank_account_subtype_label}</span>
                 <select
                   name="bank_account_subtype"
                   defaultValue={defaultAccount?.bankAccountSubtype ?? ""}
-                  className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                  className={fieldBaseClass}
                 >
                   <option value="">{texts.settings.club.treasury.bank_account_subtype_placeholder}</option>
                   {SUBTYPE_OPTIONS.map((subtype) => (
@@ -271,52 +305,54 @@ export function TreasuryAccountForm({
                   ))}
                 </select>
               </label>
+            </div>
 
-              <label className="grid gap-2 text-sm text-foreground">
-                <span className="font-medium">{texts.settings.club.treasury.account_number_label}</span>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className={cn(labelBlockClass, "text-body text-foreground")}>
+                <span className={labelTitleClass}>{texts.settings.club.treasury.account_number_label}</span>
                 <input
                   type="text"
                   name="account_number"
                   defaultValue={defaultAccount?.accountNumber ?? ""}
                   placeholder={texts.settings.club.treasury.account_number_placeholder}
-                  className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                  className={fieldBaseClass}
                 />
               </label>
-            </div>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.cbu_cvu_label}</span>
-              <input
-                type="text"
-                name="cbu_cvu"
-                inputMode="numeric"
-                maxLength={22}
-                value={cbuValue}
-                onChange={(event) => {
-                  setCbuValue(event.target.value.replace(/\D/g, "").slice(0, 22));
-                  setFormErrors((prev) => ({ ...prev, cbu: undefined }));
-                }}
-                placeholder={texts.settings.club.treasury.cbu_cvu_placeholder}
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-              />
-              {formErrors.cbu ? (
-                <span className="text-sm text-destructive" aria-live="polite">{formErrors.cbu}</span>
-              ) : null}
-            </label>
+              <label className={cn(labelBlockClass, "text-body text-foreground")}>
+                <span className={labelTitleClass}>{texts.settings.club.treasury.cbu_cvu_label}</span>
+                <input
+                  type="text"
+                  name="cbu_cvu"
+                  inputMode="numeric"
+                  maxLength={22}
+                  value={cbuValue}
+                  onChange={(event) => {
+                    setCbuValue(event.target.value.replace(/\D/g, "").slice(0, 22));
+                    setFormErrors((prev) => ({ ...prev, cbu: undefined }));
+                  }}
+                  placeholder={texts.settings.club.treasury.cbu_cvu_placeholder}
+                  className={fieldBaseClass}
+                />
+                {formErrors.cbu ? (
+                  <span className="text-small text-destructive" aria-live="polite">{formErrors.cbu}</span>
+                ) : null}
+              </label>
+            </div>
           </>
         ) : null}
 
         {/* Campos Billetera */}
         {showWalletFields ? (
-          <>
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.wallet_provider_label}</span>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className={cn(labelBlockClass, "text-body text-foreground")}>
+              <span className={labelTitleClass}>{texts.settings.club.treasury.wallet_provider_label}</span>
               <select
                 name="wallet_provider"
                 defaultValue={
                   defaultAccount?.accountType === "billetera_virtual" ? (defaultAccount?.bankEntity ?? "") : ""
                 }
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                className={fieldBaseClass}
               >
                 <option value="">{texts.settings.club.treasury.wallet_provider_placeholder}</option>
                 {texts.settings.club.treasury.wallet_providers.map((provider) => (
@@ -325,8 +361,8 @@ export function TreasuryAccountForm({
               </select>
             </label>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.alias_label}</span>
+            <label className={cn(labelBlockClass, "text-body text-foreground")}>
+              <span className={labelTitleClass}>{texts.settings.club.treasury.alias_label}</span>
               <input
                 type="text"
                 name="alias"
@@ -338,42 +374,33 @@ export function TreasuryAccountForm({
                   setFormErrors((prev) => ({ ...prev, alias: undefined }));
                 }}
                 placeholder={texts.settings.club.treasury.alias_placeholder}
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                className={fieldBaseClass}
               />
-              <span className="text-meta text-muted-foreground">
-                {texts.settings.club.treasury.alias_helper}
-              </span>
               {formErrors.alias ? (
-                <span className="text-sm text-destructive" aria-live="polite">{formErrors.alias}</span>
-              ) : null}
+                <span className="text-small text-destructive" aria-live="polite">{formErrors.alias}</span>
+              ) : (
+                <span className="text-meta text-muted-foreground">
+                  {texts.settings.club.treasury.alias_helper}
+                </span>
+              )}
             </label>
-          </>
+          </div>
         ) : null}
 
-        {/* Saldo inicial por moneda */}
+        {/* Saldo inicial por moneda — 2 columnas para ARS y USD */}
         {selectedCurrencies.length > 0 ? (
           <div className="grid gap-2">
-            <span className="text-sm font-medium text-foreground">
+            <span className={labelTitleClass}>
               {texts.settings.club.treasury.initial_balance_label}
             </span>
-            <div className="grid gap-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {selectedCurrencies.map((code) => (
-                <div
+                <InitialBalanceField
                   key={`bal-${code}`}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-3 py-2"
-                >
-                  <span className="inline-flex min-w-14 justify-center rounded-xl bg-card px-3 py-2 text-sm font-semibold tracking-wider text-foreground">
-                    {code}
-                  </span>
-                  <input
-                    type="text"
-                    name={`initial_balance[${code}]`}
-                    inputMode="decimal"
-                    value={initialBalances[code] ?? "0,00"}
-                    onChange={(event) => handleBalanceChange(code, event.target.value)}
-                    className="min-h-10 w-full rounded-xl border border-transparent bg-transparent px-3 py-2 text-right text-sm tabular-nums text-foreground focus:border-border focus:bg-card"
-                  />
-                </div>
+                  code={code}
+                  value={initialBalances[code] ?? "0,00"}
+                  onChange={(value) => handleBalanceChange(code, value)}
+                />
               ))}
             </div>
             <span className="text-meta text-muted-foreground">
@@ -382,8 +409,8 @@ export function TreasuryAccountForm({
           </div>
         ) : null}
 
-        {/* Visibilidad */}
-        <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground">
+        {/* Visibilidad — checkbox único para Secretaría. Tesorería siempre habilitada. */}
+        <label className="mb-2 flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-body text-foreground">
           <input
             type="checkbox"
             checked={availableForSecretaria}
@@ -395,13 +422,16 @@ export function TreasuryAccountForm({
           </span>
         </label>
 
-        {/* Footer actions (sticky bottom dentro del body scrolleable del modal) */}
-        <div className="sticky bottom-0 -mx-5 -mb-5 mt-auto flex items-center justify-end gap-2 border-t border-border/60 bg-card px-5 py-4 sm:-mx-6 sm:-mb-6 sm:px-6">
+        {/* Spacer para separar la última fila del footer sticky */}
+        <div className="flex-1" aria-hidden="true" />
+
+        {/* Footer actions (sticky al fondo del body scrolleable del modal) */}
+        <div className="sticky bottom-0 -mx-5 flex items-center justify-end gap-2 border-t border-border/60 bg-card px-5 py-4 sm:-mx-6 sm:px-6">
           {onCancel ? (
             <button
               type="button"
               onClick={onCancel}
-              className="min-h-11 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+              className="min-h-11 rounded-2xl border border-border bg-card px-5 py-3 text-small font-semibold text-foreground transition hover:bg-secondary"
             >
               {cancelLabel ?? texts.settings.club.treasury.cancel_cta}
             </button>
@@ -409,7 +439,7 @@ export function TreasuryAccountForm({
           <PendingSubmitButton
             idleLabel={submitLabel}
             pendingLabel={pendingLabel}
-            className="min-h-11 rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className="min-h-11 rounded-2xl bg-foreground px-5 py-3 text-small font-semibold text-primary-foreground transition hover:opacity-95"
           />
         </div>
       </PendingFieldset>
