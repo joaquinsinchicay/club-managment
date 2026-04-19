@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState, type ReactNode } from "react";
 
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
@@ -16,6 +16,7 @@ import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount } from "@/lib/amounts";
+import { triggerClientFeedback } from "@/lib/client-feedback";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
   ClubActivity,
@@ -997,7 +998,6 @@ export function TreasuryRoleCard({
   updateTransferBeforeConsolidationAction,
   executeDailyConsolidationAction
 }: TreasuryRoleCardProps) {
-  const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1053,17 +1053,7 @@ export function TreasuryRoleCard({
 
     try {
       const result = await createTreasuryRoleMovementAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-
-      nextParams.set("feedback", result.code);
-
-      if (result.movementDisplayId) {
-        nextParams.set("movement_id", result.movementDisplayId);
-      } else {
-        nextParams.delete("movement_id");
-      }
-
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code, { movementId: result.movementDisplayId });
 
       if (result.ok) {
         startTransition(() => {
@@ -1082,12 +1072,7 @@ export function TreasuryRoleCard({
 
     try {
       const result = await updateTreasuryRoleMovementAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-
-      nextParams.set("feedback", result.code);
-      nextParams.delete("movement_id");
-
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code, { movementId: result.movementDisplayId });
 
       if (result.ok) {
         startTransition(() => {
@@ -1107,15 +1092,7 @@ export function TreasuryRoleCard({
 
     try {
       const result = await createAccountTransferAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-
-      nextParams.set("feedback", result.code);
-      if (result.movementDisplayId) {
-        nextParams.set("movement_id", result.movementDisplayId);
-      } else {
-        nextParams.delete("movement_id");
-      }
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code, { movementId: result.movementDisplayId });
 
       if (result.ok) {
         startTransition(() => {
@@ -1133,11 +1110,7 @@ export function TreasuryRoleCard({
 
     try {
       const result = await createFxOperationAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-
-      nextParams.set("feedback", result.code);
-      nextParams.delete("movement_id");
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code);
 
       if (result.ok) {
         startTransition(() => {
@@ -1155,10 +1128,7 @@ export function TreasuryRoleCard({
 
     try {
       const result = await createTreasuryAccountAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("feedback", result.code);
-      nextParams.delete("movement_id");
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code);
 
       if (result.ok) {
         startTransition(() => {
@@ -1177,10 +1147,7 @@ export function TreasuryRoleCard({
 
     try {
       const result = await updateTreasuryAccountAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("feedback", result.code);
-      nextParams.delete("movement_id");
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code);
 
       if (result.ok) {
         startTransition(() => {

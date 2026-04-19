@@ -1,7 +1,9 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { startTransition, type ReactNode, useEffect, useMemo, useState } from "react";
+
+import { triggerClientFeedback } from "@/lib/client-feedback";
 
 import { CloseSessionModalForm } from "@/components/dashboard/close-session-modal-form";
 import { OpenSessionModalForm } from "@/components/dashboard/open-session-modal-form";
@@ -504,9 +506,7 @@ export function TreasuryCard({
   closeDailyCashSessionModalAction,
   openDailyCashSessionModalAction
 }: TreasuryCardProps) {
-  const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [localTreasuryCard, setLocalTreasuryCard] = useState(treasuryCard);
   const canCreateMovement = localTreasuryCard.availableActions.includes("create_movement");
   const canCloseSession = localTreasuryCard.availableActions.includes("close_session");
@@ -615,20 +615,11 @@ export function TreasuryCard({
     setActiveModal(null);
     try {
       const result = await createTreasuryMovementAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("feedback", result.code);
-      if (result.movementDisplayId) {
-        nextParams.set("movement_id", result.movementDisplayId);
-      } else {
-        nextParams.delete("movement_id");
-      }
       if (result.ok) {
         applyOptimisticMovementUpdate(result);
-        setIsMovementSubmissionPending(false);
-      } else {
-        setIsMovementSubmissionPending(false);
       }
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      setIsMovementSubmissionPending(false);
+      triggerClientFeedback("dashboard", result.code, { movementId: result.movementDisplayId });
       if (result.ok) {
         startTransition(() => { router.refresh(); });
       }
@@ -659,14 +650,11 @@ export function TreasuryCard({
     });
     try {
       const result = await updateSecretariaMovementAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("feedback", result.code);
-      nextParams.delete("movement_id");
       if (!result.ok) {
         setPendingMovementUpdate(null);
         setIsMovementUpdatePending(false);
       }
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code, { movementId: result.movementDisplayId });
       startTransition(() => { router.refresh(); });
     } catch (error) {
       setPendingMovementUpdate(null);
@@ -680,12 +668,9 @@ export function TreasuryCard({
     setActiveModal(null);
     try {
       const result = await updateSecretariaTransferAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("feedback", result.code);
-      nextParams.delete("movement_id");
       setIsMovementUpdatePending(false);
       setSelectedMovement(null);
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code, { movementId: result.movementDisplayId });
       startTransition(() => { router.refresh(); });
     } catch (error) {
       setIsMovementUpdatePending(false);
@@ -699,20 +684,13 @@ export function TreasuryCard({
     setActiveModal(null);
     try {
       const result = await createAccountTransferAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("feedback", result.code);
-      if (result.movementDisplayId) {
-        nextParams.set("movement_id", result.movementDisplayId);
-      } else {
-        nextParams.delete("movement_id");
-      }
       if (result.ok) {
         setPendingTransferMovementDisplayId(result.movementDisplayId ?? null);
       } else {
         setPendingTransferMovementDisplayId(null);
         setIsTransferSubmissionPending(false);
       }
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code, { movementId: result.movementDisplayId });
       startTransition(() => { router.refresh(); });
     } catch (error) {
       setPendingTransferMovementDisplayId(null);
@@ -726,10 +704,7 @@ export function TreasuryCard({
     setActiveModal(null);
     try {
       const result = await closeDailyCashSessionModalAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("feedback", result.code);
-      nextParams.delete("movement_id");
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code);
       startTransition(() => { router.refresh(); });
     } finally {
       setIsSessionClosePending(false);
@@ -741,10 +716,7 @@ export function TreasuryCard({
     setActiveModal(null);
     try {
       const result = await openDailyCashSessionModalAction(formData);
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.set("feedback", result.code);
-      nextParams.delete("movement_id");
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      triggerClientFeedback("dashboard", result.code);
       startTransition(() => { router.refresh(); });
     } finally {
       setIsSessionOpenPending(false);
