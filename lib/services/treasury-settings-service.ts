@@ -40,6 +40,9 @@ type TreasurySettingsActionCode =
   | "receipt_format_min_required"
   | "receipt_format_pattern_required"
   | "account_currencies_required"
+  | "account_single_currency_required"
+  | "bank_entity_required"
+  | "bank_account_subtype_required"
   | "duplicate_account_name"
   | "duplicate_category_name"
   | "duplicate_activity_name"
@@ -110,6 +113,15 @@ function normalizeAlias(value: unknown): { ok: boolean; value: string | null } {
   if (!trimmed) return { ok: true, value: null };
   if (trimmed.length > 60 || !ALIAS_REGEX.test(trimmed)) return { ok: false, value: null };
   return { ok: true, value: trimmed };
+}
+
+function buildBankAccountName(
+  bankEntity: string,
+  subtype: TreasuryAccount["bankAccountSubtype"]
+): string {
+  if (!subtype) return bankEntity;
+  const subtypeLabel = texts.settings.club.treasury.bank_account_subtypes[subtype];
+  return `${bankEntity} - ${subtypeLabel}`;
 }
 
 function parseInitialBalances(
@@ -432,10 +444,16 @@ function buildAccountBankFields(
   | { ok: false; code: TreasurySettingsActionCode } {
   if (accountType === "bancaria") {
     const bankEntity = normalizeOptionalText(input.bankEntity, 100);
+    if (!bankEntity) {
+      return { ok: false, code: "bank_entity_required" };
+    }
     const accountNumber = normalizeOptionalText(input.accountNumber, 40);
     const subtypeRaw = normalizeBankAccountSubtype(input.bankAccountSubtype);
     if (subtypeRaw === "invalid") {
       return { ok: false, code: "invalid_bank_account_subtype" };
+    }
+    if (!subtypeRaw) {
+      return { ok: false, code: "bank_account_subtype_required" };
     }
     const cbu = normalizeCbuCvu(input.cbuCvu);
     if (!cbu.ok) {
@@ -444,7 +462,7 @@ function buildAccountBankFields(
     return {
       ok: true,
       bankEntity,
-      bankAccountSubtype: (subtypeRaw as TreasuryAccount["bankAccountSubtype"]) ?? null,
+      bankAccountSubtype: subtypeRaw as TreasuryAccount["bankAccountSubtype"],
       accountNumber,
       cbuCvu: cbu.value
     };
@@ -486,12 +504,6 @@ export async function createTreasuryAccountForActiveClub(
     return { ok: false, code: "forbidden" };
   }
 
-  const name = normalizeConfigName(input.name);
-
-  if (!name) {
-    return { ok: false, code: "account_name_required" };
-  }
-
   if (!input.accountType) {
     return { ok: false, code: "account_type_required" };
   }
@@ -502,37 +514,47 @@ export async function createTreasuryAccountForActiveClub(
 
   const accountType = input.accountType as TreasuryAccount["accountType"];
 
-  const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
-  const selectedCurrencies = Array.from(
-    new Set(
-      input.currencies
-        .map((currency) => currency.trim().toUpperCase())
-        .filter((currency): currency is TreasuryCurrencyCode =>
-          TREASURY_CURRENCY_CODES.includes(currency as TreasuryCurrencyCode)
-        )
-    )
-  );
-
-  if (hasDuplicateActiveAccountName(accounts, name)) {
-    return { ok: false, code: "duplicate_account_name" };
-  }
+  const rawCurrencies = input.currencies
+    .map((currency) => currency.trim().toUpperCase())
+    .filter((currency): currency is TreasuryCurrencyCode =>
+      TREASURY_CURRENCY_CODES.includes(currency as TreasuryCurrencyCode)
+    );
+  const selectedCurrencies = Array.from(new Set(rawCurrencies));
 
   if (selectedCurrencies.length === 0) {
     return { ok: false, code: "account_currencies_required" };
+  }
+
+  if (selectedCurrencies.length > 1) {
+    return { ok: false, code: "account_single_currency_required" };
   }
 
   if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
     return { ok: false, code: "invalid_account_currency" };
   }
 
-  const balances = parseInitialBalances(input.initialBalances ?? {}, selectedCurrencies);
-  if (!balances.ok) {
-    return { ok: false, code: "invalid_initial_balance" };
-  }
-
   const bankFields = buildAccountBankFields(input, accountType);
   if (!bankFields.ok) {
     return { ok: false, code: bankFields.code };
+  }
+
+  // Para cuentas `bancaria`, el nombre se deriva server-side desde entidad + subtipo.
+  const name = accountType === "bancaria" && bankFields.bankEntity
+    ? buildBankAccountName(bankFields.bankEntity, bankFields.bankAccountSubtype)
+    : normalizeConfigName(input.name);
+
+  if (!name) {
+    return { ok: false, code: "account_name_required" };
+  }
+
+  const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
+  if (hasDuplicateActiveAccountName(accounts, name)) {
+    return { ok: false, code: "duplicate_account_name" };
+  }
+
+  const balances = parseInitialBalances(input.initialBalances ?? {}, selectedCurrencies);
+  if (!balances.ok) {
+    return { ok: false, code: "invalid_initial_balance" };
   }
 
   const resolvedEmoji = resolveConfiguredEmoji(input.emoji, TREASURY_ACCOUNT_EMOJI_OPTIONS);
@@ -577,12 +599,6 @@ export async function updateTreasuryAccountForActiveClub(
     return { ok: false, code: "forbidden" };
   }
 
-  const name = normalizeConfigName(input.name);
-
-  if (!name) {
-    return { ok: false, code: "account_name_required" };
-  }
-
   if (!input.accountType) {
     return { ok: false, code: "account_type_required" };
   }
@@ -594,31 +610,27 @@ export async function updateTreasuryAccountForActiveClub(
   const accountType = input.accountType as TreasuryAccount["accountType"];
 
   const accounts = await accessRepository.listTreasuryAccountsForClub(context.activeClub.id);
-  const selectedCurrencies = Array.from(
-    new Set(
-      input.currencies
-        .map((currency) => currency.trim().toUpperCase())
-        .filter((currency): currency is TreasuryCurrencyCode =>
-          TREASURY_CURRENCY_CODES.includes(currency as TreasuryCurrencyCode)
-        )
-    )
-  );
   const existingAccount = accounts.find((account) => account.id === input.accountId);
 
   if (!existingAccount) {
     return { ok: false, code: "account_not_found" };
   }
 
-  if (hasDuplicateActiveAccountName(accounts, name, input.accountId)) {
-    return { ok: false, code: "duplicate_account_name" };
-  }
+  // En edición, la moneda operativa no puede cambiar: tomamos la existente y
+  // ignoramos cualquier valor que llegue del cliente.
+  const existingCurrencies = existingAccount.currencyDetails
+    .map((detail) => detail.currencyCode)
+    .filter((currency): currency is TreasuryCurrencyCode =>
+      TREASURY_CURRENCY_CODES.includes(currency as TreasuryCurrencyCode)
+    );
+  const selectedCurrencies = Array.from(new Set(existingCurrencies));
 
   if (selectedCurrencies.length === 0) {
     return { ok: false, code: "account_currencies_required" };
   }
 
-  if (!selectedCurrencies.every((currency) => TREASURY_CURRENCY_CODES.includes(currency))) {
-    return { ok: false, code: "invalid_account_currency" };
+  if (selectedCurrencies.length > 1) {
+    return { ok: false, code: "account_single_currency_required" };
   }
 
   const balances = parseInitialBalances(input.initialBalances ?? {}, selectedCurrencies);
@@ -626,9 +638,32 @@ export async function updateTreasuryAccountForActiveClub(
     return { ok: false, code: "invalid_initial_balance" };
   }
 
-  const bankFields = buildAccountBankFields(input, accountType);
+  // En edición de `bancaria`, entidad y subtipo son inmutables: tomamos los
+  // existentes para que el nombre derivado quede estable y no dependa del form.
+  const effectiveInput: TreasuryAccountMutationInput =
+    accountType === "bancaria"
+      ? {
+          ...input,
+          bankEntity: existingAccount.bankEntity ?? "",
+          bankAccountSubtype: existingAccount.bankAccountSubtype ?? ""
+        }
+      : input;
+
+  const bankFields = buildAccountBankFields(effectiveInput, accountType);
   if (!bankFields.ok) {
     return { ok: false, code: bankFields.code };
+  }
+
+  const name = accountType === "bancaria" && bankFields.bankEntity
+    ? buildBankAccountName(bankFields.bankEntity, bankFields.bankAccountSubtype)
+    : normalizeConfigName(input.name);
+
+  if (!name) {
+    return { ok: false, code: "account_name_required" };
+  }
+
+  if (hasDuplicateActiveAccountName(accounts, name, input.accountId)) {
+    return { ok: false, code: "duplicate_account_name" };
   }
 
   const resolvedEmoji = resolveConfiguredEmoji(

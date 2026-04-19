@@ -92,11 +92,12 @@ export function TreasuryAccountForm({
   const [accountType, setAccountType] = useState<TreasuryAccountType | "">(
     defaultAccount?.accountType ?? ""
   );
-  const [selectedCurrencies, setSelectedCurrencies] = useState<TreasuryCurrencyCode[]>(
-    defaultAccount?.currencies.filter((c): c is TreasuryCurrencyCode =>
+  const [selectedCurrency, setSelectedCurrency] = useState<TreasuryCurrencyCode | "">(() => {
+    const first = defaultAccount?.currencies.find((c): c is TreasuryCurrencyCode =>
       CURRENCY_OPTIONS.includes(c as TreasuryCurrencyCode)
-    ) ?? []
-  );
+    );
+    return first ?? "";
+  });
   const defaultBalances = useMemo(() => {
     const map: Record<TreasuryCurrencyCode, string> = { ARS: "0,00", USD: "0,00" };
     defaultAccount?.currencyDetails.forEach((detail) => {
@@ -108,6 +109,15 @@ export function TreasuryAccountForm({
   const [availableForSecretaria, setAvailableForSecretaria] = useState<boolean>(
     defaultAccount?.visibleForSecretaria ?? false
   );
+  const [bankEntity, setBankEntity] = useState<string>(
+    defaultAccount?.accountType === "bancaria" ? (defaultAccount?.bankEntity ?? "") : ""
+  );
+  const [bankSubtype, setBankSubtype] = useState<TreasuryBankAccountSubtype | "">(
+    defaultAccount?.accountType === "bancaria" ? (defaultAccount?.bankAccountSubtype ?? "") : ""
+  );
+  const [nameValue, setNameValue] = useState<string>(
+    defaultAccount?.accountType === "bancaria" ? "" : (defaultAccount?.name ?? "")
+  );
   const [cbuValue, setCbuValue] = useState<string>(
     defaultAccount?.accountType === "bancaria" ? (defaultAccount?.cbuCvu ?? "") : ""
   );
@@ -118,39 +128,46 @@ export function TreasuryAccountForm({
     name?: string;
     accountType?: string;
     currencies?: string;
+    bankEntity?: string;
+    bankSubtype?: string;
     cbu?: string;
     alias?: string;
   }>({});
 
-  // En edición, tipo de cuenta y monedas quedan bloqueados para no romper la
-  // consistencia de movimientos ya registrados contra esta cuenta.
+  // En edición, tipo de cuenta, moneda y datos bancarios de identidad quedan
+  // bloqueados para no romper la consistencia de movimientos ya registrados.
   const isEditMode = Boolean(defaultAccount);
 
-  function toggleCurrency(code: TreasuryCurrencyCode) {
-    setSelectedCurrencies((current) =>
-      current.includes(code) ? current.filter((c) => c !== code) : [...current, code]
-    );
-    setFormErrors((prev) => ({ ...prev, currencies: undefined }));
-  }
+  const showBankFields = accountType === "bancaria";
+  const showWalletFields = accountType === "billetera_virtual";
+
+  // Nombre auto-compuesto para cuentas Banco: "Entidad - Tipo de cuenta".
+  const composedBankName = useMemo(() => {
+    if (!showBankFields) return "";
+    if (!bankEntity || !bankSubtype) return "";
+    const subtypeLabel = texts.settings.club.treasury.bank_account_subtypes[bankSubtype];
+    return `${bankEntity} - ${subtypeLabel}`;
+  }, [showBankFields, bankEntity, bankSubtype]);
+
+  const effectiveName = showBankFields ? composedBankName : nameValue;
 
   function handleBalanceChange(code: TreasuryCurrencyCode, value: string) {
     setInitialBalances((prev) => ({ ...prev, [code]: value }));
   }
 
-  const showBankFields = accountType === "bancaria";
-  const showWalletFields = accountType === "billetera_virtual";
-
   function validateAndSubmit(event: React.FormEvent<HTMLFormElement>) {
     const errors: typeof formErrors = {};
-    const form = event.currentTarget;
-    const nameValue = String(new FormData(form).get("name") ?? "").trim();
-    if (!nameValue) errors.name = texts.settings.club.treasury.feedback.account_name_required;
+    if (!effectiveName.trim()) errors.name = texts.settings.club.treasury.feedback.account_name_required;
     if (!accountType) errors.accountType = texts.settings.club.treasury.feedback.account_type_required;
-    if (selectedCurrencies.length === 0) {
+    if (!selectedCurrency) {
       errors.currencies = texts.settings.club.treasury.feedback.account_currencies_required;
     }
-    if (showBankFields && cbuValue.trim() && !CBU_REGEX.test(cbuValue.trim())) {
-      errors.cbu = texts.settings.club.treasury.feedback.invalid_cbu;
+    if (showBankFields) {
+      if (!bankEntity) errors.bankEntity = texts.settings.club.treasury.feedback.bank_entity_required;
+      if (!bankSubtype) errors.bankSubtype = texts.settings.club.treasury.feedback.bank_account_subtype_required;
+      if (cbuValue.trim() && !CBU_REGEX.test(cbuValue.trim())) {
+        errors.cbu = texts.settings.club.treasury.feedback.invalid_cbu;
+      }
     }
     if (showWalletFields && aliasValue.trim() && !ALIAS_REGEX.test(aliasValue.trim())) {
       errors.alias = texts.settings.club.treasury.feedback.invalid_alias;
@@ -170,6 +187,7 @@ export function TreasuryAccountForm({
       <PendingFieldset className="flex min-h-0 flex-1 flex-col gap-5">
         {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
         <input type="hidden" name="account_type" value={accountType} />
+        <input type="hidden" name="name" value={effectiveName} />
         {availableForSecretaria ? <input type="hidden" name="available_for_secretaria" value="on" /> : null}
 
         {/* Tipo de cuenta */}
@@ -221,23 +239,39 @@ export function TreasuryAccountForm({
             {texts.settings.club.treasury.account_name_label}{" "}
             <span aria-hidden="true" className="text-destructive">*</span>
           </span>
-          <input
-            type="text"
-            name="name"
-            defaultValue={defaultAccount?.name ?? ""}
-            placeholder={texts.settings.club.treasury.account_name_placeholder}
-            onChange={() => setFormErrors((prev) => ({ ...prev, name: undefined }))}
-            className={fieldBaseClass}
-          />
+          {showBankFields ? (
+            <input
+              type="text"
+              value={composedBankName}
+              placeholder={texts.settings.club.treasury.account_name_banco_auto_placeholder}
+              readOnly
+              aria-readonly
+              tabIndex={-1}
+              className={cn(fieldBaseClass, "cursor-not-allowed bg-muted/40 text-muted-foreground")}
+            />
+          ) : (
+            <input
+              type="text"
+              value={nameValue}
+              onChange={(event) => {
+                setNameValue(event.target.value);
+                setFormErrors((prev) => ({ ...prev, name: undefined }));
+              }}
+              placeholder={texts.settings.club.treasury.account_name_placeholder}
+              className={fieldBaseClass}
+            />
+          )}
           <span className="text-meta text-muted-foreground">
-            {texts.settings.club.treasury.account_name_helper}
+            {showBankFields
+              ? texts.settings.club.treasury.account_name_banco_helper
+              : texts.settings.club.treasury.account_name_helper}
           </span>
           {formErrors.name ? (
             <span className="text-small text-destructive" aria-live="polite">{formErrors.name}</span>
           ) : null}
         </label>
 
-        {/* Monedas */}
+        {/* Moneda — selector excluyente */}
         <div className="grid gap-2">
           <span className={labelTitleClass}>
             {texts.settings.club.treasury.account_currencies_label}{" "}
@@ -245,7 +279,7 @@ export function TreasuryAccountForm({
           </span>
           <div className="flex flex-wrap gap-2">
             {CURRENCY_OPTIONS.map((code) => {
-              const selected = selectedCurrencies.includes(code);
+              const selected = selectedCurrency === code;
               return (
                 <button
                   key={code}
@@ -254,7 +288,8 @@ export function TreasuryAccountForm({
                   disabled={isEditMode}
                   onClick={() => {
                     if (isEditMode) return;
-                    toggleCurrency(code);
+                    setSelectedCurrency(code);
+                    setFormErrors((prev) => ({ ...prev, currencies: undefined }));
                   }}
                   className={cn(
                     "inline-flex min-h-10 items-center gap-2 rounded-full border px-5 text-small font-semibold transition",
@@ -275,9 +310,9 @@ export function TreasuryAccountForm({
               );
             })}
           </div>
-          {selectedCurrencies.map((code) => (
-            <input key={`cur-${code}`} type="hidden" name="currencies" value={code} />
-          ))}
+          {selectedCurrency ? (
+            <input type="hidden" name="currencies" value={selectedCurrency} />
+          ) : null}
           <span className="text-meta text-muted-foreground">
             {texts.settings.club.treasury.account_currencies_helper}
           </span>
@@ -291,25 +326,53 @@ export function TreasuryAccountForm({
           <>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className={cn(labelBlockClass, "text-body text-foreground")}>
-                <span className={labelTitleClass}>{texts.settings.club.treasury.bank_entity_label}</span>
+                <span className={labelTitleClass}>
+                  {texts.settings.club.treasury.bank_entity_label}{" "}
+                  <span aria-hidden="true" className="text-destructive">*</span>
+                </span>
                 <select
-                  name="bank_entity"
-                  defaultValue={defaultAccount?.bankEntity ?? ""}
-                  className={fieldBaseClass}
+                  name={isEditMode ? undefined : "bank_entity"}
+                  value={bankEntity}
+                  disabled={isEditMode}
+                  onChange={(event) => {
+                    setBankEntity(event.target.value);
+                    setFormErrors((prev) => ({ ...prev, bankEntity: undefined, name: undefined }));
+                  }}
+                  className={cn(
+                    fieldBaseClass,
+                    isEditMode && "cursor-not-allowed bg-muted/40 text-muted-foreground"
+                  )}
                 >
                   <option value="">{texts.settings.club.treasury.bank_entity_placeholder}</option>
                   {texts.settings.club.treasury.bank_entities.map((entity) => (
                     <option key={entity} value={entity}>{entity}</option>
                   ))}
                 </select>
+                {isEditMode ? (
+                  <input type="hidden" name="bank_entity" value={bankEntity} />
+                ) : null}
+                {formErrors.bankEntity ? (
+                  <span className="text-small text-destructive" aria-live="polite">{formErrors.bankEntity}</span>
+                ) : null}
               </label>
 
               <label className={cn(labelBlockClass, "text-body text-foreground")}>
-                <span className={labelTitleClass}>{texts.settings.club.treasury.bank_account_subtype_label}</span>
+                <span className={labelTitleClass}>
+                  {texts.settings.club.treasury.bank_account_subtype_label}{" "}
+                  <span aria-hidden="true" className="text-destructive">*</span>
+                </span>
                 <select
-                  name="bank_account_subtype"
-                  defaultValue={defaultAccount?.bankAccountSubtype ?? ""}
-                  className={fieldBaseClass}
+                  name={isEditMode ? undefined : "bank_account_subtype"}
+                  value={bankSubtype}
+                  disabled={isEditMode}
+                  onChange={(event) => {
+                    setBankSubtype(event.target.value as TreasuryBankAccountSubtype | "");
+                    setFormErrors((prev) => ({ ...prev, bankSubtype: undefined, name: undefined }));
+                  }}
+                  className={cn(
+                    fieldBaseClass,
+                    isEditMode && "cursor-not-allowed bg-muted/40 text-muted-foreground"
+                  )}
                 >
                   <option value="">{texts.settings.club.treasury.bank_account_subtype_placeholder}</option>
                   {SUBTYPE_OPTIONS.map((subtype) => (
@@ -318,6 +381,12 @@ export function TreasuryAccountForm({
                     </option>
                   ))}
                 </select>
+                {isEditMode ? (
+                  <input type="hidden" name="bank_account_subtype" value={bankSubtype} />
+                ) : null}
+                {formErrors.bankSubtype ? (
+                  <span className="text-small text-destructive" aria-live="polite">{formErrors.bankSubtype}</span>
+                ) : null}
               </label>
             </div>
 
@@ -397,21 +466,18 @@ export function TreasuryAccountForm({
           </div>
         ) : null}
 
-        {/* Saldo inicial por moneda — 2 columnas para ARS y USD */}
-        {selectedCurrencies.length > 0 ? (
+        {/* Saldo inicial de la moneda operativa */}
+        {selectedCurrency ? (
           <div className="grid gap-2">
             <span className={labelTitleClass}>
               {texts.settings.club.treasury.initial_balance_label}
             </span>
             <div className="grid gap-3 sm:grid-cols-2">
-              {selectedCurrencies.map((code) => (
-                <InitialBalanceField
-                  key={`bal-${code}`}
-                  code={code}
-                  value={initialBalances[code] ?? "0,00"}
-                  onChange={(value) => handleBalanceChange(code, value)}
-                />
-              ))}
+              <InitialBalanceField
+                code={selectedCurrency}
+                value={initialBalances[selectedCurrency] ?? "0,00"}
+                onChange={(value) => handleBalanceChange(selectedCurrency, value)}
+              />
             </div>
             <span className="text-meta text-muted-foreground">
               {texts.settings.club.treasury.initial_balance_helper}

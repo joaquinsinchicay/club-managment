@@ -125,7 +125,7 @@ function formatLastMovementDate(value: string) {
   return `${day}/${month} ${hours}:${minutes}`;
 }
 
-function formatAccountSubtitle(account: TreasuryAccount, isMulti: boolean): string | null {
+function formatAccountSubtitle(account: TreasuryAccount): string | null {
   const parts: Array<string | null | undefined> = [];
 
   if (account.accountType === "bancaria") {
@@ -135,12 +135,11 @@ function formatAccountSubtitle(account: TreasuryAccount, isMulti: boolean): stri
     }
   } else if (account.accountType === "billetera_virtual") {
     parts.push(account.bankEntity);
-    if (isMulti) parts.push(texts.dashboard.treasury_role.multi_wallet_label);
   } else {
     parts.push(texts.dashboard.treasury_role.cash_account_label);
   }
 
-  if (!isMulti && account.currencies.length === 1) {
+  if (account.currencies.length === 1) {
     parts.push(account.currencies[0]);
   }
 
@@ -479,10 +478,10 @@ function AccountRow({
   fullAccount?: TreasuryAccount;
   lastMovementAt?: string | null;
 }) {
-  const isMulti = account.balances.length > 1;
-  const subtitleLine = fullAccount ? formatAccountSubtitle(fullAccount, isMulti) : null;
+  const subtitleLine = fullAccount ? formatAccountSubtitle(fullAccount) : null;
   const accountNumberLine = fullAccount ? formatAccountIdentifier(fullAccount) : null;
   const lastMovementLabel = lastMovementAt ? formatLastMovementDate(lastMovementAt) : null;
+  const primaryBalance = account.balances[0];
 
   return (
     <div className="group border-b border-dashed border-slate-200 py-3 last:border-b-0">
@@ -522,37 +521,16 @@ function AccountRow({
             </div>
           ) : null}
         </div>
-        {isMulti ? (
-          <span className="inline-flex shrink-0 items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold tracking-wider text-slate-500">
-            {account.balances.length} {texts.dashboard.treasury_role.multi_currency_label}
-          </span>
-        ) : (
-          <p className="shrink-0 text-card-title font-bold tabular-nums tracking-tight text-foreground">
-            {account.balances[0]?.currencyCode === "ARS" ? "$ " : "US$ "}
-            {formatLocalizedAmount(account.balances[0]?.amount ?? 0)}
-          </p>
-        )}
+        <p className="shrink-0 text-card-title font-bold tabular-nums tracking-tight text-foreground">
+          {primaryBalance?.currencyCode === "USD" ? "US$ " : "$ "}
+          {formatLocalizedAmount(primaryBalance?.amount ?? 0)}
+        </p>
         {action ? (
           <div className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
             {action}
           </div>
         ) : null}
       </div>
-
-      {/* Multi-currency breakdown */}
-      {isMulti && (
-        <div className="ml-12 mt-2 flex flex-col gap-1.5 border-l-2 border-slate-100 pl-3">
-          {account.balances.map((b) => (
-            <div key={b.currencyCode} className="flex items-center justify-between gap-3">
-              <span className="text-eyebrow font-semibold text-slate-400">{b.currencyCode}</span>
-              <span className="text-small font-semibold tabular-nums text-foreground">
-                {b.currencyCode === "ARS" ? "$ " : "US$ "}
-                {formatLocalizedAmount(b.amount)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
