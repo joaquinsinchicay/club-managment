@@ -16,10 +16,16 @@ type SettingsPageLayoutProps = {
   defaultTabId?: string;
 };
 
+const LEGACY_TAB_ALIASES: Record<string, string> = {
+  categorias: "categorias-actividades",
+  actividades: "categorias-actividades"
+};
+
 export function SettingsPageLayout({ tabs, defaultTabId }: SettingsPageLayoutProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTabId = searchParams.get("tab") ?? defaultTabId ?? tabs[0]?.id;
+  const rawTabId = searchParams.get("tab") ?? defaultTabId ?? tabs[0]?.id;
+  const activeTabId = rawTabId ? (LEGACY_TAB_ALIASES[rawTabId] ?? rawTabId) : rawTabId;
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0];
 
   function handleTabChange(tabId: string) {

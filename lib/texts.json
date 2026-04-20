@@ -599,11 +599,48 @@
       "club_summary_roles_empty": "Sin roles operativos visibles",
       "tabs": {
         "club_data": "Datos del club",
-        "members": "Miembros",
-        "accounts": "Cuentas",
-        "categories": "Categorías",
-        "activities": "Actividades",
+        "journey": "Jornada",
+        "categories_activities": "Categorías y actividades",
+        "members": "Usuarios y roles",
+        "role_permissions": "Permisos por rol",
+        "receipt_numbering": "Numeración de comprobantes",
+        "notifications": "Notificaciones",
+        "integrations": "Integraciones",
+        "audit": "Auditoría",
         "membership_systems": "Sistema de Socios"
+      },
+      "placeholders": {
+        "coming_soon_badge": "Próximamente",
+        "journey": {
+          "eyebrow": "Jornada",
+          "title": "Configuración de la jornada operativa",
+          "description": "Definí los parámetros de apertura, cierre y horarios de la jornada. Esta sección estará disponible en una próxima iteración."
+        },
+        "role_permissions": {
+          "eyebrow": "Permisos por rol",
+          "title": "Matriz de permisos por rol",
+          "description": "Ajustá qué puede hacer cada rol dentro del club. Esta sección estará disponible en una próxima iteración."
+        },
+        "receipt_numbering": {
+          "eyebrow": "Numeración de comprobantes",
+          "title": "Reglas de numeración de comprobantes",
+          "description": "Definí prefijos, series y correlatividad para los comprobantes del club. Esta sección estará disponible en una próxima iteración."
+        },
+        "notifications": {
+          "eyebrow": "Notificaciones",
+          "title": "Notificaciones del club",
+          "description": "Configurá los eventos que disparan avisos a miembros y al equipo operativo. Esta sección estará disponible en una próxima iteración."
+        },
+        "integrations": {
+          "eyebrow": "Integraciones",
+          "title": "Integraciones con servicios externos",
+          "description": "Conectá el club con pasarelas de pago, calendarios y otros sistemas. Esta sección estará disponible en una próxima iteración."
+        },
+        "audit": {
+          "eyebrow": "Auditoría",
+          "title": "Registro de auditoría",
+          "description": "Consultá el historial de cambios sensibles de la configuración del club. Esta sección estará disponible en una próxima iteración."
+        }
       },
       "identity": {
         "section_title": "Identidad",

@@ -2,11 +2,11 @@
 
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
-import { ActivitiesTab } from "@/components/settings/tabs/activities-tab";
-import { CategoriesTab } from "@/components/settings/tabs/categories-tab";
+import { CategoriesActivitiesTab } from "@/components/settings/tabs/categories-activities-tab";
 import { ClubDataTab } from "@/components/settings/tabs/club-data-tab";
 import { MembersTab } from "@/components/settings/tabs/members-tab";
 import { MembershipSystemsTab } from "@/components/settings/tabs/membership-systems-tab";
+import { PlaceholderTab } from "@/components/settings/tabs/placeholder-tab";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { ClubMember, PendingClubInvitation, TreasurySettings } from "@/lib/domain/access";
@@ -50,6 +50,8 @@ export function ClubSettingsCard({
   const clubInitial = activeClubName.charAt(0).toUpperCase() || "?";
   const permissions = getClubSettingsPermissions(context.activeMembership);
 
+  const placeholders = texts.settings.club.placeholders;
+
   const tabs = [
     activeClub
       ? {
@@ -64,6 +66,31 @@ export function ClubSettingsCard({
           )
         }
       : null,
+    {
+      id: "jornada",
+      label: texts.settings.club.tabs.journey,
+      content: (
+        <PlaceholderTab
+          eyebrow={placeholders.journey.eyebrow}
+          title={placeholders.journey.title}
+          description={placeholders.journey.description}
+        />
+      )
+    },
+    {
+      id: "categorias-actividades",
+      label: texts.settings.club.tabs.categories_activities,
+      content: (
+        <CategoriesActivitiesTab
+          categories={treasurySettings.categories}
+          activities={treasurySettings.activities}
+          createTreasuryCategoryAction={createTreasuryCategoryAction}
+          updateTreasuryCategoryAction={updateTreasuryCategoryAction}
+          createClubActivityAction={createClubActivityAction}
+          updateClubActivityAction={updateClubActivityAction}
+        />
+      )
+    },
     {
       id: "miembros",
       label: texts.settings.club.tabs.members,
@@ -80,24 +107,57 @@ export function ClubSettingsCard({
       )
     },
     {
-      id: "categorias",
-      label: texts.settings.club.tabs.categories,
+      id: "permisos-por-rol",
+      label: texts.settings.club.tabs.role_permissions,
       content: (
-        <CategoriesTab
-          categories={treasurySettings.categories}
-          createTreasuryCategoryAction={createTreasuryCategoryAction}
-          updateTreasuryCategoryAction={updateTreasuryCategoryAction}
+        <PlaceholderTab
+          eyebrow={placeholders.role_permissions.eyebrow}
+          title={placeholders.role_permissions.title}
+          description={placeholders.role_permissions.description}
         />
       )
     },
     {
-      id: "actividades",
-      label: texts.settings.club.tabs.activities,
+      id: "numeracion-comprobantes",
+      label: texts.settings.club.tabs.receipt_numbering,
       content: (
-        <ActivitiesTab
-          activities={treasurySettings.activities}
-          createClubActivityAction={createClubActivityAction}
-          updateClubActivityAction={updateClubActivityAction}
+        <PlaceholderTab
+          eyebrow={placeholders.receipt_numbering.eyebrow}
+          title={placeholders.receipt_numbering.title}
+          description={placeholders.receipt_numbering.description}
+        />
+      )
+    },
+    {
+      id: "notificaciones",
+      label: texts.settings.club.tabs.notifications,
+      content: (
+        <PlaceholderTab
+          eyebrow={placeholders.notifications.eyebrow}
+          title={placeholders.notifications.title}
+          description={placeholders.notifications.description}
+        />
+      )
+    },
+    {
+      id: "integraciones",
+      label: texts.settings.club.tabs.integrations,
+      content: (
+        <PlaceholderTab
+          eyebrow={placeholders.integrations.eyebrow}
+          title={placeholders.integrations.title}
+          description={placeholders.integrations.description}
+        />
+      )
+    },
+    {
+      id: "auditoria",
+      label: texts.settings.club.tabs.audit,
+      content: (
+        <PlaceholderTab
+          eyebrow={placeholders.audit.eyebrow}
+          title={placeholders.audit.title}
+          description={placeholders.audit.description}
         />
       )
     },
