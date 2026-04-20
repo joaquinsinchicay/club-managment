@@ -26,6 +26,7 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [logoPreview, setLogoPreview] = useState<string | null>(club.logoUrl);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pendingRemove, setPendingRemove] = useState(false);
   const [colorPrimary, setColorPrimary] = useState<string>(club.colorPrimary ?? "#0f172a");
   const [colorSecondary, setColorSecondary] = useState<string>(club.colorSecondary ?? "#e2e8f0");
@@ -38,14 +39,33 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
     }
     const objectUrl = URL.createObjectURL(file);
     setLogoPreview(objectUrl);
+    setSelectedFile(file);
     setPendingRemove(false);
   }
 
   function handleRemoveLogo() {
     setLogoPreview(null);
+    setSelectedFile(null);
     setPendingRemove(true);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  }
+
+  function handleFormSubmit() {
+    // Restaura el File seleccionado al input si el browser lo vaciet re-render
+    // (pasa cuando un server action redirige sin remontar el componente).
+    if (selectedFile && fileInputRef.current) {
+      const currentFiles = fileInputRef.current.files;
+      if (!currentFiles || currentFiles.length === 0) {
+        try {
+          const dt = new DataTransfer();
+          dt.items.add(selectedFile);
+          fileInputRef.current.files = dt.files;
+        } catch (error) {
+          console.warn("[club-data-tab] DataTransfer restore failed", error);
+        }
+      }
     }
   }
 
@@ -58,6 +78,7 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
 
   function handleCancel() {
     setLogoPreview(club.logoUrl);
+    setSelectedFile(null);
     setPendingRemove(false);
     setColorPrimary(club.colorPrimary ?? "#0f172a");
     setColorSecondary(club.colorSecondary ?? "#e2e8f0");
@@ -72,6 +93,7 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
     <form
       ref={formRef}
       action={updateClubIdentityAction}
+      onSubmit={handleFormSubmit}
       className="grid gap-8"
       encType="multipart/form-data"
     >
