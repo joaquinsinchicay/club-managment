@@ -46,8 +46,6 @@ export function ClubSettingsCard({
   updateClubIdentityAction
 }: ClubSettingsCardProps) {
   const activeClub = context.activeClub;
-  const activeClubName = activeClub?.name ?? "";
-  const clubInitial = activeClubName.charAt(0).toUpperCase() || "?";
   const permissions = getClubSettingsPermissions(context.activeMembership);
 
   const placeholders = texts.settings.club.placeholders;
@@ -173,9 +171,6 @@ export function ClubSettingsCard({
     }
   ].filter((tab): tab is NonNullable<typeof tab> => Boolean(tab));
 
-  const primaryColor = activeClub?.colorPrimary ?? undefined;
-  const logoUrl = activeClub?.logoUrl ?? null;
-
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
       <PageContentHeader
@@ -183,23 +178,6 @@ export function ClubSettingsCard({
         title={texts.settings.club.title}
         description={texts.settings.club.description}
       />
-
-      <section className="rounded-dialog border border-border bg-card p-5 sm:p-6">
-        <div className="flex items-center gap-4">
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-primary/10 text-lg font-semibold text-primary"
-            style={primaryColor ? { borderColor: primaryColor } : undefined}
-          >
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={activeClubName} className="h-full w-full object-cover" />
-            ) : (
-              <span>{clubInitial}</span>
-            )}
-          </div>
-          <p className="text-xl font-semibold tracking-tight text-foreground">{activeClubName}</p>
-        </div>
-      </section>
 
       <section className="rounded-dialog border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
         <SettingsPageLayout tabs={tabs} defaultTabId="datos-del-club" />

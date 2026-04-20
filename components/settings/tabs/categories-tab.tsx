@@ -267,7 +267,7 @@ export function CategoriesTab({
         }}
       >
         {filteredCategories.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
+          <div className="rounded-shell border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
             {visibleCategories.length === 0
               ? texts.settings.club.treasury.empty_categories
               : texts.settings.club.treasury.empty_categories_search}
@@ -277,7 +277,7 @@ export function CategoriesTab({
             {filteredCategories.map((category) => (
               <article
                 key={category.id}
-                className="group rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5"
+                className="group rounded-shell border border-border/70 bg-gradient-surface-92 p-5"
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">

@@ -8,7 +8,7 @@ type PlaceholderTabProps = {
 
 export function PlaceholderTab({ eyebrow, title, description }: PlaceholderTabProps) {
   return (
-    <section className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-6 sm:p-8">
+    <section className="rounded-shell border border-dashed border-border bg-secondary/30 p-6 sm:p-8">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">

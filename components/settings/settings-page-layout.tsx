@@ -39,7 +39,7 @@ export function SettingsPageLayout({ tabs, defaultTabId }: SettingsPageLayoutPro
     <div className="space-y-6">
       <div
         role="tablist"
-        className="flex flex-wrap gap-0.5 rounded-card bg-slate-100 p-0.75"
+        className="flex flex-wrap gap-0.5 rounded-card bg-ds-slate-100 p-0.75"
       >
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab?.id;
@@ -55,7 +55,7 @@ export function SettingsPageLayout({ tabs, defaultTabId }: SettingsPageLayoutPro
                 "flex-grow basis-auto rounded-[7px] px-3 py-2 text-xs font-semibold tracking-tight transition whitespace-nowrap",
                 isActive
                   ? "bg-white text-foreground shadow-sm"
-                  : "text-slate-600 hover:text-foreground"
+                  : "text-ds-slate-600 hover:text-foreground"
               )}
             >
               {tab.label}

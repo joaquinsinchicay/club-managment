@@ -586,9 +586,9 @@
   },
   "settings": {
     "club": {
-      "eyebrow": "Configuracion",
-      "title": "Configuracion del club",
-      "description": "Gestiona la configuracion operativa del club activo.",
+      "eyebrow": "Club · Admin",
+      "title": "Configuración",
+      "description": "Ajustes del club, usuarios, roles y operativa.",
       "forbidden_title": "No tienes permisos para abrir esta configuracion",
       "forbidden_description": "Solo un usuario con rol Admin del club activo puede acceder a esta pagina.",
       "back_to_dashboard_cta": "Volver al dashboard",
