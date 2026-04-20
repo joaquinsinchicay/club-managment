@@ -598,16 +598,16 @@
       "club_summary_status_value": "Club operativo",
       "club_summary_roles_empty": "Sin roles operativos visibles",
       "tabs": {
-        "club_data": "Datos del club",
+        "club_data": "Datos",
         "journey": "Jornada",
-        "categories_activities": "Categorías y actividades",
-        "members": "Usuarios y roles",
-        "role_permissions": "Permisos por rol",
-        "receipt_numbering": "Numeración de comprobantes",
+        "categories_activities": "Categorías",
+        "members": "Usuarios",
+        "role_permissions": "Permisos",
+        "receipt_numbering": "Numeración",
         "notifications": "Notificaciones",
         "integrations": "Integraciones",
         "audit": "Auditoría",
-        "membership_systems": "Sistema de Socios"
+        "membership_systems": "Socios"
       },
       "placeholders": {
         "coming_soon_badge": "Próximamente",

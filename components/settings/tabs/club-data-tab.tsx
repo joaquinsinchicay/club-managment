@@ -84,10 +84,10 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
             <p className="text-sm text-muted-foreground">{identityTexts.section_description}</p>
           </header>
 
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4">
             <div
               className={cn(
-                "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-primary/10 text-2xl font-semibold text-primary"
+                "flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-primary/10 text-2xl font-semibold text-primary"
               )}
               style={
                 colorPrimary
@@ -107,15 +107,13 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
               )}
             </div>
 
-            <div className="grid flex-1 gap-2">
-              <p className="text-sm font-medium text-foreground">{identityTexts.logo_label}</p>
-              <p className="text-xs text-muted-foreground">{identityTexts.logo_description}</p>
-              <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-1 flex-col gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={!canEdit}
-                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-secondary/40 px-4 text-sm font-medium text-foreground transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex min-h-10 flex-1 items-center justify-center rounded-2xl border border-border bg-secondary/40 px-4 text-sm font-medium text-foreground transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {logoPreview
                     ? identityTexts.logo_replace_cta
@@ -126,12 +124,13 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
                     type="button"
                     onClick={handleRemoveLogo}
                     disabled={!canEdit}
-                    className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-4 text-sm font-medium text-destructive transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70"
+                    className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-border bg-card px-4 text-sm font-medium text-destructive transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {identityTexts.logo_remove_cta}
                   </button>
                 ) : null}
               </div>
+              <p className="text-xs text-muted-foreground">{identityTexts.logo_description}</p>
               <input
                 ref={fileInputRef}
                 type="file"
