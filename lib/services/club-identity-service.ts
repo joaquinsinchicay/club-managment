@@ -3,6 +3,19 @@ import { canManageClubMembers } from "@/lib/domain/authorization";
 import type { Club, ClubType } from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import {
+  formatCuit,
+  hasValidCuitDv,
+  hasValidCuitShape,
+  normalizeCuit
+} from "@/lib/validators/cuit";
+import { isValidEmail, validatePhone } from "@/lib/validators/contact";
+import {
+  optimizePngBuffer,
+  optimizeSvgBuffer,
+  readPngDimensions,
+  readSvgDimensions
+} from "@/lib/services/logo-pipeline";
 
 export type ClubIdentityActionCode =
   | "club_identity_updated"
@@ -10,10 +23,17 @@ export type ClubIdentityActionCode =
   | "club_not_found"
   | "invalid_name"
   | "invalid_cuit"
+  | "invalid_cuit_dv"
   | "invalid_tipo"
+  | "invalid_domicilio"
+  | "invalid_email"
+  | "invalid_telefono"
+  | "invalid_telefono_missing_prefix"
   | "invalid_color"
   | "invalid_logo"
+  | "invalid_logo_dimensions"
   | "logo_upload_failed"
+  | "logo_optimization_failed"
   | "unknown_error";
 
 export type ClubIdentityActionResult = {
@@ -25,22 +45,23 @@ export type UpdateClubIdentityInput = {
   name: string;
   cuit: string;
   tipo: string;
+  domicilio: string;
+  email: string;
+  telefono: string;
   colorPrimary: string;
   colorSecondary: string;
   logoFile?: File | null;
   removeLogo?: boolean;
 };
 
-const CUIT_REGEX = /^\d{2}-\d{8}-\d$/;
 const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-const ALLOWED_LOGO_MIME = new Set(["image/png", "image/jpeg", "image/svg+xml", "image/webp"]);
+const ALLOWED_LOGO_MIME = new Set(["image/png", "image/svg+xml"]);
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+const MIN_LOGO_DIMENSION = 256;
 const VALID_CLUB_TYPES: ClubType[] = ["asociacion_civil", "fundacion", "sociedad_civil"];
 const LOGO_BUCKET = "club-logos";
-
-function normalizeCuit(raw: string) {
-  return raw.trim();
-}
+const MIN_DOMICILIO_LENGTH = 4;
+const MAX_DOMICILIO_LENGTH = 200;
 
 function normalizeColor(raw: string) {
   return raw.trim().toLowerCase();
@@ -50,55 +71,115 @@ function isValidClubType(value: string): value is ClubType {
   return (VALID_CLUB_TYPES as string[]).includes(value);
 }
 
-function deriveExtensionFromMime(mime: string) {
-  switch (mime) {
-    case "image/png":
-      return "png";
-    case "image/jpeg":
-      return "jpg";
-    case "image/svg+xml":
-      return "svg";
-    case "image/webp":
-      return "webp";
-    default:
-      return null;
+function extensionForMime(mime: string): "png" | "svg" | null {
+  if (mime === "image/png") return "png";
+  if (mime === "image/svg+xml") return "svg";
+  return null;
+}
+
+function bucketPathFromPublicUrl(publicUrl: string): string | null {
+  const marker = `/${LOGO_BUCKET}/`;
+  const index = publicUrl.indexOf(marker);
+  if (index === -1) {
+    return null;
+  }
+  return publicUrl.slice(index + marker.length);
+}
+
+type LogoProcessingResult =
+  | { ok: true; buffer: Buffer; contentType: "image/png" | "image/svg+xml"; extension: "png" | "svg" }
+  | { ok: false; code: ClubIdentityActionCode };
+
+async function processLogoFile(file: File): Promise<LogoProcessingResult> {
+  if (!ALLOWED_LOGO_MIME.has(file.type) || file.size > MAX_LOGO_BYTES) {
+    return { ok: false, code: "invalid_logo" };
+  }
+
+  const extension = extensionForMime(file.type);
+  if (!extension) {
+    return { ok: false, code: "invalid_logo" };
+  }
+
+  const inputBuffer = Buffer.from(await file.arrayBuffer());
+
+  if (extension === "png") {
+    const dims = readPngDimensions(inputBuffer);
+    if (!dims) {
+      return { ok: false, code: "invalid_logo" };
+    }
+    if (dims.width < MIN_LOGO_DIMENSION || dims.height < MIN_LOGO_DIMENSION) {
+      return { ok: false, code: "invalid_logo_dimensions" };
+    }
+
+    try {
+      const optimized = optimizePngBuffer(inputBuffer);
+      return { ok: true, buffer: optimized, contentType: "image/png", extension: "png" };
+    } catch (error) {
+      console.error("[club-identity-service] png optimization failed", error);
+      return { ok: false, code: "logo_optimization_failed" };
+    }
+  }
+
+  const svgSource = inputBuffer.toString("utf8");
+  const dims = readSvgDimensions(svgSource);
+  if (dims && (dims.width < MIN_LOGO_DIMENSION || dims.height < MIN_LOGO_DIMENSION)) {
+    return { ok: false, code: "invalid_logo_dimensions" };
+  }
+
+  try {
+    const optimized = optimizeSvgBuffer(inputBuffer);
+    return { ok: true, buffer: optimized, contentType: "image/svg+xml", extension: "svg" };
+  } catch (error) {
+    console.error("[club-identity-service] svg optimization failed", error);
+    return { ok: false, code: "logo_optimization_failed" };
   }
 }
 
-async function uploadClubLogo(clubId: string, file: File): Promise<string | null> {
-  if (!ALLOWED_LOGO_MIME.has(file.type)) {
-    return null;
-  }
-  if (file.size > MAX_LOGO_BYTES) {
-    return null;
-  }
+type LogoUploadResult =
+  | { ok: true; publicUrl: string; objectName: string }
+  | { ok: false; code: ClubIdentityActionCode };
 
-  const ext = deriveExtensionFromMime(file.type);
-  if (!ext) {
-    return null;
-  }
-
+async function uploadProcessedLogo(
+  clubId: string,
+  buffer: Buffer,
+  contentType: string,
+  extension: string
+): Promise<LogoUploadResult> {
   const admin = createAdminSupabaseClient();
   if (!admin) {
-    return null;
+    return { ok: false, code: "logo_upload_failed" };
   }
 
-  const objectName = `${clubId}/logo-${Date.now()}.${ext}`;
-  const arrayBuffer = await file.arrayBuffer();
+  const objectName = `${clubId}/logo-${Date.now()}.${extension}`;
 
   const { error: uploadError } = await admin.storage
     .from(LOGO_BUCKET)
-    .upload(objectName, Buffer.from(arrayBuffer), {
-      contentType: file.type,
+    .upload(objectName, buffer, {
+      contentType,
       upsert: true
     });
 
   if (uploadError) {
-    return null;
+    console.error("[club-identity-service] upload failed", uploadError);
+    return { ok: false, code: "logo_upload_failed" };
   }
 
   const { data: publicUrl } = admin.storage.from(LOGO_BUCKET).getPublicUrl(objectName);
-  return publicUrl?.publicUrl ?? null;
+  if (!publicUrl?.publicUrl) {
+    return { ok: false, code: "logo_upload_failed" };
+  }
+
+  return { ok: true, publicUrl: publicUrl.publicUrl, objectName };
+}
+
+async function removeBucketObject(path: string | null): Promise<void> {
+  if (!path) return;
+  const admin = createAdminSupabaseClient();
+  if (!admin) return;
+  const { error } = await admin.storage.from(LOGO_BUCKET).remove([path]);
+  if (error) {
+    console.error("[club-identity-service] remove previous logo failed", error);
+  }
 }
 
 export async function updateClubIdentityForActiveClub(
@@ -115,22 +196,52 @@ export async function updateClubIdentityForActiveClub(
   }
 
   const clubId = context.activeClub.id;
+  const previousLogoUrl = context.activeClub.logoUrl;
 
   const name = input.name?.trim() ?? "";
   if (name.length < 2) {
     return { ok: false, code: "invalid_name" };
   }
 
-  const cuit = normalizeCuit(input.cuit ?? "");
-  if (cuit && !CUIT_REGEX.test(cuit)) {
+  const cuitDigits = normalizeCuit(input.cuit ?? "");
+  const cuit = formatCuit(cuitDigits);
+  if (!hasValidCuitShape(cuit)) {
     return { ok: false, code: "invalid_cuit" };
+  }
+  if (!hasValidCuitDv(cuitDigits)) {
+    return { ok: false, code: "invalid_cuit_dv" };
   }
 
   const tipoRaw = (input.tipo ?? "").trim();
-  if (tipoRaw && !isValidClubType(tipoRaw)) {
+  if (!isValidClubType(tipoRaw)) {
     return { ok: false, code: "invalid_tipo" };
   }
-  const tipo = tipoRaw ? (tipoRaw as ClubType) : null;
+  const tipo: ClubType = tipoRaw;
+
+  const domicilio = (input.domicilio ?? "").trim();
+  if (
+    domicilio.length < MIN_DOMICILIO_LENGTH ||
+    domicilio.length > MAX_DOMICILIO_LENGTH
+  ) {
+    return { ok: false, code: "invalid_domicilio" };
+  }
+
+  const email = (input.email ?? "").trim();
+  if (!isValidEmail(email)) {
+    return { ok: false, code: "invalid_email" };
+  }
+
+  const phoneCheck = validatePhone(input.telefono ?? "");
+  if (!phoneCheck.ok) {
+    return {
+      ok: false,
+      code:
+        phoneCheck.reason === "missing_prefix"
+          ? "invalid_telefono_missing_prefix"
+          : "invalid_telefono"
+    };
+  }
+  const telefono = phoneCheck.normalized;
 
   const colorPrimary = normalizeColor(input.colorPrimary ?? "");
   if (colorPrimary && !HEX_COLOR_REGEX.test(colorPrimary)) {
@@ -142,41 +253,66 @@ export async function updateClubIdentityForActiveClub(
     return { ok: false, code: "invalid_color" };
   }
 
-  let logoUrlToPersist: string | null | undefined = undefined;
+  let logoUrlToPersist: string | null | undefined;
+  let newLogoObjectName: string | null = null;
 
   if (input.removeLogo) {
     logoUrlToPersist = null;
   }
 
   if (input.logoFile && input.logoFile.size > 0) {
-    if (!ALLOWED_LOGO_MIME.has(input.logoFile.type) || input.logoFile.size > MAX_LOGO_BYTES) {
-      return { ok: false, code: "invalid_logo" };
+    const processed = await processLogoFile(input.logoFile);
+    if (!processed.ok) {
+      return { ok: false, code: processed.code };
     }
 
-    const uploaded = await uploadClubLogo(clubId, input.logoFile);
-    if (!uploaded) {
-      return { ok: false, code: "logo_upload_failed" };
+    const upload = await uploadProcessedLogo(
+      clubId,
+      processed.buffer,
+      processed.contentType,
+      processed.extension
+    );
+    if (!upload.ok) {
+      return { ok: false, code: upload.code };
     }
-    logoUrlToPersist = uploaded;
+
+    logoUrlToPersist = upload.publicUrl;
+    newLogoObjectName = upload.objectName;
   }
 
   try {
     const updated = await accessRepository.updateClubIdentity(clubId, {
       name,
-      cuit: cuit === "" ? null : cuit,
+      cuit,
       tipo,
+      domicilio,
+      email,
+      telefono,
       colorPrimary: colorPrimary === "" ? null : colorPrimary,
       colorSecondary: colorSecondary === "" ? null : colorSecondary,
       ...(logoUrlToPersist !== undefined ? { logoUrl: logoUrlToPersist } : {})
     });
 
     if (!updated) {
+      if (newLogoObjectName) {
+        await removeBucketObject(newLogoObjectName);
+      }
       return { ok: false, code: "club_not_found" };
+    }
+
+    if (logoUrlToPersist !== undefined && previousLogoUrl) {
+      const previousPath = bucketPathFromPublicUrl(previousLogoUrl);
+      if (previousPath && previousPath !== newLogoObjectName) {
+        await removeBucketObject(previousPath);
+      }
     }
 
     return { ok: true, code: "club_identity_updated", club: updated };
   } catch (error) {
     console.error("[club-identity-service] update failed", error);
+    if (newLogoObjectName) {
+      await removeBucketObject(newLogoObjectName);
+    }
     return { ok: false, code: "unknown_error" };
   }
 }

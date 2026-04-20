@@ -22,6 +22,9 @@ export type Club = {
   logoUrl: string | null;
   colorPrimary: string | null;
   colorSecondary: string | null;
+  domicilio: string | null;
+  email: string | null;
+  telefono: string | null;
 };
 
 export type AvailableClub = {

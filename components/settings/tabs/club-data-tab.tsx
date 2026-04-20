@@ -6,6 +6,7 @@ import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-fo
 import type { Club, ClubType } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
+import { formatCuit, normalizeCuit } from "@/lib/validators/cuit";
 
 type ClubDataTabProps = {
   club: Club;
@@ -21,12 +22,14 @@ function getClubInitial(name: string) {
 
 export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDataTabProps) {
   const identityTexts = texts.settings.club.identity;
+  const formRef = useRef<HTMLFormElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [logoPreview, setLogoPreview] = useState<string | null>(club.logoUrl);
   const [pendingRemove, setPendingRemove] = useState(false);
   const [colorPrimary, setColorPrimary] = useState<string>(club.colorPrimary ?? "#0f172a");
   const [colorSecondary, setColorSecondary] = useState<string>(club.colorSecondary ?? "#e2e8f0");
+  const [cuit, setCuit] = useState<string>(club.cuit ?? "");
 
   function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -46,8 +49,32 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
     }
   }
 
+  function handleCuitBlur(event: React.FocusEvent<HTMLInputElement>) {
+    const digits = normalizeCuit(event.target.value);
+    if (digits.length === 11) {
+      setCuit(formatCuit(digits));
+    }
+  }
+
+  function handleCancel() {
+    setLogoPreview(club.logoUrl);
+    setPendingRemove(false);
+    setColorPrimary(club.colorPrimary ?? "#0f172a");
+    setColorSecondary(club.colorSecondary ?? "#e2e8f0");
+    setCuit(club.cuit ?? "");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    formRef.current?.reset();
+  }
+
   return (
-    <form action={updateClubIdentityAction} className="grid gap-8" encType="multipart/form-data">
+    <form
+      ref={formRef}
+      action={updateClubIdentityAction}
+      className="grid gap-8"
+      encType="multipart/form-data"
+    >
       <PendingFieldset className="grid gap-8" disabled={!canEdit}>
         <section className="grid gap-5">
           <header className="grid gap-1">
@@ -109,7 +136,7 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
                 ref={fileInputRef}
                 type="file"
                 name="logo"
-                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                accept="image/png,image/svg+xml"
                 onChange={handleLogoChange}
                 className="hidden"
               />
@@ -118,12 +145,17 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
           </div>
 
           <label className="grid gap-2 text-sm text-foreground">
-            <span className="font-medium">{identityTexts.name_label}</span>
+            <span className="font-medium">
+              {identityTexts.name_label}
+              <span className="ml-1 text-destructive" aria-hidden="true">*</span>
+            </span>
             <input
               type="text"
               name="name"
               defaultValue={club.name}
               placeholder={identityTexts.name_placeholder}
+              minLength={2}
+              maxLength={80}
               className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
               required
             />
@@ -131,32 +163,95 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{identityTexts.cuit_label}</span>
+              <span className="font-medium">
+                {identityTexts.cuit_label}
+                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
+              </span>
               <input
                 type="text"
                 name="cuit"
-                defaultValue={club.cuit ?? ""}
+                value={cuit}
+                onChange={(event) => setCuit(event.target.value)}
+                onBlur={handleCuitBlur}
                 placeholder={identityTexts.cuit_placeholder}
-                pattern="\d{2}-\d{8}-\d"
+                inputMode="numeric"
                 className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                required
               />
               <span className="text-xs text-muted-foreground">{identityTexts.cuit_helper}</span>
             </label>
 
             <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{identityTexts.tipo_label}</span>
+              <span className="font-medium">
+                {identityTexts.tipo_label}
+                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
+              </span>
               <select
                 name="tipo"
                 defaultValue={club.tipo ?? ""}
                 className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                required
               >
-                <option value="">{identityTexts.tipo_placeholder}</option>
+                <option value="" disabled>{identityTexts.tipo_placeholder}</option>
                 {CLUB_TYPE_VALUES.map((value) => (
                   <option key={value} value={value}>
                     {identityTexts.tipo_options[value]}
                   </option>
                 ))}
               </select>
+            </label>
+          </div>
+
+          <label className="grid gap-2 text-sm text-foreground">
+            <span className="font-medium">
+              {identityTexts.domicilio_label}
+              <span className="ml-1 text-destructive" aria-hidden="true">*</span>
+            </span>
+            <input
+              type="text"
+              name="domicilio"
+              defaultValue={club.domicilio ?? ""}
+              placeholder={identityTexts.domicilio_placeholder}
+              minLength={4}
+              maxLength={200}
+              className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+              required
+            />
+          </label>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">
+                {identityTexts.email_label}
+                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
+              </span>
+              <input
+                type="email"
+                name="email"
+                defaultValue={club.email ?? ""}
+                placeholder={identityTexts.email_placeholder}
+                autoComplete="email"
+                inputMode="email"
+                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                required
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm text-foreground">
+              <span className="font-medium">
+                {identityTexts.telefono_label}
+                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
+              </span>
+              <input
+                type="tel"
+                name="telefono"
+                defaultValue={club.telefono ?? ""}
+                placeholder={identityTexts.telefono_placeholder}
+                inputMode="tel"
+                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                required
+              />
+              <span className="text-xs text-muted-foreground">{identityTexts.telefono_helper}</span>
             </label>
           </div>
         </section>
@@ -227,7 +322,14 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
         </section>
 
         {canEdit ? (
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-5 py-3 text-sm font-medium text-foreground transition hover:bg-secondary"
+            >
+              {identityTexts.cancel_cta}
+            </button>
             <PendingSubmitButton
               idleLabel={identityTexts.save_cta}
               pendingLabel={identityTexts.save_loading}

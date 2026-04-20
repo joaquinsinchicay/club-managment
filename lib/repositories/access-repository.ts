@@ -212,6 +212,9 @@ type AccessRepository = {
       logoUrl?: string | null;
       colorPrimary?: string | null;
       colorSecondary?: string | null;
+      domicilio?: string | null;
+      email?: string | null;
+      telefono?: string | null;
     },
     client?: AccessRepositoryClient
   ): Promise<Club | null>;
@@ -679,7 +682,10 @@ function createStore(): MockStore {
       tipo: null,
       logoUrl: null,
       colorPrimary: null,
-      colorSecondary: null
+      colorSecondary: null,
+      domicilio: null,
+      email: null,
+      telefono: null
     },
     {
       id: CLUB_SUR_ID,
@@ -690,7 +696,10 @@ function createStore(): MockStore {
       tipo: null,
       logoUrl: null,
       colorPrimary: null,
-      colorSecondary: null
+      colorSecondary: null,
+      domicilio: null,
+      email: null,
+      telefono: null
     }
   ];
 
@@ -1231,6 +1240,9 @@ function mapClubRow(row: {
   logo_url?: string | null;
   color_primary?: string | null;
   color_secondary?: string | null;
+  domicilio?: string | null;
+  email?: string | null;
+  telefono?: string | null;
 }): Club {
   return {
     id: row.id,
@@ -1241,7 +1253,10 @@ function mapClubRow(row: {
     tipo: isClubType(row.tipo) ? row.tipo : null,
     logoUrl: row.logo_url ?? null,
     colorPrimary: row.color_primary ?? null,
-    colorSecondary: row.color_secondary ?? null
+    colorSecondary: row.color_secondary ?? null,
+    domicilio: row.domicilio ?? null,
+    email: row.email ?? null,
+    telefono: row.telefono ?? null
   };
 }
 
@@ -1977,7 +1992,7 @@ async function findRealClubById(clubId: string, client?: AccessRepositoryClient)
 
   const { data, error } = await supabase
     .from("clubs")
-    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary")
+    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary,domicilio,email,telefono")
     .eq("id", clubId)
     .maybeSingle();
 
@@ -1995,6 +2010,9 @@ type UpdateClubIdentityFields = {
   logoUrl?: string | null;
   colorPrimary?: string | null;
   colorSecondary?: string | null;
+  domicilio?: string | null;
+  email?: string | null;
+  telefono?: string | null;
 };
 
 async function updateRealClubIdentity(
@@ -2015,6 +2033,9 @@ async function updateRealClubIdentity(
   if (fields.logoUrl !== undefined) payload.logo_url = fields.logoUrl;
   if (fields.colorPrimary !== undefined) payload.color_primary = fields.colorPrimary;
   if (fields.colorSecondary !== undefined) payload.color_secondary = fields.colorSecondary;
+  if (fields.domicilio !== undefined) payload.domicilio = fields.domicilio;
+  if (fields.email !== undefined) payload.email = fields.email;
+  if (fields.telefono !== undefined) payload.telefono = fields.telefono;
 
   if (Object.keys(payload).length === 0) {
     return findRealClubById(clubId, client);
@@ -2024,7 +2045,7 @@ async function updateRealClubIdentity(
     .from("clubs")
     .update(payload)
     .eq("id", clubId)
-    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary")
+    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary,domicilio,email,telefono")
     .maybeSingle();
 
   if (error || !data) {
@@ -4653,7 +4674,10 @@ export const accessRepository: AccessRepository = {
       logoUrl: fields.logoUrl !== undefined ? fields.logoUrl : current.logoUrl,
       colorPrimary: fields.colorPrimary !== undefined ? fields.colorPrimary : current.colorPrimary,
       colorSecondary:
-        fields.colorSecondary !== undefined ? fields.colorSecondary : current.colorSecondary
+        fields.colorSecondary !== undefined ? fields.colorSecondary : current.colorSecondary,
+      domicilio: fields.domicilio !== undefined ? fields.domicilio : current.domicilio,
+      email: fields.email !== undefined ? fields.email : current.email,
+      telefono: fields.telefono !== undefined ? fields.telefono : current.telefono
     };
 
     store.clubs[index] = updated;

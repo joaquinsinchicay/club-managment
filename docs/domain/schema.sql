@@ -64,6 +64,9 @@ tipo text check (
 logo_url text,
 color_primary text,
 color_secondary text,
+domicilio text,
+email text,
+telefono text,
 created_at timestamp default now(),
 updated_at timestamp default now()
 );
