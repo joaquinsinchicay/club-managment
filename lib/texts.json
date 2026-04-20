@@ -480,7 +480,9 @@
       "conciliacion_edit_cta": "Editar",
       "conciliacion_empty_pending": "No hay movimientos pendientes para la fecha seleccionada.",
       "conciliacion_session_open_title": "La jornada todavia esta abierta",
-      "conciliacion_session_open_description": "Espera a que Secretaria cierre la jornada para poder conciliar los movimientos de la fecha seleccionada."
+      "conciliacion_session_open_description": "Espera a que Secretaria cierre la jornada para poder conciliar los movimientos de la fecha seleccionada.",
+      "conciliacion_auto_closed_badge": "Cierre automatico",
+      "conciliacion_auto_closed_description": "La jornada fue cerrada automaticamente por el sistema con saldos esperados."
     },
     "consolidation": {
       "eyebrow": "Consolidacion",

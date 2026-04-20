@@ -230,6 +230,12 @@ export function TreasuryConciliacionTab({
     : dashboard.pendingMovements;
 
   const isSessionOpen = dashboard.sessionStatus === "open";
+  const isSessionAutoClosed =
+    dashboard.sessionStatus === "closed" && dashboard.sessionCloseType === "auto";
+  const autoClosedAtLabel =
+    isSessionAutoClosed && dashboard.sessionClosedAt
+      ? formatMovementDateTime(dashboard.sessionClosedAt)
+      : null;
   const hasPending = pendingCount > 0;
   const canApprove =
     !isSessionOpen && hasPending && dashboard.pendingMovements.every((movement) => movement.isValid);
@@ -270,6 +276,19 @@ export function TreasuryConciliacionTab({
             <p className="mt-0.5 text-meta text-muted-foreground">
               {texts.dashboard.treasury_role.conciliacion_movements_subtitle}
             </p>
+            {isSessionAutoClosed ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <StatusBadge
+                  tone="warning"
+                  label={texts.dashboard.treasury_role.conciliacion_auto_closed_badge}
+                />
+                <span className="text-meta text-muted-foreground">
+                  {autoClosedAtLabel
+                    ? `${texts.dashboard.treasury_role.conciliacion_auto_closed_description} (${autoClosedAtLabel})`
+                    : texts.dashboard.treasury_role.conciliacion_auto_closed_description}
+                </span>
+              </div>
+            ) : null}
           </div>
           {canApprove ? (
             <form action={executeDailyConsolidationAction}>

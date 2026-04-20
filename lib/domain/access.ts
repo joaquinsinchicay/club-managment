@@ -210,6 +210,8 @@ export type TreasurySettings = {
 
 export type TreasurySessionStatus = "open" | "closed";
 
+export type SessionCloseType = "manual" | "auto";
+
 export type DailyCashSession = {
   id: string;
   clubId: string;
@@ -219,6 +221,7 @@ export type DailyCashSession = {
   closedAt: string | null;
   openedByUserId: string | null;
   closedByUserId: string | null;
+  closeType: SessionCloseType;
   notes?: string | null;
 };
 
@@ -460,6 +463,8 @@ export type TreasuryConsolidationDashboard = {
   defaultDate: string;
   hasLoadedDate: boolean;
   sessionStatus: "open" | "closed" | "not_started";
+  sessionCloseType: SessionCloseType | null;
+  sessionClosedAt: string | null;
   batch: DailyConsolidationBatch | null;
   pendingMovements: ConsolidationMovement[];
   integratedMovements: ConsolidationMovement[];

@@ -208,3 +208,10 @@ Do not reference current code files.
 | Cerrar la jornada antes de generar ajustes | Media | Alta | En cierre, persistir saldos y ajustes antes del cambio a `closed`. |
 | UX confusa con muchas cuentas | Media | Media | Agrupar por cuenta y mostrar resumen claro de diferencia por moneda. |
 | Falta de categoría Ajuste | Baja | Alta | Validar antes de confirmar y devolver feedback específico. |
+
+---
+
+## 17. Relacionado
+
+- [PDD US-10 · Apertura y cierre diario](pdd_us_10_apertura_y_cierre_diario.md)
+- [PDD US-32 · Cierre automático de jornada colgada](pdd_us_32_cierre_automatico_de_jornada.md) — el cierre automático usa saldos esperados sin ajustes; los cierres manuales de esta US marcan `close_type = 'manual'`.

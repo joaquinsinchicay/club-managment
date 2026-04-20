@@ -518,6 +518,24 @@ Ante conflicto entre alternativas, priorizar:
 8. Consolidación explícita por fecha y club.
 9. Corrección de Tesorería solo con auditoría.
 10. Operaciones críticas siempre transaccionales.
+11. Autocierre de jornada colgada disparado desde el layout autenticado.
+
+---
+
+## 18. ADR — Autocierre de jornadas colgadas desde el layout autenticado
+
+**Contexto.** Cuando Secretaría olvida cerrar la jornada al finalizar el día, al día siguiente Tesorería no puede conciliar la fecha anterior porque la UI bloquea con *"La jornada todavía está abierta"*. Existían RPC de autocierre pero solo se invocaban desde los caminos de Secretaría, no desde Tesorería.
+
+**Decisión.** El autocierre se dispara en un único punto — `app/(dashboard)/layout.tsx` — a través del helper exportado `ensureStaleDailyCashSessionAutoClosedForActiveClub(context)`. El guard ejecuta en cada request autenticada. No se usa cookie ni memoización: la RPC es idempotente (filtra por `status = 'open'` y usa `FOR UPDATE`) y el costo de una consulta vacía es despreciable. Las 7 invocaciones previas en `treasury-service.ts` fueron removidas para mantener una única fuente de verdad.
+
+**Flag de trazabilidad.** Se agrega la columna `daily_cash_sessions.close_type` (enum `session_close_type`: `manual` | `auto`) con default `manual`. La RPC de autocierre siempre setea `'auto'`; la RPC de cierre manual siempre setea `'manual'`. La UI de Tesorería → Conciliación pinta el badge *"Cierre automático"* cuando corresponde.
+
+**Tradeoffs.**
+- *Pro:* single source of truth, cubre todos los roles, no hay cron/edge function a mantener.
+- *Contra:* si una pestaña permanece abierta cruzando medianoche y el usuario ejecuta una server action sin full navigation, el layout no se re-renderiza. Este edge case se considera aceptable: la próxima navegación ejecuta el guard.
+- *Alternativas descartadas:* cron diario (agrega infraestructura, deja ventana abierta), cookie guard (complejidad innecesaria dado que la RPC es idempotente), mantener las 7 invocaciones (duplica trabajo y fragmenta responsabilidad).
+
+**Referencias.** PDD US-32, migración `supabase/migrations/20260420120000_add_daily_cash_session_close_type.sql`.
 
 ```
 ```

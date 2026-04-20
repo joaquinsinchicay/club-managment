@@ -1028,7 +1028,8 @@ function createStore(): MockStore {
       openedAt: "2026-04-09T13:00:00.000Z",
       closedAt: "2026-04-09T21:30:00.000Z",
       openedByUserId: SECRETARIA_USER_ID,
-      closedByUserId: SECRETARIA_USER_ID
+      closedByUserId: SECRETARIA_USER_ID,
+      closeType: "manual"
     }
   ];
   const dailyCashSessionBalances: DailyCashSessionBalance[] = [];
@@ -1623,6 +1624,7 @@ function mapDailyCashSessionRow(row: {
   closed_at: string | null;
   opened_by_user_id: string;
   closed_by_user_id: string | null;
+  close_type?: DailyCashSession["closeType"] | null;
 }): DailyCashSession {
   return {
     id: row.id,
@@ -1632,7 +1634,8 @@ function mapDailyCashSessionRow(row: {
     openedAt: row.opened_at,
     closedAt: row.closed_at ?? null,
     openedByUserId: row.opened_by_user_id,
-    closedByUserId: row.closed_by_user_id ?? null
+    closedByUserId: row.closed_by_user_id ?? null,
+    closeType: row.close_type ?? "manual"
   };
 }
 
@@ -2470,6 +2473,7 @@ async function findRealDailyCashSessionByDate(clubId: string, sessionDate: strin
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
+    close_type: DailyCashSession["closeType"] | null;
   }>;
 
   if (rows.length === 0) {
@@ -2519,6 +2523,7 @@ async function findRealLastOpenDailyCashSessionBeforeDate(
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
+    close_type: DailyCashSession["closeType"] | null;
   }>;
 
   if (rows.length === 0) {
@@ -2568,6 +2573,7 @@ async function createRealDailyCashSession(
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
+    close_type: DailyCashSession["closeType"] | null;
   }>)[0] ?? null);
 
   if (!row) {
@@ -2592,6 +2598,7 @@ async function closeRealDailyCashSession(
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
+    close_type: DailyCashSession["closeType"] | null;
   }>("close_daily_cash_session_for_current_club", clubId, client, {
     operation: "close_daily_cash_session",
     details: { sessionId, closedByUserId },
@@ -2691,6 +2698,7 @@ async function openRealDailyCashSessionWithBalances(input: {
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
+    close_type: DailyCashSession["closeType"] | null;
   }>)[0] ?? null);
 
   return row ? mapDailyCashSessionRow(row) : null;
@@ -2781,6 +2789,7 @@ async function closeRealDailyCashSessionWithBalances(input: {
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
+    close_type: DailyCashSession["closeType"] | null;
   }>)[0] ?? null);
 
   return row ? mapDailyCashSessionRow(row) : null;
@@ -2853,6 +2862,7 @@ async function autoCloseRealStaleDailyCashSessionWithBalances(input: {
     closed_at: string | null;
     opened_by_user_id: string;
     closed_by_user_id: string | null;
+    close_type: DailyCashSession["closeType"] | null;
   }>)[0] ?? null);
 
   return row ? mapDailyCashSessionRow(row) : null;
@@ -5064,7 +5074,8 @@ export const accessRepository: AccessRepository = {
       openedAt: now(),
       closedAt: null,
       openedByUserId,
-      closedByUserId: null
+      closedByUserId: null,
+      closeType: "manual"
     };
 
     getStore().dailyCashSessions.push(session);
@@ -5083,7 +5094,8 @@ export const accessRepository: AccessRepository = {
       openedAt: now(),
       closedAt: null,
       openedByUserId: input.openedByUserId,
-      closedByUserId: null
+      closedByUserId: null,
+      closeType: "manual"
     };
 
     const store = getStore();

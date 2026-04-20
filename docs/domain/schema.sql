@@ -31,6 +31,8 @@ create type movement_status as enum (
 
 create type session_status as enum ('open', 'closed');
 
+create type session_close_type as enum ('manual', 'auto');
+
 create type balance_moment as enum ('opening', 'closing');
 
 create type consolidation_status as enum ('pending', 'completed', 'failed');
@@ -217,6 +219,7 @@ opened_at timestamp not null default now(),
 closed_at timestamp,
 opened_by_user_id uuid references users(id),
 closed_by_user_id uuid references users(id),
+close_type session_close_type not null default 'manual',
 notes text,
 unique (club_id, session_date)
 );

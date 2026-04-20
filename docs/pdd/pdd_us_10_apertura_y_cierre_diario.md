@@ -231,3 +231,10 @@ Do not reference current code files.
 - Con jornada `closed` en el día actual: mostrar `Jornada cerrada`, ocultar CTAs y reemplazar la descripción operativa por `La jornada ya fue cerrada. No se encuentra disponible para carga de movimientos.`
 - Con jornada `closed` en el día actual: mantener visibles los saldos y movimientos ya registrados para ese dia en las cards de dashboard.
 - Si la resolución de `daily_cash_sessions` falla, la tab `Secretaría` no debe inferir `Jornada pendiente` ni exponer CTAs operativas.
+
+---
+
+## 18. Relacionado
+
+- [PDD US-14 · Apertura y cierre con validación de saldos](pdd_us_14_apertura_y_cierre_con_validacion_de_saldos.md)
+- [PDD US-32 · Cierre automático de jornada colgada](pdd_us_32_cierre_automatico_de_jornada.md) — detalla el guard del layout autenticado, el flag `close_type` y el badge *"Cierre automático"* en Conciliación.

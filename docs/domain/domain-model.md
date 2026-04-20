@@ -283,13 +283,15 @@ Atributos:
 * closed_at
 * opened_by_user_id
 * closed_by_user_id
-* notes (text, nullable): observación libre registrada por el operador al cierre de la jornada
+* close_type (manual/auto): distingue cierres manuales de Secretaría de cierres automáticos disparados por el guard del layout autenticado al detectar jornadas colgadas
+* notes (text, nullable): observación libre registrada por el operador al cierre de la jornada; en cierres automáticos se persiste una nota por defecto cuando el campo no tenía valor previo
 
 Reglas:
 
 * Solo una jornada por día y club.
 * Requiere jornada abierta para operar.
 * El saldo declarado (saldo real) al cierre no puede ser negativo. La diferencia entre saldo declarado y esperado sí puede ser negativa (representa un faltante de arqueo).
+* Una jornada `open` cuya `session_date` es anterior al día actual se cierra automáticamente al primer ingreso autenticado del día, con `close_type = 'auto'` y `declared_balance = expected_balance` para todas las cuentas.
 
 ---
 
