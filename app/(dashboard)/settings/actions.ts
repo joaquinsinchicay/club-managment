@@ -24,7 +24,7 @@ import { resolveFeedback } from "@/lib/feedback-catalog";
 import { flashToast } from "@/lib/toast-server";
 
 function redirectToSettings(code: string, tab = "members") {
-  revalidatePath("/settings");
+  revalidatePath("/", "layout");
   flashToast(resolveFeedback("settings", code));
   redirect(`/settings?tab=${encodeURIComponent(tab)}`);
 }

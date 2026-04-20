@@ -84,15 +84,21 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
             <p className="text-sm text-muted-foreground">{identityTexts.section_description}</p>
           </header>
 
-          <div className="flex items-center gap-4">
-            <div
+          <div className="flex items-start gap-4">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!canEdit}
               className={cn(
-                "flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-primary/10 text-2xl font-semibold text-primary"
+                "group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-primary/10 text-2xl font-semibold text-primary transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
               )}
               style={
                 colorPrimary
                   ? { borderColor: colorPrimary }
                   : undefined
+              }
+              aria-label={
+                logoPreview ? identityTexts.logo_replace_cta : identityTexts.logo_upload_cta
               }
             >
               {logoPreview ? (
@@ -105,60 +111,46 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
               ) : (
                 <span>{getClubInitial(club.name)}</span>
               )}
-            </div>
+            </button>
 
-            <div className="flex flex-1 flex-col gap-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={!canEdit}
-                  className="inline-flex min-h-10 flex-1 items-center justify-center rounded-2xl border border-border bg-secondary/40 px-4 text-sm font-medium text-foreground transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {logoPreview
-                    ? identityTexts.logo_replace_cta
-                    : identityTexts.logo_upload_cta}
-                </button>
-                {logoPreview ? (
+            <label className="grid flex-1 gap-2 text-sm text-foreground">
+              <span className="font-medium">
+                {identityTexts.name_label}
+                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
+              </span>
+              <input
+                type="text"
+                name="name"
+                defaultValue={club.name}
+                placeholder={identityTexts.name_placeholder}
+                minLength={2}
+                maxLength={80}
+                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                required
+              />
+              <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span>{identityTexts.logo_description}</span>
+                {logoPreview && canEdit ? (
                   <button
                     type="button"
                     onClick={handleRemoveLogo}
-                    disabled={!canEdit}
-                    className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-border bg-card px-4 text-sm font-medium text-destructive transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70"
+                    className="text-xs font-medium text-destructive hover:underline"
                   >
                     {identityTexts.logo_remove_cta}
                   </button>
                 ) : null}
-              </div>
-              <p className="text-xs text-muted-foreground">{identityTexts.logo_description}</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                name="logo"
-                accept="image/png,image/svg+xml"
-                onChange={handleLogoChange}
-                className="hidden"
-              />
-              {pendingRemove ? <input type="hidden" name="remove_logo" value="on" /> : null}
-            </div>
-          </div>
-
-          <label className="grid gap-2 text-sm text-foreground">
-            <span className="font-medium">
-              {identityTexts.name_label}
-              <span className="ml-1 text-destructive" aria-hidden="true">*</span>
-            </span>
+              </span>
+            </label>
             <input
-              type="text"
-              name="name"
-              defaultValue={club.name}
-              placeholder={identityTexts.name_placeholder}
-              minLength={2}
-              maxLength={80}
-              className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-              required
+              ref={fileInputRef}
+              type="file"
+              name="logo"
+              accept="image/png,image/svg+xml"
+              onChange={handleLogoChange}
+              className="hidden"
             />
-          </label>
+            {pendingRemove ? <input type="hidden" name="remove_logo" value="on" /> : null}
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2 text-sm text-foreground">

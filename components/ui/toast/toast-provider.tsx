@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { showToast, type ToastPayload } from "@/lib/toast";
 
@@ -38,12 +39,15 @@ function readAndClearFlashCookie(): ToastPayload | null {
 }
 
 export function ToastProvider() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     const payload = readAndClearFlashCookie();
     if (payload) {
       showToast(payload);
     }
-  }, []);
+  }, [pathname, searchParams]);
 
   return <ToastViewport />;
 }
