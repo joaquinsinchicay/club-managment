@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 import { showToast, type ToastPayload } from "@/lib/toast";
 
@@ -9,56 +8,31 @@ import { ToastViewport } from "./toast-viewport";
 
 const FLASH_COOKIE = "__toast";
 
-function readAndClearFlashCookie(): ToastPayload | null {
-  if (typeof document === "undefined") {
-    return null;
-  }
+type FlashPayload = ToastPayload & { nonce?: number };
 
-  const match = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith(`${FLASH_COOKIE}=`));
+type ToastProviderProps = {
+  flashPayload?: FlashPayload | null;
+};
 
-  if (!match) {
-    return null;
-  }
-
-  const rawValue = match.slice(FLASH_COOKIE.length + 1);
+function clearFlashCookie() {
+  if (typeof document === "undefined") return;
   document.cookie = `${FLASH_COOKIE}=; path=/; max-age=0; samesite=lax`;
-
-  try {
-    const decoded = decodeURIComponent(rawValue);
-    const parsed = JSON.parse(decoded) as ToastPayload;
-    if (parsed && typeof parsed.title === "string" && typeof parsed.kind === "string") {
-      return parsed;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
 }
 
-function FlashToastWatcher() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+export function ToastProvider({ flashPayload }: ToastProviderProps = {}) {
+  const lastShownRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const payload = readAndClearFlashCookie();
-    if (payload) {
-      showToast(payload);
-    }
-  }, [pathname, searchParams]);
+    if (!flashPayload) return;
 
-  return null;
-}
+    const key = `${flashPayload.nonce ?? ""}:${flashPayload.title}`;
+    if (lastShownRef.current === key) return;
 
-export function ToastProvider() {
-  return (
-    <>
-      <Suspense fallback={null}>
-        <FlashToastWatcher />
-      </Suspense>
-      <ToastViewport />
-    </>
-  );
+    lastShownRef.current = key;
+    const { nonce: _nonce, ...rest } = flashPayload;
+    showToast(rest);
+    clearFlashCookie();
+  }, [flashPayload]);
+
+  return <ToastViewport />;
 }

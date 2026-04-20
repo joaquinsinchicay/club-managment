@@ -7,9 +7,10 @@ export const FLASH_TOAST_COOKIE = "__toast";
 export type FlashToastPayload = Omit<ToastPayload, "action">;
 
 export function flashToast(payload: FlashToastPayload): void {
-  cookies().set(FLASH_TOAST_COOKIE, JSON.stringify(payload), {
+  const withNonce = { ...payload, nonce: Date.now() };
+  cookies().set(FLASH_TOAST_COOKIE, JSON.stringify(withNonce), {
     path: "/",
-    maxAge: 10,
+    maxAge: 30,
     httpOnly: false,
     sameSite: "lax"
   });

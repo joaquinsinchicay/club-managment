@@ -85,33 +85,67 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
           </header>
 
           <div className="flex items-start gap-4">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={!canEdit}
-              className={cn(
-                "group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-primary/10 text-2xl font-semibold text-primary transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
-              )}
-              style={
-                colorPrimary
-                  ? { borderColor: colorPrimary }
-                  : undefined
-              }
-              aria-label={
-                logoPreview ? identityTexts.logo_replace_cta : identityTexts.logo_upload_cta
-              }
-            >
-              {logoPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={logoPreview}
-                  alt={club.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span>{getClubInitial(club.name)}</span>
-              )}
-            </button>
+            <div className="flex flex-col items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => canEdit && fileInputRef.current?.click()}
+                disabled={!canEdit}
+                className={cn(
+                  "group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-primary/10 text-2xl font-semibold text-primary transition",
+                  canEdit
+                    ? "cursor-pointer hover:ring-2 hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    : "cursor-not-allowed opacity-70"
+                )}
+                style={
+                  colorPrimary
+                    ? { borderColor: colorPrimary }
+                    : undefined
+                }
+                aria-label={
+                  logoPreview ? identityTexts.logo_replace_cta : identityTexts.logo_upload_cta
+                }
+              >
+                {logoPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={logoPreview}
+                    alt={club.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{getClubInitial(club.name)}</span>
+                )}
+                {canEdit ? (
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border border-border bg-foreground text-primary-foreground shadow-sm transition group-hover:scale-105"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      className="size-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                  </span>
+                ) : null}
+              </button>
+              {logoPreview && canEdit ? (
+                <button
+                  type="button"
+                  onClick={handleRemoveLogo}
+                  className="text-xs font-medium text-destructive hover:underline"
+                >
+                  {identityTexts.logo_remove_cta}
+                </button>
+              ) : null}
+            </div>
 
             <label className="grid flex-1 gap-2 text-sm text-foreground">
               <span className="font-medium">
@@ -128,19 +162,8 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
                 className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
                 required
               />
-              <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span>{identityTexts.logo_description}</span>
-                {logoPreview && canEdit ? (
-                  <button
-                    type="button"
-                    onClick={handleRemoveLogo}
-                    className="text-xs font-medium text-destructive hover:underline"
-                  >
-                    {identityTexts.logo_remove_cta}
-                  </button>
-                ) : null}
-              </span>
             </label>
+
             <input
               ref={fileInputRef}
               type="file"
@@ -151,6 +174,8 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
             />
             {pendingRemove ? <input type="hidden" name="remove_logo" value="on" /> : null}
           </div>
+
+          <p className="text-xs text-muted-foreground">{identityTexts.logo_description}</p>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2 text-sm text-foreground">
