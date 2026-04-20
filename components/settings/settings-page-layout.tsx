@@ -37,28 +37,31 @@ export function SettingsPageLayout({ tabs, defaultTabId }: SettingsPageLayoutPro
 
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto">
-        <div className="flex min-w-max gap-1">
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeTab?.id;
+      <div
+        role="tablist"
+        className="flex flex-wrap gap-0.5 rounded-card bg-slate-100 p-0.75"
+      >
+        {tabs.map((tab) => {
+          const isActive = tab.id === activeTab?.id;
 
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabChange(tab.id)}
-                className={cn(
-                  "px-4 py-3 text-sm font-semibold transition whitespace-nowrap border-b-2",
-                  isActive
-                    ? "border-success text-success"
-                    : "border-transparent text-slate-400 hover:text-foreground"
-                )}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              onClick={() => handleTabChange(tab.id)}
+              aria-pressed={isActive}
+              className={cn(
+                "flex-grow basis-auto rounded-[7px] px-3 py-2 text-xs font-semibold tracking-tight transition whitespace-nowrap",
+                isActive
+                  ? "bg-white text-foreground shadow-sm"
+                  : "text-slate-600 hover:text-foreground"
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       <div>{activeTab?.content}</div>
