@@ -461,12 +461,90 @@ Atributos:
 
 ---
 
+## 7.4 CostCenter (US-52)
+
+Dimensión de imputación paralela a categorías y actividades. Agrupa compromisos económicos acotados en el tiempo (deudas, eventos, jornadas, presupuestos, publicidades, sponsors) para medir avance contra un monto objetivo.
+
+Atributos:
+
+* id
+* club_id
+* name (único por club, case-insensitive)
+* description
+* type (`deuda`, `evento`, `jornada`, `presupuesto`, `publicidad`, `sponsor`)
+* status (`activo`, `inactivo`)
+* start_date
+* end_date (nullable; se autocompleta al cerrar)
+* currency_code
+* amount (obligatorio para `deuda`, `presupuesto`, `publicidad`, `sponsor`)
+* periodicity (`unico`, `mensual`, `trimestral`, `semestral`, `anual`; solo aplica a `presupuesto`, `publicidad`, `sponsor`)
+* responsible_user_id
+* created_by_user_id
+* updated_by_user_id
+* created_at
+* updated_at
+
+Reglas clave:
+
+* Solo rol `tesoreria` puede crear, editar y cerrar centros de costo.
+* Cierre = cambio de `status` a `inactivo`; si `end_date` está vacía o es futura, se autocompleta con hoy.
+* Si el CC tiene movimientos enlazados, no se permite editar `type`, `currency_code` ni `start_date`.
+* Los indicadores de avance se calculan como Σ de movimientos enlazados (suma directa, sin conversión de moneda).
+
+---
+
+## 7.5 MovementCostCenterLink (US-53)
+
+Relación N:M entre movimientos y centros de costo.
+
+Atributos:
+
+* movement_id
+* cost_center_id
+* created_at
+* created_by_user_id
+
+Reglas clave:
+
+* La imputación es **completa a cada CC** (sin prorrateo). Un movimiento de importe M enlazado a N CC suma M a cada uno; los reportes cruzados entre CC pueden contener doble conteo por diseño.
+* Solo rol `tesoreria` puede crear o eliminar enlaces.
+* CC `inactivos` no aparecen en el selector pero los enlaces previos se conservan.
+* `ON DELETE CASCADE` desde `treasury_movements` y desde `cost_centers` para evitar enlaces huérfanos.
+
+---
+
+## 7.6 CostCenterAuditLog (US-52)
+
+Historial append-only de cambios sobre un CC.
+
+Atributos:
+
+* id
+* cost_center_id
+* actor_user_id
+* action_type (`created`, `updated`, `closed`)
+* field (nullable; aplica para `updated`)
+* old_value
+* new_value
+* payload_before (jsonb; snapshot en `created`)
+* payload_after (jsonb)
+* changed_at
+
+Reglas clave:
+
+* Append-only; no admite `UPDATE` ni `DELETE` desde la aplicación.
+* Se escribe desde el service al crear, editar o cerrar un CC.
+
+---
+
 ## 8. Relaciones clave
 
 * User → Membership → Club
-* Club → Accounts / Categories / Activities / Events
+* Club → Accounts / Categories / Activities / Events / CostCenters
 * DailyCashSession → Movements
 * Movement → Account / Category / Activity / Event
+* Movement ↔ CostCenter (N:M vía MovementCostCenterLink)
+* CostCenter → CostCenterAuditLog
 * Transfer / FX → Movements
 * ConsolidationBatch → Movements
 * Movement → AuditLog
@@ -483,6 +561,7 @@ Atributos:
 6. Las configuraciones son por club.
 7. Solo entidades visibles para el rol activo participan en la operatoria configurable.
 8. La consolidación no puede ejecutarse dos veces para la misma fecha.
+9. Los Centros de Costo son una dimensión de imputación paralela: un mismo movimiento puede quedar enlazado a varios CC y cada uno recibe la imputación completa (doble conteo esperado en reportes cruzados entre CC).
 
 ```
 ```

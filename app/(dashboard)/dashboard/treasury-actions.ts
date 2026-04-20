@@ -18,11 +18,13 @@ import {
   createTreasuryAccountForActiveClub,
   updateTreasuryAccountForActiveClub
 } from "@/lib/services/treasury-settings-service";
+import { syncMovementCostCenterLinks } from "@/lib/services/cost-center-service";
 
 export type TreasuryActionResponse = {
   ok: boolean;
   code: string;
   movementDisplayId?: string;
+  movementId?: string;
   optimisticUpdate?: TreasuryMovementOptimisticUpdate;
 };
 
@@ -111,19 +113,41 @@ export async function createTreasuryRoleMovementAction(formData: FormData) {
     amount: String(formData.get("amount") ?? "")
   });
 
+  // US-53: if the form carries cost_center_ids (only Tesorería sees that
+  // field), sync the movement <-> cost center links right after the movement
+  // is persisted. Errors are best-effort: the movement itself is already
+  // committed, so we only log the sync failure for observability.
+  if (result.ok && result.movementId) {
+    const costCenterIds = formData.getAll("cost_center_ids").map(String).filter(Boolean);
+    if (costCenterIds.length > 0) {
+      const linkResult = await syncMovementCostCenterLinks({
+        movementId: result.movementId,
+        costCenterIds
+      });
+      if (!linkResult.ok) {
+        console.error("[create-movement.sync_cost_centers]", {
+          movementId: result.movementId,
+          code: linkResult.code
+        });
+      }
+    }
+  }
+
   revalidatePath("/dashboard");
   revalidatePath("/treasury");
 
   return {
     ok: result.ok,
     code: result.code,
-    movementDisplayId: result.movementDisplayId
+    movementDisplayId: result.movementDisplayId,
+    movementId: result.movementId
   } satisfies TreasuryActionResponse;
 }
 
 export async function updateTreasuryRoleMovementAction(formData: FormData) {
+  const movementId = String(formData.get("movement_id") ?? "");
   const result = await updateTreasuryRoleMovement({
-    movementId: String(formData.get("movement_id") ?? ""),
+    movementId,
     accountId: String(formData.get("account_id") ?? ""),
     movementType: String(formData.get("movement_type") ?? ""),
     categoryId: String(formData.get("category_id") ?? ""),
@@ -134,6 +158,28 @@ export async function updateTreasuryRoleMovementAction(formData: FormData) {
     currencyCode: String(formData.get("currency_code") ?? ""),
     amount: String(formData.get("amount") ?? "")
   });
+
+  // US-53: sync cost-center links on edit. The form always submits the full
+  // new selection (possibly empty), so the service handles diff + audit.
+  if (result.ok && movementId) {
+    const costCenterIds = formData.getAll("cost_center_ids").map(String).filter(Boolean);
+    // The presence of the `cost_centers_present` hidden flag tells us the
+    // form rendered the multiselect; otherwise we leave links untouched
+    // (e.g. Secretaría editing, where the field is not visible).
+    const syncRequested = formData.get("cost_centers_present") === "1";
+    if (syncRequested) {
+      const linkResult = await syncMovementCostCenterLinks({
+        movementId,
+        costCenterIds
+      });
+      if (!linkResult.ok) {
+        console.error("[update-movement.sync_cost_centers]", {
+          movementId,
+          code: linkResult.code
+        });
+      }
+    }
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/treasury");

@@ -25,6 +25,9 @@ alter table fx_operations enable row level security;
 alter table daily_consolidation_batches enable row level security;
 alter table movement_integrations enable row level security;
 alter table movement_audit_logs enable row level security;
+alter table cost_centers enable row level security;
+alter table treasury_movement_cost_centers enable row level security;
+alter table cost_center_audit_log enable row level security;
 
 -- =========================================
 -- HELPER FUNCTIONS
@@ -1291,6 +1294,126 @@ begin
     v_roles;
 end;
 $$;
+
+-- =========================================
+-- COST CENTERS (US-52)
+-- =========================================
+
+drop policy if exists "Members can view cost centers" on cost_centers;
+drop policy if exists "Treasury manage cost centers in current club" on cost_centers;
+
+create policy "Members can view cost centers"
+on cost_centers
+for select
+to authenticated
+using (
+  club_id = current_club_id()
+  and is_member_of_current_club()
+);
+
+create policy "Treasury manage cost centers in current club"
+on cost_centers
+for all
+to authenticated
+using (
+  club_id = current_club_id()
+  and (select current_user_has_role('tesoreria'))
+)
+with check (
+  club_id = current_club_id()
+  and (select current_user_has_role('tesoreria'))
+);
+
+-- =========================================
+-- TREASURY MOVEMENT · COST CENTER LINKS (US-53)
+-- =========================================
+
+drop policy if exists "Members can view movement cost center links" on treasury_movement_cost_centers;
+drop policy if exists "Treasury manage movement cost center links" on treasury_movement_cost_centers;
+
+create policy "Members can view movement cost center links"
+on treasury_movement_cost_centers
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from cost_centers cc
+    where cc.id = treasury_movement_cost_centers.cost_center_id
+      and cc.club_id = current_club_id()
+  )
+  and is_member_of_current_club()
+);
+
+create policy "Treasury manage movement cost center links"
+on treasury_movement_cost_centers
+for all
+to authenticated
+using (
+  (select current_user_has_role('tesoreria'))
+  and exists (
+    select 1
+    from cost_centers cc
+    where cc.id = treasury_movement_cost_centers.cost_center_id
+      and cc.club_id = current_club_id()
+  )
+  and exists (
+    select 1
+    from treasury_movements m
+    where m.id = treasury_movement_cost_centers.movement_id
+      and m.club_id = current_club_id()
+  )
+)
+with check (
+  (select current_user_has_role('tesoreria'))
+  and exists (
+    select 1
+    from cost_centers cc
+    where cc.id = treasury_movement_cost_centers.cost_center_id
+      and cc.club_id = current_club_id()
+  )
+  and exists (
+    select 1
+    from treasury_movements m
+    where m.id = treasury_movement_cost_centers.movement_id
+      and m.club_id = current_club_id()
+  )
+);
+
+-- =========================================
+-- COST CENTER · AUDIT LOG (US-52)
+-- =========================================
+
+drop policy if exists "Members can view cost center audit log" on cost_center_audit_log;
+drop policy if exists "Treasury can insert cost center audit log" on cost_center_audit_log;
+
+create policy "Members can view cost center audit log"
+on cost_center_audit_log
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from cost_centers cc
+    where cc.id = cost_center_audit_log.cost_center_id
+      and cc.club_id = current_club_id()
+  )
+  and is_member_of_current_club()
+);
+
+create policy "Treasury can insert cost center audit log"
+on cost_center_audit_log
+for insert
+to authenticated
+with check (
+  (select current_user_has_role('tesoreria'))
+  and exists (
+    select 1
+    from cost_centers cc
+    where cc.id = cost_center_audit_log.cost_center_id
+      and cc.club_id = current_club_id()
+  )
+);
 
 create or replace function remove_membership_for_current_actor(p_membership_id uuid)
 returns boolean

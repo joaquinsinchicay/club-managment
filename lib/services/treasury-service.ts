@@ -111,6 +111,9 @@ export type TreasuryActionResult = {
   ok: boolean;
   code: TreasuryActionCode;
   movementDisplayId?: string;
+  // US-53: exposed so the caller can link the fresh movement to cost centers
+  // right after creation/update without a separate lookup by displayId.
+  movementId?: string;
 };
 
 export type TreasuryMovementOptimisticUpdate = {
@@ -2380,7 +2383,12 @@ export async function createTreasuryRoleMovement(input: {
     return { ok: false, code: "movement_create_failed" };
   }
 
-  return { ok: true, code: "movement_created", movementDisplayId: created.displayId };
+  return {
+    ok: true,
+    code: "movement_created",
+    movementDisplayId: created.displayId,
+    movementId: created.id
+  };
 }
 
 export async function updateTreasuryRoleMovement(input: {

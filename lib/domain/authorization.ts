@@ -80,3 +80,16 @@ export function canAccessClubSettingsNavigation(membership: MembershipLike) {
 export function canOperateSecretaria(membership: MembershipLike) {
   return isActiveMembership(membership) && hasMembershipRole(membership, "secretaria");
 }
+
+/**
+ * Cost Centers (US-52 / US-53) are visible and mutable only for the
+ * `tesoreria` role in the active club. Secretaría does not see the tab nor
+ * the multiselect field in movements.
+ */
+export function canAccessCostCenters(membership: MembershipLike) {
+  return isActiveMembership(membership) && hasMembershipRole(membership, "tesoreria");
+}
+
+export function canMutateCostCenters(membership: MembershipLike) {
+  return canAccessCostCenters(membership);
+}

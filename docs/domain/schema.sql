@@ -39,6 +39,25 @@ create type consolidation_status as enum ('pending', 'completed', 'failed');
 
 create type receipt_validation_type as enum ('numeric', 'pattern');
 
+create type cost_center_type as enum (
+'deuda',
+'evento',
+'jornada',
+'presupuesto',
+'publicidad',
+'sponsor'
+);
+
+create type cost_center_status as enum ('activo', 'inactivo');
+
+create type cost_center_periodicity as enum (
+'unico',
+'mensual',
+'trimestral',
+'semestral',
+'anual'
+);
+
 -- =========================================
 -- USERS & CLUBS
 -- =========================================
@@ -347,6 +366,66 @@ performed_at timestamp default now()
 );
 
 -- =========================================
+-- CENTROS DE COSTO (US-52 / US-53)
+-- =========================================
+
+create table cost_centers (
+id uuid primary key default uuid_generate_v4(),
+club_id uuid not null references clubs(id) on delete cascade,
+name text not null,
+description text,
+type cost_center_type not null,
+status cost_center_status not null default 'activo',
+start_date date not null,
+end_date date,
+currency_code text not null,
+amount numeric(18, 2),
+periodicity cost_center_periodicity,
+responsible_user_id uuid references users(id),
+created_by_user_id uuid references users(id),
+updated_by_user_id uuid references users(id),
+created_at timestamp not null default now(),
+updated_at timestamp not null default now(),
+constraint cost_centers_end_date_gte_start
+  check (end_date is null or end_date >= start_date),
+constraint cost_centers_amount_required_by_type
+  check (
+    (type in ('deuda', 'presupuesto', 'publicidad', 'sponsor') and amount is not null)
+    or (type in ('evento', 'jornada'))
+  ),
+constraint cost_centers_periodicity_by_type
+  check (
+    (type in ('presupuesto', 'publicidad', 'sponsor'))
+    or periodicity is null
+  )
+);
+
+-- Nombre único por club (case-insensitive, trimeado).
+create unique index cost_centers_club_name_ci_uidx
+on cost_centers (club_id, lower(trim(name)));
+
+create table treasury_movement_cost_centers (
+movement_id uuid not null references treasury_movements(id) on delete cascade,
+cost_center_id uuid not null references cost_centers(id) on delete cascade,
+created_at timestamp not null default now(),
+created_by_user_id uuid references users(id),
+primary key (movement_id, cost_center_id)
+);
+
+create table cost_center_audit_log (
+id uuid primary key default uuid_generate_v4(),
+cost_center_id uuid not null references cost_centers(id) on delete cascade,
+actor_user_id uuid references users(id),
+action_type text not null check (action_type in ('created', 'updated', 'closed')),
+field text,
+old_value text,
+new_value text,
+payload_before jsonb,
+payload_after jsonb,
+changed_at timestamp not null default now()
+);
+
+-- =========================================
 -- INDEXES (IMPORTANTES PARA PERFORMANCE)
 -- =========================================
 
@@ -363,3 +442,12 @@ create index idx_memberships_user on memberships(user_id);
 create index idx_memberships_club on memberships(club_id);
 
 create index idx_accounts_club on treasury_accounts(club_id);
+
+create index idx_cost_centers_club on cost_centers(club_id);
+create index idx_cost_centers_club_status on cost_centers(club_id, status);
+create index idx_cost_centers_responsible on cost_centers(responsible_user_id);
+
+create index idx_movement_cc_cost_center on treasury_movement_cost_centers(cost_center_id);
+create index idx_movement_cc_movement on treasury_movement_cost_centers(movement_id);
+
+create index idx_cost_center_audit_cc on cost_center_audit_log(cost_center_id, changed_at desc);

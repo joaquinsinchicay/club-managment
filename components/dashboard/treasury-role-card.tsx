@@ -59,9 +59,22 @@ type TreasuryRoleCardProps = {
   updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   updateTransferBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
+  // US-52: Optional slot rendered inside the "Centros de Costo" sub-tab when
+  // the current user can access it. The page server-side prepares this tree
+  // with pre-fetched data and bound server actions.
+  costCentersTab?: ReactNode;
+  // US-53: Active cost centers for the multiselect in the movement creation
+  // form. Only passed when the current user has role `tesoreria`.
+  activeCostCenters?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    currencyCode: string;
+    status: "activo" | "inactivo";
+  }>;
 };
 
-type SubTab = "resumen" | "cuentas" | "movimientos" | "conciliacion";
+type SubTab = "resumen" | "cuentas" | "movimientos" | "conciliacion" | "cost_centers";
 
 type TotalBalance = {
   currencyCode: string;
@@ -300,7 +313,8 @@ function SubTabNav({
     { id: "resumen", label: texts.dashboard.treasury_role.tab_resumen },
     { id: "cuentas", label: texts.dashboard.treasury_role.tab_cuentas },
     { id: "movimientos", label: texts.dashboard.treasury_role.tab_movimientos },
-    { id: "conciliacion", label: texts.dashboard.treasury_role.tab_conciliacion }
+    { id: "conciliacion", label: texts.dashboard.treasury_role.tab_conciliacion },
+    { id: "cost_centers", label: texts.dashboard.treasury_role.tab_cost_centers }
   ];
 
   return (
@@ -977,14 +991,23 @@ export function TreasuryRoleCard({
   transferTargetAccounts,
   updateMovementBeforeConsolidationAction,
   updateTransferBeforeConsolidationAction,
-  executeDailyConsolidationAction
+  executeDailyConsolidationAction,
+  costCentersTab,
+  activeCostCenters
 }: TreasuryRoleCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const initialTab = ((): SubTab => {
     const raw = searchParams.get("tab");
-    if (raw === "cuentas" || raw === "movimientos" || raw === "conciliacion") return raw;
+    if (
+      raw === "cuentas" ||
+      raw === "movimientos" ||
+      raw === "conciliacion" ||
+      raw === "cost_centers"
+    ) {
+      return raw;
+    }
     return "resumen";
   })();
   const [activeTab, setActiveTab] = useState<SubTab>(initialTab);
@@ -1221,6 +1244,8 @@ export function TreasuryRoleCard({
             executeDailyConsolidationAction={executeDailyConsolidationAction}
           />
         )}
+
+        {activeTab === "cost_centers" && costCentersTab}
       </div>
 
       {/* Modals */}
@@ -1245,6 +1270,7 @@ export function TreasuryRoleCard({
           pendingLabel={texts.dashboard.treasury_role.create_loading}
           sessionDate={dashboard.sessionDate}
           onCancel={() => setActiveModal(null)}
+          costCenters={activeCostCenters}
         />
       </Modal>
 

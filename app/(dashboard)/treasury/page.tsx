@@ -13,11 +13,21 @@ import {
   updateMovementBeforeConsolidationAction,
   updateTransferBeforeConsolidationAction
 } from "@/app/(dashboard)/treasury/actions";
+import {
+  createCostCenterAction,
+  updateCostCenterAction
+} from "@/app/(dashboard)/treasury/cost-centers/actions";
+import { CostCentersTab } from "@/components/treasury/cost-centers-tab";
 import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { canMutateTreasurySettings, canOperateTesoreria } from "@/lib/domain/authorization";
+import {
+  canAccessCostCenters,
+  canMutateTreasurySettings,
+  canOperateTesoreria
+} from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
+import { listCostCentersForActiveClub } from "@/lib/services/cost-center-service";
 import {
   getActiveActivitiesForTesoreria,
   getEnabledCalendarEventsForTesoreria,
@@ -91,6 +101,53 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
     (account) => !account.visibleForSecretaria && account.visibleForTesoreria
   );
 
+  // US-52: Centros de Costo — solo rol tesoreria. Se prefetch en server para
+  // pasar por prop al slot de la sub-tab. Si el rol no aplica, costCentersTab
+  // queda undefined y la pestaña no renderiza nada.
+  const canSeeCostCenters = canAccessCostCenters(context.activeMembership);
+  const costCentersData = canSeeCostCenters ? await listCostCentersForActiveClub() : null;
+  const clubMembers = canSeeCostCenters
+    ? await accessRepository.listClubMembers(context.activeClub.id)
+    : [];
+
+  const availableCurrencies = Array.from(
+    new Set(
+      [
+        ...currencies.map((c) => c.currencyCode),
+        ...allAccounts.flatMap((a) => a.currencies)
+      ].filter(Boolean)
+    )
+  );
+
+  const costCentersTabNode =
+    canSeeCostCenters && costCentersData && costCentersData.ok ? (
+      <CostCentersTab
+        costCenters={costCentersData.costCenters}
+        aggregates={Object.fromEntries(costCentersData.aggregates)}
+        badges={Object.fromEntries(costCentersData.badges)}
+        members={clubMembers.filter((m) => m.status === "activo")}
+        availableCurrencies={availableCurrencies}
+        createCostCenterAction={createCostCenterAction}
+        updateCostCenterAction={updateCostCenterAction}
+      />
+    ) : undefined;
+
+  // US-53: only pass the multiselect options when the user can mutate CC.
+  // Secretaría edits will not include `cost_centers_present`, so the action
+  // leaves links untouched.
+  const activeCostCentersForMovements =
+    canSeeCostCenters && costCentersData && costCentersData.ok
+      ? costCentersData.costCenters
+          .filter((cc) => cc.status === "activo")
+          .map((cc) => ({
+            id: cc.id,
+            name: cc.name,
+            type: cc.type,
+            currencyCode: cc.currencyCode,
+            status: cc.status
+          }))
+      : undefined;
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
       <PageContentHeader
@@ -128,6 +185,8 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
         updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
         updateTransferBeforeConsolidationAction={updateTransferBeforeConsolidationAction}
         executeDailyConsolidationAction={executeDailyConsolidationAction}
+        costCentersTab={costCentersTabNode}
+        activeCostCenters={activeCostCentersForMovements}
       />
     </main>
   );

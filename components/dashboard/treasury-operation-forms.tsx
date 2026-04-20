@@ -32,6 +32,18 @@ type BaseMovementFormProps = {
   submitLabel: string;
   pendingLabel: string;
   submitAction: (formData: FormData) => Promise<unknown>;
+  // US-53: optional multiselect of active cost centers. Only passed from
+  // contexts where the user has role `tesoreria`; Secretaría never receives
+  // these options. When present, the form submits `cost_center_ids[]` and
+  // a `cost_centers_present` flag so the action knows to sync links.
+  costCenters?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    currencyCode: string;
+    status: "activo" | "inactivo";
+  }>;
+  initialCostCenterIds?: string[];
 };
 
 type OperationalFormCopy = {
@@ -1802,9 +1814,24 @@ export function TreasuryRoleMovementForm({
   pendingLabel,
   submitAction,
   sessionDate,
-  onCancel
+  onCancel,
+  costCenters,
+  initialCostCenterIds
 }: BaseMovementFormProps & { sessionDate: string; onCancel?: () => void }) {
   const copy = texts.dashboard.treasury_role;
+  const ccCopy = texts.dashboard.treasury_role.cost_centers;
+
+  // US-53: selection state for the cost-center multiselect. Only rendered when
+  // `costCenters` is passed (rol Tesorería).
+  const [selectedCostCenterIds, setSelectedCostCenterIds] = useState<string[]>(
+    () => initialCostCenterIds ?? []
+  );
+  function toggleCostCenter(id: string) {
+    setSelectedCostCenterIds((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    );
+  }
+  const activeCostCenters = (costCenters ?? []).filter((cc) => cc.status === "activo");
 
   const [formState, setFormState] = useState<MovementFormState>(() => ({
     accountId: "",
@@ -2096,6 +2123,65 @@ export function TreasuryRoleMovementForm({
             className={CONTROL_CLASSNAME}
           />
         </label>
+
+        {/* COST CENTERS (US-53, rol tesoreria) */}
+        {costCenters !== undefined && (
+          <div className="grid gap-2">
+            <p className={FIELD_LABEL_CLASSNAME}>{ccCopy.movements_cost_centers_label}</p>
+            {/* Flag for the server action to know this form includes the field
+                (so edits preserve other roles' links when the field is not
+                rendered). */}
+            <input type="hidden" name="cost_centers_present" value="1" />
+            {activeCostCenters.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {ccCopy.movements_cost_centers_empty_options}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1">
+                {activeCostCenters.map((cc) => {
+                  const selected = selectedCostCenterIds.includes(cc.id);
+                  const currencyMismatch =
+                    formState.currencyCode && cc.currencyCode !== formState.currencyCode;
+                  return (
+                    <label
+                      key={cc.id}
+                      className={cn(
+                        "flex items-center gap-2 rounded-btn border px-3 py-2 text-sm transition",
+                        selected
+                          ? "border-foreground bg-secondary"
+                          : "border-border bg-card hover:bg-secondary/60"
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        name="cost_center_ids"
+                        value={cc.id}
+                        checked={selected}
+                        onChange={() => toggleCostCenter(cc.id)}
+                        className="size-4"
+                      />
+                      <span className="flex-1 truncate">{cc.name}</span>
+                      <span className="rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-eyebrow font-semibold uppercase text-slate-700">
+                        {cc.type}
+                      </span>
+                      <span className="text-eyebrow font-semibold uppercase text-muted-foreground">
+                        {cc.currencyCode}
+                      </span>
+                      {selected && currencyMismatch ? (
+                        <span
+                          className="rounded-[4px] bg-amber-50 px-1.5 py-0.5 text-eyebrow font-semibold uppercase text-amber-700"
+                          title={ccCopy.movements_cost_centers_currency_mismatch}
+                        >
+                          ⚠
+                        </span>
+                      ) : null}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* BUTTONS */}
         <div className="grid grid-cols-2 gap-3">

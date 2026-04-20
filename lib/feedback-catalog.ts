@@ -30,7 +30,14 @@ const SUCCESS_CODES = new Set<string>([
   "movement_integrated",
   "transfer_created",
   "fx_operation_created",
-  "consolidation_completed"
+  "consolidation_completed",
+
+  // Dashboard · treasury · cost centers (US-52 / US-53)
+  "cost_center_created",
+  "cost_center_updated",
+  "cost_center_closed",
+  "cost_center_movement_links_synced",
+  "cost_center_movement_unlinked"
 ]);
 
 export type FeedbackDomain = "settings" | "dashboard";
@@ -57,7 +64,8 @@ function lookupMessage(domain: FeedbackDomain, code: string): string | undefined
 
   const merged: Record<string, string> = {
     ...(texts.dashboard.feedback as Record<string, string>),
-    ...(texts.settings.club.treasury.feedback as Record<string, string>)
+    ...(texts.settings.club.treasury.feedback as Record<string, string>),
+    ...(texts.dashboard.treasury_role.cost_centers.feedback as Record<string, string>)
   };
   return merged[code];
 }
