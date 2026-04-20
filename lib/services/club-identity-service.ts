@@ -90,17 +90,39 @@ type LogoProcessingResult =
   | { ok: true; buffer: Buffer; contentType: "image/png" | "image/svg+xml"; extension: "png" | "svg" }
   | { ok: false; code: ClubIdentityActionCode };
 
-async function processLogoFile(file: File): Promise<LogoProcessingResult> {
-  if (!ALLOWED_LOGO_MIME.has(file.type) || file.size > MAX_LOGO_BYTES) {
-    return { ok: false, code: "invalid_logo" };
+function detectLogoKindFromBuffer(buffer: Buffer): "png" | "svg" | null {
+  const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (buffer.length >= PNG_SIGNATURE.length) {
+    let matches = true;
+    for (let i = 0; i < PNG_SIGNATURE.length; i += 1) {
+      if (buffer[i] !== PNG_SIGNATURE[i]) {
+        matches = false;
+        break;
+      }
+    }
+    if (matches) return "png";
   }
 
-  const extension = extensionForMime(file.type);
-  if (!extension) {
+  const head = buffer.subarray(0, 512).toString("utf8").trimStart();
+  if (head.startsWith("<?xml") || head.startsWith("<svg")) {
+    return "svg";
+  }
+
+  return null;
+}
+
+async function processLogoFile(file: File): Promise<LogoProcessingResult> {
+  if (file.size > MAX_LOGO_BYTES) {
     return { ok: false, code: "invalid_logo" };
   }
 
   const inputBuffer = Buffer.from(await file.arrayBuffer());
+  const detected = detectLogoKindFromBuffer(inputBuffer);
+  const extension = detected ?? extensionForMime(file.type);
+
+  if (!extension) {
+    return { ok: false, code: "invalid_logo" };
+  }
 
   if (extension === "png") {
     const dims = readPngDimensions(inputBuffer);
