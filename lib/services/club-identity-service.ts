@@ -112,14 +112,7 @@ function detectLogoKindFromBuffer(buffer: Buffer): "png" | "svg" | null {
 }
 
 async function processLogoFile(file: File): Promise<LogoProcessingResult> {
-  const debugInfo = {
-    name: file.name,
-    type: file.type,
-    size: file.size
-  };
-
   if (file.size > MAX_LOGO_BYTES) {
-    console.error("[club-identity-service] invalid_logo: size > max", debugInfo);
     return { ok: false, code: "invalid_logo" };
   }
 
@@ -128,23 +121,12 @@ async function processLogoFile(file: File): Promise<LogoProcessingResult> {
   const extension = detected ?? extensionForMime(file.type);
 
   if (!extension) {
-    const head = inputBuffer.subarray(0, 16).toString("hex");
-    console.error("[club-identity-service] invalid_logo: unknown kind", {
-      ...debugInfo,
-      head16Hex: head
-    });
     return { ok: false, code: "invalid_logo" };
   }
 
   if (extension === "png") {
     const dims = readPngDimensions(inputBuffer);
     if (!dims) {
-      const head = inputBuffer.subarray(0, 16).toString("hex");
-      console.error("[club-identity-service] invalid_logo: png dims null", {
-        ...debugInfo,
-        head16Hex: head,
-        detected
-      });
       return { ok: false, code: "invalid_logo" };
     }
     if (dims.width < MIN_LOGO_DIMENSION || dims.height < MIN_LOGO_DIMENSION) {
