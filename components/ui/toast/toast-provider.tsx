@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 import { showToast, type ToastPayload } from "@/lib/toast";
@@ -38,7 +38,7 @@ function readAndClearFlashCookie(): ToastPayload | null {
   return null;
 }
 
-export function ToastProvider() {
+function FlashToastWatcher() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -49,5 +49,16 @@ export function ToastProvider() {
     }
   }, [pathname, searchParams]);
 
-  return <ToastViewport />;
+  return null;
+}
+
+export function ToastProvider() {
+  return (
+    <>
+      <Suspense fallback={null}>
+        <FlashToastWatcher />
+      </Suspense>
+      <ToastViewport />
+    </>
+  );
 }
