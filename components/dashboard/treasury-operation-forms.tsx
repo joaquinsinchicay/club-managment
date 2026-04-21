@@ -509,7 +509,7 @@ function formatSessionDateLong(sessionDate: string): string {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
-const FIELD_LABEL_CLASSNAME = "text-eyebrow font-semibold uppercase tracking-[0.1em] text-muted-foreground";
+const FIELD_LABEL_CLASSNAME = "text-xs font-semibold text-foreground";
 
 export function SecretariaMovementForm({
   accounts,
@@ -892,9 +892,7 @@ export function SecretariaMovementEditForm({
       <PendingFieldset className="grid gap-4">
         {/* ID chip */}
         <div className="flex items-center gap-2">
-          <span className="text-eyebrow font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-            {copy.movement_id_label}
-          </span>
+          <span className={FIELD_LABEL_CLASSNAME}>{copy.movement_id_label}</span>
           <span className="rounded-md bg-secondary px-2 py-0.5 text-meta font-semibold tabular-nums text-foreground">
             {movement.movementDisplayId}
           </span>
@@ -2245,8 +2243,6 @@ export function TreasuryRoleFxForm({
 
   const handleReset = () => setFormState(buildEmptyFxFormState());
 
-  const LABEL_CLASSNAME = "text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground";
-
   return (
     <form
       action={async (formData) => {
@@ -2269,7 +2265,7 @@ export function TreasuryRoleFxForm({
       <PendingFieldset className="flex flex-col gap-4">
         {/* FECHA */}
         <div className="flex flex-col gap-1.5">
-          <p className={LABEL_CLASSNAME}>{texts.dashboard.treasury_role.date_label}</p>
+          <p className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.date_label}</p>
           <div className="min-h-11 rounded-card border border-border bg-secondary/40 px-3 py-2 text-sm font-medium text-foreground">
             {formatSessionDateLong(sessionDate)}
           </div>
@@ -2277,7 +2273,7 @@ export function TreasuryRoleFxForm({
 
         {/* OPERACIÓN */}
         <div className="flex flex-col gap-1.5">
-          <p className={LABEL_CLASSNAME}>
+          <p className={FIELD_LABEL_CLASSNAME}>
             {texts.dashboard.treasury_role.fx_operation_label}
             <span className="text-destructive" aria-hidden="true"> *</span>
           </p>
@@ -2315,7 +2311,7 @@ export function TreasuryRoleFxForm({
         {/* CUENTA ORIGEN + MONTO ENTREGADO */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <p className={LABEL_CLASSNAME}>
+            <p className={FIELD_LABEL_CLASSNAME}>
               {texts.dashboard.treasury_role.fx_source_account_label}
               <span className="text-destructive" aria-hidden="true"> *</span>
             </p>
@@ -2332,7 +2328,7 @@ export function TreasuryRoleFxForm({
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <p className={LABEL_CLASSNAME}>
+            <p className={FIELD_LABEL_CLASSNAME}>
               {texts.dashboard.treasury_role.fx_source_amount_label}
               <span className="text-destructive" aria-hidden="true"> *</span>
             </p>
@@ -2358,7 +2354,7 @@ export function TreasuryRoleFxForm({
 
         {/* TIPO DE CAMBIO */}
         <div className="flex flex-col gap-1.5">
-          <p className={LABEL_CLASSNAME}>
+          <p className={FIELD_LABEL_CLASSNAME}>
             {texts.dashboard.treasury_role.fx_exchange_rate_label}
             <span className="text-destructive" aria-hidden="true"> *</span>
           </p>
@@ -2384,7 +2380,7 @@ export function TreasuryRoleFxForm({
         {/* CUENTA DESTINO + MONTO RECIBIDO */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <p className={LABEL_CLASSNAME}>
+            <p className={FIELD_LABEL_CLASSNAME}>
               {texts.dashboard.treasury_role.fx_target_account_label}
               <span className="text-destructive" aria-hidden="true"> *</span>
             </p>
@@ -2401,7 +2397,7 @@ export function TreasuryRoleFxForm({
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <p className={LABEL_CLASSNAME}>{texts.dashboard.treasury_role.fx_target_amount_label}</p>
+            <p className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.fx_target_amount_label}</p>
             <div className="flex overflow-hidden rounded-card border border-border bg-secondary/40">
               <span className="flex shrink-0 items-center border-r border-border bg-secondary/60 px-3 text-sm font-semibold text-muted-foreground">
                 {targetCurrencyCode}
@@ -2418,7 +2414,7 @@ export function TreasuryRoleFxForm({
 
         {/* CONCEPTO */}
         <div className="flex flex-col gap-1.5">
-          <p className={LABEL_CLASSNAME}>{texts.dashboard.treasury_role.concept_label}</p>
+          <p className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.concept_label}</p>
           <input
             type="text"
             name="concept"

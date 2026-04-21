@@ -5,17 +5,16 @@ import { useSearchParams } from "next/navigation";
 
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
-  CONTROL_CLASSNAME,
-  FIELD_LABEL_CLASSNAME,
   FORM_GRID_CLASSNAME,
-  FORM_GRID_PADDING_CLASSNAME,
+  FormCheckboxCard,
   FormField,
-  REQUIRED_SUFFIX
+  FormFieldLabel,
+  FormInput,
+  FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
 import type { ClubActivity } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
-import { cn } from "@/lib/utils";
 
 const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
@@ -68,64 +67,47 @@ export function ActivityForm({
 
   return (
     <form action={action} className="flex flex-col">
-      <PendingFieldset className={cn(FORM_GRID_CLASSNAME, FORM_GRID_PADDING_CLASSNAME)}>
+      <PendingFieldset className={FORM_GRID_CLASSNAME}>
         {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 
         <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.emoji_label}</span>
-          <select
-            name="emoji"
-            defaultValue={defaultActivity?.emoji ?? ""}
-            className={CONTROL_CLASSNAME}
-          >
+          <FormFieldLabel>{texts.settings.club.treasury.emoji_label}</FormFieldLabel>
+          <FormSelect name="emoji" defaultValue={defaultActivity?.emoji ?? ""}>
             <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
             {getEmojiOptions(TREASURY_ACTIVITY_EMOJI_OPTIONS, defaultActivity?.emoji).map((emoji) => (
               <option key={`activity-emoji-${emoji}`} value={emoji}>
                 {emoji}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </FormField>
 
         <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>
+          <FormFieldLabel required>
             {texts.settings.club.treasury.activity_name_label}
-            {REQUIRED_SUFFIX}
-          </span>
-          <input
-            type="text"
-            name="name"
-            defaultValue={defaultActivity?.name ?? ""}
-            className={CONTROL_CLASSNAME}
-          />
+          </FormFieldLabel>
+          <FormInput type="text" name="name" defaultValue={defaultActivity?.name ?? ""} />
         </FormField>
 
         <div className="grid gap-3 sm:col-span-2">
           {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
-            <label
+            <FormCheckboxCard
               key={`activity-visibility-${visibility}`}
-              className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-            >
-              <input
-                type="checkbox"
-                name="visibility"
-                value={visibility}
-                checked={selectedVisibility.includes(visibility)}
-                onChange={(e) => handleVisibilityToggle(visibility, e.target.checked)}
-                className="size-4 rounded border-border"
-              />
-              <span className="font-medium">
-                {visibility === "secretaria"
+              name="visibility"
+              value={visibility}
+              label={
+                visibility === "secretaria"
                   ? texts.settings.club.treasury.visibility_secretaria_checkbox
-                  : texts.settings.club.treasury.visibility_tesoreria_checkbox}
-              </span>
-            </label>
+                  : texts.settings.club.treasury.visibility_tesoreria_checkbox
+              }
+              checked={selectedVisibility.includes(visibility)}
+              onChange={(checked) => handleVisibilityToggle(visibility, checked)}
+            />
           ))}
         </div>
       </PendingFieldset>
 
       <ModalFooter
-        size="sm"
         align="end"
         onCancel={onClose}
         cancelLabel={texts.settings.club.treasury.cancel_cta}

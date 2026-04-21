@@ -98,7 +98,7 @@ Taxonomía de `size`:
 Reglas de uso:
 - `align="stretch"` (default) → dos botones iguales en `grid-cols-2`. Úsese en confirmaciones y acciones principales (tesorería, sesión).
 - `align="end"` → botones autoancho pegados a la derecha. Úsese en forms densos (settings, cost centers) donde el full-width se ve desproporcionado.
-- `size="sm"` solo cuando el modal es de densidad compacta (cost centers, categorías, actividades, receipt formats). Default `md` para dashboard/tesorería.
+- **`size="md"` es obligatorio en todos los modales** — la altura/radio de botón debe ser idéntica en toda la app. `size="sm"` existe en la API pero no se usa en modales (reservado para triggers fuera de modal).
 - Para modales de **una sola acción** (Invitar), omitir `onCancel`/`cancelLabel`. La X del header sigue siendo vía de salida.
 - Nunca pasar `className` para overridear padding/radius/altura. Si el layout no encaja, discutir antes de hackear.
 - `submitVariant="destructive"` en acciones destructivas (cerrar jornada, remover miembro, eliminar recurso).
@@ -120,20 +120,145 @@ Reglas de uso:
 // ❌ MODAL_FOOTER_CLASSNAME (eliminado)
 ```
 
+### Primitivos de form obligatorios
+
+Todo campo dentro de un modal usa los primitivos de `@/components/ui/modal-form`. Prohibido hardcodear clases de input/select/textarea/readonly/checkbox/banner.
+
+Catálogo (API pública):
+- `<FormField>` — wrapper `<label>` con gap y tipografía canónica (usar para agrupar label + control).
+- `<FormFieldLabel>` — label de campo individual. Tipografía: `text-xs font-semibold text-foreground` (sentence case, NO uppercase). Prop `required` agrega asterisco.
+- `<FormInput>` / `<FormSelect>` / `<FormTextarea>` — reemplazan `<input className={CONTROL_CLASSNAME}>`. Estilo: `min-h-11 rounded-card bg-card border border-border px-4 py-3 text-sm text-foreground focus:ring-foreground/10`.
+- `<FormReadonly>` — campo no editable (fecha, hora, saldo previo, tipo inmutable). Estilo: igual que input + `bg-secondary/40 text-muted-foreground`.
+- `<FormSection>` — section header uppercase único (`text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground`). Un único estilo en toda la app. Prop `required`.
+- `<FormHelpText>` — hint (`text-xs text-muted-foreground`).
+- `<FormError>` — error inline (`text-xs font-medium text-destructive`).
+- `<FormBanner variant="warning" | "destructive" | "info">` — callout. Reemplaza `<div className="rounded-card border-amber-200 bg-amber-50 …">` y variaciones.
+- `<FormCheckboxCard>` — checkbox estilo pill. Reemplaza wrappers hand-rolled con `rounded-2xl bg-secondary/40`.
+
+### Prohibiciones explícitas (form)
+```tsx
+// ❌ radius fuera de rounded-card en controles/banners/tablas/readonly
+<input className="rounded-2xl ..." />
+<div className="rounded-lg ...">       // banner, tabla, textarea
+
+// ❌ bg-secondary/40 en inputs editables (solo permitido en FormReadonly)
+<input className="bg-secondary/40 ..." />
+
+// ❌ labels uppercase + muted-foreground en campos individuales
+<span className="text-meta uppercase tracking-[0.06em] text-muted-foreground">Concepto</span>
+
+// ❌ heights o paddings variables en inputs
+<input className="min-h-9 px-3 py-2 text-[13px] ..." />   // usar <FormInput>
+
+// ❌ tracking distinto de 0.14em en section headers uppercase
+<p className="tracking-[0.18em] uppercase ...">Roles</p>   // usar <FormSection>
+
+// ❌ focus:ring-foreground/20 (canon es /10)
+
+// ❌ Constantes FORM_* / CONTROL_CLASSNAME / FIELD_LABEL_CLASSNAME redeclaradas localmente
+```
+
 ### Checklist para modales nuevos o modificados
 - [ ] `<Modal>` con `size` explícito apropiado a la taxonomía.
 - [ ] `<ModalFooter>` con labels desde `texts.*` (nunca hardcoded).
 - [ ] Si el footer tiene Cancelar, considerar `hideCloseButton` para evitar doble salida.
 - [ ] `submitVariant="destructive"` para acciones destructivas.
+- [ ] Todos los campos usan `<FormFieldLabel>`, `<FormInput>`, `<FormSelect>`, `<FormTextarea>`, `<FormReadonly>`, `<FormCheckboxCard>`, `<FormSection>`, `<FormBanner>`, `<FormError>`, `<FormHelpText>`. No hay clases hardcodeadas.
 - [ ] Si el submit depende de validación client-side, `submitDisabled` conectado.
 - [ ] Si usa server action, el handler sigue el patrón `setModalOpen(false) → await action → triggerClientFeedback → router.refresh` (ver sección de feedback).
-- [ ] Nada de `rounded-2xl`, `rounded-card`, `py-3`, `min-h-11` hardcoded en botones o en el footer.
+- [ ] Nada de `rounded-2xl`, `rounded-lg`, `py-3`, `min-h-9/10`, `bg-secondary/40` en inputs editables.
 
 ### Referencia canónica
 - Wiring Modal + form con handler: `components/dashboard/treasury-role-card.tsx` (bloque `edit_movement`).
-- Form con `<ModalFooter>` `stretch`/`md`: `SecretariaMovementEditForm` en `components/dashboard/treasury-operation-forms.tsx`.
-- Footer `align="end"` + `size="sm"`: `CostCenterForm` en `components/treasury/cost-centers-tab.tsx`.
+- Form con primitivos completos + `<ModalFooter>`: `SecretariaMovementEditForm` en `components/dashboard/treasury-operation-forms.tsx`.
+- Form con `<FormReadonly>` y banner: `OpenSessionModalForm` en `components/dashboard/open-session-modal-form.tsx`.
+- Form con `<FormCheckboxCard>` + validación inline: `CategoryForm` en `components/settings/tabs/category-form.tsx`.
+- Footer `align="end"`: `CostCenterForm` en `components/treasury/cost-centers-tab.tsx`.
 - Footer sin `onCancel` (acción única): modal "Invitar" en `components/settings/tabs/members-tab.tsx`.
+
+---
+
+## 🧾 Regla crítica: tablas / listas tabulares
+
+### Primitivos obligatorios
+- Toda lista tabular (movimientos, miembros, cuentas, cost centers, categorías, conciliación, etc.) usa **`@/components/ui/data-table`**. Prohibido re-implementar el shell con `<div className="rounded-shell border ...">`, headers desktop con `md:grid-cols-[...]` a mano, `divide-y divide-border/60` suelto o `<article>` con padding/hover propio.
+- Cualquier chip/pill de metadata dentro de una fila usa **`<DataTableChip>`**. Prohibido declarar objetos `chipStyle` locales, `style={{ background: "var(--slate-...)" }}` inline o `rounded-full px-2` manual.
+- Todo monto con signo usa **`<DataTableAmount>`**. Prohibido calcular el signo / color / símbolo de moneda a mano en la fila.
+- Acciones hover-reveal van envueltas en **`<DataTableActions>`**. Prohibido replicar `opacity-0 transition group-hover:opacity-100` en cada fila.
+
+### API canónica: `<DataTable>` + subcomponentes
+```tsx
+<DataTable
+  density="compact" | "comfortable"   // default "comfortable"
+  gridColumns="minmax(0,1.7fr) 180px 150px 88px"  // opcional; md+ aplica a header y filas
+>
+  <DataTableHeader>
+    <DataTableHeadCell align="left" | "right" | "center">Concepto</DataTableHeadCell>
+  </DataTableHeader>
+
+  <DataTableBody>
+    <DataTableRow
+      as="article" | "div" | "button"         // default "div"
+      density={...}                             // hereda si se omite
+      useGrid={true | false}                    // default true; false para filas flex (p. ej. Secretaría)
+      hoverReveal={true | false}                // activa group para <DataTableActions>
+    >
+      <DataTableCell align?>...</DataTableCell>
+    </DataTableRow>
+  </DataTableBody>
+</DataTable>
+
+<DataTableChip tone="neutral" | "income" | "expense" | "warning" | "info">{label}</DataTableChip>
+<DataTableAmount type="ingreso" | "egreso" | "neutral" currencyCode={...} amount={...} size="inline" | "display" />
+<DataTableActions reveal={true}>{actions}</DataTableActions>
+<DataTableEmpty title={...} description={...} icon={...} action={...} />
+```
+
+Taxonomía de `density`:
+- `compact` → `px-4 py-3` + `text-label` (13 px). Úsese en listas densas con muchos items (movimientos, cuentas, conciliación).
+- `comfortable` (default) → `px-4 py-4 md:px-5` + `text-body` (14 px). Úsese en miembros, cost centers, categorías.
+
+Reglas de uso:
+- **`size="md"` implícito, no hay override**. Padding, radio, tipografía, hover y divider **no se tocan**.
+- Si la fila necesita un **layout de grid alineado con el header**, pasar `gridColumns` en `<DataTable>` y usar `<DataTableCell>` como hijos — el grid aplica solo en md+. En mobile los cells se stackean.
+- Si la fila es **flex/libre** (layout interno propio, como SecretariaMovementList), pasar `useGrid={false}` a `DataTableRow` y componer adentro con flexbox. No declarar `<DataTableHeader>` en ese caso.
+- Para **acciones por fila** (editar/eliminar) usar `hoverReveal` + `<DataTableActions>`. El wrapper ya maneja `focus-within` para accesibilidad por teclado.
+- **Empty state**: siempre `<DataTableEmpty>`. Nunca `border-dashed bg-secondary/30 p-6` a mano.
+
+### Prohibiciones explícitas
+```tsx
+// ❌ shell hardcoded
+<div className="rounded-[18px] border border-border bg-card">   // usar <DataTable>
+<div className="rounded-shell ..."><div className="divide-y ...">  // idem
+// ❌ header desktop a mano
+<div className="hidden md:grid md:grid-cols-[...]">                 // usar <DataTableHeader gridColumns>
+// ❌ padding / radio / hover / tipografía hardcoded en filas
+<article className="p-5 rounded-toast hover:bg-slate-50 ...">       // usar density
+<article className="px-4 py-3 hover:bg-slate-100 ...">              // idem
+// ❌ chip styles inline
+const chipStyle = { background: "var(--slate-100)", borderRadius: 4, ... };  // usar <DataTableChip>
+<span style={{ background: "var(--slate-100)" }}>                   // idem
+// ❌ color de monto por inline style / var
+<span style={{ color: "var(--green-700)" }}>                        // usar <DataTableAmount>
+// ❌ hover colors fuera del token
+hover:bg-slate-50 | hover:bg-slate-100                              // el primitivo ya resuelve hover
+// ❌ acciones hover-reveal ad-hoc
+<div className="opacity-0 group-hover:opacity-100 ...">             // usar <DataTableActions>
+```
+
+### Checklist para tablas nuevas o modificadas
+- [ ] `<DataTable>` con `density` explícito (o default `comfortable`).
+- [ ] Si hay columnas alineadas desktop, `gridColumns` + `<DataTableHeader>` + `<DataTableHeadCell>`.
+- [ ] Si la fila tiene layout libre (bullet, metadata stack), `useGrid={false}`.
+- [ ] Chips de metadata con `<DataTableChip tone>`; acciones con `<DataTableActions>`.
+- [ ] Montos con `<DataTableAmount>` (no calcular signo/color a mano).
+- [ ] Empty state con `<DataTableEmpty>`, nunca `border-dashed` ad-hoc.
+- [ ] Labels (header, empty state, `createdBy`, etc.) desde `texts.*` (nunca hardcoded).
+- [ ] Cero clases `rounded-[18px]`, `rounded-2xl`, `rounded-toast`, `hover:bg-slate-*`, `p-5`, `px-4 py-3` en filas fuera del primitivo.
+
+### Referencia canónica
+- Fila con grid desktop + header: `MovementList` en `components/dashboard/movement-list.tsx`.
+- Fila con layout flex (`useGrid={false}`) + hover-reveal: `SecretariaMovementList` en `components/dashboard/secretaria-movement-list.tsx`.
 
 ---
 

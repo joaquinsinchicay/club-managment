@@ -3,6 +3,15 @@
 import { type FormEvent, useMemo, useState } from "react";
 
 import { ModalFooter } from "@/components/ui/modal-footer";
+import {
+  FormBanner,
+  FormFieldLabel,
+  FormHelpText,
+  FormInput,
+  FormReadonly,
+  FormSection,
+  FormTextarea,
+} from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
 import {
   formatLocalizedAmount,
@@ -128,57 +137,48 @@ export function CloseSessionModalForm({
     >
       <PendingFieldset className="flex flex-col gap-4">
         {/* Fecha + Hora */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <p className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              {texts.dashboard.treasury.close_session_date_label}
-            </p>
-            <div className="min-h-11 rounded-lg border border-border bg-secondary/40 px-3 py-2 text-sm text-muted-foreground">
-              {validation.sessionDate}
-            </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <FormFieldLabel>{texts.dashboard.treasury.close_session_date_label}</FormFieldLabel>
+            <FormReadonly>{validation.sessionDate}</FormReadonly>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <p className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              {texts.dashboard.treasury.close_session_time_label}
-            </p>
-            <div className="min-h-11 rounded-lg border border-border bg-secondary/40 px-3 py-2 text-sm text-muted-foreground">
-              {timeString}
-            </div>
+          <div className="flex flex-col gap-2">
+            <FormFieldLabel>{texts.dashboard.treasury.close_session_time_label}</FormFieldLabel>
+            <FormReadonly>{timeString}</FormReadonly>
           </div>
         </div>
 
         {/* Resumen del día */}
-        <div className="grid grid-cols-4 gap-3 rounded-lg border border-border bg-secondary/30 px-4 py-3">
+        <div className="grid grid-cols-4 gap-3 rounded-card border border-border bg-secondary/30 px-4 py-3">
           <div>
-            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.close_session_summary_movements}</p>
+            <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_movements}</p>
             <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-foreground">{summary.total}</p>
           </div>
           <div>
-            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.close_session_summary_ingresos}</p>
+            <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_ingresos}</p>
             <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-emerald-700">
               + {formatLocalizedAmount(summary.ingresos)}
             </p>
           </div>
           <div>
-            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.close_session_summary_egresos}</p>
+            <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_egresos}</p>
             <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-red-700">
               − {formatLocalizedAmount(summary.egresos)}
             </p>
           </div>
           <div>
-            <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.close_session_summary_transfers}</p>
+            <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_transfers}</p>
             <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-foreground">{summary.transfers}</p>
           </div>
         </div>
 
         {/* Tabla de arqueo */}
-        <div className="flex flex-col gap-1.5">
-          <span className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-            {texts.dashboard.treasury.close_session_table_account}{" "}
-            <span className="text-destructive" aria-hidden="true">*</span>
-          </span>
-          <div className="overflow-hidden rounded-lg border border-border">
-            <div className="grid grid-cols-[1.4fr_90px_90px_120px_90px] gap-2 border-b border-border bg-secondary/40 px-3 py-2 text-eyebrow font-bold uppercase tracking-[0.06em] text-muted-foreground">
+        <div className="flex flex-col gap-2">
+          <FormSection required>
+            {texts.dashboard.treasury.close_session_table_account}
+          </FormSection>
+          <div className="overflow-hidden rounded-card border border-border">
+            <div className="grid grid-cols-[1.4fr_90px_90px_140px_100px] gap-2 border-b border-border bg-secondary/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               <span>{texts.dashboard.treasury.close_session_table_account}</span>
               <span className="text-right">{texts.dashboard.treasury.close_session_table_opening}</span>
               <span className="text-right">{texts.dashboard.treasury.close_session_table_net_movements}</span>
@@ -196,27 +196,27 @@ export function CloseSessionModalForm({
                 <div
                   key={`${draft.accountId}-${draft.currencyCode}`}
                   className={cn(
-                    "grid grid-cols-[1.4fr_90px_90px_120px_90px] items-center gap-2 px-3 py-2.5",
+                    "grid grid-cols-[1.4fr_90px_90px_140px_100px] items-center gap-2 px-4 py-3",
                     index < drafts.length - 1 && "border-b border-border"
                   )}
                 >
                   <input type="hidden" name="account_id" value={draft.accountId} />
                   <input type="hidden" name="currency_code" value={draft.currencyCode} />
                   <div>
-                    <p className="text-[13px] font-semibold text-foreground">{draft.accountName}</p>
-                    <p className="text-meta text-muted-foreground">
+                    <p className="text-sm font-semibold text-foreground">{draft.accountName}</p>
+                    <p className="text-xs text-muted-foreground">
                       {texts.dashboard.treasury.expected_balance_label}:{" "}
                       <span className="font-medium text-foreground">
                         $ {formatLocalizedAmount(draft.expectedBalance)}
                       </span>
                     </p>
                   </div>
-                  <p className="text-right text-[13px] tabular-nums text-muted-foreground">
+                  <p className="text-right text-sm tabular-nums text-muted-foreground">
                     $ {formatLocalizedAmount(draft.openingBalance)}
                   </p>
                   <p
                     className={cn(
-                      "text-right text-[13px] tabular-nums",
+                      "text-right text-sm tabular-nums",
                       netMovements > 0
                         ? "text-emerald-700"
                         : netMovements < 0
@@ -229,7 +229,7 @@ export function CloseSessionModalForm({
                       : `${netMovements > 0 ? "+ " : "− "}$ ${formatLocalizedAmount(Math.abs(netMovements))}`}
                   </p>
                   <div className="flex flex-col gap-1">
-                    <input
+                    <FormInput
                       type="text"
                       name="declared_balance"
                       inputMode="decimal"
@@ -238,19 +238,19 @@ export function CloseSessionModalForm({
                       onBlur={(e) => updateDraft(draft.accountId, formatLocalizedAmountInputOnBlur(e.target.value))}
                       onFocus={(e) => updateDraft(draft.accountId, formatLocalizedAmountInputOnFocus(e.target.value))}
                       className={cn(
-                        "min-h-9 rounded-lg border bg-card px-2 py-1.5 text-right text-[13px] tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20",
-                        isNegative ? "border-destructive focus:ring-destructive/20" : "border-border"
+                        "text-right tabular-nums",
+                        isNegative && "border-destructive focus:ring-destructive/20"
                       )}
                     />
                     {isNegative ? (
-                      <p className="text-right text-eyebrow font-semibold text-destructive">
+                      <p className="text-right text-xs font-medium text-destructive">
                         {texts.dashboard.treasury.close_session_negative_balance_error}
                       </p>
                     ) : null}
                   </div>
                   <p
                     className={cn(
-                      "text-right text-[13px] font-semibold tabular-nums",
+                      "text-right text-sm font-semibold tabular-nums",
                       diffLabel === null
                         ? "text-muted-foreground/60"
                         : diffLabel.positive
@@ -264,58 +264,41 @@ export function CloseSessionModalForm({
               );
             })}
           </div>
-          <p className="text-meta text-muted-foreground">
-            {texts.dashboard.treasury.close_session_table_helper}
-          </p>
+          <FormHelpText>{texts.dashboard.treasury.close_session_table_helper}</FormHelpText>
         </div>
 
         {/* Motivo de la diferencia (solo si hay diferencias) */}
         {hasDifferences ? (
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="cl-diff-notes"
-              className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground"
-            >
-              {texts.dashboard.treasury.close_session_diff_notes_label}{" "}
-              <span className="text-destructive" aria-hidden="true">*</span>
-            </label>
-            <textarea
+          <div className="flex flex-col gap-2">
+            <FormFieldLabel required>
+              {texts.dashboard.treasury.close_session_diff_notes_label}
+            </FormFieldLabel>
+            <FormTextarea
               id="cl-diff-notes"
               name="diff_notes"
               placeholder={texts.dashboard.treasury.close_session_diff_notes_placeholder}
               rows={3}
               required
-              className="min-h-[72px] resize-y rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-foreground/20"
             />
           </div>
         ) : null}
 
         {/* Observaciones generales */}
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="cl-notes"
-            className="text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground"
-          >
-            {texts.dashboard.treasury.close_session_notes_label}
-          </label>
-          <textarea
+        <div className="flex flex-col gap-2">
+          <FormFieldLabel>{texts.dashboard.treasury.close_session_notes_label}</FormFieldLabel>
+          <FormTextarea
             id="cl-notes"
             name="notes"
             placeholder={texts.dashboard.treasury.close_session_notes_placeholder}
             rows={2}
-            className="min-h-[56px] resize-y rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-foreground/20"
           />
         </div>
 
-        {/* Banner de advertencia */}
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
-          <p className="text-[12px] leading-[1.5] text-slate-700">
-            <span className="font-bold text-red-700">! </span>
-            {warningText.split("**").map((part, i) =>
-              i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-            )}
-          </p>
-        </div>
+        <FormBanner variant="destructive">
+          {warningText.split("**").map((part, i) =>
+            i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+          )}
+        </FormBanner>
 
         <ModalFooter
           onCancel={onCancel}

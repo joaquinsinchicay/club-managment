@@ -3,6 +3,15 @@
 import { useMemo, useState } from "react";
 
 import { ModalFooter } from "@/components/ui/modal-footer";
+import {
+  FormBanner,
+  FormFieldLabel,
+  FormHelpText,
+  FormInput,
+  FormReadonly,
+  FormSection,
+  FormTextarea,
+} from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
 import {
   formatLocalizedAmount,
@@ -28,9 +37,6 @@ type DraftState = {
   previousBalance: number;
   declaredBalance: string;
 };
-
-const LABEL_CLASSNAME = "text-meta font-semibold uppercase tracking-[0.06em] text-muted-foreground";
-const READONLY_INPUT_CLASSNAME = "min-h-11 rounded-card border border-border bg-secondary/40 px-3 py-2 text-sm text-muted-foreground";
 
 export function OpenSessionModalForm({ validation, submitAction, onCancel }: OpenSessionModalFormProps) {
   const now = new Date();
@@ -70,25 +76,24 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
     >
       <PendingFieldset className="flex flex-col gap-4">
         {/* Fecha + Hora */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <p className={LABEL_CLASSNAME}>{texts.dashboard.treasury.open_session_date_label}</p>
-            <div className={READONLY_INPUT_CLASSNAME}>{validation.sessionDate}</div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <FormFieldLabel>{texts.dashboard.treasury.open_session_date_label}</FormFieldLabel>
+            <FormReadonly>{validation.sessionDate}</FormReadonly>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <p className={LABEL_CLASSNAME}>{texts.dashboard.treasury.open_session_time_label}</p>
-            <div className={READONLY_INPUT_CLASSNAME}>{timeString}</div>
+          <div className="flex flex-col gap-2">
+            <FormFieldLabel>{texts.dashboard.treasury.open_session_time_label}</FormFieldLabel>
+            <FormReadonly>{timeString}</FormReadonly>
           </div>
         </div>
 
         {/* Tabla de saldos de apertura */}
-        <div className="flex flex-col gap-1.5">
-          <span className={LABEL_CLASSNAME}>
-            {texts.dashboard.treasury.open_session_balances_label}{" "}
-            <span className="text-destructive" aria-hidden="true">*</span>
-          </span>
+        <div className="flex flex-col gap-2">
+          <FormSection required>
+            {texts.dashboard.treasury.open_session_balances_label}
+          </FormSection>
           <div className="overflow-hidden rounded-card border border-border">
-            <div className="grid grid-cols-[1fr_120px_140px] gap-3 border-b border-border bg-secondary/40 px-3 py-2 text-eyebrow font-bold uppercase tracking-[0.06em] text-muted-foreground">
+            <div className="grid grid-cols-[1fr_120px_160px] gap-3 border-b border-border bg-secondary/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               <span>{texts.dashboard.treasury.open_session_table_account}</span>
               <span className="text-right">{texts.dashboard.treasury.open_session_table_prev}</span>
               <span className="text-right">{texts.dashboard.treasury.open_session_table_opening}</span>
@@ -97,20 +102,20 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
               <div
                 key={`${draft.accountId}-${draft.currencyCode}`}
                 className={cn(
-                  "grid grid-cols-[1fr_120px_140px] items-center gap-3 px-3 py-2.5",
+                  "grid grid-cols-[1fr_120px_160px] items-center gap-3 px-4 py-3",
                   index < drafts.length - 1 && "border-b border-border"
                 )}
               >
                 <input type="hidden" name="account_id" value={draft.accountId} />
                 <input type="hidden" name="currency_code" value={draft.currencyCode} />
                 <div>
-                  <p className="text-[13px] font-semibold text-foreground">{draft.accountName}</p>
-                  <p className="text-meta text-muted-foreground">{draft.currencyCode}</p>
+                  <p className="text-sm font-semibold text-foreground">{draft.accountName}</p>
+                  <p className="text-xs text-muted-foreground">{draft.currencyCode}</p>
                 </div>
-                <p className="text-right text-[13px] tabular-nums text-muted-foreground">
+                <p className="text-right text-sm tabular-nums text-muted-foreground">
                   $ {formatLocalizedAmount(draft.previousBalance)}
                 </p>
-                <input
+                <FormInput
                   type="text"
                   name="declared_balance"
                   inputMode="decimal"
@@ -118,46 +123,35 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
                   onChange={(e) => updateDraft(index, sanitizeLocalizedAmountInput(e.target.value))}
                   onBlur={(e) => updateDraft(index, formatLocalizedAmountInputOnBlur(e.target.value))}
                   onFocus={(e) => updateDraft(index, formatLocalizedAmountInputOnFocus(e.target.value))}
-                  className="min-h-10 rounded-card border border-border bg-card px-3 py-2 text-right text-[13px] tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                  className="text-right tabular-nums"
                 />
               </div>
             ))}
           </div>
-          <p className="text-meta text-muted-foreground">
-            {texts.dashboard.treasury.open_session_table_helper}
-          </p>
+          <FormHelpText>{texts.dashboard.treasury.open_session_table_helper}</FormHelpText>
         </div>
 
         {/* Motivo de la diferencia (condicional) */}
         {hasDifferences ? (
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="op-diff-notes"
-              className={LABEL_CLASSNAME}
-            >
-              {texts.dashboard.treasury.open_session_diff_notes_label}{" "}
-              <span className="text-destructive" aria-hidden="true">*</span>
-            </label>
-            <textarea
+          <div className="flex flex-col gap-2">
+            <FormFieldLabel required>
+              {texts.dashboard.treasury.open_session_diff_notes_label}
+            </FormFieldLabel>
+            <FormTextarea
               id="op-diff-notes"
               name="diff_notes"
               placeholder={texts.dashboard.treasury.open_session_diff_notes_placeholder}
               rows={3}
               required
-              className="min-h-[72px] resize-y rounded-card border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-foreground/20"
             />
           </div>
         ) : null}
 
-        {/* Banner de advertencia */}
-        <div className="rounded-card border border-amber-200 bg-amber-50 px-3 py-2.5">
-          <p className="text-[12px] leading-[1.5] text-slate-700">
-            <span className="font-bold text-amber-700">! </span>
-            {warningText.split("**").map((part, i) =>
-              i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-            )}
-          </p>
-        </div>
+        <FormBanner variant="warning">
+          {warningText.split("**").map((part, i) =>
+            i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+          )}
+        </FormBanner>
 
         <ModalFooter
           onCancel={onCancel}

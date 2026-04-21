@@ -7,6 +7,14 @@ import { useSearchParams } from "next/navigation";
 import { buttonClass } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
+import {
+  FormCheckboxCard,
+  FormField,
+  FormFieldLabel,
+  FormInput,
+  FormSection,
+  FormSelect,
+} from "@/components/ui/modal-form";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import { SettingsTabShell } from "@/components/settings/settings-tab-shell";
 import { formatMembershipRoles, MEMBERSHIP_ROLES } from "@/lib/domain/membership-roles";
@@ -264,23 +272,18 @@ export function MembersTab({
       >
         <form action={inviteUserAction} className="grid gap-4">
           <PendingFieldset className="grid gap-4">
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.invitations.email_label}</span>
-              <input
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.invitations.email_label}</FormFieldLabel>
+              <FormInput
                 type="email"
                 name="email"
                 placeholder={texts.settings.club.invitations.email_placeholder}
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
               />
-            </label>
+            </FormField>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.invitations.role_label}</span>
-              <select
-                name="role"
-                defaultValue=""
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-              >
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.invitations.role_label}</FormFieldLabel>
+              <FormSelect name="role" defaultValue="">
                 <option value="" disabled>
                   {texts.settings.club.members.role_placeholder}
                 </option>
@@ -289,8 +292,8 @@ export function MembersTab({
                     {texts.settings.club.members.roles[role]}
                   </option>
                 ))}
-              </select>
-            </label>
+              </FormSelect>
+            </FormField>
 
             <ModalFooter
               submitLabel={texts.settings.club.invitations.invite_cta}
@@ -312,31 +315,19 @@ export function MembersTab({
             <PendingFieldset className="grid gap-4">
               <input type="hidden" name="membership_id" value={editingMember.membershipId} />
 
-              <div className="space-y-3">
-                <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {texts.settings.club.members.roles_label}
-                </p>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {MEMBERSHIP_ROLES.map((role) => {
-                    const inputId = `modal-${editingMember.membershipId}-${role}`;
-                    return (
-                      <label
-                        key={role}
-                        htmlFor={inputId}
-                        className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-3 py-3 text-sm text-foreground transition hover:bg-secondary"
-                      >
-                        <input
-                          id={inputId}
-                          type="checkbox"
-                          name="roles"
-                          value={role}
-                          defaultChecked={editingMember.roles.includes(role)}
-                          className="h-4 w-4 border-border text-foreground focus:ring-foreground"
-                        />
-                        <span className="font-medium">{getRoleLabel(role)}</span>
-                      </label>
-                    );
-                  })}
+              <div className="grid gap-3">
+                <FormSection>{texts.settings.club.members.roles_label}</FormSection>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {MEMBERSHIP_ROLES.map((role) => (
+                    <FormCheckboxCard
+                      key={role}
+                      id={`modal-${editingMember.membershipId}-${role}`}
+                      name="roles"
+                      value={role}
+                      label={getRoleLabel(role)}
+                      defaultChecked={editingMember.roles.includes(role)}
+                    />
+                  ))}
                 </div>
               </div>
 
@@ -362,10 +353,8 @@ export function MembersTab({
       >
         {removingMember ? (
           <>
-            <div className="rounded-[24px] border border-border bg-secondary/50 px-4 py-4">
-              <p className="text-meta font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                {texts.settings.club.members.remove_dialog_member_label}
-              </p>
+            <div className="rounded-card border border-border bg-secondary/40 px-4 py-3">
+              <FormSection>{texts.settings.club.members.remove_dialog_member_label}</FormSection>
               <p className="mt-1 font-semibold text-foreground">{removingMember.fullName}</p>
               <p className="text-sm text-muted-foreground">{removingMember.email}</p>
             </div>

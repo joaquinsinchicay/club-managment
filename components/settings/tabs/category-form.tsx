@@ -5,13 +5,14 @@ import { useSearchParams } from "next/navigation";
 
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
-  CONTROL_CLASSNAME,
-  CONTROL_DISABLED_CLASSNAME,
-  FIELD_LABEL_CLASSNAME,
   FORM_GRID_CLASSNAME,
-  FORM_GRID_PADDING_CLASSNAME,
+  FormCheckboxCard,
+  FormError,
   FormField,
-  REQUIRED_SUFFIX
+  FormFieldLabel,
+  FormInput,
+  FormReadonly,
+  FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
 import type { TreasuryCategory } from "@/lib/domain/access";
@@ -20,7 +21,6 @@ import {
   getMovementTypeForParentCategory,
   getParentCategoryOptionsWithCurrentValue
 } from "@/lib/treasury-system-categories";
-import { cn } from "@/lib/utils";
 
 const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
@@ -106,7 +106,7 @@ export function CategoryForm({
       }}
       className="flex flex-col"
     >
-      <PendingFieldset className={cn(FORM_GRID_CLASSNAME, FORM_GRID_PADDING_CLASSNAME)}>
+      <PendingFieldset className={FORM_GRID_CLASSNAME}>
         {defaultCategory ? <input type="hidden" name="category_id" value={defaultCategory.id} /> : null}
         {isSystemCategory ? (
           <>
@@ -118,16 +118,14 @@ export function CategoryForm({
         ) : null}
 
         <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>
+          <FormFieldLabel required>
             {texts.settings.club.treasury.parent_category_label}
-            {REQUIRED_SUFFIX}
-          </span>
-          <select
+          </FormFieldLabel>
+          <FormSelect
             name="parent_category"
             value={selectedParentCategory}
             disabled={isSystemCategory}
             onChange={(event) => setSelectedParentCategory(event.target.value)}
-            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
           >
             <option value="" disabled>
               {texts.settings.club.treasury.parent_category_placeholder}
@@ -137,27 +135,21 @@ export function CategoryForm({
                 {parentCategory}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </FormField>
 
         <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.category_type_label}</span>
-          <input
-            type="text"
-            value={getMovementTypeLabel(movementType)}
-            readOnly
-            className={cn(CONTROL_CLASSNAME, "text-muted-foreground")}
-          />
+          <FormFieldLabel>{texts.settings.club.treasury.category_type_label}</FormFieldLabel>
+          <FormReadonly>{getMovementTypeLabel(movementType)}</FormReadonly>
           <input type="hidden" name="movement_type" value={movementType} />
         </FormField>
 
         <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.emoji_label}</span>
-          <select
+          <FormFieldLabel>{texts.settings.club.treasury.emoji_label}</FormFieldLabel>
+          <FormSelect
             name="emoji"
             defaultValue={defaultCategory?.emoji ?? ""}
             disabled={isSystemCategory}
-            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
           >
             <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
             {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
@@ -165,67 +157,55 @@ export function CategoryForm({
                 {emoji}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </FormField>
 
         <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>
+          <FormFieldLabel required>
             {texts.settings.club.treasury.sub_category_name_label}
-            {REQUIRED_SUFFIX}
-          </span>
-          <input
+          </FormFieldLabel>
+          <FormInput
             type="text"
             name="sub_category_name"
             defaultValue={defaultCategory?.subCategoryName ?? ""}
             disabled={isSystemCategory}
-            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
           />
         </FormField>
 
         <FormField fullWidth>
-          <span className={FIELD_LABEL_CLASSNAME}>
+          <FormFieldLabel>
             {texts.settings.club.treasury.category_description_label}
-          </span>
-          <input
+          </FormFieldLabel>
+          <FormInput
             type="text"
             name="description"
             defaultValue={defaultCategory?.description ?? ""}
             disabled={isSystemCategory}
-            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
           />
         </FormField>
 
         <div className="grid gap-3 sm:col-span-2">
           {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
-            <label
+            <FormCheckboxCard
               key={`category-visibility-${visibility}`}
-              className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-            >
-              <input
-                type="checkbox"
-                name="visibility"
-                value={visibility}
-                checked={selectedVisibility.includes(visibility)}
-                onChange={(event) => handleVisibilityToggle(visibility, event.target.checked)}
-                className="size-4 rounded border-border"
-              />
-              <span className="font-medium">
-                {visibility === "secretaria"
+              name="visibility"
+              value={visibility}
+              label={
+                visibility === "secretaria"
                   ? texts.settings.club.treasury.visibility_secretaria_checkbox
-                  : texts.settings.club.treasury.visibility_tesoreria_checkbox}
-              </span>
-            </label>
+                  : texts.settings.club.treasury.visibility_tesoreria_checkbox
+              }
+              checked={selectedVisibility.includes(visibility)}
+              onChange={(checked) => handleVisibilityToggle(visibility, checked)}
+            />
           ))}
           {visibilityTouched && selectedVisibility.length === 0 ? (
-            <p aria-live="assertive" className="text-sm text-destructive">
-              {texts.settings.club.treasury.feedback.account_visibility_required}
-            </p>
+            <FormError>{texts.settings.club.treasury.feedback.account_visibility_required}</FormError>
           ) : null}
         </div>
       </PendingFieldset>
 
       <ModalFooter
-        size="sm"
         align="end"
         onCancel={onClose}
         cancelLabel={texts.settings.club.treasury.cancel_cta}

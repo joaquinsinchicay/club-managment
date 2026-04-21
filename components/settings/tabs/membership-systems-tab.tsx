@@ -5,6 +5,14 @@ import { useSearchParams } from "next/navigation";
 
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
+import {
+  FormCheckboxCard,
+  FormField,
+  FormFieldLabel,
+  FormInput,
+  FormSection,
+  FormSelect,
+} from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
 import type { ReceiptFormat } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
@@ -60,57 +68,42 @@ function ReceiptFormatForm({ action, defaultFormat, onCancel, onSuccess }: Recei
       <PendingFieldset className="grid gap-4">
         <input type="hidden" name="receipt_format_id" value={defaultFormat.id} />
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.receipt_name_label}</span>
-          <input
+        <FormField>
+          <FormFieldLabel>{texts.settings.club.treasury.receipt_name_label}</FormFieldLabel>
+          <FormInput
             type="text"
             name="name"
             defaultValue={defaultFormat.name}
             maxLength={50}
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.receipt_validation_type_label}</span>
-          <select
-            name="validation_type"
-            defaultValue={defaultFormat.validationType}
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-          >
+        <FormField>
+          <FormFieldLabel>{texts.settings.club.treasury.receipt_validation_type_label}</FormFieldLabel>
+          <FormSelect name="validation_type" defaultValue={defaultFormat.validationType}>
             {RECEIPT_VALIDATION_TYPE_OPTIONS.map((type) => (
               <option key={type} value={type}>
                 {getValidationTypeLabel(type)}
               </option>
             ))}
-          </select>
-        </label>
+          </FormSelect>
+        </FormField>
 
-        <fieldset className="grid gap-3">
-          <legend className="text-sm font-medium text-foreground">
-            {texts.settings.club.treasury.account_visibility_label}
-          </legend>
+        <div className="grid gap-3">
+          <FormSection>{texts.settings.club.treasury.account_visibility_label}</FormSection>
           <div className="grid gap-3 sm:grid-cols-2">
             {TREASURY_VISIBILITY_OPTIONS.map((visibility) => (
-              <label
+              <FormCheckboxCard
                 key={`receipt-visibility-${visibility}`}
-                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-              >
-                <input
-                  type="checkbox"
-                  name="visibility"
-                  value={visibility}
-                  checked={selectedVisibility.includes(visibility)}
-                  onChange={(e) => handleVisibilityToggle(visibility, e.target.checked)}
-                  className="size-4 rounded border-border"
-                />
-                <span className="font-medium">
-                  {texts.settings.club.treasury.account_visibility_options[visibility]}
-                </span>
-              </label>
+                name="visibility"
+                value={visibility}
+                label={texts.settings.club.treasury.account_visibility_options[visibility]}
+                checked={selectedVisibility.includes(visibility)}
+                onChange={(checked) => handleVisibilityToggle(visibility, checked)}
+              />
             ))}
           </div>
-        </fieldset>
+        </div>
 
         <ModalFooter
           align="end"
