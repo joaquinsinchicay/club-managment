@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { Modal } from "@/components/ui/modal";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
-import { SettingsTabShell } from "@/components/settings/settings-tab-shell";
 import type { TreasuryCategory } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import {
@@ -24,20 +22,6 @@ function getEmojiOptions(options: string[], currentEmoji?: string | null) {
   return options;
 }
 
-function getRoleVisibilityLabel(visibleForSecretaria: boolean, visibleForTesoreria: boolean) {
-  const labels = [];
-
-  if (visibleForSecretaria) {
-    labels.push(texts.settings.club.treasury.account_visibility_options.secretaria);
-  }
-
-  if (visibleForTesoreria) {
-    labels.push(texts.settings.club.treasury.account_visibility_options.tesoreria);
-  }
-
-  return labels.join(" + ") || texts.settings.club.treasury.visibility_hidden;
-}
-
 function getMovementTypeLabel(movementType: TreasuryCategory["movementType"]) {
   return texts.settings.club.treasury.category_movement_types[movementType];
 }
@@ -54,7 +38,7 @@ type CategoryFormProps = {
   onSuccess: () => void;
 };
 
-function CategoryForm({
+export function CategoryForm({
   action,
   submitLabel,
   pendingLabel,
@@ -229,150 +213,5 @@ function CategoryForm({
         />
       </PendingFieldset>
     </form>
-  );
-}
-
-type CategoriesTabProps = {
-  categories: TreasuryCategory[];
-  createTreasuryCategoryAction: (formData: FormData) => Promise<void>;
-  updateTreasuryCategoryAction: (formData: FormData) => Promise<void>;
-};
-
-export function CategoriesTab({
-  categories,
-  createTreasuryCategoryAction,
-  updateTreasuryCategoryAction
-}: CategoriesTabProps) {
-  const [search, setSearch] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<TreasuryCategory | null>(null);
-  const visibleCategories = categories.filter((category) => !category.isLegacy);
-  const filteredCategories = visibleCategories.filter((category) =>
-    [category.subCategoryName, category.description, category.parentCategory]
-      .join(" ")
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
-
-  return (
-    <>
-      <SettingsTabShell
-        searchPlaceholder={texts.settings.club.treasury.categories_title}
-        searchValue={search}
-        onSearch={setSearch}
-        ctaLabel={texts.settings.club.treasury.create_category_cta}
-        onCta={() => {
-          setIsCreating(true);
-          setEditingCategory(null);
-        }}
-      >
-        {filteredCategories.length === 0 ? (
-          <div className="rounded-shell border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-            {visibleCategories.length === 0
-              ? texts.settings.club.treasury.empty_categories
-              : texts.settings.club.treasury.empty_categories_search}
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {filteredCategories.map((category) => (
-              <article
-                key={category.id}
-                className="group rounded-shell border border-border/70 bg-gradient-surface-92 p-5"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-shell bg-primary/10 text-xl">
-                        {category.emoji ?? texts.settings.club.treasury.default_category_emoji}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-base font-semibold text-foreground">
-                          {category.subCategoryName}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{category.description}</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.parent_category_badge}
-                        </span>
-                        <span className="font-medium">{category.parentCategory}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.category_type_badge}
-                        </span>
-                        <span className="font-medium">{getMovementTypeLabel(category.movementType)}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_visibility_label}
-                        </span>
-                        <span className="font-medium">
-                          {getRoleVisibilityLabel(
-                            category.visibleForSecretaria,
-                            category.visibleForTesoreria
-                          )}
-                        </span>
-                      </span>
-                      {category.isSystem ? (
-                        <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                          <span className="font-medium">{texts.settings.club.treasury.system_category_badge}</span>
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingCategory(category);
-                      setIsCreating(false);
-                    }}
-                    aria-label={texts.settings.club.treasury.edit_category_cta}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground opacity-0 transition hover:bg-secondary hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
-                  >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </SettingsTabShell>
-
-      <Modal
-        open={isCreating}
-        title={texts.settings.club.treasury.create_category_cta}
-        onClose={() => setIsCreating(false)}
-      >
-        <CategoryForm
-          action={createTreasuryCategoryAction}
-          submitLabel={texts.settings.club.treasury.save_category_cta}
-          pendingLabel={texts.settings.club.treasury.save_category_loading}
-          onSuccess={() => setIsCreating(false)}
-        />
-      </Modal>
-
-      <Modal
-        open={editingCategory !== null}
-        title={texts.settings.club.treasury.edit_category_cta}
-        onClose={() => setEditingCategory(null)}
-      >
-        {editingCategory ? (
-          <CategoryForm
-            key={editingCategory.id}
-            action={updateTreasuryCategoryAction}
-            submitLabel={texts.settings.club.treasury.update_category_cta}
-            pendingLabel={texts.settings.club.treasury.update_category_loading}
-            defaultCategory={editingCategory}
-            onSuccess={() => setEditingCategory(null)}
-          />
-        ) : null}
-      </Modal>
-    </>
   );
 }
