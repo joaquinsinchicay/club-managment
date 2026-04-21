@@ -3,6 +3,17 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { buttonClass } from "@/components/ui/button";
+import {
+  CONTROL_CLASSNAME,
+  CONTROL_DISABLED_CLASSNAME,
+  FIELD_LABEL_CLASSNAME,
+  FORM_GRID_CLASSNAME,
+  FORM_GRID_PADDING_CLASSNAME,
+  FormField,
+  MODAL_FOOTER_CLASSNAME,
+  REQUIRED_SUFFIX
+} from "@/components/ui/modal-form";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type { TreasuryCategory } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
@@ -10,6 +21,7 @@ import {
   getMovementTypeForParentCategory,
   getParentCategoryOptionsWithCurrentValue
 } from "@/lib/treasury-system-categories";
+import { cn } from "@/lib/utils";
 
 const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
@@ -35,6 +47,7 @@ type CategoryFormProps = {
   submitLabel: string;
   pendingLabel: string;
   defaultCategory?: TreasuryCategory;
+  onClose: () => void;
   onSuccess: () => void;
 };
 
@@ -43,6 +56,7 @@ export function CategoryForm({
   submitLabel,
   pendingLabel,
   defaultCategory,
+  onClose,
   onSuccess
 }: CategoryFormProps) {
   const isSystemCategory = defaultCategory?.isSystem ?? false;
@@ -91,9 +105,9 @@ export function CategoryForm({
           setVisibilityTouched(true);
         }
       }}
-      className="grid gap-4"
+      className="flex flex-col"
     >
-      <PendingFieldset className="grid gap-4">
+      <PendingFieldset className={cn(FORM_GRID_CLASSNAME, FORM_GRID_PADDING_CLASSNAME)}>
         {defaultCategory ? <input type="hidden" name="category_id" value={defaultCategory.id} /> : null}
         {isSystemCategory ? (
           <>
@@ -104,24 +118,27 @@ export function CategoryForm({
           </>
         ) : null}
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.sub_category_name_label}</span>
+        <FormField fullWidth>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {texts.settings.club.treasury.sub_category_name_label}
+            {REQUIRED_SUFFIX}
+          </span>
           <input
             type="text"
             name="sub_category_name"
             defaultValue={defaultCategory?.subCategoryName ?? ""}
             disabled={isSystemCategory}
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.emoji_label}</span>
           <select
             name="emoji"
             defaultValue={defaultCategory?.emoji ?? ""}
             disabled={isSystemCategory}
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
           >
             <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
             {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
@@ -130,27 +147,43 @@ export function CategoryForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.category_description_label}</span>
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.category_type_label}</span>
+          <input
+            type="text"
+            value={getMovementTypeLabel(movementType)}
+            readOnly
+            className={cn(CONTROL_CLASSNAME, "text-muted-foreground")}
+          />
+          <input type="hidden" name="movement_type" value={movementType} />
+        </FormField>
+
+        <FormField fullWidth>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {texts.settings.club.treasury.category_description_label}
+          </span>
           <input
             type="text"
             name="description"
             defaultValue={defaultCategory?.description ?? ""}
             disabled={isSystemCategory}
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.parent_category_label}</span>
+        <FormField fullWidth>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {texts.settings.club.treasury.parent_category_label}
+            {REQUIRED_SUFFIX}
+          </span>
           <select
             name="parent_category"
             value={selectedParentCategory}
             disabled={isSystemCategory}
             onChange={(event) => setSelectedParentCategory(event.target.value)}
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground disabled:text-muted-foreground"
+            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
           >
             <option value="" disabled>
               {texts.settings.club.treasury.parent_category_placeholder}
@@ -161,28 +194,18 @@ export function CategoryForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.category_type_label}</span>
-          <input
-            type="text"
-            value={getMovementTypeLabel(movementType)}
-            readOnly
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground"
-          />
-          <input type="hidden" name="movement_type" value={movementType} />
-        </label>
-
-        <fieldset className="grid gap-3">
-          <legend className="text-sm font-medium text-foreground">
+        <fieldset className="grid gap-3 sm:col-span-2">
+          <legend className={FIELD_LABEL_CLASSNAME}>
             {texts.settings.club.treasury.account_visibility_label}
+            {REQUIRED_SUFFIX}
           </legend>
           <div className="grid gap-3 sm:grid-cols-2">
             {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
               <label
                 key={`category-visibility-${visibility}`}
-                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                className="flex min-h-11 items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground"
               >
                 <input
                   type="checkbox"
@@ -204,14 +227,23 @@ export function CategoryForm({
             </p>
           ) : null}
         </fieldset>
+      </PendingFieldset>
 
+      <div className={MODAL_FOOTER_CLASSNAME}>
+        <button
+          type="button"
+          onClick={onClose}
+          className={buttonClass({ variant: "secondary", size: "sm" })}
+        >
+          {texts.settings.club.treasury.cancel_cta}
+        </button>
         <PendingSubmitButton
           idleLabel={submitLabel}
           pendingLabel={pendingLabel}
           disabled={selectedVisibility.length === 0}
-          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+          className={buttonClass({ variant: "primary", size: "sm" })}
         />
-      </PendingFieldset>
+      </div>
     </form>
   );
 }

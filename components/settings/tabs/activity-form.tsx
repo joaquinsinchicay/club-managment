@@ -3,9 +3,20 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { buttonClass } from "@/components/ui/button";
+import {
+  CONTROL_CLASSNAME,
+  FIELD_LABEL_CLASSNAME,
+  FORM_GRID_CLASSNAME,
+  FORM_GRID_PADDING_CLASSNAME,
+  FormField,
+  MODAL_FOOTER_CLASSNAME,
+  REQUIRED_SUFFIX
+} from "@/components/ui/modal-form";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type { ClubActivity } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
+import { cn } from "@/lib/utils";
 
 const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
@@ -22,6 +33,7 @@ type ActivityFormProps = {
   submitLabel: string;
   pendingLabel: string;
   defaultActivity?: ClubActivity;
+  onClose: () => void;
   onSuccess: () => void;
 };
 
@@ -30,6 +42,7 @@ export function ActivityForm({
   submitLabel,
   pendingLabel,
   defaultActivity,
+  onClose,
   onSuccess
 }: ActivityFormProps) {
   const [selectedVisibility, setSelectedVisibility] = useState<string[]>(
@@ -55,29 +68,48 @@ export function ActivityForm({
   }
 
   return (
-    <form action={action} className="grid gap-4">
-      <PendingFieldset className="grid gap-4">
+    <form action={action} className="flex flex-col">
+      <PendingFieldset className={cn(FORM_GRID_CLASSNAME, FORM_GRID_PADDING_CLASSNAME)}>
         {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.activity_name_label}</span>
+        <FormField fullWidth>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {texts.settings.club.treasury.activity_name_label}
+            {REQUIRED_SUFFIX}
+          </span>
           <input
             type="text"
             name="name"
             defaultValue={defaultActivity?.name ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+            className={CONTROL_CLASSNAME}
           />
-        </label>
+        </FormField>
 
-        <fieldset className="grid gap-3">
-          <legend className="text-sm font-medium text-foreground">
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.emoji_label}</span>
+          <select
+            name="emoji"
+            defaultValue={defaultActivity?.emoji ?? ""}
+            className={CONTROL_CLASSNAME}
+          >
+            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+            {getEmojiOptions(TREASURY_ACTIVITY_EMOJI_OPTIONS, defaultActivity?.emoji).map((emoji) => (
+              <option key={`activity-emoji-${emoji}`} value={emoji}>
+                {emoji}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <fieldset className="grid gap-3 sm:col-span-2">
+          <legend className={FIELD_LABEL_CLASSNAME}>
             {texts.settings.club.treasury.account_visibility_label}
           </legend>
           <div className="grid gap-3 sm:grid-cols-2">
             {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
               <label
                 key={`activity-visibility-${visibility}`}
-                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+                className="flex min-h-11 items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground"
               >
                 <input
                   type="checkbox"
@@ -94,29 +126,22 @@ export function ActivityForm({
             ))}
           </div>
         </fieldset>
+      </PendingFieldset>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-          <select
-            name="emoji"
-            defaultValue={defaultActivity?.emoji ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-          >
-            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
-            {getEmojiOptions(TREASURY_ACTIVITY_EMOJI_OPTIONS, defaultActivity?.emoji).map((emoji) => (
-              <option key={`activity-emoji-${emoji}`} value={emoji}>
-                {emoji}
-              </option>
-            ))}
-          </select>
-        </label>
-
+      <div className={MODAL_FOOTER_CLASSNAME}>
+        <button
+          type="button"
+          onClick={onClose}
+          className={buttonClass({ variant: "secondary", size: "sm" })}
+        >
+          {texts.settings.club.treasury.cancel_cta}
+        </button>
         <PendingSubmitButton
           idleLabel={submitLabel}
           pendingLabel={pendingLabel}
-          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+          className={buttonClass({ variant: "primary", size: "sm" })}
         />
-      </PendingFieldset>
+      </div>
     </form>
   );
 }

@@ -177,10 +177,10 @@ export function CategoriesActivitiesTab({
                 aria-pressed={isActive}
                 onClick={() => setFilter(option.value)}
                 className={cn(
-                  "inline-flex min-h-9 items-center justify-center rounded-full border px-4 py-2 text-sm font-medium transition",
+                  "inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 text-sm font-semibold transition",
                   isActive
-                    ? "border-foreground bg-foreground text-primary-foreground"
-                    : "border-border bg-card text-foreground hover:bg-secondary"
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-border bg-card text-foreground hover:bg-slate-50"
                 )}
               >
                 {option.label}
@@ -247,7 +247,7 @@ export function CategoriesActivitiesTab({
                   setEditingActivity(activity);
                   setIsCreatingActivity(false);
                 }}
-                className="group relative inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-card px-3 py-2 pr-8 text-sm font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="group relative inline-flex min-h-8 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 pr-8 text-sm font-semibold text-foreground transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
               >
                 {activity.emoji ? <span aria-hidden="true">{activity.emoji}</span> : null}
                 <span>{activity.name}</span>
@@ -267,11 +267,13 @@ export function CategoriesActivitiesTab({
         open={isCreatingCategory}
         title={treasuryTexts.create_category_cta}
         onClose={() => setIsCreatingCategory(false)}
+        hideCloseButton
       >
         <CategoryForm
           action={createTreasuryCategoryAction}
           submitLabel={treasuryTexts.save_category_cta}
           pendingLabel={treasuryTexts.save_category_loading}
+          onClose={() => setIsCreatingCategory(false)}
           onSuccess={() => setIsCreatingCategory(false)}
         />
       </Modal>
@@ -280,6 +282,7 @@ export function CategoriesActivitiesTab({
         open={editingCategory !== null}
         title={treasuryTexts.edit_category_cta}
         onClose={() => setEditingCategory(null)}
+        hideCloseButton
       >
         {editingCategory ? (
           <CategoryForm
@@ -288,6 +291,7 @@ export function CategoriesActivitiesTab({
             submitLabel={treasuryTexts.update_category_cta}
             pendingLabel={treasuryTexts.update_category_loading}
             defaultCategory={editingCategory}
+            onClose={() => setEditingCategory(null)}
             onSuccess={() => setEditingCategory(null)}
           />
         ) : null}
@@ -297,11 +301,13 @@ export function CategoriesActivitiesTab({
         open={isCreatingActivity}
         title={treasuryTexts.create_activity_cta}
         onClose={() => setIsCreatingActivity(false)}
+        hideCloseButton
       >
         <ActivityForm
           action={createClubActivityAction}
           submitLabel={treasuryTexts.save_activity_cta}
           pendingLabel={treasuryTexts.save_activity_loading}
+          onClose={() => setIsCreatingActivity(false)}
           onSuccess={() => setIsCreatingActivity(false)}
         />
       </Modal>
@@ -310,6 +316,7 @@ export function CategoriesActivitiesTab({
         open={editingActivity !== null}
         title={treasuryTexts.edit_activity_cta}
         onClose={() => setEditingActivity(null)}
+        hideCloseButton
       >
         {editingActivity ? (
           <ActivityForm
@@ -318,6 +325,7 @@ export function CategoriesActivitiesTab({
             submitLabel={treasuryTexts.update_activity_cta}
             pendingLabel={treasuryTexts.update_activity_loading}
             defaultActivity={editingActivity}
+            onClose={() => setEditingActivity(null)}
             onSuccess={() => setEditingActivity(null)}
           />
         ) : null}
