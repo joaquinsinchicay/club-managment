@@ -10,7 +10,7 @@ import {
   sanitizeLocalizedAmountInput
 } from "@/lib/amounts";
 import { ModalFooter } from "@/components/ui/modal-footer";
-import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { PendingFieldset } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
   ConsolidationTransferEdit,
@@ -1757,15 +1757,14 @@ export function ConsolidationTransferEditForm({
           />
         </FormField>
 
-        <div className="sm:col-span-2">
-          <PendingSubmitButton
-            idleLabel={submitLabel}
-            pendingLabel={pendingLabel}
-            disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
-            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-          />
-        </div>
       </PendingFieldset>
+
+      <ModalFooter
+        submitLabel={submitLabel}
+        pendingLabel={pendingLabel}
+        submitDisabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
+        submitVariant="dark"
+      />
     </form>
   );
 }
@@ -2145,22 +2144,14 @@ export function TreasuryRoleMovementForm({
           </div>
         )}
 
-        {/* BUTTONS */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={onCancel ?? handleReset}
-            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {copy.reset_cta}
-          </button>
-          <PendingSubmitButton
-            idleLabel={submitLabel}
-            pendingLabel={pendingLabel}
-            disabled={!isMovementFormValid(formState)}
-            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-          />
-        </div>
+        <ModalFooter
+          onCancel={onCancel ?? handleReset}
+          cancelLabel={copy.reset_cta}
+          submitLabel={submitLabel}
+          pendingLabel={pendingLabel}
+          submitDisabled={!isMovementFormValid(formState)}
+          submitVariant="dark"
+        />
       </PendingFieldset>
     </form>
   );
@@ -2427,22 +2418,14 @@ export function TreasuryRoleFxForm({
           </p>
         </div>
 
-        {/* BOTONES */}
-        <div className="flex gap-2 border-t border-border pt-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="min-h-11 flex-1 rounded-card border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {texts.dashboard.treasury_role.reset_cta}
-          </button>
-          <PendingSubmitButton
-            idleLabel={texts.dashboard.treasury_role.fx_create_cta}
-            pendingLabel={texts.dashboard.treasury_role.fx_create_loading}
-            disabled={!isFxFormValid(formState)}
-            className="min-h-11 flex-1 rounded-card bg-foreground px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-          />
-        </div>
+        <ModalFooter
+          onCancel={onCancel}
+          cancelLabel={texts.dashboard.treasury_role.reset_cta}
+          submitLabel={texts.dashboard.treasury_role.fx_create_cta}
+          pendingLabel={texts.dashboard.treasury_role.fx_create_loading}
+          submitDisabled={!isFxFormValid(formState)}
+          submitVariant="dark"
+        />
       </PendingFieldset>
     </form>
   );
