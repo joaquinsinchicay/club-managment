@@ -2709,6 +2709,21 @@ export async function getTreasuryConsolidationDashboard(
   const clubId = context.activeClub.id;
   const selectedDate = consolidationDate?.trim() || getDefaultConsolidationDate();
   const today = getTodayDate();
+
+  try {
+    await ensureStaleDailyCashSessionAutoClosedForActiveClub({
+      activeClub: { id: clubId },
+      user: { id: context.user.id }
+    });
+  } catch (error) {
+    console.warn("[daily-session-guard-failed]", {
+      clubId,
+      userId: context.user.id,
+      source: "treasury_consolidation_dashboard",
+      error
+    });
+  }
+
   const allAccounts = await accessRepository.listTreasuryAccountsForClub(clubId);
   const allAccountIds = allAccounts.map((account) => account.id);
   const [movements, integrations, allClubMovements] = await Promise.all([
