@@ -333,3 +333,4 @@ Es un sistema diseñado para:
 
 Si algo no está documentado:
 👉 no existe
+
