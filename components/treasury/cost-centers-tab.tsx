@@ -43,7 +43,8 @@ import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 import { buttonClass } from "@/components/ui/button";
-import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { ModalFooter } from "@/components/ui/modal-footer";
+import { PendingFieldset } from "@/components/ui/pending-form";
 
 type CostCenterActionResult = { ok: boolean; code: string };
 
@@ -650,20 +651,14 @@ function CostCenterForm({
         ) : null}
       </PendingFieldset>
 
-      <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className={buttonClass({ variant: "secondary", size: "sm" })}
-        >
-          {tCC.form_cancel_cta}
-        </button>
-        <PendingSubmitButton
-          className={buttonClass({ variant: "primary", size: "sm" })}
-          idleLabel={tCC.form_submit_cta}
-          pendingLabel={isEdit ? tCC.update_loading : tCC.save_loading}
-        />
-      </div>
+      <ModalFooter
+        size="sm"
+        align="end"
+        onCancel={onCancel}
+        cancelLabel={tCC.form_cancel_cta}
+        submitLabel={tCC.form_submit_cta}
+        pendingLabel={isEdit ? tCC.update_loading : tCC.save_loading}
+      />
     </form>
   );
 }

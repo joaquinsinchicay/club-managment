@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 import { buttonClass } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { ModalFooter } from "@/components/ui/modal-footer";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import { SettingsTabShell } from "@/components/settings/settings-tab-shell";
 import { formatMembershipRoles, MEMBERSHIP_ROLES } from "@/lib/domain/membership-roles";
@@ -256,6 +257,7 @@ export function MembersTab({
       {/* Modal: Invitar */}
       <Modal
         open={isInviting}
+        size="sm"
         title={texts.settings.club.invitations.section_title}
         description={texts.settings.club.invitations.section_description}
         onClose={() => setIsInviting(false)}
@@ -290,10 +292,9 @@ export function MembersTab({
               </select>
             </label>
 
-            <PendingSubmitButton
-              idleLabel={texts.settings.club.invitations.invite_cta}
+            <ModalFooter
+              submitLabel={texts.settings.club.invitations.invite_cta}
               pendingLabel={texts.settings.club.invitations.invite_loading}
-              className={buttonClass()}
             />
           </PendingFieldset>
         </form>
@@ -302,6 +303,7 @@ export function MembersTab({
       {/* Modal: Editar roles */}
       <Modal
         open={editingMember !== null}
+        size="md"
         title={texts.settings.club.members.update_roles_cta}
         onClose={() => setEditingMember(null)}
       >
@@ -338,10 +340,12 @@ export function MembersTab({
                 </div>
               </div>
 
-              <PendingSubmitButton
-                idleLabel={texts.settings.club.members.update_roles_cta}
+              <ModalFooter
+                align="end"
+                onCancel={() => setEditingMember(null)}
+                cancelLabel={texts.settings.club.members.update_roles_cancel_cta}
+                submitLabel={texts.settings.club.members.update_roles_cta}
                 pendingLabel={texts.settings.club.members.update_roles_loading}
-                className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
               />
             </PendingFieldset>
           </form>
@@ -351,6 +355,7 @@ export function MembersTab({
       {/* Modal: Confirmar remover */}
       <Modal
         open={removingMember !== null}
+        size="sm"
         title={texts.settings.club.members.remove_dialog_title}
         description={texts.settings.club.members.remove_dialog_description}
         onClose={() => setRemovingMembershipId(null)}
@@ -365,20 +370,15 @@ export function MembersTab({
               <p className="text-sm text-muted-foreground">{removingMember.email}</p>
             </div>
 
-            <form action={removeMembershipAction} className="mt-4">
-              <PendingFieldset className="grid gap-3 sm:grid-cols-2">
+            <form action={removeMembershipAction}>
+              <PendingFieldset className="contents">
                 <input type="hidden" name="membership_id" value={removingMember.membershipId} />
-                <button
-                  type="button"
-                  onClick={() => setRemovingMembershipId(null)}
-                  className="min-h-11 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
-                >
-                  {texts.settings.club.members.remove_dialog_cancel_cta}
-                </button>
-                <PendingSubmitButton
-                  idleLabel={texts.settings.club.members.remove_dialog_confirm_cta}
+                <ModalFooter
+                  onCancel={() => setRemovingMembershipId(null)}
+                  cancelLabel={texts.settings.club.members.remove_dialog_cancel_cta}
+                  submitLabel={texts.settings.club.members.remove_dialog_confirm_cta}
                   pendingLabel={texts.settings.club.members.remove_loading}
-                  className="min-h-11 w-full rounded-2xl bg-destructive px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                  submitVariant="destructive"
                 />
               </PendingFieldset>
             </form>

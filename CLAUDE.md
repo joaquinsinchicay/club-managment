@@ -58,23 +58,82 @@ CORRECTO:
 ## 🪟 Regla crítica: modales
 
 ### Primitivos obligatorios
-- Todo modal usa `@/components/ui/modal`. Prohibido re-implementar overlay/panel con `BlockingOverlay` o `<div fixed>`.
+- Todo modal usa `@/components/ui/modal`. Prohibido re-implementar overlay/panel con `BlockingOverlay`, `<div fixed>`, portales manuales o wrappers propios.
 - El primitivo ya renderiza un botón de cerrar con icono `X` en el header. **No agregar** botones textuales "Cerrar" dentro del body.
-- Todo form dentro de un modal usa `@/components/ui/modal-footer` para los botones de acción. `onCancel` es **obligatorio** — el botón de Cancelar debe cerrar el modal.
+- Todo form dentro de un modal usa `@/components/ui/modal-footer` para los botones de acción. Reimplementar el footer a mano está **prohibido**.
 
-### Tokens
-- Los botones usan `Button` o `buttonClass()` de `@/components/ui/button`. **Prohibido hardcodear** `min-h-*`, `py-*`, `rounded-*`, `px-*` en clases de botón.
-- Tamaño default: `size="md"` (44px alto, 10px padding vertical).
-- Radio default para botones de form: `radius="btn"`.
+### API canónica: `<Modal>`
+```tsx
+<Modal
+  open={...}
+  onClose={...}
+  title={...}
+  description={...}         // opcional
+  size="sm" | "md" | "lg"   // default "md"
+  hideCloseButton           // opcional; usar si el footer ya tiene Cancelar
+  closeDisabled             // durante submit
+>
+```
+Taxonomía de `size`:
+- `sm` → `max-w-md`. Confirmaciones irreversibles, modales de 1 campo (Invitar, Eliminar miembro, Confirmar remoción).
+- `md` → `max-w-xl`. **Default**. Form simple de un solo flujo (editar movimiento, crear categoría/actividad, editar cost center).
+- `lg` → `max-w-3xl`. Forms multi-columna, listas, tablas embebidas (apertura/cierre de jornada).
 
-### Tamaños de panel
-- `max-w-md` — confirmaciones / diálogos simples.
-- `max-w-xl` — formularios de un solo flujo (default para edición).
-- `max-w-3xl` — listas, tablas, formularios multi-columna.
+`panelClassName` es escape-hatch; no usar salvo excepción aprobada en code review.
+
+### API canónica: `<ModalFooter>`
+```tsx
+<ModalFooter
+  onCancel={handleCancel}       // opcional; si se omite, solo Submit (caso "Invitar")
+  cancelLabel="Cancelar"
+  submitLabel="Guardar"
+  pendingLabel="Guardando…"
+  submitDisabled={...}
+  submitVariant="primary" | "destructive" | "dark"   // default "primary"
+  size="sm" | "md"              // default "md"
+  align="stretch" | "end"       // default "stretch"
+/>
+```
+
+Reglas de uso:
+- `align="stretch"` (default) → dos botones iguales en `grid-cols-2`. Úsese en confirmaciones y acciones principales (tesorería, sesión).
+- `align="end"` → botones autoancho pegados a la derecha. Úsese en forms densos (settings, cost centers) donde el full-width se ve desproporcionado.
+- `size="sm"` solo cuando el modal es de densidad compacta (cost centers, categorías, actividades, receipt formats). Default `md` para dashboard/tesorería.
+- Para modales de **una sola acción** (Invitar), omitir `onCancel`/`cancelLabel`. La X del header sigue siendo vía de salida.
+- Nunca pasar `className` para overridear padding/radius/altura. Si el layout no encaja, discutir antes de hackear.
+- `submitVariant="destructive"` en acciones destructivas (cerrar jornada, remover miembro, eliminar recurso).
+
+### Prohibiciones explícitas
+```tsx
+// ❌ radius hardcoded
+<button className="rounded-2xl ..." />
+// ❌ altura / padding hardcoded
+<button className="min-h-11 py-3 ..." />
+// ❌ footer a mano
+<div className="flex gap-2 border-t pt-4">
+  <button>Cancelar</button>
+  <PendingSubmitButton ... />
+</div>
+// ❌ panelClassName para forzar ancho
+<Modal panelClassName="max-w-xl" />   // usar size="md"
+// ❌ X + botón "Cerrar" textual simultáneos
+// ❌ MODAL_FOOTER_CLASSNAME (eliminado)
+```
+
+### Checklist para modales nuevos o modificados
+- [ ] `<Modal>` con `size` explícito apropiado a la taxonomía.
+- [ ] `<ModalFooter>` con labels desde `texts.*` (nunca hardcoded).
+- [ ] Si el footer tiene Cancelar, considerar `hideCloseButton` para evitar doble salida.
+- [ ] `submitVariant="destructive"` para acciones destructivas.
+- [ ] Si el submit depende de validación client-side, `submitDisabled` conectado.
+- [ ] Si usa server action, el handler sigue el patrón `setModalOpen(false) → await action → triggerClientFeedback → router.refresh` (ver sección de feedback).
+- [ ] Nada de `rounded-2xl`, `rounded-card`, `py-3`, `min-h-11` hardcoded en botones o en el footer.
 
 ### Referencia canónica
-- Wiring del Modal + form: `components/dashboard/treasury-role-card.tsx` bloque `edit_movement`.
-- Form con footer tokenizado: `SecretariaMovementEditForm` en `components/dashboard/treasury-operation-forms.tsx`.
+- Wiring Modal + form con handler: `components/dashboard/treasury-role-card.tsx` (bloque `edit_movement`).
+- Form con `<ModalFooter>` `stretch`/`md`: `SecretariaMovementEditForm` en `components/dashboard/treasury-operation-forms.tsx`.
+- Footer `align="end"` + `size="sm"`: `CostCenterForm` en `components/treasury/cost-centers-tab.tsx`.
+- Footer sin `onCancel` (acción única): modal "Invitar" en `components/settings/tabs/members-tab.tsx`.
 
 ---
 

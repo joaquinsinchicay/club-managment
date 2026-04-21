@@ -528,6 +528,7 @@ export function TreasuryConciliacionTab({
             : texts.dashboard.consolidation.edit_description
         }
         closeDisabled={isEditSubmissionPending}
+        size="md"
       >
         {editingTransfer ? (
           <ConsolidationTransferEditForm

@@ -1256,7 +1256,7 @@ export function TreasuryRoleCard({
         description={texts.dashboard.treasury_role.movement_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
         hideCloseButton
-        panelClassName="max-w-xl"
+        size="md"
       >
         <TreasuryRoleMovementForm
           accounts={accounts}
@@ -1283,7 +1283,7 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.edit_form_title}
         description={texts.dashboard.treasury_role.edit_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
-        panelClassName="max-w-xl"
+        size="md"
       >
         {selectedMovement?.canEdit ? (
           <SecretariaMovementEditForm
@@ -1313,7 +1313,7 @@ export function TreasuryRoleCard({
         description={texts.dashboard.treasury_role.fx_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
         hideCloseButton
-        panelClassName="max-w-xl"
+        size="md"
       >
         <TreasuryRoleFxForm
           accounts={accounts}
@@ -1335,7 +1335,7 @@ export function TreasuryRoleCard({
           isTransferSubmissionPending
         }
         hideCloseButton
-        panelClassName="max-w-xl"
+        size="md"
       >
         <AccountTransferForm
           sourceAccounts={accounts}
@@ -1354,7 +1354,7 @@ export function TreasuryRoleCard({
         description={texts.settings.club.treasury.create_account_description}
         closeDisabled={isAccountSubmissionPending}
         hideCloseButton
-        panelClassName="max-w-xl"
+        size="md"
       >
         <TreasuryAccountForm
           action={handleCreateAccount}
@@ -1375,7 +1375,7 @@ export function TreasuryRoleCard({
         description={texts.settings.club.treasury.edit_account_description}
         closeDisabled={isAccountSubmissionPending}
         hideCloseButton
-        panelClassName="max-w-xl"
+        size="md"
       >
         {editingAccount ? (
           <TreasuryAccountForm

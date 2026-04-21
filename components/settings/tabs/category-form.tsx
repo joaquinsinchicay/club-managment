@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { buttonClass } from "@/components/ui/button";
+import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   CONTROL_CLASSNAME,
   CONTROL_DISABLED_CLASSNAME,
@@ -11,10 +11,9 @@ import {
   FORM_GRID_CLASSNAME,
   FORM_GRID_PADDING_CLASSNAME,
   FormField,
-  MODAL_FOOTER_CLASSNAME,
   REQUIRED_SUFFIX
 } from "@/components/ui/modal-form";
-import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { PendingFieldset } from "@/components/ui/pending-form";
 import type { TreasuryCategory } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import {
@@ -225,21 +224,15 @@ export function CategoryForm({
         </div>
       </PendingFieldset>
 
-      <div className={MODAL_FOOTER_CLASSNAME}>
-        <button
-          type="button"
-          onClick={onClose}
-          className={buttonClass({ variant: "secondary", size: "sm" })}
-        >
-          {texts.settings.club.treasury.cancel_cta}
-        </button>
-        <PendingSubmitButton
-          idleLabel={submitLabel}
-          pendingLabel={pendingLabel}
-          disabled={selectedVisibility.length === 0}
-          className={buttonClass({ variant: "primary", size: "sm" })}
-        />
-      </div>
+      <ModalFooter
+        size="sm"
+        align="end"
+        onCancel={onClose}
+        cancelLabel={texts.settings.club.treasury.cancel_cta}
+        submitLabel={submitLabel}
+        pendingLabel={pendingLabel}
+        submitDisabled={selectedVisibility.length === 0}
+      />
     </form>
   );
 }

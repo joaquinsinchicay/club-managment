@@ -1,10 +1,12 @@
 "use client";
 
-import { type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 import { BlockingOverlay } from "@/components/ui/overlay";
+
+type ModalSize = "sm" | "md" | "lg";
 
 type ModalProps = {
   open: boolean;
@@ -12,9 +14,16 @@ type ModalProps = {
   description?: string;
   onClose: () => void;
   children: ReactNode;
+  size?: ModalSize;
   panelClassName?: string;
   closeDisabled?: boolean;
   hideCloseButton?: boolean;
+};
+
+const sizeClasses: Record<ModalSize, string> = {
+  sm: "max-w-md",
+  md: "max-w-xl",
+  lg: "max-w-3xl",
 };
 
 export function Modal({
@@ -23,6 +32,7 @@ export function Modal({
   description,
   onClose,
   children,
+  size = "md",
   panelClassName,
   closeDisabled = false,
   hideCloseButton = false
@@ -45,7 +55,8 @@ export function Modal({
     >
       <div
         className={cn(
-          "flex max-h-[calc(100dvh-24px)] w-full max-w-3xl flex-col rounded-toast border border-border bg-card shadow-soft sm:max-h-[calc(100dvh-48px)]",
+          "flex max-h-[calc(100dvh-24px)] w-full flex-col rounded-toast border border-border bg-card shadow-soft sm:max-h-[calc(100dvh-48px)]",
+          sizeClasses[size],
           panelClassName
         )}
         onClick={(event) => event.stopPropagation()}
@@ -94,20 +105,5 @@ export function Modal({
         <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">{children}</div>
       </div>
     </BlockingOverlay>
-  );
-}
-
-type ModalTriggerButtonProps = ComponentPropsWithoutRef<"button">;
-
-export function ModalTriggerButton({ className, type = "button", ...props }: ModalTriggerButtonProps) {
-  return (
-    <button
-      type={type}
-      className={cn(
-        "inline-flex min-h-11 items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold transition",
-        className
-      )}
-      {...props}
-    />
   );
 }

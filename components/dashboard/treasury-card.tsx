@@ -745,7 +745,7 @@ export function TreasuryCard({
         description={texts.dashboard.treasury.movement_form_description}
         closeDisabled={isMovementSubmissionPending}
         hideCloseButton
-        panelClassName="max-w-xl"
+        size="md"
       >
         <SecretariaMovementForm
           accounts={movementAccounts}
@@ -772,7 +772,7 @@ export function TreasuryCard({
         description={texts.dashboard.treasury.edit_form_description}
         closeDisabled={isMovementUpdatePending}
         hideCloseButton
-        panelClassName="max-w-xl"
+        size="md"
       >
         {selectedMovement ? (
           <SecretariaMovementEditForm
@@ -804,7 +804,7 @@ export function TreasuryCard({
         description={texts.dashboard.treasury.edit_form_description}
         closeDisabled={isMovementUpdatePending}
         hideCloseButton
-        panelClassName="max-w-xl"
+        size="md"
       >
         {selectedMovement && selectedMovement.transferReference !== null ? (() => {
           const pairedMovement = localTreasuryCard.movements.find(
@@ -848,7 +848,7 @@ export function TreasuryCard({
         description={texts.dashboard.treasury.transfer_form_description}
         closeDisabled={isTransferSubmissionPending}
         hideCloseButton
-        panelClassName="max-w-xl"
+        size="md"
       >
         <AccountTransferForm
           sourceAccounts={transferSourceAccounts}
@@ -867,7 +867,7 @@ export function TreasuryCard({
         description={texts.dashboard.treasury.closing_description}
         closeDisabled={isSessionClosePending}
         hideCloseButton
-        panelClassName="max-w-2xl"
+        size="lg"
       >
         {closeSessionValidation ? (
           <CloseSessionModalForm
@@ -887,7 +887,7 @@ export function TreasuryCard({
         description={texts.dashboard.treasury.opening_description}
         closeDisabled={isSessionOpenPending}
         hideCloseButton
-        panelClassName="max-w-2xl"
+        size="lg"
       >
         {openSessionValidation ? (
           <OpenSessionModalForm

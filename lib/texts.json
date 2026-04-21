@@ -846,6 +846,7 @@
         "approve_cta": "Aprobar acceso",
         "update_role_cta": "Actualizar rol",
         "update_roles_cta": "Actualizar roles",
+        "update_roles_cancel_cta": "Cancelar",
         "approve_loading": "Aprobando acceso...",
         "update_roles_loading": "Actualizando roles...",
         "remove_cta": "Remover miembro",

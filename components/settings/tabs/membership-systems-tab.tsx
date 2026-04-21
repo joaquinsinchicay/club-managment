@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Modal } from "@/components/ui/modal";
-import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { ModalFooter } from "@/components/ui/modal-footer";
+import { PendingFieldset } from "@/components/ui/pending-form";
 import type { ReceiptFormat } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 
@@ -29,10 +30,11 @@ function getValidationTypeLabel(validationType: ReceiptFormat["validationType"])
 type ReceiptFormatFormProps = {
   action: (formData: FormData) => Promise<void>;
   defaultFormat: ReceiptFormat;
+  onCancel: () => void;
   onSuccess: () => void;
 };
 
-function ReceiptFormatForm({ action, defaultFormat, onSuccess }: ReceiptFormatFormProps) {
+function ReceiptFormatForm({ action, defaultFormat, onCancel, onSuccess }: ReceiptFormatFormProps) {
   const [selectedVisibility, setSelectedVisibility] = useState<string[]>(
     TREASURY_VISIBILITY_OPTIONS.filter((v) =>
       v === "secretaria" ? defaultFormat.visibleForSecretaria : defaultFormat.visibleForTesoreria
@@ -110,10 +112,12 @@ function ReceiptFormatForm({ action, defaultFormat, onSuccess }: ReceiptFormatFo
           </div>
         </fieldset>
 
-        <PendingSubmitButton
-          idleLabel={texts.settings.club.treasury.update_receipt_format_cta}
+        <ModalFooter
+          align="end"
+          onCancel={onCancel}
+          cancelLabel={texts.settings.club.treasury.cancel_cta}
+          submitLabel={texts.settings.club.treasury.update_receipt_format_cta}
           pendingLabel={texts.settings.club.treasury.update_receipt_format_loading}
-          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
         />
       </PendingFieldset>
     </form>
@@ -184,6 +188,7 @@ export function MembershipSystemsTab({ receiptFormats, updateReceiptFormatAction
           key={receiptFormat.id}
           action={updateReceiptFormatAction}
           defaultFormat={receiptFormat}
+          onCancel={() => setIsEditing(false)}
           onSuccess={() => setIsEditing(false)}
         />
       </Modal>

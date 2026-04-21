@@ -11,8 +11,6 @@ export const CONTROL_CLASSNAME =
 export const CONTROL_DISABLED_CLASSNAME = "disabled:opacity-60";
 export const FIELD_LABEL_CLASSNAME = "text-xs font-semibold text-foreground";
 export const REQUIRED_SUFFIX = " *";
-export const MODAL_FOOTER_CLASSNAME =
-  "flex items-center justify-end gap-2 border-t border-border px-5 py-4";
 
 type FormFieldProps = {
   children: ReactNode;

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 
-import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { ModalFooter } from "@/components/ui/modal-footer";
+import { PendingFieldset } from "@/components/ui/pending-form";
 import {
   formatLocalizedAmount,
   formatLocalizedAmountInputOnBlur,
@@ -158,21 +159,12 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
           </p>
         </div>
 
-        {/* Botones */}
-        <div className="flex gap-2 border-t border-border pt-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="min-h-11 flex-1 rounded-card border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {texts.dashboard.treasury.cancel_session_cta}
-          </button>
-          <PendingSubmitButton
-            idleLabel={texts.dashboard.treasury.confirm_open_session_cta}
-            pendingLabel={texts.dashboard.treasury.confirm_open_session_loading}
-            className="min-h-11 flex-1 rounded-card bg-foreground px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-          />
-        </div>
+        <ModalFooter
+          onCancel={onCancel}
+          cancelLabel={texts.dashboard.treasury.cancel_session_cta}
+          submitLabel={texts.dashboard.treasury.confirm_open_session_cta}
+          pendingLabel={texts.dashboard.treasury.confirm_open_session_loading}
+        />
       </PendingFieldset>
     </form>
   );
