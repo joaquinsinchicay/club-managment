@@ -96,7 +96,7 @@ const FORM_GRID_CLASSNAME = "grid gap-4 sm:grid-cols-2";
 const FIELD_CLASSNAME = "grid gap-2 text-sm text-foreground";
 const FULL_WIDTH_FIELD_CLASSNAME = "sm:col-span-2";
 const CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10";
-const DISABLED_CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-card px-4 py-3 text-sm text-muted-foreground";
+const DISABLED_CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground";
 
 type MovementFormState = {
   movementDate?: string;
@@ -601,7 +601,7 @@ export function SecretariaMovementForm({
                   type="button"
                   onClick={() => setFormState((s) => ({ ...s, movementType: type }))}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-xl border px-3 py-3 transition",
+                    "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
                       ? isIngreso
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -893,7 +893,7 @@ export function SecretariaMovementEditForm({
         {/* ID chip */}
         <div className="flex items-center gap-2">
           <span className={FIELD_LABEL_CLASSNAME}>{copy.movement_id_label}</span>
-          <span className="rounded-md bg-secondary px-2 py-0.5 text-meta font-semibold tabular-nums text-foreground">
+          <span className="rounded-card bg-secondary px-2 py-0.5 text-xs font-semibold tabular-nums text-foreground">
             {movement.movementDisplayId}
           </span>
         </div>
@@ -929,7 +929,7 @@ export function SecretariaMovementEditForm({
                   type="button"
                   onClick={() => setFormState((s) => ({ ...s, movementType: type }))}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-xl border px-3 py-3 transition",
+                    "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
                       ? isIngreso
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -1893,7 +1893,7 @@ export function TreasuryRoleMovementForm({
                   type="button"
                   onClick={() => setFormState((s) => ({ ...s, movementType: type }))}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-xl border px-3 py-3 transition",
+                    "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
                       ? isIngreso
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -2261,7 +2261,7 @@ export function TreasuryRoleFxForm({
         {/* FECHA */}
         <div className="flex flex-col gap-1.5">
           <p className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.date_label}</p>
-          <div className="min-h-11 rounded-card border border-border bg-secondary/40 px-3 py-2 text-sm font-medium text-foreground">
+          <div className={DISABLED_CONTROL_CLASSNAME}>
             {formatSessionDateLong(sessionDate)}
           </div>
         </div>
@@ -2314,7 +2314,7 @@ export function TreasuryRoleFxForm({
               name="source_account_id"
               value={formState.sourceAccountId}
               onChange={(e) => setFormState((s) => ({ ...s, sourceAccountId: e.target.value }))}
-              className={cn(CONTROL_CLASSNAME, "px-3 py-2")}
+              className={CONTROL_CLASSNAME}
             >
               <option value="" disabled>{texts.dashboard.treasury_role.fx_source_account_placeholder}</option>
               {accounts.map((account) => (
@@ -2383,7 +2383,7 @@ export function TreasuryRoleFxForm({
               name="target_account_id"
               value={formState.targetAccountId}
               onChange={(e) => setFormState((s) => ({ ...s, targetAccountId: e.target.value }))}
-              className={cn(CONTROL_CLASSNAME, "px-3 py-2")}
+              className={CONTROL_CLASSNAME}
             >
               <option value="" disabled>{texts.dashboard.treasury_role.fx_target_account_placeholder}</option>
               {accounts.map((account) => (
@@ -2416,7 +2416,7 @@ export function TreasuryRoleFxForm({
             value={formState.concept}
             onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
             placeholder={texts.dashboard.treasury_role.fx_concept_placeholder}
-            className={cn(CONTROL_CLASSNAME, "px-3 py-2")}
+            className={CONTROL_CLASSNAME}
           />
         </div>
 
