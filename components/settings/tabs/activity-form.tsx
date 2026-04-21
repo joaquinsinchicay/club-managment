@@ -72,19 +72,6 @@ export function ActivityForm({
       <PendingFieldset className={cn(FORM_GRID_CLASSNAME, FORM_GRID_PADDING_CLASSNAME)}>
         {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 
-        <FormField fullWidth>
-          <span className={FIELD_LABEL_CLASSNAME}>
-            {texts.settings.club.treasury.activity_name_label}
-            {REQUIRED_SUFFIX}
-          </span>
-          <input
-            type="text"
-            name="name"
-            defaultValue={defaultActivity?.name ?? ""}
-            className={CONTROL_CLASSNAME}
-          />
-        </FormField>
-
         <FormField>
           <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.emoji_label}</span>
           <select
@@ -99,6 +86,19 @@ export function ActivityForm({
               </option>
             ))}
           </select>
+        </FormField>
+
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {texts.settings.club.treasury.activity_name_label}
+            {REQUIRED_SUFFIX}
+          </span>
+          <input
+            type="text"
+            name="name"
+            defaultValue={defaultActivity?.name ?? ""}
+            className={CONTROL_CLASSNAME}
+          />
         </FormField>
 
         <div className="grid gap-3 sm:col-span-2">

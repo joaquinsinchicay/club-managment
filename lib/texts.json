@@ -895,7 +895,7 @@
         "filter_egresos_label": "Egresos",
         "subcategories_count_singular": "1 subcategoria",
         "subcategories_count_plural": "{count} subcategorias",
-        "create_category_short_cta": "+ Categoria",
+        "create_category_short_cta": "Cargar Sub Categoria",
         "create_activity_short_cta": "+ Actividad",
         "empty_groups_filter": "Sin categorias para este filtro.",
         "activities_title": "Actividades",

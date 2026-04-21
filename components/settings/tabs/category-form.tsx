@@ -118,62 +118,7 @@ export function CategoryForm({
           </>
         ) : null}
 
-        <FormField fullWidth>
-          <span className={FIELD_LABEL_CLASSNAME}>
-            {texts.settings.club.treasury.sub_category_name_label}
-            {REQUIRED_SUFFIX}
-          </span>
-          <input
-            type="text"
-            name="sub_category_name"
-            defaultValue={defaultCategory?.subCategoryName ?? ""}
-            disabled={isSystemCategory}
-            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
-          />
-        </FormField>
-
         <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.emoji_label}</span>
-          <select
-            name="emoji"
-            defaultValue={defaultCategory?.emoji ?? ""}
-            disabled={isSystemCategory}
-            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
-          >
-            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
-            {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
-              <option key={`category-emoji-${emoji}`} value={emoji}>
-                {emoji}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        <FormField>
-          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.category_type_label}</span>
-          <input
-            type="text"
-            value={getMovementTypeLabel(movementType)}
-            readOnly
-            className={cn(CONTROL_CLASSNAME, "text-muted-foreground")}
-          />
-          <input type="hidden" name="movement_type" value={movementType} />
-        </FormField>
-
-        <FormField fullWidth>
-          <span className={FIELD_LABEL_CLASSNAME}>
-            {texts.settings.club.treasury.category_description_label}
-          </span>
-          <input
-            type="text"
-            name="description"
-            defaultValue={defaultCategory?.description ?? ""}
-            disabled={isSystemCategory}
-            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
-          />
-        </FormField>
-
-        <FormField fullWidth>
           <span className={FIELD_LABEL_CLASSNAME}>
             {texts.settings.club.treasury.parent_category_label}
             {REQUIRED_SUFFIX}
@@ -194,6 +139,61 @@ export function CategoryForm({
               </option>
             ))}
           </select>
+        </FormField>
+
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.category_type_label}</span>
+          <input
+            type="text"
+            value={getMovementTypeLabel(movementType)}
+            readOnly
+            className={cn(CONTROL_CLASSNAME, "text-muted-foreground")}
+          />
+          <input type="hidden" name="movement_type" value={movementType} />
+        </FormField>
+
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>{texts.settings.club.treasury.emoji_label}</span>
+          <select
+            name="emoji"
+            defaultValue={defaultCategory?.emoji ?? ""}
+            disabled={isSystemCategory}
+            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
+          >
+            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+            {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
+              <option key={`category-emoji-${emoji}`} value={emoji}>
+                {emoji}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {texts.settings.club.treasury.sub_category_name_label}
+            {REQUIRED_SUFFIX}
+          </span>
+          <input
+            type="text"
+            name="sub_category_name"
+            defaultValue={defaultCategory?.subCategoryName ?? ""}
+            disabled={isSystemCategory}
+            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
+          />
+        </FormField>
+
+        <FormField fullWidth>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {texts.settings.club.treasury.category_description_label}
+          </span>
+          <input
+            type="text"
+            name="description"
+            defaultValue={defaultCategory?.description ?? ""}
+            disabled={isSystemCategory}
+            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
+          />
         </FormField>
 
         <div className="grid gap-3 sm:col-span-2">
