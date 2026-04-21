@@ -9,6 +9,7 @@ import {
   parseLocalizedAmount,
   sanitizeLocalizedAmountInput
 } from "@/lib/amounts";
+import { ModalFooter } from "@/components/ui/modal-footer";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
@@ -525,7 +526,7 @@ export function SecretariaMovementForm({
   copy = texts.dashboard.treasury
 }: BaseMovementFormProps & {
   sessionDate: string;
-  onCancel?: () => void;
+  onCancel: () => void;
   copy?: OperationalFormCopy;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(buildEmptySecretariaMovementFormState);
@@ -799,21 +800,13 @@ export function SecretariaMovementForm({
         </label>
 
         {/* BUTTONS */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {copy.reset_cta}
-          </button>
-          <PendingSubmitButton
-            idleLabel={submitLabel}
-            pendingLabel={pendingLabel}
-            disabled={!isMovementFormValid(formState)}
-            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-          />
-        </div>
+        <ModalFooter
+          onCancel={onCancel}
+          cancelLabel={copy.reset_cta}
+          submitLabel={submitLabel}
+          pendingLabel={pendingLabel}
+          submitDisabled={!isMovementFormValid(formState)}
+        />
       </PendingFieldset>
     </form>
   );
@@ -839,7 +832,7 @@ export function SecretariaMovementEditForm({
   copy?: OperationalFormCopy;
   extraHiddenFields?: ReactNode;
   editableMovementDate?: boolean;
-  onCancel?: () => void;
+  onCancel: () => void;
 }) {
   const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
 
@@ -1152,21 +1145,13 @@ export function SecretariaMovementEditForm({
         ) : null}
 
         {/* BUTTONS */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {copy.reset_cta}
-          </button>
-          <PendingSubmitButton
-            idleLabel={submitLabel}
-            pendingLabel={pendingLabel}
-            disabled={!isMovementFormValid(formState)}
-            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-          />
-        </div>
+        <ModalFooter
+          onCancel={onCancel}
+          cancelLabel={copy.reset_cta}
+          submitLabel={submitLabel}
+          pendingLabel={pendingLabel}
+          submitDisabled={!isMovementFormValid(formState)}
+        />
       </PendingFieldset>
     </form>
   );
@@ -1189,7 +1174,7 @@ export function AccountTransferEditForm({
   currencies: TreasuryCurrencyConfig[];
   submitAction: (formData: FormData) => Promise<unknown>;
   sessionDate: string;
-  onCancel?: () => void;
+  onCancel: () => void;
 }) {
   const [formState, setFormState] = useState<TransferFormState>(() => initialValues);
 
@@ -1366,21 +1351,13 @@ export function AccountTransferEditForm({
         </label>
 
         {/* BUTTONS */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {texts.dashboard.treasury.reset_cta}
-          </button>
-          <PendingSubmitButton
-            idleLabel={texts.dashboard.treasury.update_cta}
-            pendingLabel={texts.dashboard.treasury.update_loading}
-            disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
-            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-          />
-        </div>
+        <ModalFooter
+          onCancel={onCancel}
+          cancelLabel={texts.dashboard.treasury.reset_cta}
+          submitLabel={texts.dashboard.treasury.update_cta}
+          pendingLabel={texts.dashboard.treasury.update_loading}
+          submitDisabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
+        />
       </PendingFieldset>
     </form>
   );
@@ -1399,7 +1376,7 @@ export function AccountTransferForm({
   currencies: TreasuryCurrencyConfig[];
   submitAction: (formData: FormData) => Promise<void>;
   sessionDate: string;
-  onCancel?: () => void;
+  onCancel: () => void;
 }) {
   const [formState, setFormState] = useState<TransferFormState>(buildEmptyTransferFormState);
 
@@ -1569,21 +1546,13 @@ export function AccountTransferForm({
         </label>
 
         {/* BUTTONS */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="min-h-11 rounded-btn border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-          >
-            {texts.dashboard.treasury.reset_cta}
-          </button>
-          <PendingSubmitButton
-            idleLabel={texts.dashboard.treasury.transfer_create_cta}
-            pendingLabel={texts.dashboard.treasury.transfer_create_loading}
-            disabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
-            className="min-h-11 rounded-btn bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-          />
-        </div>
+        <ModalFooter
+          onCancel={onCancel}
+          cancelLabel={texts.dashboard.treasury.reset_cta}
+          submitLabel={texts.dashboard.treasury.transfer_create_cta}
+          pendingLabel={texts.dashboard.treasury.transfer_create_loading}
+          submitDisabled={!isTransferFormValid(formState, targetAccountCurrencyError)}
+        />
       </PendingFieldset>
     </form>
   );

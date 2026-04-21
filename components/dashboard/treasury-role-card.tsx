@@ -1283,6 +1283,7 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.edit_form_title}
         description={texts.dashboard.treasury_role.edit_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
+        panelClassName="max-w-xl"
       >
         {selectedMovement?.canEdit ? (
           <SecretariaMovementEditForm
@@ -1297,6 +1298,10 @@ export function TreasuryRoleCard({
             pendingLabel={texts.dashboard.treasury_role.update_loading}
             movement={selectedMovement}
             copy={texts.dashboard.treasury_role}
+            onCancel={() => {
+              setActiveModal(null);
+              setSelectedMovement(null);
+            }}
           />
         ) : null}
       </Modal>

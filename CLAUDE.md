@@ -55,6 +55,29 @@ CORRECTO:
 
 ---
 
+## 🪟 Regla crítica: modales
+
+### Primitivos obligatorios
+- Todo modal usa `@/components/ui/modal`. Prohibido re-implementar overlay/panel con `BlockingOverlay` o `<div fixed>`.
+- El primitivo ya renderiza un botón de cerrar con icono `X` en el header. **No agregar** botones textuales "Cerrar" dentro del body.
+- Todo form dentro de un modal usa `@/components/ui/modal-footer` para los botones de acción. `onCancel` es **obligatorio** — el botón de Cancelar debe cerrar el modal.
+
+### Tokens
+- Los botones usan `Button` o `buttonClass()` de `@/components/ui/button`. **Prohibido hardcodear** `min-h-*`, `py-*`, `rounded-*`, `px-*` en clases de botón.
+- Tamaño default: `size="md"` (44px alto, 10px padding vertical).
+- Radio default para botones de form: `radius="btn"`.
+
+### Tamaños de panel
+- `max-w-md` — confirmaciones / diálogos simples.
+- `max-w-xl` — formularios de un solo flujo (default para edición).
+- `max-w-3xl` — listas, tablas, formularios multi-columna.
+
+### Referencia canónica
+- Wiring del Modal + form: `components/dashboard/treasury-role-card.tsx` bloque `edit_movement`.
+- Form con footer tokenizado: `SecretariaMovementEditForm` en `components/dashboard/treasury-operation-forms.tsx`.
+
+---
+
 ## 🔔 Regla crítica: feedback al usuario
 
 ### Patrón obligatorio

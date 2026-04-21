@@ -559,6 +559,10 @@ export function TreasuryConciliacionTab({
             extraHiddenFields={
               <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
             }
+            onCancel={() => {
+              setEditingMovement(null);
+              setEditingTransfer(null);
+            }}
           />
         ) : null}
       </Modal>
