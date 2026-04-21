@@ -15,6 +15,7 @@
  * without leaking DB details.
  */
 
+import { parseLocalizedAmount } from "@/lib/amounts";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import type { Membership } from "@/lib/domain/access";
 import { canMutateCostCenters, canAccessCostCenters } from "@/lib/domain/authorization";
@@ -161,9 +162,14 @@ function normalizeIsoDate(raw: unknown): string | null {
 
 function normalizeAmount(raw: unknown): number | null {
   if (raw === null || raw === undefined || raw === "") return null;
-  const value = typeof raw === "string" ? Number(raw) : typeof raw === "number" ? raw : Number.NaN;
-  if (!Number.isFinite(value) || value < 0) return null;
-  return value;
+  if (typeof raw === "number") {
+    return Number.isFinite(raw) && raw >= 0 ? raw : null;
+  }
+  if (typeof raw === "string") {
+    const value = parseLocalizedAmount(raw);
+    return value !== null && value >= 0 ? value : null;
+  }
+  return null;
 }
 
 function todayIso(): string {

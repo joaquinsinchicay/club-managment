@@ -98,6 +98,34 @@ La cookie flash `__toast` se consume una sola vez al rehidratar en el cliente. N
 - Si se toca una pantalla que todavía usa feedback inline transitorio, debe migrarse a toast en la misma tarea.
 - No se deben introducir nuevos mensajes inline para feedback post-acción.
 
+### Forms dentro de modales con server actions
+
+El patrón `flashToast() + redirect()` **NO sirve** dentro de modales: el modal vive en estado React del cliente, y la soft-navigation al mismo path preserva el árbol React, dejando el modal abierto con el toast detrás.
+
+**Patrón obligatorio para forms en modal**:
+
+1. La server action devuelve `{ ok: boolean; code: string }` (no `redirect`, no `flashToast`).
+2. La action solo llama `revalidatePath(...)` para invalidar la cache.
+3. El client-component que abre el modal envuelve la action en un handler:
+
+```tsx
+const router = useRouter();
+const [, startTransition] = useTransition();
+
+async function handleSubmit(formData: FormData) {
+  setModalOpen(false);                          // 1. cerrar el modal
+  const result = await action(formData);        // 2. esperar al server
+  triggerClientFeedback("domain", result.code); // 3. toast client-side
+  if (result.ok) {
+    startTransition(() => router.refresh());    // 4. refrescar datos
+  }
+}
+```
+
+Ejemplo canónico: `components/dashboard/treasury-card.tsx` (función `handleCreateTreasuryMovement`).
+
+Para forms que NO viven en modal (settings, full-page) seguir usando el patrón `flashToast + redirect`.
+
 ---
 
 ## 🧩 Flujo de desarrollo

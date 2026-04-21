@@ -13,6 +13,8 @@ import {
 } from "@/lib/services/cost-center-service";
 import { flashToast } from "@/lib/toast-server";
 
+export type CostCenterActionResult = { ok: boolean; code: string };
+
 /**
  * Maps the service result code to the feedback-catalog code so `resolveFeedback`
  * can pick up the right text + toast kind. Keeps the service layer agnostic of
@@ -70,19 +72,6 @@ function toFeedbackCode(code: CostCenterActionCode): string {
   }
 }
 
-function redirectToCostCenters(code: CostCenterActionCode): never {
-  const feedbackCode = toFeedbackCode(code);
-  const feedback = resolveFeedback("dashboard", feedbackCode);
-
-  flashToast({
-    kind: feedback.kind,
-    title: feedback.title
-  });
-
-  revalidatePath("/treasury");
-  redirect("/treasury?tab=cost_centers");
-}
-
 /**
  * Extracts the raw input shape expected by the service from a FormData payload.
  * Empty strings are normalized to undefined to let the service's validator
@@ -110,19 +99,25 @@ function rawFromFormData(formData: FormData) {
   };
 }
 
-export async function createCostCenterAction(formData: FormData) {
+export async function createCostCenterAction(
+  formData: FormData
+): Promise<CostCenterActionResult> {
   const result = await createCostCenter(rawFromFormData(formData));
-  redirectToCostCenters(result.code);
+  revalidatePath("/treasury");
+  return { ok: result.ok, code: toFeedbackCode(result.code) };
 }
 
-export async function updateCostCenterAction(formData: FormData) {
+export async function updateCostCenterAction(
+  formData: FormData
+): Promise<CostCenterActionResult> {
   const costCenterId = String(formData.get("cost_center_id") ?? "");
   if (!costCenterId) {
-    redirectToCostCenters("cost_center_not_found");
+    return { ok: false, code: toFeedbackCode("cost_center_not_found") };
   }
 
   const result = await updateCostCenter(costCenterId, rawFromFormData(formData));
-  redirectToCostCenters(result.code);
+  revalidatePath("/treasury");
+  return { ok: result.ok, code: toFeedbackCode(result.code) };
 }
 
 export async function syncMovementCostCenterLinksAction(formData: FormData) {

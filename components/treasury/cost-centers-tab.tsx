@@ -13,7 +13,8 @@
  * `app/(dashboard)/treasury/cost-centers/actions.ts`).
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   COST_CENTER_PERIODICITIES,
@@ -31,11 +32,20 @@ import {
   supportsPeriodicity
 } from "@/lib/domain/cost-center";
 import type { ClubMember } from "@/lib/domain/access";
+import {
+  formatLocalizedAmount,
+  formatLocalizedAmountInputOnBlur,
+  formatLocalizedAmountInputOnFocus,
+  sanitizeLocalizedAmountInput
+} from "@/lib/amounts";
+import { triggerClientFeedback } from "@/lib/client-feedback";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 import { buttonClass } from "@/components/ui/button";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+
+type CostCenterActionResult = { ok: boolean; code: string };
 
 // -------------------------------------------------------------------------
 // Types
@@ -50,8 +60,8 @@ type CostCentersTabProps = {
   badges: Record<string, CostCenterBadge[]>;
   members: ClubMember[];
   availableCurrencies: string[];
-  createCostCenterAction: (formData: FormData) => void | Promise<void>;
-  updateCostCenterAction: (formData: FormData) => void | Promise<void>;
+  createCostCenterAction: (formData: FormData) => Promise<CostCenterActionResult>;
+  updateCostCenterAction: (formData: FormData) => Promise<CostCenterActionResult>;
 };
 
 // -------------------------------------------------------------------------
@@ -419,22 +429,22 @@ function CostCenterForm({
   availableCurrencies,
   members,
   hasLinks,
-  createAction,
-  updateAction,
-  onClose
+  submitAction,
+  onCancel
 }: {
   costCenter: CostCenter | null;
   availableCurrencies: string[];
   members: ClubMember[];
   hasLinks: boolean;
-  createAction: (formData: FormData) => void | Promise<void>;
-  updateAction: (formData: FormData) => void | Promise<void>;
-  onClose: () => void;
+  submitAction: (formData: FormData) => void | Promise<void>;
+  onCancel: () => void;
 }) {
   const isEdit = Boolean(costCenter);
   const [type, setType] = useState<CostCenterType>(costCenter?.type ?? "presupuesto");
+  const [amountInput, setAmountInput] = useState<string>(() =>
+    costCenter?.amount != null ? formatLocalizedAmount(costCenter.amount) : ""
+  );
   const lockedByLinks = isEdit && hasLinks;
-  const action = isEdit ? updateAction : createAction;
 
   const showCurrency = requiresCurrency(type);
   const showAmount = requiresAmount(type);
@@ -446,7 +456,7 @@ function CostCenterForm({
   const legacyResponsibleUserId = costCenter?.responsibleUserId ?? null;
 
   return (
-    <form action={action} className="flex flex-col">
+    <form action={submitAction} className="flex flex-col">
       <PendingFieldset className={cn(FORM_GRID_CLASSNAME, "px-5 py-5")}>
         {isEdit && costCenter && (
           <input type="hidden" name="cost_center_id" value={costCenter.id} />
@@ -573,12 +583,17 @@ function CostCenterForm({
               {REQUIRED_SUFFIX}
             </span>
             <input
-              type="number"
+              type="text"
               name="amount"
-              min={0}
-              step="0.01"
+              inputMode="decimal"
               required
-              defaultValue={costCenter?.amount ?? ""}
+              value={amountInput}
+              onChange={(e) => setAmountInput(sanitizeLocalizedAmountInput(e.target.value))}
+              onBlur={(e) => setAmountInput(formatLocalizedAmountInputOnBlur(e.target.value))}
+              onFocus={(e) => setAmountInput(formatLocalizedAmountInputOnFocus(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === "-") e.preventDefault();
+              }}
               className={cn(CONTROL_CLASSNAME, "tabular-nums")}
             />
           </FormField>
@@ -631,7 +646,7 @@ function CostCenterForm({
       <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
         <button
           type="button"
-          onClick={onClose}
+          onClick={onCancel}
           className={buttonClass({ variant: "secondary", size: "sm" })}
         >
           {tCC.form_cancel_cta}
@@ -665,6 +680,20 @@ export function CostCentersTab({
   const [modalState, setModalState] = useState<
     { mode: "create" } | { mode: "edit"; cc: CostCenter; hasLinks: boolean } | null
   >(null);
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  async function handleSubmit(formData: FormData) {
+    const isEdit = modalState?.mode === "edit";
+    setModalState(null);
+    const result = isEdit
+      ? await updateCostCenterAction(formData)
+      : await createCostCenterAction(formData);
+    triggerClientFeedback("dashboard", result.code);
+    if (result.ok) {
+      startTransition(() => router.refresh());
+    }
+  }
 
   const memberByUserId = useMemo(() => {
     const map = new Map<string, ClubMember>();
@@ -831,9 +860,8 @@ export function CostCentersTab({
             availableCurrencies={availableCurrencies}
             members={members}
             hasLinks={modalState.mode === "edit" ? modalState.hasLinks : false}
-            createAction={createCostCenterAction}
-            updateAction={updateCostCenterAction}
-            onClose={() => setModalState(null)}
+            submitAction={handleSubmit}
+            onCancel={() => setModalState(null)}
           />
         )}
       </Modal>
