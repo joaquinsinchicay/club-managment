@@ -7,3 +7,5 @@ npm-debug.log*
 supabase/.temp
 .vercel
 .env*.local
+tsconfig.tsbuildinfo
+.claude/
