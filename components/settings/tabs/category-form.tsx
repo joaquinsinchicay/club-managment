@@ -196,37 +196,33 @@ export function CategoryForm({
           </select>
         </FormField>
 
-        <fieldset className="grid gap-3 sm:col-span-2">
-          <legend className={FIELD_LABEL_CLASSNAME}>
-            {texts.settings.club.treasury.account_visibility_label}
-            {REQUIRED_SUFFIX}
-          </legend>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
-              <label
-                key={`category-visibility-${visibility}`}
-                className="flex min-h-11 items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground"
-              >
-                <input
-                  type="checkbox"
-                  name="visibility"
-                  value={visibility}
-                  checked={selectedVisibility.includes(visibility)}
-                  onChange={(event) => handleVisibilityToggle(visibility, event.target.checked)}
-                  className="size-4 rounded border-border"
-                />
-                <span className="font-medium">
-                  {texts.settings.club.treasury.account_visibility_options[visibility]}
-                </span>
-              </label>
-            ))}
-          </div>
+        <div className="grid gap-3 sm:col-span-2">
+          {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
+            <label
+              key={`category-visibility-${visibility}`}
+              className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
+            >
+              <input
+                type="checkbox"
+                name="visibility"
+                value={visibility}
+                checked={selectedVisibility.includes(visibility)}
+                onChange={(event) => handleVisibilityToggle(visibility, event.target.checked)}
+                className="size-4 rounded border-border"
+              />
+              <span className="font-medium">
+                {visibility === "secretaria"
+                  ? texts.settings.club.treasury.visibility_secretaria_checkbox
+                  : texts.settings.club.treasury.visibility_tesoreria_checkbox}
+              </span>
+            </label>
+          ))}
           {visibilityTouched && selectedVisibility.length === 0 ? (
             <p aria-live="assertive" className="text-sm text-destructive">
               {texts.settings.club.treasury.feedback.account_visibility_required}
             </p>
           ) : null}
-        </fieldset>
+        </div>
       </PendingFieldset>
 
       <div className={MODAL_FOOTER_CLASSNAME}>

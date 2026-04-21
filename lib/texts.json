@@ -1010,6 +1010,7 @@
         "edit_account_description": "Actualiza los datos de la cuenta.",
         "cancel_cta": "Cancelar",
         "visibility_secretaria_checkbox": "Disponible para Secretaria",
+        "visibility_tesoreria_checkbox": "Disponible para Tesoreria",
         "account_type_placeholder": "Selecciona un tipo",
         "receipt_validation_type_label": "Tipo de validacion",
         "receipt_min_label": "Proximo recibo",
