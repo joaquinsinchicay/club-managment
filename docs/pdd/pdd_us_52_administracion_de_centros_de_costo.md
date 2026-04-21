@@ -98,11 +98,19 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - La periodicidad es **metadata descriptiva** en esta US (no genera CC hijos).
 
 ### Campos obligatorios base
-- `Nombre`, `Tipo`, `Estado`, `Fecha Inicio`, `Moneda`, `Responsable` son obligatorios siempre.
+- `Nombre`, `Tipo`, `Estado`, `Fecha Inicio` son obligatorios siempre.
 
-### Monto obligatorio según tipo
-- Obligatorio para `deuda`, `presupuesto`, `publicidad`, `sponsor`.
-- Opcional para `evento` y `jornada`.
+### Monto visible y obligatorio según tipo
+- Visible y obligatorio para `deuda`, `presupuesto`, `publicidad`, `sponsor`.
+- Oculto y opcional para `evento` y `jornada` (persistido como `null`).
+
+### Moneda visible y obligatoria según tipo
+- Visible y obligatoria para `deuda`, `presupuesto`, `publicidad`, `sponsor`.
+- Oculta y opcional para `evento` y `jornada`. En esos casos el sistema persiste por default `ARS` (la columna `currency_code` en DB es `NOT NULL`).
+
+### Responsable visible y obligatorio según tipo
+- Visible y obligatorio para `deuda`, `presupuesto`.
+- Oculto y opcional para `evento`, `jornada`, `publicidad`, `sponsor` (persistido como `null` en alta; en edición se preserva el valor previo si existía).
 
 ### Periodicidad visible según tipo
 - Campo visible solo cuando el tipo es `presupuesto`, `sponsor` o `publicidad`.

@@ -58,6 +58,28 @@ export const COST_CENTER_TYPES_SUPPORTING_PERIODICITY: readonly CostCenterType[]
   "sponsor"
 ];
 
+/**
+ * Types where `currency_code` must be elicited from the user and is
+ * mandatory in the form. For the rest the field is hidden and the system
+ * persists a default currency (resolved by the caller).
+ */
+export const COST_CENTER_TYPES_REQUIRING_CURRENCY: readonly CostCenterType[] = [
+  "deuda",
+  "presupuesto",
+  "publicidad",
+  "sponsor"
+];
+
+/**
+ * Types where `responsible_user_id` is visible and mandatory. For the rest
+ * the field is hidden and the value is left null on create (or preserved on
+ * edit if a previous value existed).
+ */
+export const COST_CENTER_TYPES_REQUIRING_RESPONSIBLE: readonly CostCenterType[] = [
+  "deuda",
+  "presupuesto"
+];
+
 export type CostCenter = {
   id: string;
   clubId: string;
@@ -141,6 +163,14 @@ export function requiresAmount(type: CostCenterType): boolean {
 
 export function supportsPeriodicity(type: CostCenterType): boolean {
   return COST_CENTER_TYPES_SUPPORTING_PERIODICITY.includes(type);
+}
+
+export function requiresCurrency(type: CostCenterType): boolean {
+  return COST_CENTER_TYPES_REQUIRING_CURRENCY.includes(type);
+}
+
+export function requiresResponsible(type: CostCenterType): boolean {
+  return COST_CENTER_TYPES_REQUIRING_RESPONSIBLE.includes(type);
 }
 
 /**

@@ -31,6 +31,8 @@ import {
   isCostCenterStatus,
   isCostCenterType,
   requiresAmount,
+  requiresCurrency,
+  requiresResponsible,
   resolveEndDateOnClose,
   supportsPeriodicity
 } from "@/lib/domain/cost-center";
@@ -179,11 +181,13 @@ type ValidatedInput = {
   status: CostCenterStatus;
   startDate: string;
   endDate: string | null;
-  currencyCode: string;
+  currencyCode: string | null;
   amount: number | null;
   periodicity: CostCenterPeriodicity | null;
   responsibleUserId: string | null;
 };
+
+const DEFAULT_CURRENCY_CODE = "ARS";
 
 type RawInput = {
   name?: unknown;
@@ -246,8 +250,12 @@ function validateInput(
   }
   if (endDate && endDate < startDate) return { ok: false, code: "invalid_date_range" };
 
-  if (!currencyCode) return { ok: false, code: "currency_required" };
-  if (!responsibleUserId) return { ok: false, code: "responsible_required" };
+  if (requiresCurrency(type) && !currencyCode) {
+    return { ok: false, code: "currency_required" };
+  }
+  if (requiresResponsible(type) && !responsibleUserId) {
+    return { ok: false, code: "responsible_required" };
+  }
 
   if (requiresAmount(type) && amount === null) return { ok: false, code: "amount_required" };
 
@@ -423,7 +431,7 @@ export async function createCostCenter(
       status: input.status,
       startDate: input.startDate,
       endDate: input.endDate,
-      currencyCode: input.currencyCode,
+      currencyCode: input.currencyCode ?? DEFAULT_CURRENCY_CODE,
       amount: input.amount,
       periodicity: input.periodicity,
       responsibleUserId: input.responsibleUserId,
@@ -473,10 +481,18 @@ export async function updateCostCenter(
     });
     if (duplicate) return err<{ costCenter: CostCenter }>("duplicate_name");
 
+    // Preserve legacy values for fields that the form may omit when the new
+    // type does not require them (currency, responsible). This avoids losing
+    // data on tipo transitions like Sponsor → Jornada.
+    const effectiveCurrencyCode =
+      input.currencyCode ?? existing.currencyCode ?? DEFAULT_CURRENCY_CODE;
+    const effectiveResponsibleUserId =
+      input.responsibleUserId ?? existing.responsibleUserId;
+
     const hasLinks = await costCenterRepository.hasLinkedMovements(costCenterId);
     if (hasLinks) {
       if (input.type !== existing.type) return err<{ costCenter: CostCenter }>("locked_field_modified");
-      if (input.currencyCode !== existing.currencyCode)
+      if (effectiveCurrencyCode !== existing.currencyCode)
         return err<{ costCenter: CostCenter }>("locked_field_modified");
       if (input.startDate !== existing.startDate)
         return err<{ costCenter: CostCenter }>("locked_field_modified");
@@ -504,10 +520,10 @@ export async function updateCostCenter(
         status: input.status,
         startDate: input.startDate,
         endDate: effectiveEndDate,
-        currencyCode: input.currencyCode,
+        currencyCode: effectiveCurrencyCode,
         amount: input.amount,
         periodicity: input.periodicity,
-        responsibleUserId: input.responsibleUserId
+        responsibleUserId: effectiveResponsibleUserId
       }
     });
     if (!updated) return err<{ costCenter: CostCenter }>("cost_center_not_found");

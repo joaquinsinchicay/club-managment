@@ -525,6 +525,7 @@
         "form_responsible_label": "Responsable",
         "form_disabled_hint": "No editable: el CC tiene movimientos enlazados.",
         "form_submit_cta": "Guardar",
+        "form_cancel_cta": "Cancelar",
         "type_debt": "Deuda",
         "type_event": "Evento",
         "type_workday": "Jornada",

@@ -26,6 +26,8 @@ import {
   type CostCenterStatus,
   type CostCenterType,
   requiresAmount,
+  requiresCurrency,
+  requiresResponsible,
   supportsPeriodicity
 } from "@/lib/domain/cost-center";
 import type { ClubMember } from "@/lib/domain/access";
@@ -385,6 +387,33 @@ function CostCenterCard({
 // Form (create/edit)
 // -------------------------------------------------------------------------
 
+// -------------------------------------------------------------------------
+// Form tokens — aligned with treasury-operation-forms.tsx for visual parity.
+// -------------------------------------------------------------------------
+
+const FORM_GRID_CLASSNAME = "grid gap-4 sm:grid-cols-2";
+const FIELD_CLASSNAME = "grid gap-2 text-sm text-foreground";
+const FULL_WIDTH_FIELD_CLASSNAME = "sm:col-span-2";
+const CONTROL_CLASSNAME =
+  "min-h-11 w-full rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10";
+const CONTROL_DISABLED_CLASSNAME = "disabled:opacity-60";
+const FIELD_LABEL_CLASSNAME = "text-xs font-semibold text-foreground";
+const REQUIRED_SUFFIX = " *";
+
+function FormField({
+  children,
+  fullWidth = false
+}: {
+  children: React.ReactNode;
+  fullWidth?: boolean;
+}) {
+  return (
+    <label className={cn(FIELD_CLASSNAME, fullWidth && FULL_WIDTH_FIELD_CLASSNAME)}>
+      {children}
+    </label>
+  );
+}
+
 function CostCenterForm({
   costCenter,
   availableCurrencies,
@@ -407,45 +436,60 @@ function CostCenterForm({
   const lockedByLinks = isEdit && hasLinks;
   const action = isEdit ? updateAction : createAction;
 
+  const showCurrency = requiresCurrency(type);
+  const showAmount = requiresAmount(type);
+  const showResponsible = requiresResponsible(type);
+  const showPeriodicity = supportsPeriodicity(type);
+
+  // Preserve legacy values when the form omits the field for the new type.
+  const legacyCurrencyCode = costCenter?.currencyCode ?? null;
+  const legacyResponsibleUserId = costCenter?.responsibleUserId ?? null;
+
   return (
     <form action={action} className="flex flex-col">
-      <PendingFieldset className="grid grid-cols-1 gap-4 px-5 py-5 sm:grid-cols-2">
+      <PendingFieldset className={cn(FORM_GRID_CLASSNAME, "px-5 py-5")}>
         {isEdit && costCenter && (
           <input type="hidden" name="cost_center_id" value={costCenter.id} />
         )}
 
-        <label className="sm:col-span-2">
-          <span className="text-xs font-semibold text-foreground">{tCC.form_name_label}</span>
+        <FormField fullWidth>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {tCC.form_name_label}
+            {REQUIRED_SUFFIX}
+          </span>
           <input
             type="text"
             name="name"
             required
             defaultValue={costCenter?.name ?? ""}
             placeholder={tCC.form_name_placeholder}
-            className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
+            className={CONTROL_CLASSNAME}
           />
-        </label>
+        </FormField>
 
-        <label className="sm:col-span-2">
-          <span className="text-xs font-semibold text-foreground">{tCC.form_description_label}</span>
+        <FormField fullWidth>
+          <span className={FIELD_LABEL_CLASSNAME}>{tCC.form_description_label}</span>
           <textarea
             name="description"
             defaultValue={costCenter?.description ?? ""}
             rows={2}
             placeholder={tCC.form_description_placeholder}
-            className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
+            className={CONTROL_CLASSNAME}
           />
-        </label>
+        </FormField>
 
-        <label>
-          <span className="text-xs font-semibold text-foreground">{tCC.form_type_label}</span>
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {tCC.form_type_label}
+            {REQUIRED_SUFFIX}
+          </span>
           <select
             name="type"
             required
             defaultValue={costCenter?.type ?? "presupuesto"}
             disabled={lockedByLinks}
             onChange={(e) => setType(e.target.value as CostCenterType)}
-            className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
+            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
             title={lockedByLinks ? tCC.form_disabled_hint : undefined}
           >
             {COST_CENTER_TYPES.map((t) => (
@@ -454,14 +498,14 @@ function CostCenterForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label>
-          <span className="text-xs font-semibold text-foreground">{tCC.form_status_label}</span>
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>{tCC.form_status_label}</span>
           <select
             name="status"
             defaultValue={costCenter?.status ?? "activo"}
-            className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
+            className={CONTROL_CLASSNAME}
           >
             {COST_CENTER_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -469,74 +513,84 @@ function CostCenterForm({
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label>
-          <span className="text-xs font-semibold text-foreground">{tCC.form_start_date_label}</span>
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>
+            {tCC.form_start_date_label}
+            {REQUIRED_SUFFIX}
+          </span>
           <input
             type="date"
             name="start_date"
             required
             defaultValue={costCenter?.startDate ?? ""}
             disabled={lockedByLinks}
-            className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
+            className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
             title={lockedByLinks ? tCC.form_disabled_hint : undefined}
           />
-        </label>
+        </FormField>
 
-        <label>
-          <span className="text-xs font-semibold text-foreground">{tCC.form_end_date_label}</span>
+        <FormField>
+          <span className={FIELD_LABEL_CLASSNAME}>{tCC.form_end_date_label}</span>
           <input
             type="date"
             name="end_date"
             defaultValue={costCenter?.endDate ?? ""}
-            className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
+            className={CONTROL_CLASSNAME}
           />
-        </label>
+        </FormField>
 
-        <label>
-          <span className="text-xs font-semibold text-foreground">{tCC.form_currency_label}</span>
-          <select
-            name="currency_code"
-            required
-            defaultValue={costCenter?.currencyCode ?? availableCurrencies[0] ?? ""}
-            disabled={lockedByLinks}
-            className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
-            title={lockedByLinks ? tCC.form_disabled_hint : undefined}
-          >
-            {availableCurrencies.map((code) => (
-              <option key={code} value={code}>
-                {code}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          <span className="text-xs font-semibold text-foreground">
-            {tCC.form_amount_label}
-            {requiresAmount(type) ? " *" : ""}
-          </span>
-          <input
-            type="number"
-            name="amount"
-            min={0}
-            step="0.01"
-            required={requiresAmount(type)}
-            defaultValue={costCenter?.amount ?? ""}
-            className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm tabular-nums"
-          />
-        </label>
-
-        {supportsPeriodicity(type) && (
-          <label>
-            <span className="text-xs font-semibold text-foreground">
-              {tCC.form_periodicity_label}
+        {showCurrency ? (
+          <FormField>
+            <span className={FIELD_LABEL_CLASSNAME}>
+              {tCC.form_currency_label}
+              {REQUIRED_SUFFIX}
             </span>
+            <select
+              name="currency_code"
+              required
+              defaultValue={costCenter?.currencyCode ?? availableCurrencies[0] ?? ""}
+              disabled={lockedByLinks}
+              className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
+              title={lockedByLinks ? tCC.form_disabled_hint : undefined}
+            >
+              {availableCurrencies.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        ) : legacyCurrencyCode ? (
+          <input type="hidden" name="currency_code" value={legacyCurrencyCode} />
+        ) : null}
+
+        {showAmount ? (
+          <FormField>
+            <span className={FIELD_LABEL_CLASSNAME}>
+              {tCC.form_amount_label}
+              {REQUIRED_SUFFIX}
+            </span>
+            <input
+              type="number"
+              name="amount"
+              min={0}
+              step="0.01"
+              required
+              defaultValue={costCenter?.amount ?? ""}
+              className={cn(CONTROL_CLASSNAME, "tabular-nums")}
+            />
+          </FormField>
+        ) : null}
+
+        {showPeriodicity && (
+          <FormField>
+            <span className={FIELD_LABEL_CLASSNAME}>{tCC.form_periodicity_label}</span>
             <select
               name="periodicity"
               defaultValue={costCenter?.periodicity ?? "unico"}
-              className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
+              className={CONTROL_CLASSNAME}
             >
               {COST_CENTER_PERIODICITIES.map((p) => (
                 <option key={p} value={p}>
@@ -544,27 +598,34 @@ function CostCenterForm({
                 </option>
               ))}
             </select>
-          </label>
+          </FormField>
         )}
 
-        <label className="sm:col-span-2">
-          <span className="text-xs font-semibold text-foreground">{tCC.form_responsible_label}</span>
-          <select
-            name="responsible_user_id"
-            required
-            defaultValue={costCenter?.responsibleUserId ?? ""}
-            className="mt-1 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
-          >
-            <option value="" disabled>
-              —
-            </option>
-            {members.map((m) => (
-              <option key={m.userId} value={m.userId}>
-                {m.fullName}
+        {showResponsible ? (
+          <FormField fullWidth>
+            <span className={FIELD_LABEL_CLASSNAME}>
+              {tCC.form_responsible_label}
+              {REQUIRED_SUFFIX}
+            </span>
+            <select
+              name="responsible_user_id"
+              required
+              defaultValue={costCenter?.responsibleUserId ?? ""}
+              className={CONTROL_CLASSNAME}
+            >
+              <option value="" disabled>
+                —
               </option>
-            ))}
-          </select>
-        </label>
+              {members.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.fullName}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        ) : legacyResponsibleUserId ? (
+          <input type="hidden" name="responsible_user_id" value={legacyResponsibleUserId} />
+        ) : null}
       </PendingFieldset>
 
       <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
@@ -573,7 +634,7 @@ function CostCenterForm({
           onClick={onClose}
           className={buttonClass({ variant: "secondary", size: "sm" })}
         >
-          Cancelar
+          {tCC.form_cancel_cta}
         </button>
         <PendingSubmitButton
           className={buttonClass({ variant: "primary", size: "sm" })}
@@ -762,6 +823,7 @@ export function CostCentersTab({
         open={modalState !== null}
         onClose={() => setModalState(null)}
         title={modalState?.mode === "edit" ? tCC.form_edit_title : tCC.form_create_title}
+        hideCloseButton
       >
         {modalState && (
           <CostCenterForm
