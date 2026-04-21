@@ -6,16 +6,19 @@
  * (`lib/services/cost-center-service.ts`) can orchestrate business logic
  * without touching Supabase directly.
  *
- *  - Reads use the server client and rely on RLS + `club_id` filter.
- *  - Writes go through the admin client following the same pattern used by
- *    the rest of the treasury settings module.
+ *  - Reads and writes both use the admin client. Authorization is enforced
+ *    by the service layer (`guardRead`/`guardMutate`) and every query
+ *    explicitly filters by `club_id`. We bypass RLS because `app.current_club_id`
+ *    is not set from the JS-side server client (only RPC functions seed it),
+ *    which would otherwise make `current_club_id()` return NULL and the
+ *    RLS policy `club_id = current_club_id()` would always fail. Same pattern
+ *    as `access-repository` for `treasury_accounts`.
  */
 
 import {
   MissingSupabaseAdminConfigError,
   createRequiredAdminSupabaseClient
 } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type {
   CostCenter,
   CostCenterAggregates,
@@ -243,7 +246,7 @@ export const costCenterRepository = {
     clubId: string,
     filters: ListCostCentersFilters = {}
   ): Promise<CostCenter[]> {
-    const supabase = createServerSupabaseClient();
+    const supabase = requireAdminClient("list_cost_centers_for_club", { clubId });
     let query = supabase
       .from("cost_centers")
       .select(COST_CENTER_COLUMNS)
@@ -275,7 +278,7 @@ export const costCenterRepository = {
   },
 
   async getById(clubId: string, costCenterId: string): Promise<CostCenter | null> {
-    const supabase = createServerSupabaseClient();
+    const supabase = requireAdminClient("get_cost_center_by_id", { clubId, costCenterId });
     const { data, error } = await supabase
       .from("cost_centers")
       .select(COST_CENTER_COLUMNS)
@@ -298,7 +301,9 @@ export const costCenterRepository = {
     name: string;
     excludingCostCenterId?: string | null;
   }): Promise<boolean> {
-    const supabase = createServerSupabaseClient();
+    const supabase = requireAdminClient("exists_cost_center_by_name", {
+      clubId: params.clubId
+    });
     const normalized = params.name.trim().toLocaleLowerCase("es-AR");
 
     let query = supabase
@@ -323,7 +328,7 @@ export const costCenterRepository = {
   },
 
   async hasLinkedMovements(costCenterId: string): Promise<boolean> {
-    const supabase = createServerSupabaseClient();
+    const supabase = requireAdminClient("has_linked_movements", { costCenterId });
     const { count, error } = await supabase
       .from("treasury_movement_cost_centers")
       .select("cost_center_id", { head: true, count: "exact" })
@@ -414,7 +419,7 @@ export const costCenterRepository = {
   // -----------------------------------------------------------------------
 
   async getAggregatesForClub(clubId: string): Promise<Map<string, CostCenterAggregates>> {
-    const supabase = createServerSupabaseClient();
+    const supabase = requireAdminClient("get_aggregates_for_club", { clubId });
 
     // One row per (movement, cost_center) with the movement amount and type.
     const { data, error } = await supabase
@@ -478,7 +483,7 @@ export const costCenterRepository = {
     clubId: string,
     movementId: string
   ): Promise<CostCenterMovementLink[]> {
-    const supabase = createServerSupabaseClient();
+    const supabase = requireAdminClient("list_links_for_movement", { clubId, movementId });
     const { data, error } = await supabase
       .from("treasury_movement_cost_centers")
       .select(
@@ -640,7 +645,10 @@ export const costCenterRepository = {
     currencyCode: string;
     amount: number;
   }>> {
-    const supabase = createServerSupabaseClient();
+    const supabase = requireAdminClient("list_movements_for_cost_center", {
+      clubId,
+      costCenterId
+    });
 
     // Ownership check to avoid leaking data across clubs.
     const { data: owner, error: ownerError } = await supabase
@@ -742,7 +750,10 @@ export const costCenterRepository = {
     clubId: string,
     costCenterId: string
   ): Promise<string[]> {
-    const supabase = createServerSupabaseClient();
+    const supabase = requireAdminClient("list_movement_ids_for_cost_center", {
+      clubId,
+      costCenterId
+    });
 
     // Validate ownership first to avoid leaking IDs from other clubs.
     const { data: owner, error: ownerError } = await supabase
@@ -818,7 +829,10 @@ export const costCenterRepository = {
     clubId: string,
     costCenterId: string
   ): Promise<CostCenterAuditEntry[]> {
-    const supabase = createServerSupabaseClient();
+    const supabase = requireAdminClient("list_audit_for_cost_center", {
+      clubId,
+      costCenterId
+    });
 
     // Validate ownership first (RLS would enforce this, but double-check).
     const { data: owner, error: ownerError } = await supabase
