@@ -2,6 +2,14 @@
 
 import { useMemo, useState } from "react";
 
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHeader,
+  DataTableHeadCell,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FormBanner,
@@ -22,7 +30,6 @@ import {
 } from "@/lib/amounts";
 import type { DailyCashSessionValidation } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
-import { cn } from "@/lib/utils";
 
 type OpenSessionModalFormProps = {
   validation: DailyCashSessionValidation;
@@ -92,42 +99,42 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
           <FormSection required>
             {texts.dashboard.treasury.open_session_balances_label}
           </FormSection>
-          <div className="overflow-hidden rounded-card border border-border">
-            <div className="grid grid-cols-[1fr_120px_160px] gap-3 border-b border-border bg-secondary/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              <span>{texts.dashboard.treasury.open_session_table_account}</span>
-              <span className="text-right">{texts.dashboard.treasury.open_session_table_prev}</span>
-              <span className="text-right">{texts.dashboard.treasury.open_session_table_opening}</span>
-            </div>
-            {drafts.map((draft, index) => (
-              <div
-                key={`${draft.accountId}-${draft.currencyCode}`}
-                className={cn(
-                  "grid grid-cols-[1fr_120px_160px] items-center gap-3 px-4 py-3",
-                  index < drafts.length - 1 && "border-b border-border"
-                )}
-              >
-                <input type="hidden" name="account_id" value={draft.accountId} />
-                <input type="hidden" name="currency_code" value={draft.currencyCode} />
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{draft.accountName}</p>
-                  <p className="text-xs text-muted-foreground">{draft.currencyCode}</p>
-                </div>
-                <p className="text-right text-sm tabular-nums text-muted-foreground">
-                  $ {formatLocalizedAmount(draft.previousBalance)}
-                </p>
-                <FormInput
-                  type="text"
-                  name="declared_balance"
-                  inputMode="decimal"
-                  value={draft.declaredBalance}
-                  onChange={(e) => updateDraft(index, sanitizeLocalizedAmountInput(e.target.value))}
-                  onBlur={(e) => updateDraft(index, formatLocalizedAmountInputOnBlur(e.target.value))}
-                  onFocus={(e) => updateDraft(index, formatLocalizedAmountInputOnFocus(e.target.value))}
-                  className="text-right tabular-nums"
-                />
-              </div>
-            ))}
-          </div>
+          <DataTable density="compact" gridColumns="1fr 120px 160px">
+            <DataTableHeader>
+              <DataTableHeadCell>{texts.dashboard.treasury.open_session_table_account}</DataTableHeadCell>
+              <DataTableHeadCell align="right">{texts.dashboard.treasury.open_session_table_prev}</DataTableHeadCell>
+              <DataTableHeadCell align="right">{texts.dashboard.treasury.open_session_table_opening}</DataTableHeadCell>
+            </DataTableHeader>
+            <DataTableBody>
+              {drafts.map((draft, index) => (
+                <DataTableRow key={`${draft.accountId}-${draft.currencyCode}`} density="compact">
+                  <input type="hidden" name="account_id" value={draft.accountId} />
+                  <input type="hidden" name="currency_code" value={draft.currencyCode} />
+                  <DataTableCell>
+                    <p className="text-sm font-semibold text-foreground">{draft.accountName}</p>
+                    <p className="text-xs text-muted-foreground">{draft.currencyCode}</p>
+                  </DataTableCell>
+                  <DataTableCell align="right">
+                    <p className="text-sm tabular-nums text-muted-foreground">
+                      $ {formatLocalizedAmount(draft.previousBalance)}
+                    </p>
+                  </DataTableCell>
+                  <DataTableCell align="right">
+                    <FormInput
+                      type="text"
+                      name="declared_balance"
+                      inputMode="decimal"
+                      value={draft.declaredBalance}
+                      onChange={(e) => updateDraft(index, sanitizeLocalizedAmountInput(e.target.value))}
+                      onBlur={(e) => updateDraft(index, formatLocalizedAmountInputOnBlur(e.target.value))}
+                      onFocus={(e) => updateDraft(index, formatLocalizedAmountInputOnFocus(e.target.value))}
+                      className="text-right tabular-nums"
+                    />
+                  </DataTableCell>
+                </DataTableRow>
+              ))}
+            </DataTableBody>
+          </DataTable>
           <FormHelpText>{texts.dashboard.treasury.open_session_table_helper}</FormHelpText>
         </div>
 

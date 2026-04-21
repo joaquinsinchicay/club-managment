@@ -7,6 +7,15 @@ import {
   ConsolidationTransferEditForm,
   SecretariaMovementEditForm
 } from "@/components/dashboard/treasury-operation-forms";
+import {
+  DataTable,
+  DataTableActions,
+  DataTableAmount,
+  DataTableBody,
+  DataTableChip,
+  DataTableEmpty,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
@@ -296,7 +305,7 @@ export function TreasuryConciliacionTab({
               <PendingSubmitButton
                 idleLabel={texts.dashboard.treasury_role.conciliacion_approve_all_cta}
                 pendingLabel={texts.dashboard.consolidation.execute_loading}
-                className="inline-flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-slate-50"
+                className="inline-flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary/40"
               />
             </form>
           ) : null}
@@ -348,7 +357,7 @@ export function TreasuryConciliacionTab({
                 "inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 text-sm font-semibold transition",
                 selectedAccountId === null
                   ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-border bg-card text-foreground hover:bg-slate-50"
+                  : "border-border bg-card text-foreground hover:bg-secondary/40"
               )}
             >
               {texts.dashboard.treasury_role.conciliacion_filter_all_accounts}
@@ -362,7 +371,7 @@ export function TreasuryConciliacionTab({
                   "inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 text-sm font-semibold transition",
                   selectedAccountId === account.id
                     ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-border bg-card text-foreground hover:bg-slate-50"
+                    : "border-border bg-card text-foreground hover:bg-secondary/40"
                 )}
               >
                 {account.name}
@@ -383,129 +392,117 @@ export function TreasuryConciliacionTab({
               </p>
             </div>
           ) : visibleMovements.length === 0 ? (
-            <div className="rounded-dialog border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-              {texts.dashboard.treasury_role.conciliacion_empty_pending}
-            </div>
+            <DataTableEmpty title={texts.dashboard.treasury_role.conciliacion_empty_pending} />
           ) : (
-            <ul className="space-y-2.5">
-              {visibleMovements.map((movement) => {
-                return (
-                  <li
-                    key={movement.movementId}
-                    className="group rounded-dialog border border-border bg-card p-3.5 transition hover:border-slate-300"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex min-w-0 flex-1 items-start gap-3">
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            "mt-1.5 size-1.5 shrink-0 rounded-full",
-                            movement.movementType === "ingreso" ? "bg-success" : "bg-destructive"
-                          )}
-                        />
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <p className="text-small font-semibold leading-5 text-foreground">
-                            {movement.concept}
+            <DataTable density="compact">
+              <DataTableBody>
+                {visibleMovements.map((movement) => {
+                  const isPending = movement.status === "pending_consolidation";
+                  return (
+                    <DataTableRow
+                      key={movement.movementId}
+                      as="article"
+                      density="compact"
+                      useGrid={false}
+                      hoverReveal={isPending}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <span
+                            aria-hidden="true"
+                            className={cn(
+                              "mt-1.5 size-1.5 shrink-0 rounded-full",
+                              movement.movementType === "ingreso" ? "bg-ds-green" : "bg-ds-red"
+                            )}
+                          />
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <p className="text-small font-semibold leading-5 text-foreground">
+                              {movement.concept}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              <DataTableChip>{movement.accountName}</DataTableChip>
+                              {movement.categoryName ? (
+                                <DataTableChip>{movement.categoryName}</DataTableChip>
+                              ) : null}
+                              {movement.activityName ? (
+                                <DataTableChip>{movement.activityName}</DataTableChip>
+                              ) : null}
+                              {movement.calendarEventTitle ? (
+                                <DataTableChip>{movement.calendarEventTitle}</DataTableChip>
+                              ) : null}
+                            </div>
+                            <p className="text-eyebrow text-muted-foreground">
+                              {[
+                                movement.movementDisplayId,
+                                movement.createdByUserName,
+                                movement.receiptNumber
+                                  ? `${texts.dashboard.treasury.detail_receipt_label} ${movement.receiptNumber}`
+                                  : null,
+                                movement.transferReference
+                                  ? `${texts.dashboard.treasury.detail_transfer_label} ${movement.transferReference.slice(-6)}`
+                                  : null,
+                                movement.fxOperationReference
+                                  ? `${texts.dashboard.treasury.detail_fx_label} ${movement.fxOperationReference.slice(-6)}`
+                                  : null
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1 sm:min-w-[140px]">
+                          <DataTableAmount
+                            type={movement.movementType}
+                            currencyCode="ARS"
+                            amount={movement.amount}
+                            size="inline"
+                            className="text-base leading-5"
+                          />
+                          <p className="text-eyebrow text-muted-foreground">
+                            {formatMovementDateTime(movement.createdAt)}
                           </p>
-                          <div className="flex flex-wrap gap-1.5">
-                            <span className="inline-flex items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold text-slate-600">
-                              {movement.accountName}
-                            </span>
-                            {movement.categoryName ? (
-                              <span className="inline-flex items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold text-slate-600">
-                                {movement.categoryName}
-                              </span>
-                            ) : null}
-                            {movement.activityName ? (
-                              <span className="inline-flex items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold text-slate-600">
-                                {movement.activityName}
-                              </span>
-                            ) : null}
-                            {movement.calendarEventTitle ? (
-                              <span className="inline-flex items-center rounded-chip bg-slate-100 px-2 py-0.5 text-eyebrow font-semibold text-slate-600">
-                                {movement.calendarEventTitle}
-                              </span>
+                          <div className="flex flex-wrap items-center justify-end gap-1.5">
+                            <DataTableChip tone={movement.status === "integrated" ? "neutral" : "warning"}>
+                              {movement.status === "integrated"
+                                ? texts.dashboard.treasury_role.conciliacion_status_integrated
+                                : texts.dashboard.treasury_role.conciliacion_status_pending}
+                            </DataTableChip>
+                            {!movement.isValid ? (
+                              <StatusBadge
+                                label={texts.dashboard.treasury_role.conciliacion_status_invalid}
+                                tone="danger"
+                              />
                             ) : null}
                           </div>
-                          <p className="text-eyebrow text-slate-500">
-                            {[
-                              movement.movementDisplayId,
-                              movement.createdByUserName,
-                              movement.receiptNumber
-                                ? `${texts.dashboard.treasury.detail_receipt_label} ${movement.receiptNumber}`
-                                : null,
-                              movement.transferReference
-                                ? `${texts.dashboard.treasury.detail_transfer_label} ${movement.transferReference.slice(-6)}`
-                                : null,
-                              movement.fxOperationReference
-                                ? `${texts.dashboard.treasury.detail_fx_label} ${movement.fxOperationReference.slice(-6)}`
-                                : null
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </p>
                         </div>
-                      </div>
 
-                      <div className="flex flex-col items-end gap-1 sm:min-w-[140px]">
-                        <p
-                          className={cn(
-                            "text-base font-semibold leading-5 tracking-tight tabular-nums",
-                            movement.movementType === "ingreso" ? "text-success" : "text-destructive"
-                          )}
-                        >
-                          {movement.movementType === "egreso" ? "-" : "+"}$ {formatLocalizedAmount(movement.amount)}
-                        </p>
-                        <p className="text-eyebrow text-slate-500">
-                          {formatMovementDateTime(movement.createdAt)}
-                        </p>
-                        <div className="flex flex-wrap items-center justify-end gap-1.5">
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-chip px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.06em]",
-                              movement.status === "integrated"
-                                ? "bg-slate-100 text-slate-600"
-                                : "bg-amber-100 text-amber-700"
-                            )}
-                          >
-                            {movement.status === "integrated"
-                              ? texts.dashboard.treasury_role.conciliacion_status_integrated
-                              : texts.dashboard.treasury_role.conciliacion_status_pending}
-                          </span>
-                          {!movement.isValid ? (
-                            <StatusBadge
-                              label={texts.dashboard.treasury_role.conciliacion_status_invalid}
-                              tone="danger"
+                        {isPending ? (
+                          <DataTableActions>
+                            <EditIconButton
+                              label={texts.dashboard.treasury_role.conciliacion_edit_cta}
+                              onClick={() => {
+                                const editableTransfer = buildEditableTransfer(movement, [
+                                  ...dashboard.pendingMovements,
+                                  ...dashboard.integratedMovements
+                                ]);
+                                if (editableTransfer) {
+                                  setEditingMovement(null);
+                                  setEditingTransfer(editableTransfer);
+                                  return;
+                                }
+                                setEditingTransfer(null);
+                                setEditingMovement(movement);
+                              }}
                             />
-                          ) : null}
-                        </div>
+                          </DataTableActions>
+                        ) : null}
                       </div>
-
-                      {movement.status === "pending_consolidation" ? (
-                        <div className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-                          <EditIconButton
-                            label={texts.dashboard.treasury_role.conciliacion_edit_cta}
-                            onClick={() => {
-                              const editableTransfer = buildEditableTransfer(movement, [
-                                ...dashboard.pendingMovements,
-                                ...dashboard.integratedMovements
-                              ]);
-                              if (editableTransfer) {
-                                setEditingMovement(null);
-                                setEditingTransfer(editableTransfer);
-                                return;
-                              }
-                              setEditingTransfer(null);
-                              setEditingMovement(movement);
-                            }}
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                    </DataTableRow>
+                  );
+                })}
+              </DataTableBody>
+            </DataTable>
           )}
         </div>
       </section>

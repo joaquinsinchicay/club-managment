@@ -43,6 +43,13 @@ import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 import { buttonClass } from "@/components/ui/button";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableChip,
+  DataTableEmpty,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FORM_GRID_CLASSNAME,
@@ -305,100 +312,100 @@ function CostCenterCard({
     cc.type === "sponsor" || cc.type === "publicidad" ? aggregate.totalIngreso : aggregate.totalEgreso;
 
   return (
-    <div
-      className="flex w-full flex-col rounded-card border border-border bg-card p-4 text-left transition hover:border-slate-400"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate text-sm font-semibold text-foreground">{cc.name}</h3>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="rounded-[4px] bg-slate-100 px-2 py-0.5 text-eyebrow font-bold uppercase text-slate-700">
-              {TYPE_LABEL[cc.type]}
-            </span>
-            {cc.periodicity && (
-              <span className="text-xs text-muted-foreground">
-                {PERIODICITY_LABEL[cc.periodicity]}
-              </span>
-            )}
-            <span className="text-xs text-muted-foreground">
-              {formatDateRange(cc.startDate, cc.endDate)}
-            </span>
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 text-xs font-semibold",
-                cc.status === "activo" ? "text-emerald-600" : "text-slate-500"
+    <DataTableRow density="comfortable" useGrid={false}>
+      <div className="flex w-full flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-semibold text-foreground">{cc.name}</h3>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <DataTableChip className="uppercase">
+                {TYPE_LABEL[cc.type]}
+              </DataTableChip>
+              {cc.periodicity && (
+                <span className="text-xs text-muted-foreground">
+                  {PERIODICITY_LABEL[cc.periodicity]}
+                </span>
               )}
-            >
+              <span className="text-xs text-muted-foreground">
+                {formatDateRange(cc.startDate, cc.endDate)}
+              </span>
               <span
                 className={cn(
-                  "inline-block size-1.5 rounded-full",
-                  cc.status === "activo" ? "bg-emerald-500" : "bg-slate-400"
+                  "inline-flex items-center gap-1 text-xs font-semibold",
+                  cc.status === "activo" ? "text-ds-green-700" : "text-muted-foreground"
                 )}
-              />
-              {STATUS_LABEL[cc.status]}
-            </span>
+              >
+                <span
+                  className={cn(
+                    "inline-block size-1.5 rounded-full",
+                    cc.status === "activo" ? "bg-ds-green" : "bg-ds-slate-400"
+                  )}
+                />
+                {STATUS_LABEL[cc.status]}
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
+              {cc.currencyCode}
+            </p>
+            <p className="text-h3 font-bold tabular-nums">{formatCurrency(cc.amount, cc.currencyCode)}</p>
+            <p className="text-xs text-muted-foreground">
+              {tCC.progress_executed_meta
+                .replace("{executed}", formatCurrency(executed, cc.currencyCode))
+                .replace("{percent}", String(pct))}
+            </p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
-            {cc.currencyCode}
-          </p>
-          <p className="text-h3 font-bold tabular-nums">{formatCurrency(cc.amount, cc.currencyCode)}</p>
-          <p className="text-xs text-muted-foreground">
-            {tCC.progress_executed_meta
-              .replace("{executed}", formatCurrency(executed, cc.currencyCode))
-              .replace("{percent}", String(pct))}
-          </p>
-        </div>
-      </div>
 
-      {cc.amount ? (
-        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-          <div
-            className={cn("h-full rounded-full", progressBarColor(cc, aggregate))}
-            style={{ width: `${Math.min(100, pct)}%` }}
-          />
-        </div>
-      ) : null}
-
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1.5">
-          {badgeList.map((badge) => (
-            <span
-              key={badge.kind}
-              className={cn(
-                "inline-flex items-center rounded-[4px] border px-2 py-0.5 text-xs font-medium",
-                BADGE_COLORS[badge.kind]
-              )}
-            >
-              {BADGE_LABEL[badge.kind]}
-            </span>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-eyebrow font-bold text-slate-700">
-            {initialsFromMember(responsible)}
+        {cc.amount ? (
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary/60">
+            <div
+              className={cn("h-full rounded-full", progressBarColor(cc, aggregate))}
+              style={{ width: `${Math.min(100, pct)}%` }}
+            />
           </div>
-          <span className="text-xs text-muted-foreground">{shortNameFromMember(responsible)}</span>
+        ) : null}
+
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {badgeList.map((badge) => (
+              <span
+                key={badge.kind}
+                className={cn(
+                  "inline-flex items-center rounded-chip border px-2 py-0.5 text-xs font-medium",
+                  BADGE_COLORS[badge.kind]
+                )}
+              >
+                {BADGE_LABEL[badge.kind]}
+              </span>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-eyebrow font-bold text-foreground">
+              {initialsFromMember(responsible)}
+            </div>
+            <span className="text-xs text-muted-foreground">{shortNameFromMember(responsible)}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+          <a
+            href={`/treasury/cost-centers/${cc.id}`}
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
+            Ver movimientos →
+          </a>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
+            Editar
+          </button>
         </div>
       </div>
-
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
-        <a
-          href={`/treasury/cost-centers/${cc.id}`}
-          className="text-xs font-semibold text-muted-foreground hover:text-foreground"
-        >
-          Ver movimientos →
-        </a>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="text-xs font-semibold text-muted-foreground hover:text-foreground"
-        >
-          Editar
-        </button>
-      </div>
-    </div>
+    </DataTableRow>
   );
 }
 
@@ -738,7 +745,7 @@ export function CostCentersTab({
                   "rounded-full border px-3 py-1 text-xs font-medium",
                   active
                     ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-card text-foreground hover:bg-slate-50"
+                    : "border-border bg-card text-foreground hover:bg-secondary/40"
                 )}
               >
                 {opt.label} · {count}
@@ -759,7 +766,7 @@ export function CostCentersTab({
                   "rounded-full border px-3 py-1 text-xs font-medium",
                   active
                     ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-card text-foreground hover:bg-slate-50"
+                    : "border-border bg-card text-foreground hover:bg-secondary/40"
                 )}
               >
                 {opt.label} · {count}
@@ -770,37 +777,41 @@ export function CostCentersTab({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-card border border-dashed border-border bg-card px-4 py-10 text-center">
-          <h3 className="text-sm font-semibold text-foreground">{tCC.empty_title}</h3>
-          <p className="max-w-md text-sm text-muted-foreground">{tCC.empty_description}</p>
-          <button
-            type="button"
-            onClick={() => setModalState({ mode: "create" })}
-            className={buttonClass({ variant: "primary", size: "sm" })}
-          >
-            {tCC.create_full_cta}
-          </button>
-        </div>
+        <DataTableEmpty
+          title={tCC.empty_title}
+          description={tCC.empty_description}
+          action={
+            <button
+              type="button"
+              onClick={() => setModalState({ mode: "create" })}
+              className={buttonClass({ variant: "primary", size: "sm" })}
+            >
+              {tCC.create_full_cta}
+            </button>
+          }
+        />
       ) : (
-        <div className="flex flex-col gap-2.5">
-          {filtered.map((cc) => (
-            <CostCenterCard
-              key={cc.id}
-              cc={cc}
-              aggregate={
-                aggregates[cc.id] ?? {
-                  costCenterId: cc.id,
-                  totalIngreso: 0,
-                  totalEgreso: 0,
-                  linkedMovementCount: 0
+        <DataTable density="comfortable">
+          <DataTableBody>
+            {filtered.map((cc) => (
+              <CostCenterCard
+                key={cc.id}
+                cc={cc}
+                aggregate={
+                  aggregates[cc.id] ?? {
+                    costCenterId: cc.id,
+                    totalIngreso: 0,
+                    totalEgreso: 0,
+                    linkedMovementCount: 0
+                  }
                 }
-              }
-              badgeList={badges[cc.id] ?? []}
-              responsible={cc.responsibleUserId ? memberByUserId.get(cc.responsibleUserId) : undefined}
-              onEdit={() => setModalState({ mode: "edit", cc, hasLinks: resolveHasLinks(cc) })}
-            />
-          ))}
-        </div>
+                badgeList={badges[cc.id] ?? []}
+                responsible={cc.responsibleUserId ? memberByUserId.get(cc.responsibleUserId) : undefined}
+                onEdit={() => setModalState({ mode: "edit", cc, hasLinks: resolveHasLinks(cc) })}
+              />
+            ))}
+          </DataTableBody>
+        </DataTable>
       )}
 
       <Modal

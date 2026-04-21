@@ -5,6 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { buttonClass } from "@/components/ui/button";
+import {
+  DataTable,
+  DataTableActions,
+  DataTableBody,
+  DataTableEmpty,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
@@ -117,148 +124,151 @@ export function MembersTab({
         onCta={() => setIsInviting(true)}
       >
         {isEmpty ? (
-          <div className="rounded-toast border border-dashed border-border bg-secondary/30 p-6 text-sm text-muted-foreground">
-            <p className="font-semibold text-foreground">{texts.settings.club.members.empty_title}</p>
-            <p className="mt-2">{texts.settings.club.members.empty_description}</p>
-          </div>
+          <DataTableEmpty
+            title={texts.settings.club.members.empty_title}
+            description={texts.settings.club.members.empty_description}
+          />
         ) : (
-          <div className="space-y-4">
-            {filteredInvitations.map((invitation) => (
-              <article
-                key={invitation.invitationId}
-                className="rounded-toast border border-warning/35 bg-gradient-warning-soft p-5 shadow-soft"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
-                    <span aria-hidden="true">{getInitials(invitation.email, invitation.email)}</span>
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-base font-semibold text-foreground">{invitation.email}</p>
-                      <span className="rounded-full bg-warning px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-accent-foreground">
-                        {texts.settings.club.members.pending_badge}
-                      </span>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <MemberMetaPill
-                        label={texts.settings.club.members.status_label}
-                        value={getStatusLabel(invitation.status)}
-                      />
-                      <MemberMetaPill
-                        label={texts.settings.club.members.role_label}
-                        value={getRoleLabel(invitation.role)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
-
-            {filteredMembers.map((member) => {
-              const isCurrentUser = member.userId === currentUserId;
-              const initials = getInitials(member.fullName, member.email);
-              const memberToneClass =
-                member.status === "pendiente_aprobacion"
-                  ? "border-warning/35 bg-gradient-warning-soft"
-                  : "border-border/70 bg-gradient-surface-soft";
-
-              return (
-                <article
-                  key={member.membershipId}
-                  className={`group rounded-toast border p-5 shadow-soft ${memberToneClass}`}
+          <DataTable density="comfortable">
+            <DataTableBody>
+              {filteredInvitations.map((invitation) => (
+                <DataTableRow
+                  key={invitation.invitationId}
+                  as="article"
+                  density="comfortable"
+                  useGrid={false}
                 >
                   <div className="flex items-start gap-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
-                      {member.avatarUrl ? (
-                        <Image
-                          src={member.avatarUrl}
-                          alt=""
-                          width={48}
-                          height={48}
-                          unoptimized
-                          className="h-12 w-12 object-cover"
-                        />
-                      ) : (
-                        <span aria-hidden="true">{initials}</span>
-                      )}
+                      <span aria-hidden="true">{getInitials(invitation.email, invitation.email)}</span>
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-base font-semibold text-foreground">{member.fullName}</p>
-                        {isCurrentUser ? (
-                          <span className="rounded-full bg-foreground px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-primary-foreground">
-                            {texts.settings.club.members.current_user_badge}
-                          </span>
-                        ) : null}
-                        {member.status === "pendiente_aprobacion" ? (
-                          <span className="rounded-full bg-warning px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-accent-foreground">
-                            {texts.settings.club.members.pending_badge}
-                          </span>
-                        ) : null}
+                        <p className="truncate text-base font-semibold text-foreground">{invitation.email}</p>
+                        <span className="rounded-full bg-warning px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-accent-foreground">
+                          {texts.settings.club.members.pending_badge}
+                        </span>
                       </div>
-                      <p className="mt-1 truncate text-sm text-muted-foreground">{member.email}</p>
 
                       <div className="mt-4 flex flex-wrap gap-2 text-xs">
                         <MemberMetaPill
                           label={texts.settings.club.members.status_label}
-                          value={getStatusLabel(member.status)}
+                          value={getStatusLabel(invitation.status)}
                         />
                         <MemberMetaPill
-                          label={texts.settings.club.members.roles_label}
-                          value={formatMembershipRoles(member.roles)}
+                          label={texts.settings.club.members.role_label}
+                          value={getRoleLabel(invitation.role)}
                         />
                       </div>
                     </div>
+                  </div>
+                </DataTableRow>
+              ))}
 
-                    <div className="flex shrink-0 items-center gap-2 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-                      {member.status !== "pendiente_aprobacion" ? (
+              {filteredMembers.map((member) => {
+                const isCurrentUser = member.userId === currentUserId;
+                const initials = getInitials(member.fullName, member.email);
+
+                return (
+                  <DataTableRow
+                    key={member.membershipId}
+                    as="article"
+                    density="comfortable"
+                    useGrid={false}
+                    hoverReveal
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
+                        {member.avatarUrl ? (
+                          <Image
+                            src={member.avatarUrl}
+                            alt=""
+                            width={48}
+                            height={48}
+                            unoptimized
+                            className="h-12 w-12 object-cover"
+                          />
+                        ) : (
+                          <span aria-hidden="true">{initials}</span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-base font-semibold text-foreground">{member.fullName}</p>
+                          {isCurrentUser ? (
+                            <span className="rounded-full bg-foreground px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-primary-foreground">
+                              {texts.settings.club.members.current_user_badge}
+                            </span>
+                          ) : null}
+                          {member.status === "pendiente_aprobacion" ? (
+                            <span className="rounded-full bg-warning px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-accent-foreground">
+                              {texts.settings.club.members.pending_badge}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 truncate text-sm text-muted-foreground">{member.email}</p>
+
+                        <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                          <MemberMetaPill
+                            label={texts.settings.club.members.status_label}
+                            value={getStatusLabel(member.status)}
+                          />
+                          <MemberMetaPill
+                            label={texts.settings.club.members.roles_label}
+                            value={formatMembershipRoles(member.roles)}
+                          />
+                        </div>
+                      </div>
+
+                      <DataTableActions>
+                        {member.status !== "pendiente_aprobacion" ? (
+                          <button
+                            type="button"
+                            onClick={() => setEditingMember(member)}
+                            aria-label={texts.settings.club.members.update_roles_cta}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-btn border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
+                        ) : null}
+
                         <button
                           type="button"
-                          onClick={() => setEditingMember(member)}
-                          aria-label={texts.settings.club.members.update_roles_cta}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                          onClick={() => setRemovingMembershipId(member.membershipId)}
+                          aria-label={isCurrentUser ? texts.settings.club.members.leave_club_cta : texts.settings.club.members.remove_cta}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-btn border border-destructive/25 bg-destructive/10 text-destructive transition hover:bg-destructive/15"
                         >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
-                      ) : null}
-
-                      <button
-                        type="button"
-                        onClick={() => setRemovingMembershipId(member.membershipId)}
-                        aria-label={isCurrentUser ? texts.settings.club.members.leave_club_cta : texts.settings.club.members.remove_cta}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-destructive/25 bg-destructive/10 text-destructive transition hover:bg-destructive/15"
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      </DataTableActions>
                     </div>
-                  </div>
 
-                  {member.status === "pendiente_aprobacion" ? (
-                    <div className="mt-4">
-                      <form action={approveMembershipAction}>
-                        <input type="hidden" name="membership_id" value={member.membershipId} />
-                        <input type="hidden" name="role" value={member.roles[0] ?? "secretaria"} />
-                        <PendingFieldset className="contents">
-                          <PendingSubmitButton
-                            idleLabel={texts.settings.club.members.approve_cta}
-                            pendingLabel={texts.settings.club.members.approve_loading}
-                            className={buttonClass({ fullWidth: true })}
-                          />
-                        </PendingFieldset>
-                      </form>
-                    </div>
-                  ) : null}
-                </article>
-              );
-            })}
-          </div>
+                    {member.status === "pendiente_aprobacion" ? (
+                      <div className="mt-4">
+                        <form action={approveMembershipAction}>
+                          <input type="hidden" name="membership_id" value={member.membershipId} />
+                          <input type="hidden" name="role" value={member.roles[0] ?? "secretaria"} />
+                          <PendingFieldset className="contents">
+                            <PendingSubmitButton
+                              idleLabel={texts.settings.club.members.approve_cta}
+                              pendingLabel={texts.settings.club.members.approve_loading}
+                              className={buttonClass({ fullWidth: true })}
+                            />
+                          </PendingFieldset>
+                        </form>
+                      </div>
+                    ) : null}
+                  </DataTableRow>
+                );
+              })}
+            </DataTableBody>
+          </DataTable>
         )}
       </SettingsTabShell>
 

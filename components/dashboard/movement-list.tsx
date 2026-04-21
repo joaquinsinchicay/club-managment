@@ -2,9 +2,17 @@
 
 import { type ReactNode } from "react";
 
-import { formatLocalizedAmount } from "@/lib/amounts";
+import {
+  DataTable,
+  DataTableAmount,
+  DataTableBody,
+  DataTableCell,
+  DataTableChip,
+  DataTableHeader,
+  DataTableHeadCell,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import type { TreasuryMovementType } from "@/lib/domain/access";
-import { cn } from "@/lib/utils";
 
 type MovementListItem = {
   movementId: string;
@@ -27,17 +35,12 @@ type MovementListProps = {
   createdByLabel: string;
 };
 
-function getMovementAmountClassName(movementType: TreasuryMovementType) {
-  return movementType === "ingreso" ? "text-success" : "text-destructive";
-}
+const GRID_COLUMNS =
+  "minmax(0,1.7fr) minmax(180px,0.95fr) minmax(150px,0.9fr) 88px";
 
 function formatMovementDateTime(value: string) {
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
+  if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("es-AR", {
     dateStyle: "short",
     timeStyle: "short"
@@ -53,34 +56,20 @@ export function MovementList({
   createdByLabel
 }: MovementListProps) {
   return (
-    <div>
-      <div className="hidden rounded-t-[18px] border border-border bg-secondary/20 px-4 py-3 md:grid md:grid-cols-[minmax(0,1.7fr)_minmax(180px,0.95fr)_minmax(150px,0.9fr)_88px] md:items-center md:gap-4">
-        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {conceptLabel}
-        </p>
-        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
-          {amountLabel}
-        </p>
-        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {accountLabel}
-        </p>
-        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground md:text-right">
-          {actionsLabel}
-        </p>
-      </div>
+    <DataTable gridColumns={GRID_COLUMNS}>
+      <DataTableHeader>
+        <DataTableHeadCell>{conceptLabel}</DataTableHeadCell>
+        <DataTableHeadCell align="right">{amountLabel}</DataTableHeadCell>
+        <DataTableHeadCell>{accountLabel}</DataTableHeadCell>
+        <DataTableHeadCell align="right">{actionsLabel}</DataTableHeadCell>
+      </DataTableHeader>
 
-      <div className="grid gap-3 md:gap-0">
-        {items.map((item, index) => (
-          <article
-            key={item.movementId}
-            className={cn(
-              "rounded-shell border border-border bg-card p-4 shadow-soft md:grid md:grid-cols-[minmax(0,1.7fr)_minmax(180px,0.95fr)_minmax(150px,0.9fr)_88px] md:items-center md:gap-4 md:rounded-none md:border-t-0 md:p-5 md:shadow-none",
-              index === items.length - 1 && "md:rounded-b-[18px]"
-            )}
-          >
-            <div className="min-w-0">
+      <DataTableBody>
+        {items.map((item) => (
+          <DataTableRow key={item.movementId} as="article">
+            <DataTableCell>
               <p
-                className="overflow-hidden text-pretty text-base font-semibold leading-6 text-foreground"
+                className="overflow-hidden text-pretty font-semibold leading-6 text-foreground"
                 style={{
                   display: "-webkit-box",
                   WebkitBoxOrient: "vertical",
@@ -89,29 +78,30 @@ export function MovementList({
               >
                 {item.concept}
               </p>
-              <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              <p className="mt-1.5 text-meta text-muted-foreground">
                 {formatMovementDateTime(item.createdAt)} · {createdByLabel} {item.createdByUserName}
               </p>
-            </div>
+            </DataTableCell>
 
-            <div className="mt-4 space-y-2 md:mt-0 md:justify-self-end md:text-right">
-              <p className={cn("text-[1.7rem] font-semibold leading-none tracking-tight", getMovementAmountClassName(item.movementType))}>
-                {item.movementType === "egreso" ? "-" : "+"} {item.currencyCode} {formatLocalizedAmount(item.amount)}
-              </p>
-            </div>
+            <DataTableCell align="right" className="mt-3 md:mt-0">
+              <DataTableAmount
+                type={item.movementType}
+                currencyCode={item.currencyCode}
+                amount={item.amount}
+                size="display"
+              />
+            </DataTableCell>
 
-            <div className="mt-4 md:mt-0">
-              <p className="inline-flex min-h-9 items-center rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
-                {item.accountName}
-              </p>
-            </div>
+            <DataTableCell className="mt-3 md:mt-0">
+              <DataTableChip>{item.accountName}</DataTableChip>
+            </DataTableCell>
 
-            <div className="mt-4 flex min-h-10 items-center justify-start md:mt-0 md:justify-end">
-              {item.action ?? <span aria-hidden="true" className="text-xs font-medium text-muted-foreground">-</span>}
-            </div>
-          </article>
+            <DataTableCell align="right" className="mt-3 md:mt-0">
+              {item.action ?? <span aria-hidden="true" className="text-meta text-muted-foreground">-</span>}
+            </DataTableCell>
+          </DataTableRow>
         ))}
-      </div>
-    </div>
+      </DataTableBody>
+    </DataTable>
   );
 }

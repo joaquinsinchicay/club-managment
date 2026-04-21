@@ -15,6 +15,11 @@ import {
 } from "@/components/dashboard/treasury-operation-forms";
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import { Button } from "@/components/ui/button";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
@@ -313,29 +318,33 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
         ) : card.accounts.length === 0 ? (
           <p className="pt-3 text-xs text-muted-foreground">{texts.dashboard.treasury.empty_accounts}</p>
         ) : (
-          <div className="divide-y divide-dashed divide-border">
-            {card.accounts.map((account) => (
-              <div key={account.accountId} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="truncate text-label font-medium text-foreground">{account.name}</span>
-                  <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                    {texts.dashboard.treasury_role.cash_account_label}
-                  </span>
-                </div>
-                <div className="shrink-0 text-right">
-                  {account.balances.map((balance) => (
-                    <p
-                      key={`${account.accountId}-${balance.currencyCode}`}
-                      className="text-card-title font-semibold tabular-nums tracking-tight text-foreground"
-                    >
-                      <span className="mr-0.5 text-eyebrow font-medium text-muted-foreground">$</span>
-                      {formatLocalizedAmount(balance.amount)}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <DataTable density="compact" className="rounded-none border-0">
+            <DataTableBody>
+              {card.accounts.map((account) => (
+                <DataTableRow key={account.accountId} density="compact" useGrid={false}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className="truncate text-label font-medium text-foreground">{account.name}</span>
+                      <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                        {texts.dashboard.treasury_role.cash_account_label}
+                      </span>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      {account.balances.map((balance) => (
+                        <p
+                          key={`${account.accountId}-${balance.currencyCode}`}
+                          className="text-card-title font-semibold tabular-nums tracking-tight text-foreground"
+                        >
+                          <span className="mr-0.5 text-eyebrow font-medium text-muted-foreground">$</span>
+                          {formatLocalizedAmount(balance.amount)}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </DataTableRow>
+              ))}
+            </DataTableBody>
+          </DataTable>
         )}
       </div>
     </section>

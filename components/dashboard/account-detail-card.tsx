@@ -1,9 +1,16 @@
-import type React from "react";
 import Link from "next/link";
 
 import type { TreasuryAccount, TreasuryAccountDetail } from "@/lib/domain/access";
 import { formatLocalizedAmount } from "@/lib/amounts";
+import {
+  DataTable,
+  DataTableAmount,
+  DataTableBody,
+  DataTableChip,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import { PageContentHeader } from "@/components/ui/page-content-header";
+import type { TreasuryMovementType } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 
 type AccountDetailCardProps = {
@@ -24,22 +31,10 @@ function formatPaginationText(template: string, values: Record<string, number>) 
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ""));
 }
 
-function getBulletColor(type: "ingreso" | "egreso" | string): string {
-  if (type === "ingreso") return "var(--green)";
-  if (type === "egreso") return "var(--red)";
-  return "var(--slate-400)";
-}
-
-function getAmountColor(type: "ingreso" | "egreso" | string): string {
-  if (type === "ingreso") return "var(--green-700)";
-  if (type === "egreso") return "var(--red-700)";
-  return "var(--slate-700)";
-}
-
-function formatAmount(type: "ingreso" | "egreso" | string, currencyCode: string, amount: number): string {
-  const sign = type === "ingreso" ? "+" : type === "egreso" ? "-" : "";
-  const symbol = currencyCode === "ARS" ? "$" : "US$";
-  return `${sign}${symbol} ${formatLocalizedAmount(amount)}`;
+function getBulletClassName(type: TreasuryMovementType | string): string {
+  if (type === "ingreso") return "bg-ds-green";
+  if (type === "egreso") return "bg-ds-red";
+  return "bg-ds-slate-400";
 }
 
 function formatMovementDateTime(value: string) {
@@ -53,16 +48,6 @@ function formatMovementDateTime(value: string) {
     minute: "2-digit"
   }).format(date);
 }
-
-const chipStyle: React.CSSProperties = {
-  background: "var(--slate-100)",
-  color: "var(--slate-600)",
-  borderRadius: 4,
-  fontSize: 10,
-  fontWeight: 600,
-  padding: "2px 6px",
-  lineHeight: "16px"
-};
 
 function formatMovementGroupDate(value: string) {
   const date = new Date(`${value}T00:00:00`);
@@ -180,16 +165,16 @@ export function AccountDetailCard({
                   {texts.dashboard.treasury.detail_empty_movements}
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-shell border border-border bg-card">
+                <DataTable density="compact">
                   {movementGroups.map((group, groupIndex) => (
                     <section key={group.movementDate}>
-                      <div className={`flex items-center gap-3 px-4 py-2 ${groupIndex > 0 ? "border-t border-border" : ""} bg-secondary/20`}>
-                        <p className="text-meta font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      <div className={`flex items-center gap-3 bg-secondary/20 px-4 py-2 ${groupIndex > 0 ? "border-t border-border/60" : ""}`}>
+                        <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
                           {formatMovementGroupDate(group.movementDate)}
                         </p>
                       </div>
 
-                      <div className="divide-y divide-border">
+                      <DataTableBody>
                         {group.movements.map((movement) => {
                           const meta = [
                             movement.movementDisplayId,
@@ -209,37 +194,41 @@ export function AccountDetailCard({
                             .join(" · ");
 
                           return (
-                            <article key={movement.movementId} className="px-4 py-3 transition-colors hover:bg-slate-50">
+                            <DataTableRow
+                              key={movement.movementId}
+                              as="article"
+                              density="compact"
+                              useGrid={false}
+                            >
                               <div className="flex items-start gap-3">
                                 <span
-                                  className="mt-1.5 size-2 shrink-0 rounded-full"
-                                  style={{ background: getBulletColor(movement.movementType) }}
+                                  className={`mt-1.5 size-2 shrink-0 rounded-full ${getBulletClassName(movement.movementType)}`}
                                   aria-hidden="true"
                                 />
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-start justify-between gap-3">
                                     <p
-                                      className="overflow-hidden text-[14px] font-semibold leading-snug text-foreground"
+                                      className="overflow-hidden font-semibold leading-snug text-foreground"
                                       style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2 }}
                                     >
                                       {movement.concept}
                                     </p>
-                                    <p
-                                      className="shrink-0 text-[14px] font-semibold tabular-nums"
-                                      style={{ color: getAmountColor(movement.movementType) }}
-                                    >
-                                      {formatAmount(movement.movementType, movement.currencyCode, movement.amount)}
-                                    </p>
+                                    <DataTableAmount
+                                      type={movement.movementType}
+                                      currencyCode={movement.currencyCode}
+                                      amount={movement.amount}
+                                      className="shrink-0"
+                                    />
                                   </div>
 
                                   <div className="mt-1.5 flex items-center justify-between gap-2">
                                     <div className="flex flex-wrap gap-1">
-                                      <span style={chipStyle}>{detail.account.name}</span>
+                                      <DataTableChip>{detail.account.name}</DataTableChip>
                                       {movement.categoryName ? (
-                                        <span style={chipStyle}>{movement.categoryName}</span>
+                                        <DataTableChip>{movement.categoryName}</DataTableChip>
                                       ) : null}
                                       {movement.activityName ? (
-                                        <span style={chipStyle}>{movement.activityName}</span>
+                                        <DataTableChip>{movement.activityName}</DataTableChip>
                                       ) : null}
                                     </div>
                                     <p className="shrink-0 text-meta tabular-nums text-muted-foreground">
@@ -252,10 +241,10 @@ export function AccountDetailCard({
                                   </div>
                                 </div>
                               </div>
-                            </article>
+                            </DataTableRow>
                           );
                         })}
-                      </div>
+                      </DataTableBody>
                     </section>
                   ))}
 
@@ -306,7 +295,7 @@ export function AccountDetailCard({
                       </div>
                     </div>
                   ) : null}
-                </div>
+                </DataTable>
               )}
             </>
           ) : null}

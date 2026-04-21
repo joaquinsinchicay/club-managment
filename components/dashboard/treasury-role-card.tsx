@@ -13,6 +13,12 @@ import {
 } from "@/components/dashboard/treasury-operation-forms";
 import { TreasuryAccountForm } from "@/components/treasury/account-form";
 import { Button } from "@/components/ui/button";
+import {
+  DataTable,
+  DataTableActions,
+  DataTableBody,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
@@ -500,8 +506,7 @@ function AccountRow({
   const primaryBalance = account.balances[0];
 
   return (
-    <div className="group border-b border-dashed border-slate-200 py-3 last:border-b-0">
-      {/* Header row */}
+    <DataTableRow density="compact" useGrid={false} hoverReveal={Boolean(action)}>
       <div className="flex items-center gap-3">
         <AccountAvatar name={account.name} accountType={account.accountType} />
         <div className="min-w-0 flex-1">
@@ -512,12 +517,12 @@ function AccountRow({
             <p className="mt-0.5 truncate text-meta text-muted-foreground">{subtitleLine}</p>
           ) : null}
           {accountNumberLine ? (
-            <p className="mt-0.5 truncate text-eyebrow font-medium tracking-wide text-slate-500">
+            <p className="mt-0.5 truncate text-eyebrow font-medium tracking-wide text-muted-foreground">
               {accountNumberLine}
             </p>
           ) : null}
           {lastMovementLabel !== null && fullAccount ? (
-            <p className="mt-0.5 truncate text-eyebrow text-slate-400">
+            <p className="mt-0.5 truncate text-eyebrow text-muted-foreground">
               {lastMovementLabel
                 ? `${texts.dashboard.treasury_role.last_movement_label}: ${lastMovementLabel}`
                 : texts.dashboard.treasury_role.no_movements_yet}
@@ -527,9 +532,9 @@ function AccountRow({
             <div className="mt-0.5 flex items-center gap-1">
               <span className={cn(
                 "inline-flex size-1.5 rounded-full",
-                account.hasPendingMovements ? "bg-amber-500" : "bg-emerald-500"
+                account.hasPendingMovements ? "bg-ds-amber" : "bg-ds-green"
               )} />
-              <span className="text-eyebrow text-slate-500">
+              <span className="text-eyebrow text-muted-foreground">
                 {account.hasPendingMovements
                   ? texts.dashboard.treasury_role.conciliation_status_pending
                   : texts.dashboard.treasury_role.conciliation_status_ok}
@@ -541,13 +546,9 @@ function AccountRow({
           {primaryBalance?.currencyCode === "USD" ? "US$ " : "$ "}
           {formatLocalizedAmount(primaryBalance?.amount ?? 0)}
         </p>
-        {action ? (
-          <div className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-            {action}
-          </div>
-        ) : null}
+        {action ? <DataTableActions>{action}</DataTableActions> : null}
       </div>
-    </div>
+    </DataTableRow>
   );
 }
 
@@ -736,27 +737,29 @@ function CuentasTab({
           {texts.dashboard.treasury_role.empty_accounts}
         </div>
       ) : (
-        <div className="px-4">
-          {enrichedAccounts.map((enriched) => {
-            const fullAccount = accounts.find((a) => a.id === enriched.accountId);
-            return (
-              <AccountRow
-                key={enriched.accountId}
-                account={enriched}
-                fullAccount={fullAccount}
-                lastMovementAt={lastMovementByAccountId[enriched.accountId] ?? null}
-                action={
-                  isAdmin && fullAccount ? (
-                    <EditIconButton
-                      onClick={() => onEditAccount(fullAccount)}
-                      label={texts.dashboard.treasury_role.accounts_tab_edit_cta_label}
-                    />
-                  ) : undefined
-                }
-              />
-            );
-          })}
-        </div>
+        <DataTable density="compact" className="rounded-none border-0">
+          <DataTableBody>
+            {enrichedAccounts.map((enriched) => {
+              const fullAccount = accounts.find((a) => a.id === enriched.accountId);
+              return (
+                <AccountRow
+                  key={enriched.accountId}
+                  account={enriched}
+                  fullAccount={fullAccount}
+                  lastMovementAt={lastMovementByAccountId[enriched.accountId] ?? null}
+                  action={
+                    isAdmin && fullAccount ? (
+                      <EditIconButton
+                        onClick={() => onEditAccount(fullAccount)}
+                        label={texts.dashboard.treasury_role.accounts_tab_edit_cta_label}
+                      />
+                    ) : undefined
+                  }
+                />
+              );
+            })}
+          </DataTableBody>
+        </DataTable>
       )}
     </div>
   );
@@ -803,7 +806,7 @@ function MovimientosTab({
           <button
             type="button"
             onClick={onCreateMovement}
-            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40"
           >
             {texts.dashboard.treasury_role.movements_cta_movement}
           </button>
@@ -812,7 +815,7 @@ function MovimientosTab({
           <button
             type="button"
             onClick={onCreateTransfer}
-            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40"
           >
             {texts.dashboard.treasury_role.movements_cta_transfer}
           </button>
@@ -932,7 +935,7 @@ function ResumenTab({
             <button
               type="button"
               onClick={onViewAllAccounts}
-              className="shrink-0 rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-slate-50"
+              className="shrink-0 rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40"
             >
               {texts.dashboard.treasury_role.detail_accounts_cta}
             </button>

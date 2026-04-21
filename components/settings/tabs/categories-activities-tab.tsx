@@ -180,7 +180,7 @@ export function CategoriesActivitiesTab({
                   "inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 text-sm font-semibold transition",
                   isActive
                     ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-border bg-card text-foreground hover:bg-slate-50"
+                    : "border-border bg-card text-foreground hover:bg-secondary/40"
                 )}
               >
                 {option.label}
@@ -247,7 +247,7 @@ export function CategoriesActivitiesTab({
                   setEditingActivity(activity);
                   setIsCreatingActivity(false);
                 }}
-                className="group relative inline-flex min-h-8 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 pr-8 text-sm font-semibold text-foreground transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
+                className="group relative inline-flex min-h-8 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 pr-8 text-sm font-semibold text-foreground transition hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
               >
                 {activity.emoji ? <span aria-hidden="true">{activity.emoji}</span> : null}
                 <span>{activity.name}</span>
