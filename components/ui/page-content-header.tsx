@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { LinkButton } from "@/components/ui/link-button";
 import { cn } from "@/lib/utils";
 
 type PageContentHeaderProps = {
@@ -42,12 +41,7 @@ export function PageContentHeader({
           <div className="flex shrink-0 items-center gap-3">
             {actions}
             {backHref && backLabel ? (
-              <Link
-                href={backHref}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-              >
-                {backLabel}
-              </Link>
+              <LinkButton href={backHref}>{backLabel}</LinkButton>
             ) : null}
           </div>
         ) : null}

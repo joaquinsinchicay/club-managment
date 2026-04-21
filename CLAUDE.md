@@ -262,6 +262,165 @@ hover:bg-slate-50 | hover:bg-slate-100                              // el primit
 
 ---
 
+## 🔗 Regla crítica: botones y link-buttons
+
+### Primitivos obligatorios
+- Todo `<button>` con estilo visible usa **`@/components/ui/button`** (`<Button>` o `buttonClass()`). Prohibido reimplementar `inline-flex rounded-xl bg-foreground px-4 py-3 text-sm font-semibold ...` a mano.
+- Todo `<Link>` de `next/link` estilado como botón usa **`@/components/ui/link-button`** (`<LinkButton>`).
+- `NavigationLinkWithLoader` y `PendingSubmitButton` reciben className vía `buttonClass({...})`, nunca string hardcoded.
+
+### API canónica
+```tsx
+<Button variant="primary" | "secondary" | "destructive" | "dark" size="sm" | "md" radius="btn" | "xl" fullWidth />
+
+<LinkButton href="/secretary" variant="secondary" size="md" fullWidth external>
+  {texts.dashboard.overview.open_module_cta}
+</LinkButton>
+```
+
+Defaults: `Button` → `primary/md/xl`; `LinkButton` → `secondary/md/xl`. Usar `variant="primary"` para CTA principal, `variant="secondary"` para back/cancel, `variant="destructive"` para destructivas.
+
+### Prohibiciones
+```tsx
+// ❌
+<Link href="..." className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 ..." />
+<button className="rounded-2xl bg-foreground px-4 py-3 ..." />
+```
+
+### Referencia canónica
+- Back button: `PageContentHeader` en `components/ui/page-content-header.tsx`.
+- CTA fullWidth: dashboard overview en `app/(dashboard)/dashboard/page.tsx`.
+
+---
+
+## 👤 Regla crítica: avatares y iniciales
+
+### Primitivos obligatorios
+- Todo avatar con iniciales usa **`@/components/ui/avatar`** (`<Avatar>`).
+- Utilidad única de iniciales: **`getInitials(name, fallback?)`** desde el mismo módulo. Prohibido replicar `name.split(/\s+/).filter(Boolean).slice(0, 2).map(...).join("")`.
+- `ClubMark` (branding) queda como excepción gráfica pero usa internamente `getInitials()`.
+
+### API canónica
+```tsx
+<Avatar
+  name="Juan Pérez"
+  email="juan@ejemplo.com"
+  size="xs" | "sm" | "md" | "lg"
+  tone="neutral" | "bancaria" | "virtual" | "efectivo" | "accent"
+  shape="circle" | "square"
+/>
+```
+
+Regla de `tone`: `neutral` → usuarios; `bancaria/virtual/efectivo` → cuentas tesoreria según `accountType`; `accent` → estados activos.
+
+### Referencia canónica
+- Avatar de miembro: `MembersTab` en `components/settings/tabs/members-tab.tsx`.
+- Avatar de cuenta tesorería: `AccountAvatar` en `components/dashboard/treasury-role-card.tsx`.
+
+---
+
+## 🏷️ Regla crítica: chips, badges y pills
+
+### Primitivos obligatorios
+- **Chip estático** (metadata, rol, etiqueta) → **`<Chip tone size>`**.
+- **Chip clickable** (filtros, toggle) → **`<ChipButton active onClick>`** (incluye `aria-pressed`).
+- **Chip link** (filtro navegable) → **`<ChipLink href active>`** (incluye `aria-current`).
+- **Status semántico uppercase** (Aprobado, Pendiente, Vencido, Current user) → **`<StatusBadge tone>`**.
+- **Chip dentro de fila de `DataTable`** → `<DataTableChip>` por coherencia tipográfica.
+- **Pair label-value** (visibilidad, rol, moneda) → **`<MetaPill label value>`** desde `@/components/ui/meta-pill`.
+
+### Prohibiciones
+```tsx
+// ❌ pill a mano
+<span className="rounded-full border px-3 py-1 ..." />
+<button className={`rounded-full ... ${active ? "bg-foreground ..." : "bg-card ..."}`} />
+// ❌ MemberMetaPill o variantes locales (usar MetaPill)
+```
+
+### Referencia canónica
+- Filter pills: `TreasuryConciliacionTab` y `CategoriesActivitiesTab`.
+- MetaPill: `MembersTab`, `MembershipSystemsTab`.
+- StatusBadge accent: `MembersTab` (`current_user_badge`).
+
+---
+
+## 🗒️ Regla crítica: empty states
+
+### Primitivos obligatorios
+- Empty state **dentro de `DataTable`** → **`<DataTableEmpty>`**.
+- Empty state **standalone** → **`<EmptyState variant="card"|"dashed"|"inline">`** desde `@/components/ui/empty-state`.
+
+### API canónica
+```tsx
+<EmptyState
+  title={texts.dashboard.treasury.detail_empty_title}
+  description={texts.dashboard.treasury.detail_empty_description}
+  icon={<IconInbox />}
+  action={<LinkButton href="/secretary">Volver</LinkButton>}
+  variant="dashed"
+/>
+```
+
+### Prohibiciones
+```tsx
+// ❌ empty state hardcoded
+<div className="rounded-xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">...</div>
+<div className="rounded-[24px] border border-dashed ..." />
+```
+
+### Referencia canónica
+- Empty standalone: `DailySessionBalanceCard`, `CategoriesActivitiesTab`, `ClubTreasurySettingsManager`.
+
+---
+
+## 🃏 Regla crítica: cards
+
+### Primitivos obligatorios
+- Todo contenedor con radio + borde + fondo propio (fuera de tablas y modales) usa **`<Card>`** desde `@/components/ui/card`.
+- Headers de card con título + descripción + acción opcional usan **`<CardHeader>`**.
+- `<CardShell>` queda reservado para auth pages.
+
+### API canónica
+```tsx
+<Card as="article" padding="none" | "compact" | "comfortable" tone="default" | "muted">
+  <CardHeader
+    eyebrow={texts.dashboard.overview.treasury_eyebrow}
+    title={texts.dashboard.overview.tesoreria_title}
+    description={texts.dashboard.overview.tesoreria_description}
+    action={<LinkButton href="/treasury">Abrir</LinkButton>}
+    divider
+  />
+  <CardBody>...</CardBody>
+  <CardFooter>...</CardFooter>
+</Card>
+```
+
+Defaults: `padding="comfortable"`. Usar `padding="none"` si la card contiene `DataTable` u otro con padding propio. `tone="muted"` para secciones secundarias.
+
+### Prohibiciones
+```tsx
+// ❌
+<article className="rounded-dialog border border-border bg-card p-5">...</article>
+<section className="rounded-[26px] border border-border/70 bg-[linear-gradient(...)] p-5">...</section>
+<div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 border-b border-border">...</div>   // usar <CardHeader divider>
+```
+
+### Referencia canónica
+- Card operativa: dashboard overview en `app/(dashboard)/dashboard/page.tsx`.
+- Card + CardHeader + DataTable: `MovementsCard` / `BalancesCard` en `components/dashboard/treasury-card.tsx`.
+
+---
+
+## 🗂️ Regla crítica: settings tabs
+
+### Primitivo obligatorio
+- Tabs de settings con búsqueda + CTA usan **`<SettingsTabShell>`** (`components/settings/settings-tab-shell.tsx`).
+
+### Referencia canónica
+- `MembersTab` y `AccountsTab`.
+
+---
+
 ## 🔔 Regla crítica: feedback al usuario
 
 ### Patrón obligatorio

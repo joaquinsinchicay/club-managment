@@ -1,5 +1,6 @@
 "use client";
 
+import { Card } from "@/components/ui/card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
 import { CategoriesActivitiesTab } from "@/components/settings/tabs/categories-activities-tab";
@@ -179,9 +180,9 @@ export function ClubSettingsCard({
         description={texts.settings.club.description}
       />
 
-      <section className="rounded-dialog border border-border bg-card px-5 py-6 sm:px-8 sm:py-8">
+      <Card as="section" className="px-5 py-6 sm:px-8 sm:py-8" padding="none">
         <SettingsPageLayout tabs={tabs} defaultTabId="datos-del-club" />
-      </section>
+      </Card>
     </main>
   );
 }

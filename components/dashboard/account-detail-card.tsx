@@ -1,7 +1,8 @@
-import Link from "next/link";
-
 import type { TreasuryAccount, TreasuryAccountDetail } from "@/lib/domain/access";
 import { formatLocalizedAmount } from "@/lib/amounts";
+import { buttonClass } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ChipLink } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableAmount,
@@ -9,6 +10,8 @@ import {
   DataTableChip,
   DataTableRow,
 } from "@/components/ui/data-table";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LinkButton } from "@/components/ui/link-button";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import type { TreasuryMovementType } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
@@ -113,7 +116,7 @@ export function AccountDetailCard({
         backLabel={secondaryActionLabel}
       />
 
-      <section className="w-full max-w-5xl rounded-dialog border border-border bg-card p-6 sm:p-8">
+      <Card as="section" className="w-full max-w-5xl p-6 sm:p-8" padding="none">
         <div className="space-y-5">
           {accounts.length > 0 ? (
             <div className="grid gap-2">
@@ -122,24 +125,18 @@ export function AccountDetailCard({
               </p>
               <div className="flex flex-wrap gap-2">
                 {accounts.map((account) => (
-                  <Link
+                  <ChipLink
                     key={account.id}
                     href={`${accountHrefBase}/${account.id}`}
-                    className={`rounded-full border px-3 py-2 text-sm font-medium transition ${
-                      account.id === currentAccountId
-                        ? "border-foreground bg-foreground text-primary-foreground"
-                        : "border-border bg-card text-foreground hover:bg-secondary"
-                    }`}
+                    active={account.id === currentAccountId}
                   >
                     {account.name}
-                  </Link>
+                  </ChipLink>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
-              {emptyAccountsLabel}
-            </div>
+            <EmptyState title={emptyAccountsLabel ?? ""} />
           )}
 
           {detail ? (
@@ -161,9 +158,7 @@ export function AccountDetailCard({
               </div>
 
               {detail.movements.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
-                  {texts.dashboard.treasury.detail_empty_movements}
-                </div>
+                <EmptyState title={texts.dashboard.treasury.detail_empty_movements} />
               ) : (
                 <DataTable density="compact">
                   {movementGroups.map((group, groupIndex) => (
@@ -268,27 +263,21 @@ export function AccountDetailCard({
 
                       <div className="flex gap-3">
                         {activePage > 1 ? (
-                          <Link
-                            href={previousPageHref}
-                            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                          >
+                          <LinkButton href={previousPageHref}>
                             {texts.dashboard.treasury.detail_pagination_previous_cta}
-                          </Link>
+                          </LinkButton>
                         ) : (
-                          <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-secondary/30 px-4 py-3 text-sm font-semibold text-muted-foreground">
+                          <span className={buttonClass({ variant: "secondary", className: "cursor-not-allowed border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/30" })}>
                             {texts.dashboard.treasury.detail_pagination_previous_cta}
                           </span>
                         )}
 
                         {activePage < totalPages ? (
-                          <Link
-                            href={nextPageHref}
-                            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-                          >
+                          <LinkButton href={nextPageHref}>
                             {texts.dashboard.treasury.detail_pagination_next_cta}
-                          </Link>
+                          </LinkButton>
                         ) : (
-                          <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-secondary/30 px-4 py-3 text-sm font-semibold text-muted-foreground">
+                          <span className={buttonClass({ variant: "secondary", className: "cursor-not-allowed border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/30" })}>
                             {texts.dashboard.treasury.detail_pagination_next_cta}
                           </span>
                         )}
@@ -300,7 +289,7 @@ export function AccountDetailCard({
             </>
           ) : null}
         </div>
-      </section>
+      </Card>
     </main>
   );
 }

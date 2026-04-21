@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 
+import { Button, buttonClass } from "@/components/ui/button";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type { Club, ClubType } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
@@ -361,17 +362,13 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
 
         {canEdit ? (
           <div className="flex flex-wrap justify-end gap-2">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-card px-5 py-3 text-sm font-medium text-foreground transition hover:bg-secondary"
-            >
+            <Button variant="secondary" onClick={handleCancel}>
               {identityTexts.cancel_cta}
-            </button>
+            </Button>
             <PendingSubmitButton
               idleLabel={identityTexts.save_cta}
               pendingLabel={identityTexts.save_loading}
-              className="min-h-11 rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+              className={buttonClass({ variant: "primary" })}
             />
           </div>
         ) : null}

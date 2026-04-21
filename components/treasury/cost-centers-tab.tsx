@@ -42,7 +42,9 @@ import { triggerClientFeedback } from "@/lib/client-feedback";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
+import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableBody,
@@ -131,12 +133,12 @@ const BADGE_LABEL: Record<CostCenterBadge["kind"], string> = {
   overdue: tCC.badge_overdue
 };
 
-const BADGE_COLORS: Record<CostCenterBadge["kind"], string> = {
-  debt_settled: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  budget_near_limit: "bg-amber-50 text-amber-700 border-amber-200",
-  budget_exceeded: "bg-rose-50 text-rose-700 border-rose-200",
-  goal_met: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  overdue: "bg-rose-50 text-rose-700 border-rose-200"
+const BADGE_TONES: Record<CostCenterBadge["kind"], "income" | "warning" | "expense"> = {
+  debt_settled: "income",
+  budget_near_limit: "warning",
+  budget_exceeded: "expense",
+  goal_met: "income",
+  overdue: "expense"
 };
 
 function formatCurrency(amount: number | null, currencyCode: string): string {
@@ -186,14 +188,6 @@ function progressBarColor(cc: CostCenter, agg: CostCenterAggregates): string {
   if ((cc.type === "sponsor" || cc.type === "publicidad") && cc.amount && agg.totalIngreso >= cc.amount)
     return "bg-emerald-500";
   return "bg-slate-400";
-}
-
-function initialsFromMember(member: ClubMember | undefined): string {
-  if (!member) return "?";
-  const parts = member.fullName.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "";
-  const second = parts[1]?.[0] ?? "";
-  return `${first}${second}`.toUpperCase() || "?";
 }
 
 function shortNameFromMember(member: ClubMember | undefined): string {
@@ -370,21 +364,13 @@ function CostCenterCard({
         <div className="mt-3 flex items-center justify-between gap-3">
           <div className="flex flex-wrap gap-1.5">
             {badgeList.map((badge) => (
-              <span
-                key={badge.kind}
-                className={cn(
-                  "inline-flex items-center rounded-chip border px-2 py-0.5 text-xs font-medium",
-                  BADGE_COLORS[badge.kind]
-                )}
-              >
+              <Chip key={badge.kind} tone={BADGE_TONES[badge.kind]} size="sm">
                 {BADGE_LABEL[badge.kind]}
-              </span>
+              </Chip>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-eyebrow font-bold text-foreground">
-              {initialsFromMember(responsible)}
-            </div>
+            <Avatar name={responsible?.fullName ?? "?"} size="sm" />
             <span className="text-xs text-muted-foreground">{shortNameFromMember(responsible)}</span>
           </div>
         </div>
@@ -613,7 +599,6 @@ function CostCenterForm({
       </PendingFieldset>
 
       <ModalFooter
-        align="end"
         onCancel={onCancel}
         cancelLabel={tCC.form_cancel_cta}
         submitLabel={tCC.form_submit_cta}

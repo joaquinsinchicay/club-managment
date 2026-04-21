@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { getInitials } from "@/components/ui/avatar";
 import { BlockingOverlay } from "@/components/ui/overlay";
 import { Spinner } from "@/components/ui/pending-form";
 import { texts } from "@/lib/texts";
@@ -13,20 +14,6 @@ type AvatarSessionMenuProps = {
   email: string;
   avatarUrl: string | null;
 };
-
-function getInitials(fullName: string, email: string) {
-  const nameParts = fullName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
-
-  if (nameParts.length > 0) {
-    return nameParts.map((part) => part[0]?.toUpperCase() ?? "").join("");
-  }
-
-  return email.trim()[0]?.toUpperCase() ?? "";
-}
 
 export function AvatarSessionMenu({
   fullName,

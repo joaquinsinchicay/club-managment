@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { Avatar, getInitials } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
 import {
   DataTable,
@@ -12,7 +13,9 @@ import {
   DataTableEmpty,
   DataTableRow,
 } from "@/components/ui/data-table";
+import { MetaPill } from "@/components/ui/meta-pill";
 import { Modal } from "@/components/ui/modal";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FormCheckboxCard,
@@ -33,29 +36,12 @@ import type {
   PendingClubInvitation
 } from "@/lib/domain/access";
 
-function getInitials(fullName: string, email: string) {
-  const nameParts = fullName.trim().split(/\s+/).filter(Boolean).slice(0, 2);
-  if (nameParts.length > 0) {
-    return nameParts.map((part) => part[0]?.toUpperCase() ?? "").join("");
-  }
-  return email.trim()[0]?.toUpperCase() ?? "";
-}
-
 function getRoleLabel(role: MembershipRole) {
   return texts.settings.club.members.roles[role];
 }
 
 function getStatusLabel(status: MembershipStatus) {
   return texts.settings.club.members.statuses[status];
-}
-
-function MemberMetaPill({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
-    </span>
-  );
 }
 
 const membershipRoles: MembershipRole[] = ["admin", "secretaria", "tesoreria"];
@@ -146,17 +132,18 @@ export function MembersTab({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-base font-semibold text-foreground">{invitation.email}</p>
-                        <span className="rounded-full bg-warning px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-accent-foreground">
-                          {texts.settings.club.members.pending_badge}
-                        </span>
+                        <StatusBadge
+                          label={texts.settings.club.members.pending_badge}
+                          tone="warning"
+                        />
                       </div>
 
                       <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                        <MemberMetaPill
+                        <MetaPill
                           label={texts.settings.club.members.status_label}
                           value={getStatusLabel(invitation.status)}
                         />
-                        <MemberMetaPill
+                        <MetaPill
                           label={texts.settings.club.members.role_label}
                           value={getRoleLabel(invitation.role)}
                         />
@@ -168,7 +155,6 @@ export function MembersTab({
 
               {filteredMembers.map((member) => {
                 const isCurrentUser = member.userId === currentUserId;
-                const initials = getInitials(member.fullName, member.email);
 
                 return (
                   <DataTableRow
@@ -179,8 +165,8 @@ export function MembersTab({
                     hoverReveal
                   >
                     <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card text-sm font-semibold text-foreground">
-                        {member.avatarUrl ? (
+                      {member.avatarUrl ? (
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card">
                           <Image
                             src={member.avatarUrl}
                             alt=""
@@ -189,33 +175,35 @@ export function MembersTab({
                             unoptimized
                             className="h-12 w-12 object-cover"
                           />
-                        ) : (
-                          <span aria-hidden="true">{initials}</span>
-                        )}
-                      </div>
+                        </span>
+                      ) : (
+                        <Avatar name={member.fullName} email={member.email} size="lg" />
+                      )}
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="truncate text-base font-semibold text-foreground">{member.fullName}</p>
                           {isCurrentUser ? (
-                            <span className="rounded-full bg-foreground px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-primary-foreground">
-                              {texts.settings.club.members.current_user_badge}
-                            </span>
+                            <StatusBadge
+                              label={texts.settings.club.members.current_user_badge}
+                              tone="accent"
+                            />
                           ) : null}
                           {member.status === "pendiente_aprobacion" ? (
-                            <span className="rounded-full bg-warning px-2.5 py-1 text-meta font-semibold uppercase tracking-[0.14em] text-accent-foreground">
-                              {texts.settings.club.members.pending_badge}
-                            </span>
+                            <StatusBadge
+                              label={texts.settings.club.members.pending_badge}
+                              tone="warning"
+                            />
                           ) : null}
                         </div>
                         <p className="mt-1 truncate text-sm text-muted-foreground">{member.email}</p>
 
                         <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                          <MemberMetaPill
+                          <MetaPill
                             label={texts.settings.club.members.status_label}
                             value={getStatusLabel(member.status)}
                           />
-                          <MemberMetaPill
+                          <MetaPill
                             label={texts.settings.club.members.roles_label}
                             value={formatMembershipRoles(member.roles)}
                           />
@@ -342,7 +330,6 @@ export function MembersTab({
               </div>
 
               <ModalFooter
-                align="end"
                 onCancel={() => setEditingMember(null)}
                 cancelLabel={texts.settings.club.members.update_roles_cancel_cta}
                 submitLabel={texts.settings.club.members.update_roles_cta}

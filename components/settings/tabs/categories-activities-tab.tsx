@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 
 import { ActivityForm } from "@/components/settings/tabs/activity-form";
 import { CategoryForm } from "@/components/settings/tabs/category-form";
+import { Button } from "@/components/ui/button";
+import { ChipButton } from "@/components/ui/chip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { ClubActivity, TreasuryCategory, TreasuryCategoryMovementType } from "@/lib/domain/access";
@@ -149,17 +152,17 @@ export function CategoriesActivitiesTab({
             </h2>
             <p className="text-sm text-muted-foreground">{treasuryTexts.taxonomy_eyebrow}</p>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={() => {
               setIsCreatingCategory(true);
               setEditingCategory(null);
             }}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 w-full sm:w-auto"
+            className="w-full gap-2 sm:w-auto"
           >
             <PlusIcon className="h-4 w-4" />
             {treasuryTexts.create_category_short_cta}
-          </button>
+          </Button>
         </header>
 
         <div
@@ -167,32 +170,22 @@ export function CategoriesActivitiesTab({
           aria-label={treasuryTexts.filter_all_label}
           className="flex flex-wrap gap-2 overflow-x-auto"
         >
-          {FILTER_OPTIONS.map((option) => {
-            const isActive = filter === option.value;
-            return (
-              <button
-                key={`category-filter-${option.value}`}
-                type="button"
-                role="tab"
-                aria-pressed={isActive}
-                onClick={() => setFilter(option.value)}
-                className={cn(
-                  "inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 text-sm font-semibold transition",
-                  isActive
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-border bg-card text-foreground hover:bg-secondary/40"
-                )}
-              >
-                {option.label}
-              </button>
-            );
-          })}
+          {FILTER_OPTIONS.map((option) => (
+            <ChipButton
+              key={`category-filter-${option.value}`}
+              role="tab"
+              active={filter === option.value}
+              onClick={() => setFilter(option.value)}
+            >
+              {option.label}
+            </ChipButton>
+          ))}
         </div>
 
         {filteredGroups.length === 0 ? (
-          <div className="rounded-shell border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-            {groups.length === 0 ? treasuryTexts.empty_categories : treasuryTexts.empty_groups_filter}
-          </div>
+          <EmptyState
+            title={groups.length === 0 ? treasuryTexts.empty_categories : treasuryTexts.empty_groups_filter}
+          />
         ) : (
           <div className="grid gap-2">
             {filteredGroups.map((group) => (
@@ -219,23 +212,21 @@ export function CategoriesActivitiesTab({
             </h2>
             <p className="text-sm text-muted-foreground">{treasuryTexts.activities_description}</p>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={() => {
               setIsCreatingActivity(true);
               setEditingActivity(null);
             }}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 w-full sm:w-auto"
+            className="w-full gap-2 sm:w-auto"
           >
             <PlusIcon className="h-4 w-4" />
             {treasuryTexts.create_activity_short_cta}
-          </button>
+          </Button>
         </header>
 
         {activities.length === 0 ? (
-          <div className="rounded-shell border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-            {treasuryTexts.empty_activities}
-          </div>
+          <EmptyState title={treasuryTexts.empty_activities} />
         ) : (
           <div className="flex flex-wrap gap-2">
             {activities.map((activity) => (

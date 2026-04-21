@@ -7,6 +7,8 @@ import {
   ConsolidationTransferEditForm,
   SecretariaMovementEditForm
 } from "@/components/dashboard/treasury-operation-forms";
+import { buttonClass } from "@/components/ui/button";
+import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableActions,
@@ -17,6 +19,7 @@ import {
   DataTableRow,
 } from "@/components/ui/data-table";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
@@ -305,7 +308,7 @@ export function TreasuryConciliacionTab({
               <PendingSubmitButton
                 idleLabel={texts.dashboard.treasury_role.conciliacion_approve_all_cta}
                 pendingLabel={texts.dashboard.consolidation.execute_loading}
-                className="inline-flex min-h-11 items-center justify-center rounded-btn border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary/40"
+                className={buttonClass({ variant: "secondary", radius: "btn" })}
               />
             </form>
           ) : null}
@@ -350,32 +353,20 @@ export function TreasuryConciliacionTab({
         {/* Account filter chips */}
         {!isSessionOpen && accountChips.length > 0 ? (
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
+            <ChipButton
+              active={selectedAccountId === null}
               onClick={() => setSelectedAccountId(null)}
-              className={cn(
-                "inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 text-sm font-semibold transition",
-                selectedAccountId === null
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-border bg-card text-foreground hover:bg-secondary/40"
-              )}
             >
               {texts.dashboard.treasury_role.conciliacion_filter_all_accounts}
-            </button>
+            </ChipButton>
             {accountChips.map((account) => (
-              <button
+              <ChipButton
                 key={account.id}
-                type="button"
+                active={selectedAccountId === account.id}
                 onClick={() => setSelectedAccountId(account.id)}
-                className={cn(
-                  "inline-flex min-h-8 items-center rounded-full border px-3 py-1.5 text-sm font-semibold transition",
-                  selectedAccountId === account.id
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-border bg-card text-foreground hover:bg-secondary/40"
-                )}
               >
                 {account.name}
-              </button>
+              </ChipButton>
             ))}
           </div>
         ) : null}
@@ -383,14 +374,10 @@ export function TreasuryConciliacionTab({
         {/* Movement list */}
         <div className="mt-4">
           {isSessionOpen ? (
-            <div className="rounded-dialog border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-              <p className="font-semibold text-foreground">
-                {texts.dashboard.treasury_role.conciliacion_session_open_title}
-              </p>
-              <p className="mt-1 text-muted-foreground">
-                {texts.dashboard.treasury_role.conciliacion_session_open_description}
-              </p>
-            </div>
+            <EmptyState
+              title={texts.dashboard.treasury_role.conciliacion_session_open_title}
+              description={texts.dashboard.treasury_role.conciliacion_session_open_description}
+            />
           ) : visibleMovements.length === 0 ? (
             <DataTableEmpty title={texts.dashboard.treasury_role.conciliacion_empty_pending} />
           ) : (

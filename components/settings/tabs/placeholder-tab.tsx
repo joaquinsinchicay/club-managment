@@ -1,3 +1,4 @@
+import { StatusBadge } from "@/components/ui/status-badge";
 import { texts } from "@/lib/texts";
 
 type PlaceholderTabProps = {
@@ -14,9 +15,10 @@ export function PlaceholderTab({ eyebrow, title, description }: PlaceholderTabPr
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             {eyebrow}
           </span>
-          <span className="inline-flex items-center rounded-full border border-warning/40 bg-warning/10 px-3 py-1 text-xs font-semibold text-warning">
-            {texts.settings.club.placeholders.coming_soon_badge}
-          </span>
+          <StatusBadge
+            label={texts.settings.club.placeholders.coming_soon_badge}
+            tone="warning"
+          />
         </div>
         <h3 className="text-lg font-semibold text-foreground sm:text-xl">{title}</h3>
         <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>

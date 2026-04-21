@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 
+import { buttonClass } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
@@ -117,24 +121,24 @@ export function DailySessionBalanceCard({
         backLabel={texts.dashboard.treasury.back_to_secretaria_cta}
       />
 
-      <section className="w-full max-w-5xl rounded-dialog border border-border bg-card p-6 sm:p-8">
+      <Card as="section" className="w-full max-w-5xl p-6 sm:p-8" padding="none">
         <div className="space-y-5">
           <p className="text-sm leading-6 text-muted-foreground">
             {texts.dashboard.treasury.session_validation_description}
           </p>
 
           {drafts.length === 0 ? (
-            <div className="space-y-4 rounded-xl border border-dashed border-border bg-secondary/30 p-4">
-              <p className="text-sm text-muted-foreground">
-                {texts.dashboard.treasury.session_validation_empty}
-              </p>
-              <NavigationLinkWithLoader
-                href="/secretary"
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-              >
-                {texts.dashboard.treasury.back_to_secretaria_cta}
-              </NavigationLinkWithLoader>
-            </div>
+            <EmptyState
+              title={texts.dashboard.treasury.session_validation_empty}
+              action={
+                <NavigationLinkWithLoader
+                  href="/secretary"
+                  className={buttonClass({ variant: "secondary" })}
+                >
+                  {texts.dashboard.treasury.back_to_secretaria_cta}
+                </NavigationLinkWithLoader>
+              }
+            />
           ) : (
             <form action={submitAction} className="space-y-5">
               <PendingFieldset className="space-y-5">
@@ -158,9 +162,7 @@ export function DailySessionBalanceCard({
                               {draft.currencyCode}
                             </p>
                           </div>
-                          <div className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-                            {validation.sessionDate}
-                          </div>
+                          <Chip tone="neutral">{validation.sessionDate}</Chip>
                         </div>
 
                         <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -276,11 +278,11 @@ export function DailySessionBalanceCard({
                         ? texts.dashboard.treasury.confirm_open_session_loading
                         : texts.dashboard.treasury.confirm_close_session_loading
                     }
-                    className="min-h-11 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                    className={buttonClass({ variant: "primary" })}
                   />
                   <NavigationLinkWithLoader
                     href="/secretary"
-                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                    className={buttonClass({ variant: "secondary" })}
                   >
                     {texts.dashboard.treasury.cancel_session_cta}
                   </NavigationLinkWithLoader>
@@ -289,7 +291,7 @@ export function DailySessionBalanceCard({
             </form>
           )}
         </div>
-      </section>
+      </Card>
     </main>
   );
 }

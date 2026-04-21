@@ -1,6 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { Card } from "@/components/ui/card";
+import { LinkButton } from "@/components/ui/link-button";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalizedAmount } from "@/lib/amounts";
@@ -85,7 +86,7 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {canOperateSecretariaRole && treasuryCard ? (
-          <article className="rounded-dialog border border-border bg-card p-5">
+          <Card as="article" padding="compact">
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-2">
@@ -122,18 +123,15 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              <Link
-                href="/secretary"
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-              >
+              <LinkButton href="/secretary" variant="primary" fullWidth>
                 {texts.dashboard.overview.open_module_cta}
-              </Link>
+              </LinkButton>
             </div>
-          </article>
+          </Card>
         ) : null}
 
         {canOperateTesoreriaRole && treasuryRoleDashboard ? (
-          <article className="rounded-dialog border border-border bg-card p-5">
+          <Card as="article" padding="compact">
             <div className="space-y-4">
               <div className="space-y-2">
                 <p className="text-meta font-semibold uppercase tracking-[0.22em] text-muted-foreground">
@@ -177,18 +175,15 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              <Link
-                href="/treasury"
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-              >
+              <LinkButton href="/treasury" variant="primary" fullWidth>
                 {texts.dashboard.overview.open_module_cta}
-              </Link>
+              </LinkButton>
             </div>
-          </article>
+          </Card>
         ) : null}
 
         {canAccessSettings ? (
-          <article className="rounded-dialog border border-border bg-card p-5">
+          <Card as="article" padding="compact">
             <div className="space-y-4">
               <div className="space-y-2">
                 <p className="text-meta font-semibold uppercase tracking-[0.22em] text-muted-foreground">
@@ -203,14 +198,11 @@ export default async function DashboardPage() {
                 {texts.dashboard.overview.settings_description}
               </p>
 
-              <Link
-                href="/settings"
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
-              >
+              <LinkButton href="/settings" fullWidth>
                 {texts.dashboard.overview.open_settings_cta}
-              </Link>
+              </LinkButton>
             </div>
-          </article>
+          </Card>
         ) : null}
       </section>
     </main>

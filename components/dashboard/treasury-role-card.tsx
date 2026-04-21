@@ -12,7 +12,9 @@ import {
   TreasuryRoleMovementForm
 } from "@/components/dashboard/treasury-operation-forms";
 import { TreasuryAccountForm } from "@/components/treasury/account-form";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableActions,
@@ -20,6 +22,7 @@ import {
   DataTableRow,
 } from "@/components/ui/data-table";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount } from "@/lib/amounts";
@@ -280,29 +283,20 @@ function AccountAvatar({
   name: string;
   accountType?: TreasuryAccountType;
 }) {
-  const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-
-  const colorClass =
+  const tone =
     accountType === "bancaria"
-      ? "bg-ds-blue-050 text-ds-blue-700"
+      ? "bancaria"
       : accountType === "billetera_virtual"
-        ? "bg-ds-amber-050 text-ds-amber-700"
-        : "bg-ds-green-050 text-ds-green-700"; // efectivo
+        ? "virtual"
+        : "efectivo";
 
   return (
-    <div
-      className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-lg text-eyebrow font-bold tracking-wide",
-        colorClass
-      )}
-    >
-      {initials}
-    </div>
+    <Avatar
+      name={name}
+      shape="square"
+      tone={tone}
+      className="size-9 text-eyebrow tracking-wide"
+    />
   );
 }
 
@@ -833,40 +827,30 @@ function MovimientosTab({
 
       {dashboard.accounts.length > 0 && (
         <div className="flex flex-wrap gap-1.5 overflow-x-auto pb-1">
-          <button
-            type="button"
+          <ChipButton
+            size="sm"
+            active={selectedAccountId === null}
             onClick={() => onSelectAccount(null)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-meta font-semibold transition whitespace-nowrap",
-              selectedAccountId === null
-                ? "border-slate-900 bg-slate-900 text-white"
-                : "border-transparent bg-slate-100 text-slate-600 hover:text-foreground"
-            )}
+            className="whitespace-nowrap"
           >
             {texts.dashboard.treasury_role.all_accounts_filter}
-          </button>
+          </ChipButton>
           {dashboard.accounts.map((account) => (
-            <button
+            <ChipButton
               key={account.accountId}
-              type="button"
+              size="sm"
+              active={account.accountId === selectedAccountId}
               onClick={() => onSelectAccount(account.accountId)}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-meta font-semibold transition whitespace-nowrap",
-                account.accountId === selectedAccountId
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-transparent bg-slate-100 text-slate-600 hover:text-foreground"
-              )}
+              className="whitespace-nowrap"
             >
               {account.name}
-            </button>
+            </ChipButton>
           ))}
         </div>
       )}
 
       {isEmpty ? (
-        <div className="rounded-dialog border border-dashed border-border bg-secondary/30 px-4 py-5 text-sm text-muted-foreground">
-          {texts.dashboard.treasury_role.movements_empty}
-        </div>
+        <EmptyState title={texts.dashboard.treasury_role.movements_empty} />
       ) : (
         <TreasuryRoleMovementGroups groups={filteredGroups} onEditMovement={onEditMovement} />
       )}

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 import { AvatarSessionMenu } from "@/components/navigation/avatar-session-menu";
+import { getInitials } from "@/components/ui/avatar";
 import type { SessionContext } from "@/lib/auth/service";
 import {
   canAccessDashboardSummary,
@@ -47,15 +48,6 @@ function getActiveTab(pathname: string): TabKey {
   return "dashboard";
 }
 
-function getClubInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 export function AppHeader({ context }: AppHeaderProps) {
   const pathname = usePathname();
   const activeTab = getActiveTab(pathname);
@@ -64,7 +56,7 @@ export function AppHeader({ context }: AppHeaderProps) {
     ? formatMembershipRoles(context.activeMembership.roles)
     : texts.dashboard.role_pending;
   const clubLabel = context.activeClub?.name ?? texts.header.pending_club_label;
-  const clubInitials = getClubInitials(clubLabel);
+  const clubInitials = getInitials(clubLabel);
   const clubLogoUrl = context.activeClub?.logoUrl ?? null;
   const clubPrimaryColor = context.activeClub?.colorPrimary ?? null;
 

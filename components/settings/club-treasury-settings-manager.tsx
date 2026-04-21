@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MetaPill } from "@/components/ui/meta-pill";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type {
   ClubActivity,
   TreasuryAccount,
@@ -430,11 +434,7 @@ function SettingsSectionShell({
     <section className="rounded-toast border border-border/70 bg-card p-5 shadow-soft sm:p-6">
       <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          {eyebrow ? (
-            <div className="inline-flex w-fit rounded-full border border-border/70 bg-secondary/40 px-3 py-1 text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              {eyebrow}
-            </div>
-          ) : null}
+          {eyebrow ? <StatusBadge label={eyebrow} tone="neutral" /> : null}
           <div className="space-y-1">
             <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
@@ -523,16 +523,11 @@ export function ClubTreasurySettingsManager({
         ) : null}
 
         {treasurySettings.accounts.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-            {texts.settings.club.treasury.empty_accounts}
-          </div>
+          <EmptyState title={texts.settings.club.treasury.empty_accounts} />
         ) : (
           <div className="grid gap-4">
             {treasurySettings.accounts.map((account) => (
-              <article
-                key={account.id}
-                className="rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5"
-              >
+              <Card as="article" key={account.id} padding="compact">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
@@ -546,19 +541,15 @@ export function ClubTreasurySettingsManager({
                         </p>
                       </div>
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_visibility_label}
-                        </span>
-                        <span className="font-medium">{getAccountVisibilityLabel(account)}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_currencies_label}
-                        </span>
-                        <span className="font-medium">{account.currencies.join(" · ")}</span>
-                      </span>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <MetaPill
+                        label={texts.settings.club.treasury.account_visibility_label}
+                        value={getAccountVisibilityLabel(account)}
+                      />
+                      <MetaPill
+                        label={texts.settings.club.treasury.account_currencies_label}
+                        value={account.currencies.join(" · ")}
+                      />
                     </div>
                   </div>
 
@@ -584,7 +575,7 @@ export function ClubTreasurySettingsManager({
                     />
                   </div>
                 ) : null}
-              </article>
+              </Card>
             ))}
           </div>
         )}
@@ -655,16 +646,11 @@ export function ClubTreasurySettingsManager({
         ) : null}
 
         {treasurySettings.categories.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-            {texts.settings.club.treasury.empty_categories}
-          </div>
+          <EmptyState title={texts.settings.club.treasury.empty_categories} />
         ) : (
           <div className="grid gap-4">
             {treasurySettings.categories.map((category) => (
-              <article
-                key={category.id}
-                className="rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5"
-              >
+              <Card as="article" key={category.id} padding="compact">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
@@ -681,18 +667,14 @@ export function ClubTreasurySettingsManager({
                         </p>
                       </div>
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_visibility_label}
-                        </span>
-                        <span className="font-medium">
-                          {getRoleVisibilityLabel(
-                            category.visibleForSecretaria,
-                            category.visibleForTesoreria
-                          )}
-                        </span>
-                      </span>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <MetaPill
+                        label={texts.settings.club.treasury.account_visibility_label}
+                        value={getRoleVisibilityLabel(
+                          category.visibleForSecretaria,
+                          category.visibleForTesoreria
+                        )}
+                      />
                     </div>
                   </div>
 
@@ -717,7 +699,7 @@ export function ClubTreasurySettingsManager({
                     />
                   </div>
                 ) : null}
-              </article>
+              </Card>
             ))}
           </div>
         )}
@@ -751,16 +733,11 @@ export function ClubTreasurySettingsManager({
         ) : null}
 
         {treasurySettings.activities.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-border bg-secondary/30 p-5 text-sm text-muted-foreground">
-            {texts.settings.club.treasury.empty_activities}
-          </div>
+          <EmptyState title={texts.settings.club.treasury.empty_activities} />
         ) : (
           <div className="grid gap-4">
             {treasurySettings.activities.map((activity) => (
-              <article
-                key={activity.id}
-                className="rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5"
-              >
+              <Card as="article" key={activity.id} padding="compact">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
@@ -777,18 +754,14 @@ export function ClubTreasurySettingsManager({
                         </p>
                       </div>
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-foreground">
-                        <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          {texts.settings.club.treasury.account_visibility_label}
-                        </span>
-                        <span className="font-medium">
-                          {getRoleVisibilityLabel(
-                            activity.visibleForSecretaria,
-                            activity.visibleForTesoreria
-                          )}
-                        </span>
-                      </span>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <MetaPill
+                        label={texts.settings.club.treasury.account_visibility_label}
+                        value={getRoleVisibilityLabel(
+                          activity.visibleForSecretaria,
+                          activity.visibleForTesoreria
+                        )}
+                      />
                     </div>
                   </div>
 
@@ -813,7 +786,7 @@ export function ClubTreasurySettingsManager({
                     />
                   </div>
                 ) : null}
-              </article>
+              </Card>
             ))}
           </div>
         )}

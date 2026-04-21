@@ -1,3 +1,4 @@
+import { getInitials } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 type ClubMarkProps = {
@@ -5,18 +6,8 @@ type ClubMarkProps = {
   className?: string;
 };
 
-function getClubInitials(clubName: string) {
-  return clubName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 export function ClubMark({ clubName, className }: ClubMarkProps) {
-  const initials = getClubInitials(clubName) || "C";
+  const initials = getInitials(clubName, "C");
 
   return (
     <span

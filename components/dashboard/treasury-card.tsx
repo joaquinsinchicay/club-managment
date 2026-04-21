@@ -15,6 +15,7 @@ import {
 } from "@/components/dashboard/treasury-operation-forms";
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
 import {
   DataTable,
   DataTableBody,
@@ -193,9 +194,11 @@ function SessionCard({
   const isUnresolved = sessionStatus === "unresolved";
 
   return (
-    <section
+    <Card
+      as="section"
+      padding="none"
       className={cn(
-        "rounded-xl border border-border bg-card border-l-[3px]",
+        "border-l-[3px]",
         isUnresolved ? "border-l-slate-300" : cfg.borderColor
       )}
       aria-label={texts.dashboard.treasury.session_card_label}
@@ -286,7 +289,7 @@ function SessionCard({
           ) : null}
         </div>
       ) : null}
-    </section>
+    </Card>
   );
 }
 
@@ -294,23 +297,21 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
   const isUnresolved = card.movementDataStatus === "unresolved";
 
   return (
-    <section
-      className="rounded-xl border border-border bg-card"
+    <Card
+      as="section"
+      padding="none"
       aria-label={texts.dashboard.treasury.balances_visible_title}
     >
-      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-body font-semibold leading-tight tracking-tight text-foreground">
-            {texts.dashboard.treasury.balances_visible_title}
-          </h2>
-          <p className="text-meta font-medium text-muted-foreground">
-            {texts.dashboard.treasury.balances_visible_description}
-          </p>
-        </div>
-        <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-2 py-1 text-eyebrow font-semibold text-muted-foreground">
-          ARS
-        </span>
-      </div>
+      <CardHeader
+        title={texts.dashboard.treasury.balances_visible_title}
+        description={texts.dashboard.treasury.balances_visible_description}
+        action={
+          <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-2 py-1 text-eyebrow font-semibold text-muted-foreground">
+            ARS
+          </span>
+        }
+        className="px-4 pt-4 pb-3"
+      />
 
       <div className="border-t border-border px-4 pb-4">
         {isUnresolved ? (
@@ -347,7 +348,7 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
           </DataTable>
         )}
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -385,29 +386,28 @@ function MovementsCard({
     : null;
 
   return (
-    <section
-      className="rounded-xl border border-border bg-card sm:col-span-2"
+    <Card
+      as="section"
+      padding="none"
+      className="sm:col-span-2"
       aria-label={texts.dashboard.treasury.movements_card_title}
     >
-      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-body font-semibold leading-tight tracking-tight text-foreground">
-            {texts.dashboard.treasury.movements_card_title}
-          </h2>
-          <p className="text-meta font-medium text-muted-foreground">
-            {card.movements.length} {texts.dashboard.treasury.movements_card_description} · {today}
-          </p>
-        </div>
-        {detailHref ? (
-          <NavigationLinkWithLoader
-            href={detailHref}
-            prefetch={false}
-            className="shrink-0 text-small font-semibold text-muted-foreground transition hover:text-foreground"
-          >
-            {texts.dashboard.treasury.movements_see_all_cta}
-          </NavigationLinkWithLoader>
-        ) : null}
-      </div>
+      <CardHeader
+        title={texts.dashboard.treasury.movements_card_title}
+        description={`${card.movements.length} ${texts.dashboard.treasury.movements_card_description} · ${today}`}
+        action={
+          detailHref ? (
+            <NavigationLinkWithLoader
+              href={detailHref}
+              prefetch={false}
+              className="shrink-0 text-small font-semibold text-muted-foreground transition hover:text-foreground"
+            >
+              {texts.dashboard.treasury.movements_see_all_cta}
+            </NavigationLinkWithLoader>
+          ) : undefined
+        }
+        className="px-4 pt-4 pb-2"
+      />
 
       {/* Filter chips */}
       {card.accounts.length > 1 && !isDataUnresolved && card.movements.length > 0 ? (
@@ -475,7 +475,7 @@ function MovementsCard({
           />
         )}
       </div>
-    </section>
+    </Card>
   );
 }
 

@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type StatusBadgeTone = "success" | "danger" | "warning" | "neutral";
+type StatusBadgeTone = "success" | "danger" | "warning" | "neutral" | "accent";
 
 type StatusBadgeProps = {
   label: string;
@@ -12,7 +12,8 @@ const TONE_CLASSNAME: Record<StatusBadgeTone, string> = {
   success: "border-success/20 bg-success/10 text-success",
   danger: "border-destructive/20 bg-destructive/10 text-destructive",
   warning: "border-warning/20 bg-warning/10 text-amber-700",
-  neutral: "border-border bg-secondary text-foreground"
+  neutral: "border-border bg-secondary text-foreground",
+  accent: "border-foreground bg-foreground text-background"
 };
 
 export function StatusBadge({
