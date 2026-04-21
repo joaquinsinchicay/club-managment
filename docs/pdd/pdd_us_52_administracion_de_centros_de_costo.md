@@ -122,9 +122,10 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - `Moneda` debe pertenecer al catálogo de monedas habilitadas para el club.
 - `Responsable` debe ser un miembro activo del club.
 
-### Edición según enlaces con movimientos
-- Si el CC **no tiene movimientos enlazados**, todos los campos son editables.
-- Si el CC **tiene al menos un movimiento enlazado**, se deshabilitan `Tipo`, `Moneda` y `Fecha Inicio`. El resto de los campos (`Nombre`, `Descripción`, `Estado`, `Fecha Fin`, `Monto`, `Periodicidad`, `Responsable`) permanecen editables.
+### Edición · campos inmutables
+- En modo edición, **`Tipo`, `Moneda` y `Monto` son siempre inmutables**, exista o no movimientos enlazados. Esta regla evita romper reportes ya emitidos sobre el CC. Si un valor estuvo mal cargado, se debe inactivar el CC y crear uno nuevo.
+- `Fecha Inicio` se deshabilita solo cuando el CC ya tiene movimientos enlazados.
+- El resto de los campos (`Nombre`, `Descripción`, `Estado`, `Fecha Fin`, `Periodicidad`, `Responsable`) permanecen editables siempre.
 
 ### Cierre lógico
 - Al cambiar el estado de un CC de `activo` a `inactivo`:

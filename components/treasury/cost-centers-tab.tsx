@@ -451,6 +451,11 @@ function CostCenterForm({
   const showResponsible = requiresResponsible(type);
   const showPeriodicity = supportsPeriodicity(type);
 
+  // En edición, tipo/moneda/monto son inmutables para no romper reportes ya
+  // emitidos sobre el CC. Start_date sigue la regla legacy (solo con links).
+  const lockedInEdit = isEdit;
+  const editLockHint = tCC.form_locked_in_edit_hint;
+
   // Preserve legacy values when the form omits the field for the new type.
   const legacyCurrencyCode = costCenter?.currencyCode ?? null;
   const legacyResponsibleUserId = costCenter?.responsibleUserId ?? null;
@@ -497,10 +502,10 @@ function CostCenterForm({
             name="type"
             required
             defaultValue={costCenter?.type ?? "presupuesto"}
-            disabled={lockedByLinks}
+            disabled={lockedInEdit}
             onChange={(e) => setType(e.target.value as CostCenterType)}
             className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
-            title={lockedByLinks ? tCC.form_disabled_hint : undefined}
+            title={lockedInEdit ? editLockHint : undefined}
           >
             {COST_CENTER_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -561,9 +566,9 @@ function CostCenterForm({
               name="currency_code"
               required
               defaultValue={costCenter?.currencyCode ?? availableCurrencies[0] ?? ""}
-              disabled={lockedByLinks}
+              disabled={lockedInEdit}
               className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME)}
-              title={lockedByLinks ? tCC.form_disabled_hint : undefined}
+              title={lockedInEdit ? editLockHint : undefined}
             >
               {availableCurrencies.map((code) => (
                 <option key={code} value={code}>
@@ -588,13 +593,15 @@ function CostCenterForm({
               inputMode="decimal"
               required
               value={amountInput}
+              disabled={lockedInEdit}
+              title={lockedInEdit ? editLockHint : undefined}
               onChange={(e) => setAmountInput(sanitizeLocalizedAmountInput(e.target.value))}
               onBlur={(e) => setAmountInput(formatLocalizedAmountInputOnBlur(e.target.value))}
               onFocus={(e) => setAmountInput(formatLocalizedAmountInputOnFocus(e.target.value))}
               onKeyDown={(e) => {
                 if (e.key === "-") e.preventDefault();
               }}
-              className={cn(CONTROL_CLASSNAME, "tabular-nums")}
+              className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME, "tabular-nums")}
             />
           </FormField>
         ) : null}

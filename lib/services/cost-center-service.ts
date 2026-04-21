@@ -495,13 +495,24 @@ export async function updateCostCenter(
     const effectiveResponsibleUserId =
       input.responsibleUserId ?? existing.responsibleUserId;
 
+    // En edición, tipo / moneda / monto son inmutables siempre — para no
+    // romper reportes ya emitidos sobre el CC.
+    if (input.type !== existing.type) {
+      return err<{ costCenter: CostCenter }>("locked_field_modified");
+    }
+    if (effectiveCurrencyCode !== existing.currencyCode) {
+      return err<{ costCenter: CostCenter }>("locked_field_modified");
+    }
+    if ((input.amount ?? null) !== (existing.amount ?? null)) {
+      return err<{ costCenter: CostCenter }>("locked_field_modified");
+    }
+
+    // start_date sigue la regla legacy: solo locked si el CC ya tiene movimientos.
     const hasLinks = await costCenterRepository.hasLinkedMovements(costCenterId);
     if (hasLinks) {
-      if (input.type !== existing.type) return err<{ costCenter: CostCenter }>("locked_field_modified");
-      if (effectiveCurrencyCode !== existing.currencyCode)
+      if (input.startDate !== existing.startDate) {
         return err<{ costCenter: CostCenter }>("locked_field_modified");
-      if (input.startDate !== existing.startDate)
-        return err<{ costCenter: CostCenter }>("locked_field_modified");
+      }
     }
 
     // Auto-close end_date when the user transitions to `inactivo`.

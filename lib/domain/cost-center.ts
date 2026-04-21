@@ -200,14 +200,24 @@ export function resolveEndDateOnClose(params: {
 }
 
 /**
- * Fields that become read-only when the CC already has linked movements.
- * The rest (name, description, status, end_date, amount, periodicity,
- * responsible_user_id) remain editable.
+ * Fields that become read-only in edit mode, regardless of whether the CC has
+ * linked movements. Locked to avoid breaking already-emitted reports.
+ */
+export const COST_CENTER_LOCKED_FIELDS_IN_EDIT = [
+  "type",
+  "currencyCode",
+  "amount"
+] as const;
+
+/**
+ * Fields that become read-only ONLY when the CC already has linked movements
+ * (in addition to the always-locked-in-edit fields above).
  */
 export const COST_CENTER_LOCKED_FIELDS_WHEN_LINKED = [
   "type",
   "currencyCode",
-  "startDate"
+  "startDate",
+  "amount"
 ] as const;
 
 export type CostCenterLockedField = (typeof COST_CENTER_LOCKED_FIELDS_WHEN_LINKED)[number];

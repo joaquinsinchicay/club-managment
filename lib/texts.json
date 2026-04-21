@@ -524,6 +524,7 @@
         "form_periodicity_label": "Periodicidad",
         "form_responsible_label": "Responsable",
         "form_disabled_hint": "No editable: el CC tiene movimientos enlazados.",
+        "form_locked_in_edit_hint": "No editable: para no romper reportes ya emitidos.",
         "form_submit_cta": "Guardar",
         "form_cancel_cta": "Cancelar",
         "type_debt": "Deuda",
