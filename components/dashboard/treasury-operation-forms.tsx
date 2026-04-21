@@ -2104,7 +2104,7 @@ export function TreasuryRoleMovementForm({
                 {ccCopy.movements_cost_centers_empty_options}
               </p>
             ) : (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 {activeCostCenters.map((cc) => {
                   const selected = selectedCostCenterIds.includes(cc.id);
                   const currencyMismatch =
@@ -2112,12 +2112,7 @@ export function TreasuryRoleMovementForm({
                   return (
                     <label
                       key={cc.id}
-                      className={cn(
-                        "flex items-center gap-2 rounded-btn border px-3 py-2 text-sm transition",
-                        selected
-                          ? "border-foreground bg-secondary"
-                          : "border-border bg-card hover:bg-secondary/60"
-                      )}
+                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50"
                     >
                       <input
                         type="checkbox"
@@ -2125,18 +2120,18 @@ export function TreasuryRoleMovementForm({
                         value={cc.id}
                         checked={selected}
                         onChange={() => toggleCostCenter(cc.id)}
-                        className="size-4"
+                        className="size-4 rounded border-border text-foreground focus:ring-foreground"
                       />
-                      <span className="flex-1 truncate">{cc.name}</span>
-                      <span className="rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-eyebrow font-semibold uppercase text-slate-700">
+                      <span className="flex-1 truncate font-medium">{cc.name}</span>
+                      <span className="rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">
                         {cc.type}
                       </span>
-                      <span className="text-eyebrow font-semibold uppercase text-muted-foreground">
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                         {cc.currencyCode}
                       </span>
                       {selected && currencyMismatch ? (
                         <span
-                          className="rounded-[4px] bg-amber-50 px-1.5 py-0.5 text-eyebrow font-semibold uppercase text-amber-700"
+                          className="rounded-[4px] bg-amber-50 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-amber-700"
                           title={ccCopy.movements_cost_centers_currency_mismatch}
                         >
                           ⚠

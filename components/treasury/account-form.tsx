@@ -2,7 +2,17 @@
 
 import { useMemo, useState } from "react";
 
-import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
+import { ModalFooter } from "@/components/ui/modal-footer";
+import {
+  FormCheckboxCard,
+  FormError,
+  FormField,
+  FormFieldLabel,
+  FormHelpText,
+  FormInput,
+  FormSelect,
+} from "@/components/ui/modal-form";
+import { PendingFieldset } from "@/components/ui/pending-form";
 import type {
   TreasuryAccount,
   TreasuryAccountType,
@@ -34,12 +44,6 @@ const ACCOUNT_TYPE_COLORS: Record<TreasuryAccountType, { base: string; selected:
   }
 };
 
-// Clases compartidas para inputs / selects del formulario — mantiene look & feel.
-const fieldBaseClass =
-  "min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-body text-foreground";
-const labelBlockClass = "grid gap-2";
-const labelTitleClass = "text-small font-medium text-foreground";
-
 function formatInitialBalance(value: number): string {
   if (!Number.isFinite(value)) return "0,00";
   return value.toFixed(2).replace(".", ",");
@@ -55,8 +59,8 @@ function InitialBalanceField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex min-h-11 items-center gap-2 rounded-2xl border border-border bg-secondary/40 py-1.5 pl-1.5 pr-3">
-      <span className="inline-flex min-w-12 justify-center rounded-xl bg-card px-3 py-2 text-eyebrow font-semibold tracking-wider text-muted-foreground">
+    <label className="flex min-h-11 items-center gap-2 rounded-card border border-border bg-card py-1.5 pl-1.5 pr-3">
+      <span className="inline-flex min-w-12 justify-center rounded-card bg-secondary/40 px-3 py-2 text-xs font-semibold tracking-[0.14em] text-muted-foreground">
         {code}
       </span>
       <input
@@ -66,7 +70,7 @@ function InitialBalanceField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-label={`${texts.settings.club.treasury.initial_balance_label} ${code}`}
-        className="min-h-10 w-full rounded-xl border border-transparent bg-transparent px-2 py-2 text-right text-body tabular-nums text-foreground focus:border-border focus:bg-card"
+        className="min-h-10 w-full rounded-card border border-transparent bg-transparent px-2 py-2 text-right text-sm tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10"
       />
     </label>
   );
@@ -182,9 +186,9 @@ export function TreasuryAccountForm({
     <form
       action={action as (formData: FormData) => Promise<void>}
       onSubmit={validateAndSubmit}
-      className="flex min-h-0 flex-1 flex-col"
+      className="flex flex-col"
     >
-      <PendingFieldset className="flex min-h-0 flex-1 flex-col gap-5">
+      <PendingFieldset className="flex flex-col gap-4">
         {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
         <input type="hidden" name="account_type" value={accountType} />
         <input type="hidden" name="name" value={effectiveName} />
@@ -192,10 +196,9 @@ export function TreasuryAccountForm({
 
         {/* Tipo de cuenta */}
         <div className="grid gap-2">
-          <span className={labelTitleClass}>
-            {texts.settings.club.treasury.account_type_label}{" "}
-            <span aria-hidden="true" className="text-destructive">*</span>
-          </span>
+          <FormFieldLabel required>
+            {texts.settings.club.treasury.account_type_label}
+          </FormFieldLabel>
           <div className="grid grid-cols-3 gap-2">
             {ACCOUNT_TYPE_OPTIONS.map((type) => {
               const selected = accountType === type;
@@ -212,7 +215,7 @@ export function TreasuryAccountForm({
                     setFormErrors((prev) => ({ ...prev, accountType: undefined }));
                   }}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 text-small font-semibold transition",
+                    "flex flex-col items-center justify-center gap-1.5 rounded-card border p-3 text-sm font-semibold transition",
                     selected ? palette.selected : palette.base,
                     isEditMode && !selected && "opacity-60",
                     isEditMode && "cursor-not-allowed"
@@ -226,31 +229,26 @@ export function TreasuryAccountForm({
               );
             })}
           </div>
-          {formErrors.accountType ? (
-            <p className="text-small text-destructive" aria-live="polite">
-              {formErrors.accountType}
-            </p>
-          ) : null}
+          {formErrors.accountType ? <FormError>{formErrors.accountType}</FormError> : null}
         </div>
 
         {/* Nombre */}
-        <label className={cn(labelBlockClass, "text-body text-foreground")}>
-          <span className={labelTitleClass}>
-            {texts.settings.club.treasury.account_name_label}{" "}
-            <span aria-hidden="true" className="text-destructive">*</span>
-          </span>
+        <FormField>
+          <FormFieldLabel required>
+            {texts.settings.club.treasury.account_name_label}
+          </FormFieldLabel>
           {showBankFields ? (
-            <input
+            <FormInput
               type="text"
               value={composedBankName}
               placeholder={texts.settings.club.treasury.account_name_banco_auto_placeholder}
               readOnly
               aria-readonly
               tabIndex={-1}
-              className={cn(fieldBaseClass, "cursor-not-allowed bg-muted/40 text-muted-foreground")}
+              className="cursor-not-allowed bg-secondary/40 text-muted-foreground"
             />
           ) : (
-            <input
+            <FormInput
               type="text"
               value={nameValue}
               onChange={(event) => {
@@ -258,25 +256,21 @@ export function TreasuryAccountForm({
                 setFormErrors((prev) => ({ ...prev, name: undefined }));
               }}
               placeholder={texts.settings.club.treasury.account_name_placeholder}
-              className={fieldBaseClass}
             />
           )}
-          <span className="text-meta text-muted-foreground">
+          <FormHelpText>
             {showBankFields
               ? texts.settings.club.treasury.account_name_banco_helper
               : texts.settings.club.treasury.account_name_helper}
-          </span>
-          {formErrors.name ? (
-            <span className="text-small text-destructive" aria-live="polite">{formErrors.name}</span>
-          ) : null}
-        </label>
+          </FormHelpText>
+          {formErrors.name ? <FormError>{formErrors.name}</FormError> : null}
+        </FormField>
 
         {/* Moneda — selector excluyente */}
         <div className="grid gap-2">
-          <span className={labelTitleClass}>
-            {texts.settings.club.treasury.account_currencies_label}{" "}
-            <span aria-hidden="true" className="text-destructive">*</span>
-          </span>
+          <FormFieldLabel required>
+            {texts.settings.club.treasury.account_currencies_label}
+          </FormFieldLabel>
           <div className="flex flex-wrap gap-2">
             {CURRENCY_OPTIONS.map((code) => {
               const selected = selectedCurrency === code;
@@ -292,7 +286,7 @@ export function TreasuryAccountForm({
                     setFormErrors((prev) => ({ ...prev, currencies: undefined }));
                   }}
                   className={cn(
-                    "inline-flex min-h-10 items-center gap-2 rounded-full border px-5 text-small font-semibold transition",
+                    "inline-flex min-h-10 items-center gap-2 rounded-card border px-5 text-sm font-semibold transition",
                     selected
                       ? "border-ds-blue-700 bg-ds-blue-050 text-ds-blue-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary/60",
@@ -313,24 +307,21 @@ export function TreasuryAccountForm({
           {selectedCurrency ? (
             <input type="hidden" name="currencies" value={selectedCurrency} />
           ) : null}
-          <span className="text-meta text-muted-foreground">
+          <FormHelpText>
             {texts.settings.club.treasury.account_currencies_helper}
-          </span>
-          {formErrors.currencies ? (
-            <span className="text-small text-destructive" aria-live="polite">{formErrors.currencies}</span>
-          ) : null}
+          </FormHelpText>
+          {formErrors.currencies ? <FormError>{formErrors.currencies}</FormError> : null}
         </div>
 
         {/* Campos Banco */}
         {showBankFields ? (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className={cn(labelBlockClass, "text-body text-foreground")}>
-                <span className={labelTitleClass}>
-                  {texts.settings.club.treasury.bank_entity_label}{" "}
-                  <span aria-hidden="true" className="text-destructive">*</span>
-                </span>
-                <select
+              <FormField>
+                <FormFieldLabel required>
+                  {texts.settings.club.treasury.bank_entity_label}
+                </FormFieldLabel>
+                <FormSelect
                   name={isEditMode ? undefined : "bank_entity"}
                   value={bankEntity}
                   disabled={isEditMode}
@@ -338,30 +329,23 @@ export function TreasuryAccountForm({
                     setBankEntity(event.target.value);
                     setFormErrors((prev) => ({ ...prev, bankEntity: undefined, name: undefined }));
                   }}
-                  className={cn(
-                    fieldBaseClass,
-                    isEditMode && "cursor-not-allowed bg-muted/40 text-muted-foreground"
-                  )}
                 >
                   <option value="">{texts.settings.club.treasury.bank_entity_placeholder}</option>
                   {texts.settings.club.treasury.bank_entities.map((entity) => (
                     <option key={entity} value={entity}>{entity}</option>
                   ))}
-                </select>
+                </FormSelect>
                 {isEditMode ? (
                   <input type="hidden" name="bank_entity" value={bankEntity} />
                 ) : null}
-                {formErrors.bankEntity ? (
-                  <span className="text-small text-destructive" aria-live="polite">{formErrors.bankEntity}</span>
-                ) : null}
-              </label>
+                {formErrors.bankEntity ? <FormError>{formErrors.bankEntity}</FormError> : null}
+              </FormField>
 
-              <label className={cn(labelBlockClass, "text-body text-foreground")}>
-                <span className={labelTitleClass}>
-                  {texts.settings.club.treasury.bank_account_subtype_label}{" "}
-                  <span aria-hidden="true" className="text-destructive">*</span>
-                </span>
-                <select
+              <FormField>
+                <FormFieldLabel required>
+                  {texts.settings.club.treasury.bank_account_subtype_label}
+                </FormFieldLabel>
+                <FormSelect
                   name={isEditMode ? undefined : "bank_account_subtype"}
                   value={bankSubtype}
                   disabled={isEditMode}
@@ -369,10 +353,6 @@ export function TreasuryAccountForm({
                     setBankSubtype(event.target.value as TreasuryBankAccountSubtype | "");
                     setFormErrors((prev) => ({ ...prev, bankSubtype: undefined, name: undefined }));
                   }}
-                  className={cn(
-                    fieldBaseClass,
-                    isEditMode && "cursor-not-allowed bg-muted/40 text-muted-foreground"
-                  )}
                 >
                   <option value="">{texts.settings.club.treasury.bank_account_subtype_placeholder}</option>
                   {SUBTYPE_OPTIONS.map((subtype) => (
@@ -380,31 +360,28 @@ export function TreasuryAccountForm({
                       {texts.settings.club.treasury.bank_account_subtypes[subtype]}
                     </option>
                   ))}
-                </select>
+                </FormSelect>
                 {isEditMode ? (
                   <input type="hidden" name="bank_account_subtype" value={bankSubtype} />
                 ) : null}
-                {formErrors.bankSubtype ? (
-                  <span className="text-small text-destructive" aria-live="polite">{formErrors.bankSubtype}</span>
-                ) : null}
-              </label>
+                {formErrors.bankSubtype ? <FormError>{formErrors.bankSubtype}</FormError> : null}
+              </FormField>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className={cn(labelBlockClass, "text-body text-foreground")}>
-                <span className={labelTitleClass}>{texts.settings.club.treasury.account_number_label}</span>
-                <input
+              <FormField>
+                <FormFieldLabel>{texts.settings.club.treasury.account_number_label}</FormFieldLabel>
+                <FormInput
                   type="text"
                   name="account_number"
                   defaultValue={defaultAccount?.accountNumber ?? ""}
                   placeholder={texts.settings.club.treasury.account_number_placeholder}
-                  className={fieldBaseClass}
                 />
-              </label>
+              </FormField>
 
-              <label className={cn(labelBlockClass, "text-body text-foreground")}>
-                <span className={labelTitleClass}>{texts.settings.club.treasury.cbu_cvu_label}</span>
-                <input
+              <FormField>
+                <FormFieldLabel>{texts.settings.club.treasury.cbu_cvu_label}</FormFieldLabel>
+                <FormInput
                   type="text"
                   name="cbu_cvu"
                   inputMode="numeric"
@@ -415,12 +392,9 @@ export function TreasuryAccountForm({
                     setFormErrors((prev) => ({ ...prev, cbu: undefined }));
                   }}
                   placeholder={texts.settings.club.treasury.cbu_cvu_placeholder}
-                  className={fieldBaseClass}
                 />
-                {formErrors.cbu ? (
-                  <span className="text-small text-destructive" aria-live="polite">{formErrors.cbu}</span>
-                ) : null}
-              </label>
+                {formErrors.cbu ? <FormError>{formErrors.cbu}</FormError> : null}
+              </FormField>
             </div>
           </>
         ) : null}
@@ -428,25 +402,24 @@ export function TreasuryAccountForm({
         {/* Campos Billetera */}
         {showWalletFields ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className={cn(labelBlockClass, "text-body text-foreground")}>
-              <span className={labelTitleClass}>{texts.settings.club.treasury.wallet_provider_label}</span>
-              <select
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.treasury.wallet_provider_label}</FormFieldLabel>
+              <FormSelect
                 name="wallet_provider"
                 defaultValue={
                   defaultAccount?.accountType === "billetera_virtual" ? (defaultAccount?.bankEntity ?? "") : ""
                 }
-                className={fieldBaseClass}
               >
                 <option value="">{texts.settings.club.treasury.wallet_provider_placeholder}</option>
                 {texts.settings.club.treasury.wallet_providers.map((provider) => (
                   <option key={provider} value={provider}>{provider}</option>
                 ))}
-              </select>
-            </label>
+              </FormSelect>
+            </FormField>
 
-            <label className={cn(labelBlockClass, "text-body text-foreground")}>
-              <span className={labelTitleClass}>{texts.settings.club.treasury.alias_label}</span>
-              <input
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.treasury.alias_label}</FormFieldLabel>
+              <FormInput
                 type="text"
                 name="alias"
                 maxLength={60}
@@ -457,21 +430,16 @@ export function TreasuryAccountForm({
                   setFormErrors((prev) => ({ ...prev, alias: undefined }));
                 }}
                 placeholder={texts.settings.club.treasury.alias_placeholder}
-                className={fieldBaseClass}
               />
-              {formErrors.alias ? (
-                <span className="text-small text-destructive" aria-live="polite">{formErrors.alias}</span>
-              ) : null}
-            </label>
+              {formErrors.alias ? <FormError>{formErrors.alias}</FormError> : null}
+            </FormField>
           </div>
         ) : null}
 
         {/* Saldo inicial de la moneda operativa */}
         {selectedCurrency ? (
           <div className="grid gap-2">
-            <span className={labelTitleClass}>
-              {texts.settings.club.treasury.initial_balance_label}
-            </span>
+            <FormFieldLabel>{texts.settings.club.treasury.initial_balance_label}</FormFieldLabel>
             <div className="grid gap-3 sm:grid-cols-2">
               <InitialBalanceField
                 code={selectedCurrency}
@@ -479,45 +447,26 @@ export function TreasuryAccountForm({
                 onChange={(value) => handleBalanceChange(selectedCurrency, value)}
               />
             </div>
-            <span className="text-meta text-muted-foreground">
-              {texts.settings.club.treasury.initial_balance_helper}
-            </span>
+            <FormHelpText>{texts.settings.club.treasury.initial_balance_helper}</FormHelpText>
           </div>
         ) : null}
 
         {/* Visibilidad — checkbox único para Secretaría. Tesorería siempre habilitada. */}
-        <label className="mb-2 flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-body text-foreground">
-          <input
-            type="checkbox"
-            checked={availableForSecretaria}
-            onChange={(event) => setAvailableForSecretaria(event.target.checked)}
-            className="size-4 rounded border-border"
-          />
-          <span className="font-medium">
-            {texts.settings.club.treasury.visibility_secretaria_checkbox}
-          </span>
-        </label>
+        <FormCheckboxCard
+          name="__available_for_secretaria_display"
+          value="on"
+          label={texts.settings.club.treasury.visibility_secretaria_checkbox}
+          checked={availableForSecretaria}
+          onChange={setAvailableForSecretaria}
+        />
 
-        {/* Spacer para separar la última fila del footer sticky */}
-        <div className="flex-1" aria-hidden="true" />
-
-        {/* Footer actions (sticky al fondo del body scrolleable del modal) */}
-        <div className="sticky bottom-0 -mx-5 flex items-center justify-end gap-2 border-t border-border/60 bg-card px-5 py-4 sm:-mx-6 sm:px-6">
-          {onCancel ? (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="min-h-11 rounded-2xl border border-border bg-card px-5 py-3 text-small font-semibold text-foreground transition hover:bg-secondary"
-            >
-              {cancelLabel ?? texts.settings.club.treasury.cancel_cta}
-            </button>
-          ) : null}
-          <PendingSubmitButton
-            idleLabel={submitLabel}
-            pendingLabel={pendingLabel}
-            className="min-h-11 rounded-2xl bg-foreground px-5 py-3 text-small font-semibold text-primary-foreground transition hover:opacity-95"
-          />
-        </div>
+        <ModalFooter
+          align="end"
+          onCancel={onCancel}
+          cancelLabel={cancelLabel ?? texts.settings.club.treasury.cancel_cta}
+          submitLabel={submitLabel}
+          pendingLabel={pendingLabel}
+        />
       </PendingFieldset>
     </form>
   );
