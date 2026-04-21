@@ -461,7 +461,6 @@ export function TreasuryAccountForm({
         />
 
         <ModalFooter
-          align="end"
           onCancel={onCancel}
           cancelLabel={cancelLabel ?? texts.settings.club.treasury.cancel_cta}
           submitLabel={submitLabel}

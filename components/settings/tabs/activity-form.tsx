@@ -108,7 +108,6 @@ export function ActivityForm({
       </PendingFieldset>
 
       <ModalFooter
-        align="end"
         onCancel={onClose}
         cancelLabel={texts.settings.club.treasury.cancel_cta}
         submitLabel={submitLabel}
