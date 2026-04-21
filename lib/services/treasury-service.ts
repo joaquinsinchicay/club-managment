@@ -307,7 +307,7 @@ function isMissingStaleSessionAutoCloseRpcError(error: unknown) {
 
   return (
     message.includes("get_last_open_daily_cash_session_before_date_for_current_club") ||
-    message.includes("auto_close_stale_daily_cash_session_with_balances_for_current_club") ||
+    message.includes("auto_close_stale_daily_cash_session_for_club") ||
     message.includes("function") && message.includes("does not exist")
   );
 }

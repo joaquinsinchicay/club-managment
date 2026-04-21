@@ -112,7 +112,7 @@ function getSupabaseErrorMessage(error: unknown) {
 const KNOWN_CLUB_SCOPED_RPC_NAMES = [
   "update_treasury_movement_for_current_club",
   "get_last_open_daily_cash_session_before_date_for_current_club",
-  "auto_close_stale_daily_cash_session_with_balances_for_current_club",
+  "auto_close_stale_daily_cash_session_for_club",
   "get_daily_consolidation_batch_by_date_for_current_club",
   "create_daily_consolidation_batch_for_current_club",
   "update_daily_consolidation_batch_for_current_club",
@@ -169,7 +169,7 @@ function isMissingStaleSessionAutoCloseRpcCause(error: unknown) {
 
   return (
     message.includes("get_last_open_daily_cash_session_before_date_for_current_club") ||
-    message.includes("auto_close_stale_daily_cash_session_with_balances_for_current_club") ||
+    message.includes("auto_close_stale_daily_cash_session_for_club") ||
     (message.includes("function") && message.includes("does not exist"))
   );
 }
@@ -2840,7 +2840,7 @@ async function autoCloseRealStaleDailyCashSessionWithBalances(input: {
   }
 
   const { data, error } = await supabase.rpc(
-    "auto_close_stale_daily_cash_session_with_balances_for_current_club",
+    "auto_close_stale_daily_cash_session_for_club",
     {
       p_club_id: input.clubId,
       p_before_date: input.beforeDate,
