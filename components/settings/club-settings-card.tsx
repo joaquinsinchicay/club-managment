@@ -1,5 +1,7 @@
 "use client";
 
+import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
+import { SalaryStructuresTab } from "@/components/hr/salary-structures-tab";
 import { Card } from "@/components/ui/card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
@@ -11,6 +13,10 @@ import { PlaceholderTab } from "@/components/settings/tabs/placeholder-tab";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { ClubMember, PendingClubInvitation, TreasurySettings } from "@/lib/domain/access";
+import type {
+  SalaryStructure,
+  SalaryStructureVersion,
+} from "@/lib/domain/salary-structure";
 import { getClubSettingsPermissions } from "@/lib/domain/authorization";
 
 type ClubSettingsCardProps = {
@@ -28,6 +34,13 @@ type ClubSettingsCardProps = {
   updateClubActivityAction: (formData: FormData) => Promise<void>;
   updateReceiptFormatAction: (formData: FormData) => Promise<void>;
   updateClubIdentityAction: (formData: FormData) => Promise<void>;
+  canAccessHr: boolean;
+  canMutateHr: boolean;
+  salaryStructures: SalaryStructure[];
+  salaryStructureVersionsByStructureId: Record<string, SalaryStructureVersion[]>;
+  createSalaryStructureAction: (formData: FormData) => Promise<RrhhActionResult>;
+  updateSalaryStructureAction: (formData: FormData) => Promise<RrhhActionResult>;
+  updateSalaryStructureAmountAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 export function ClubSettingsCard({
@@ -44,7 +57,14 @@ export function ClubSettingsCard({
   createClubActivityAction,
   updateClubActivityAction,
   updateReceiptFormatAction,
-  updateClubIdentityAction
+  updateClubIdentityAction,
+  canAccessHr,
+  canMutateHr,
+  salaryStructures,
+  salaryStructureVersionsByStructureId,
+  createSalaryStructureAction,
+  updateSalaryStructureAction,
+  updateSalaryStructureAmountAction
 }: ClubSettingsCardProps) {
   const activeClub = context.activeClub;
   const permissions = getClubSettingsPermissions(context.activeMembership);
@@ -105,6 +125,24 @@ export function ClubSettingsCard({
         />
       )
     },
+    canAccessHr && activeClub
+      ? {
+          id: "rrhh",
+          label: texts.settings.club.tabs.rrhh,
+          content: (
+            <SalaryStructuresTab
+              structures={salaryStructures}
+              versionsByStructureId={salaryStructureVersionsByStructureId}
+              activities={treasurySettings.activities}
+              clubCurrencyCode={activeClub.currencyCode}
+              canMutate={canMutateHr}
+              createAction={createSalaryStructureAction}
+              updateAction={updateSalaryStructureAction}
+              updateAmountAction={updateSalaryStructureAmountAction}
+            />
+          )
+        }
+      : null,
     {
       id: "permisos-por-rol",
       label: texts.settings.club.tabs.role_permissions,

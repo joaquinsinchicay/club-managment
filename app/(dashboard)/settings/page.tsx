@@ -2,10 +2,13 @@ import { ClubSettingsCard } from "@/components/settings/club-settings-card";
 import { ClubSettingsForbiddenCard } from "@/components/settings/club-settings-forbidden-card";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import {
+  canAccessHrMasters,
+  canMutateHrMasters,
   getClubSettingsPermissions
 } from "@/lib/domain/authorization";
 import { getClubMembersForActiveClub } from "@/lib/services/club-members-service";
 import { getTreasurySettingsForActiveClub } from "@/lib/services/treasury-settings-service";
+import { listSalaryStructuresWithVersionsForActiveClub } from "@/lib/services/salary-structure-service";
 import {
   approveClubMembershipAction,
   createClubActivityAction,
@@ -18,6 +21,11 @@ import {
   updateReceiptFormatAction,
   updateTreasuryCategoryAction
 } from "@/app/(dashboard)/settings/actions";
+import {
+  createSalaryStructureAction,
+  updateSalaryStructureAction,
+  updateSalaryStructureAmountAction
+} from "@/app/(dashboard)/settings/rrhh/actions";
 import { redirect } from "next/navigation";
 
 export default async function ClubSettingsPage() {
@@ -46,6 +54,20 @@ export default async function ClubSettingsPage() {
     return <ClubSettingsForbiddenCard />;
   }
 
+  const canHrRead = canAccessHrMasters(context.activeMembership);
+  const canHrMutate = canMutateHrMasters(context.activeMembership);
+
+  const salaryStructuresData = canHrRead
+    ? await listSalaryStructuresWithVersionsForActiveClub()
+    : null;
+
+  const salaryStructures =
+    salaryStructuresData && salaryStructuresData.ok ? salaryStructuresData.structures : [];
+  const salaryStructureVersions =
+    salaryStructuresData && salaryStructuresData.ok
+      ? salaryStructuresData.versionsByStructureId
+      : {};
+
   return (
     <ClubSettingsCard
       context={context}
@@ -62,6 +84,13 @@ export default async function ClubSettingsPage() {
       updateClubActivityAction={updateClubActivityAction}
       updateReceiptFormatAction={updateReceiptFormatAction}
       updateClubIdentityAction={updateClubIdentityAction}
+      canAccessHr={canHrRead}
+      canMutateHr={canHrMutate}
+      salaryStructures={salaryStructures}
+      salaryStructureVersionsByStructureId={salaryStructureVersions}
+      createSalaryStructureAction={createSalaryStructureAction}
+      updateSalaryStructureAction={updateSalaryStructureAction}
+      updateSalaryStructureAmountAction={updateSalaryStructureAmountAction}
     />
   );
 }

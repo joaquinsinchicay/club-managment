@@ -37,7 +37,13 @@ const SUCCESS_CODES = new Set<string>([
   "cost_center_updated",
   "cost_center_closed",
   "cost_center_movement_links_synced",
-  "cost_center_movement_unlinked"
+  "cost_center_movement_unlinked",
+
+  // Settings · RRHH · salary structures (US-54 / US-55)
+  "salary_structure_created",
+  "salary_structure_updated",
+  "salary_structure_status_changed",
+  "salary_structure_amount_updated"
 ]);
 
 export type FeedbackDomain = "settings" | "dashboard";
@@ -57,7 +63,8 @@ function lookupMessage(domain: FeedbackDomain, code: string): string | undefined
       ...(texts.settings.club.members.feedback as Record<string, string>),
       ...(texts.settings.club.invitations.feedback as Record<string, string>),
       ...(texts.settings.club.treasury.feedback as Record<string, string>),
-      ...(texts.settings.club.identity.feedback as Record<string, string>)
+      ...(texts.settings.club.identity.feedback as Record<string, string>),
+      ...(texts.settings.club.rrhh.feedback as Record<string, string>)
     };
     return merged[code];
   }
