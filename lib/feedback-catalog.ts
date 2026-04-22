@@ -54,7 +54,19 @@ const SUCCESS_CODES = new Set<string>([
   // Settings · RRHH · staff contracts (US-57 / US-58)
   "staff_contract_created",
   "staff_contract_updated",
-  "staff_contract_finalized"
+  "staff_contract_finalized",
+
+  // Dashboard · RRHH · payroll settlements (US-61 / US-62 / US-63 / US-66)
+  "settlement_generated",
+  "settlement_confirmed",
+  "settlement_confirmed_bulk",
+  "settlement_annulled",
+  "settlement_adjustment_added",
+  "settlement_adjustment_updated",
+  "settlement_adjustment_removed",
+  "settlement_hours_loaded",
+  "settlement_base_amount_updated",
+  "settlement_notes_updated"
 ]);
 
 export type FeedbackDomain = "settings" | "dashboard";
@@ -83,7 +95,8 @@ function lookupMessage(domain: FeedbackDomain, code: string): string | undefined
   const merged: Record<string, string> = {
     ...(texts.dashboard.feedback as Record<string, string>),
     ...(texts.settings.club.treasury.feedback as Record<string, string>),
-    ...(texts.dashboard.treasury_role.cost_centers.feedback as Record<string, string>)
+    ...(texts.dashboard.treasury_role.cost_centers.feedback as Record<string, string>),
+    ...(texts.rrhh.settlements.feedback as Record<string, string>)
   };
   return merged[code];
 }
