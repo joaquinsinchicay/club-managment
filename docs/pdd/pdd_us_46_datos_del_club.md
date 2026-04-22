@@ -57,7 +57,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 
 - Existe un club activo válido en sesión.
 - El usuario tiene rol `admin` en ese club.
-- Schema `public.clubs` incluye las columnas de identidad: `name`, `cuit`, `tipo`, `domicilio`, `email`, `telefono`, `logo_url`, `color_primary`, `color_secondary`.
+- Schema `public.clubs` incluye las columnas de identidad: `name`, `cuit`, `tipo`, `domicilio`, `email`, `telefono`, `logo_url`, `color_primary`, `color_secondary`, `currency_code`.
 
 ---
 
@@ -86,6 +86,7 @@ Usuario autenticado con membership `activo` y rol `admin` en el club activo.
 - **Email**: obligatorio, formato RFC válido (ver US-49).
 - **Teléfono**: obligatorio, formato E.164 con prefijo internacional (ver US-49).
 - **Colores**: opcionales. Si se completan deben ser HEX válidos (`#RGB` o `#RRGGBB`).
+- **Moneda del club (`currency_code`)**: obligatoria, enum `ARS | USD`. Default `ARS` en alta y backfill. Se usa como moneda canónica en módulos que requieren una unidad monetaria por defecto (ej. Estructuras Salariales de RRHH — US-54).
 - **Logo**: opcional. Detalle de formatos, tamaños, preview, reemplazo y eliminación cubiertos por US-47.
 - **Cancelar**: resetea el form al estado precargado sin pedir confirmación, incluso si había cambios pendientes.
 - **Feedback**: toda acción de guardado exitoso o fallido se comunica mediante toast (`flashToast` + `resolveFeedback`). No se usan mensajes inline para feedback post-acción.

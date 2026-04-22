@@ -1,6 +1,6 @@
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canManageClubMembers } from "@/lib/domain/authorization";
-import type { Club, ClubType } from "@/lib/domain/access";
+import type { Club, ClubType, TreasuryCurrencyCode } from "@/lib/domain/access";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import {
@@ -30,6 +30,7 @@ export type ClubIdentityActionCode =
   | "invalid_telefono"
   | "invalid_telefono_missing_prefix"
   | "invalid_color"
+  | "invalid_currency"
   | "invalid_logo"
   | "invalid_logo_dimensions"
   | "logo_upload_failed"
@@ -50,6 +51,7 @@ export type UpdateClubIdentityInput = {
   telefono: string;
   colorPrimary: string;
   colorSecondary: string;
+  currencyCode: string;
   logoFile?: File | null;
   removeLogo?: boolean;
 };
@@ -59,6 +61,7 @@ const ALLOWED_LOGO_MIME = new Set(["image/png", "image/svg+xml"]);
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const MIN_LOGO_DIMENSION = 256;
 const VALID_CLUB_TYPES: ClubType[] = ["asociacion_civil", "fundacion", "sociedad_civil"];
+const VALID_CURRENCY_CODES: TreasuryCurrencyCode[] = ["ARS", "USD"];
 const LOGO_BUCKET = "club-logos";
 const MIN_DOMICILIO_LENGTH = 4;
 const MAX_DOMICILIO_LENGTH = 200;
@@ -69,6 +72,10 @@ function normalizeColor(raw: string) {
 
 function isValidClubType(value: string): value is ClubType {
   return (VALID_CLUB_TYPES as string[]).includes(value);
+}
+
+function isValidCurrencyCode(value: string): value is TreasuryCurrencyCode {
+  return (VALID_CURRENCY_CODES as string[]).includes(value);
 }
 
 function extensionForMime(mime: string): "png" | "svg" | null {
@@ -275,6 +282,12 @@ export async function updateClubIdentityForActiveClub(
     return { ok: false, code: "invalid_color" };
   }
 
+  const currencyRaw = (input.currencyCode ?? "").trim().toUpperCase();
+  if (!isValidCurrencyCode(currencyRaw)) {
+    return { ok: false, code: "invalid_currency" };
+  }
+  const currencyCode: TreasuryCurrencyCode = currencyRaw;
+
   let logoUrlToPersist: string | null | undefined;
   let newLogoObjectName: string | null = null;
 
@@ -312,6 +325,7 @@ export async function updateClubIdentityForActiveClub(
       telefono,
       colorPrimary: colorPrimary === "" ? null : colorPrimary,
       colorSecondary: colorSecondary === "" ? null : colorSecondary,
+      currencyCode,
       ...(logoUrlToPersist !== undefined ? { logoUrl: logoUrlToPersist } : {})
     });
 

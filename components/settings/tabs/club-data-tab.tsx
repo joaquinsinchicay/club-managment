@@ -2,9 +2,17 @@
 
 import { useRef, useState } from "react";
 
+import { Avatar, getInitials } from "@/components/ui/avatar";
 import { Button, buttonClass } from "@/components/ui/button";
+import {
+  FormField,
+  FormFieldLabel,
+  FormHelpText,
+  FormInput,
+  FormSelect,
+} from "@/components/ui/modal-form";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
-import type { Club, ClubType } from "@/lib/domain/access";
+import type { Club, ClubType, TreasuryCurrencyCode } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 import { formatCuit, normalizeCuit } from "@/lib/validators/cuit";
@@ -16,10 +24,7 @@ type ClubDataTabProps = {
 };
 
 const CLUB_TYPE_VALUES: ClubType[] = ["asociacion_civil", "fundacion", "sociedad_civil"];
-
-function getClubInitial(name: string) {
-  return name.trim().charAt(0).toUpperCase() || "?";
-}
+const CURRENCY_VALUES: TreasuryCurrencyCode[] = ["ARS", "USD"];
 
 export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDataTabProps) {
   const identityTexts = texts.settings.club.identity;
@@ -54,8 +59,6 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
   }
 
   function handleFormSubmit() {
-    // Restaura el File seleccionado al input si el browser lo vaciet re-render
-    // (pasa cuando un server action redirige sin remontar el componente).
     if (selectedFile && fileInputRef.current) {
       const currentFiles = fileInputRef.current.files;
       if (!currentFiles || currentFiles.length === 0) {
@@ -90,6 +93,8 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
     formRef.current?.reset();
   }
 
+  const logoInitials = getInitials(club.name);
+
   return (
     <form
       ref={formRef}
@@ -114,33 +119,30 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
                 onClick={() => canEdit && fileInputRef.current?.click()}
                 disabled={!canEdit}
                 className={cn(
-                  "group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-primary/10 text-2xl font-semibold text-primary transition",
+                  "group relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border transition",
                   canEdit
-                    ? "cursor-pointer hover:ring-2 hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    ? "cursor-pointer hover:ring-2 hover:ring-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30"
                     : "cursor-not-allowed opacity-70"
                 )}
-                style={
-                  colorPrimary
-                    ? { borderColor: colorPrimary }
-                    : undefined
-                }
                 aria-label={
                   logoPreview ? identityTexts.logo_replace_cta : identityTexts.logo_upload_cta
                 }
               >
                 {logoPreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={logoPreview}
-                    alt={club.name}
-                    className="h-full w-full object-cover"
-                  />
+                  <span className="inline-flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={logoPreview}
+                      alt={club.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </span>
                 ) : (
-                  <span>{getClubInitial(club.name)}</span>
+                  <Avatar name={club.name} fallback={logoInitials} size="lg" tone="accent" />
                 )}
                 {canEdit ? (
                   <span
-                    className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border border-border bg-foreground text-primary-foreground shadow-sm transition group-hover:scale-105"
+                    className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border border-border bg-foreground text-background shadow-sm transition group-hover:scale-105"
                     aria-hidden="true"
                   >
                     <svg
@@ -170,22 +172,18 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
               ) : null}
             </div>
 
-            <label className="grid flex-1 gap-2 text-sm text-foreground">
-              <span className="font-medium">
-                {identityTexts.name_label}
-                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
-              </span>
-              <input
+            <FormField className="flex-1">
+              <FormFieldLabel required>{identityTexts.name_label}</FormFieldLabel>
+              <FormInput
                 type="text"
                 name="name"
                 defaultValue={club.name}
                 placeholder={identityTexts.name_placeholder}
                 minLength={2}
                 maxLength={80}
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
                 required
               />
-            </label>
+            </FormField>
 
             <input
               ref={fileInputRef}
@@ -198,15 +196,12 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
             {pendingRemove ? <input type="hidden" name="remove_logo" value="on" /> : null}
           </div>
 
-          <p className="text-xs text-muted-foreground">{identityTexts.logo_description}</p>
+          <FormHelpText>{identityTexts.logo_description}</FormHelpText>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">
-                {identityTexts.cuit_label}
-                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
-              </span>
-              <input
+            <FormField>
+              <FormFieldLabel required>{identityTexts.cuit_label}</FormFieldLabel>
+              <FormInput
                 type="text"
                 name="cuit"
                 value={cuit}
@@ -214,85 +209,78 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
                 onBlur={handleCuitBlur}
                 placeholder={identityTexts.cuit_placeholder}
                 inputMode="numeric"
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
                 required
               />
-              <span className="text-xs text-muted-foreground">{identityTexts.cuit_helper}</span>
-            </label>
+              <FormHelpText>{identityTexts.cuit_helper}</FormHelpText>
+            </FormField>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">
-                {identityTexts.tipo_label}
-                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
-              </span>
-              <select
-                name="tipo"
-                defaultValue={club.tipo ?? ""}
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
-                required
-              >
-                <option value="" disabled>{identityTexts.tipo_placeholder}</option>
+            <FormField>
+              <FormFieldLabel required>{identityTexts.tipo_label}</FormFieldLabel>
+              <FormSelect name="tipo" defaultValue={club.tipo ?? ""} required>
+                <option value="" disabled>
+                  {identityTexts.tipo_placeholder}
+                </option>
                 {CLUB_TYPE_VALUES.map((value) => (
                   <option key={value} value={value}>
                     {identityTexts.tipo_options[value]}
                   </option>
                 ))}
-              </select>
-            </label>
+              </FormSelect>
+            </FormField>
           </div>
 
-          <label className="grid gap-2 text-sm text-foreground">
-            <span className="font-medium">
-              {identityTexts.domicilio_label}
-              <span className="ml-1 text-destructive" aria-hidden="true">*</span>
-            </span>
-            <input
+          <FormField>
+            <FormFieldLabel required>{identityTexts.domicilio_label}</FormFieldLabel>
+            <FormInput
               type="text"
               name="domicilio"
               defaultValue={club.domicilio ?? ""}
               placeholder={identityTexts.domicilio_placeholder}
               minLength={4}
               maxLength={200}
-              className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
               required
             />
-          </label>
+          </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">
-                {identityTexts.email_label}
-                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
-              </span>
-              <input
+            <FormField>
+              <FormFieldLabel required>{identityTexts.email_label}</FormFieldLabel>
+              <FormInput
                 type="email"
                 name="email"
                 defaultValue={club.email ?? ""}
                 placeholder={identityTexts.email_placeholder}
                 autoComplete="email"
                 inputMode="email"
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
                 required
               />
-            </label>
+            </FormField>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">
-                {identityTexts.telefono_label}
-                <span className="ml-1 text-destructive" aria-hidden="true">*</span>
-              </span>
-              <input
+            <FormField>
+              <FormFieldLabel required>{identityTexts.telefono_label}</FormFieldLabel>
+              <FormInput
                 type="tel"
                 name="telefono"
                 defaultValue={club.telefono ?? ""}
                 placeholder={identityTexts.telefono_placeholder}
                 inputMode="tel"
-                className="min-h-11 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-foreground"
                 required
               />
-              <span className="text-xs text-muted-foreground">{identityTexts.telefono_helper}</span>
-            </label>
+              <FormHelpText>{identityTexts.telefono_helper}</FormHelpText>
+            </FormField>
           </div>
+
+          <FormField>
+            <FormFieldLabel required>{identityTexts.currency_label}</FormFieldLabel>
+            <FormSelect name="currency_code" defaultValue={club.currencyCode} required>
+              {CURRENCY_VALUES.map((value) => (
+                <option key={value} value={value}>
+                  {identityTexts.currency_options[value]}
+                </option>
+              ))}
+            </FormSelect>
+            <FormHelpText>{identityTexts.currency_helper}</FormHelpText>
+          </FormField>
         </section>
 
         <section className="grid gap-5">
@@ -306,36 +294,36 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
           </header>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{identityTexts.color_primary_label}</span>
-              <div className="flex items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-3 py-2">
+            <FormField>
+              <FormFieldLabel>{identityTexts.color_primary_label}</FormFieldLabel>
+              <div className="flex min-h-11 items-center gap-3 rounded-card border border-border bg-card px-4 py-2">
                 <input
                   type="color"
                   name="color_primary"
                   value={colorPrimary}
                   onChange={(event) => setColorPrimary(event.target.value)}
-                  className="h-10 w-12 cursor-pointer rounded-xl border border-border bg-transparent"
+                  className="h-8 w-10 cursor-pointer rounded-card border border-border bg-transparent"
                 />
                 <span className="font-mono text-xs text-muted-foreground">{colorPrimary}</span>
               </div>
-            </label>
+            </FormField>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{identityTexts.color_secondary_label}</span>
-              <div className="flex items-center gap-3 rounded-2xl border border-border bg-secondary/40 px-3 py-2">
+            <FormField>
+              <FormFieldLabel>{identityTexts.color_secondary_label}</FormFieldLabel>
+              <div className="flex min-h-11 items-center gap-3 rounded-card border border-border bg-card px-4 py-2">
                 <input
                   type="color"
                   name="color_secondary"
                   value={colorSecondary}
                   onChange={(event) => setColorSecondary(event.target.value)}
-                  className="h-10 w-12 cursor-pointer rounded-xl border border-border bg-transparent"
+                  className="h-8 w-10 cursor-pointer rounded-card border border-border bg-transparent"
                 />
                 <span className="font-mono text-xs text-muted-foreground">{colorSecondary}</span>
               </div>
-            </label>
+            </FormField>
           </div>
 
-          <div className="grid gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
+          <div className="grid gap-2 rounded-card border border-border bg-card px-4 py-3 text-sm">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               {identityTexts.color_preview_label}
             </span>
@@ -351,7 +339,7 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
                 aria-hidden="true"
               />
               <span
-                className="inline-flex min-h-8 items-center rounded-full px-3 text-xs font-semibold text-primary-foreground"
+                className="inline-flex min-h-8 items-center rounded-full px-3 text-xs font-semibold text-background"
                 style={{ backgroundColor: colorPrimary }}
               >
                 {club.name}

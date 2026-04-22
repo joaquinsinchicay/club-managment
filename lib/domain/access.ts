@@ -25,6 +25,7 @@ export type Club = {
   domicilio: string | null;
   email: string | null;
   telefono: string | null;
+  currencyCode: TreasuryCurrencyCode;
 };
 
 export type AvailableClub = {

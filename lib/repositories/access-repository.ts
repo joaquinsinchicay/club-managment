@@ -215,6 +215,7 @@ type AccessRepository = {
       domicilio?: string | null;
       email?: string | null;
       telefono?: string | null;
+      currencyCode?: TreasuryCurrencyCode;
     },
     client?: AccessRepositoryClient
   ): Promise<Club | null>;
@@ -685,7 +686,8 @@ function createStore(): MockStore {
       colorSecondary: null,
       domicilio: null,
       email: null,
-      telefono: null
+      telefono: null,
+      currencyCode: "ARS"
     },
     {
       id: CLUB_SUR_ID,
@@ -699,7 +701,8 @@ function createStore(): MockStore {
       colorSecondary: null,
       domicilio: null,
       email: null,
-      telefono: null
+      telefono: null,
+      currencyCode: "ARS"
     }
   ];
 
@@ -1243,6 +1246,7 @@ function mapClubRow(row: {
   domicilio?: string | null;
   email?: string | null;
   telefono?: string | null;
+  currency_code?: string | null;
 }): Club {
   return {
     id: row.id,
@@ -1256,12 +1260,17 @@ function mapClubRow(row: {
     colorSecondary: row.color_secondary ?? null,
     domicilio: row.domicilio ?? null,
     email: row.email ?? null,
-    telefono: row.telefono ?? null
+    telefono: row.telefono ?? null,
+    currencyCode: isTreasuryCurrencyCode(row.currency_code) ? row.currency_code : "ARS"
   };
 }
 
 function isClubType(value: unknown): value is ClubType {
   return value === "asociacion_civil" || value === "fundacion" || value === "sociedad_civil";
+}
+
+function isTreasuryCurrencyCode(value: unknown): value is TreasuryCurrencyCode {
+  return value === "ARS" || value === "USD";
 }
 
 function mapClubMemberFromMembership(membership: Membership, user: User): ClubMember {
@@ -1992,7 +2001,7 @@ async function findRealClubById(clubId: string, client?: AccessRepositoryClient)
 
   const { data, error } = await supabase
     .from("clubs")
-    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary,domicilio,email,telefono")
+    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary,domicilio,email,telefono,currency_code")
     .eq("id", clubId)
     .maybeSingle();
 
@@ -2013,6 +2022,7 @@ type UpdateClubIdentityFields = {
   domicilio?: string | null;
   email?: string | null;
   telefono?: string | null;
+  currencyCode?: TreasuryCurrencyCode;
 };
 
 async function updateRealClubIdentity(
@@ -2036,6 +2046,7 @@ async function updateRealClubIdentity(
   if (fields.domicilio !== undefined) payload.domicilio = fields.domicilio;
   if (fields.email !== undefined) payload.email = fields.email;
   if (fields.telefono !== undefined) payload.telefono = fields.telefono;
+  if (fields.currencyCode !== undefined) payload.currency_code = fields.currencyCode;
 
   if (Object.keys(payload).length === 0) {
     return findRealClubById(clubId, client);
@@ -2045,7 +2056,7 @@ async function updateRealClubIdentity(
     .from("clubs")
     .update(payload)
     .eq("id", clubId)
-    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary,domicilio,email,telefono")
+    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary,domicilio,email,telefono,currency_code")
     .maybeSingle();
 
   if (error || !data) {
@@ -4677,7 +4688,8 @@ export const accessRepository: AccessRepository = {
         fields.colorSecondary !== undefined ? fields.colorSecondary : current.colorSecondary,
       domicilio: fields.domicilio !== undefined ? fields.domicilio : current.domicilio,
       email: fields.email !== undefined ? fields.email : current.email,
-      telefono: fields.telefono !== undefined ? fields.telefono : current.telefono
+      telefono: fields.telefono !== undefined ? fields.telefono : current.telefono,
+      currencyCode: fields.currencyCode ?? current.currencyCode
     };
 
     store.clubs[index] = updated;

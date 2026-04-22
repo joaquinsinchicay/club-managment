@@ -3165,6 +3165,1590 @@ Feature: US-29 — Consolidación diaria de movimientos de Secretaría en Tesore
     And la fecha puede ser modificada manualmente por el usuario
 ```
 
+### E05 🏛️ Identidad del Club / US-46 — Edición de datos de identidad del club
+
+> *Como Admin del club, quiero editar los datos de identidad de mi club, para que figuren correctamente en reportes y comunicaciones oficiales.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-46 — Edición de datos de identidad del club
+
+  Scenario 01: Acceso como Admin al formulario de identidad
+    Given soy Admin del club activo
+    When accedo a "Configuración del club"
+    Then veo la solapa "Identidad" con el formulario precargado con los datos actuales del club
+
+  Scenario 02: Acceso denegado a usuarios sin rol Admin
+    Given no tengo rol Admin en el club activo
+    When intento acceder a la pantalla de Identidad
+    Then la solapa no se renderiza
+    And no puedo acceder a la pantalla vía URL
+
+  Scenario 03: Visualización completa del formulario
+    Given estoy en la solapa "Identidad"
+    Then veo los campos Nombre del club, CUIT, Tipo, Domicilio, Email de contacto y Teléfono
+    And veo la sección del logo con el estado actual o placeholder
+    And veo la sección de colores identificatorios primario y secundario (HEX opcional)
+    And veo el selector de moneda del club
+
+  Scenario 04: Edición exitosa de los datos
+    Given modifiqué uno o más campos con valores válidos
+    When presiono "Guardar cambios"
+    Then los datos se persisten en el registro del club activo
+    And veo un toast de éxito
+
+  Scenario 05: Cancelar descarta los cambios
+    Given modifiqué uno o más campos
+    When presiono "Cancelar"
+    Then los cambios se descartan sin pedir confirmación
+    And el formulario vuelve a mostrar los datos originales
+
+  Scenario 06: Nombre del club es obligatorio
+    Given el campo Nombre del club está vacío
+    When presiono "Guardar cambios"
+    Then el sistema bloquea el submit
+    And veo un error inline en el campo Nombre
+    And los datos no se persisten
+
+  Scenario 07: CUIT es obligatorio
+    Given el campo CUIT está vacío
+    When presiono "Guardar cambios"
+    Then el sistema bloquea el submit
+    And veo un error inline en el campo CUIT
+
+  Scenario 08: Tipo es obligatorio
+    Given el campo Tipo está vacío
+    When presiono "Guardar cambios"
+    Then el sistema bloquea el submit
+    And veo un error inline en el campo Tipo
+
+  Scenario 09: Domicilio es obligatorio
+    Given el campo Domicilio está vacío
+    When presiono "Guardar cambios"
+    Then el sistema bloquea el submit
+    And veo un error inline en el campo Domicilio
+
+  Scenario 10: Email y Teléfono son obligatorios
+    Given los campos Email o Teléfono están vacíos
+    When presiono "Guardar cambios"
+    Then el sistema bloquea el submit
+    And veo errores inline en el o los campos vacíos
+
+  Scenario 11: Error al guardar
+    Given hay un fallo de red o de servidor al persistir los cambios
+    When presiono "Guardar cambios"
+    Then los datos no se modifican
+    And veo un toast de error
+
+  Scenario 12: Consistencia por club activo
+    Given soy Admin de múltiples clubes
+    When cambio el club activo en el selector del header
+    And vuelvo a la pantalla de Identidad
+    Then el formulario recarga los datos del nuevo club activo
+```
+
+---
+
+### E05 🏛️ Identidad del Club / US-47 — Subir y reemplazar el logo del club
+
+> *Como Admin del club, quiero subir y reemplazar el logo del club, para personalizar su identidad visual en la plataforma.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-47 — Subir y reemplazar el logo del club
+
+  Scenario 01: Acceso a la carga de logo
+    Given soy Admin del club activo
+    When accedo a la sección Identidad
+    Then veo la sección "Logo del club" con el estado actual
+
+  Scenario 02: Visualización del estado actual
+    Given el club tiene un logo cargado
+    Then veo el logo vigente en la sección
+    Given el club no tiene logo cargado
+    Then veo un placeholder con las iniciales del club
+
+  Scenario 03: Carga exitosa de logo nuevo
+    Given selecciono un archivo PNG o SVG válido de mínimo 256x256 píxeles
+    When el sistema procesa el archivo
+    Then veo el preview del logo antes de confirmar
+
+  Scenario 04: Confirmación del logo
+    Given estoy viendo el preview del logo
+    When confirmo la carga
+    Then el archivo se sube a Supabase Storage optimizado
+    And reemplaza el logo actual del club
+    And veo un toast de éxito
+
+  Scenario 05: Formato inválido bloqueado
+    Given intento subir un archivo JPG, WebP u otro formato no permitido
+    When el sistema valida el archivo
+    Then se bloquea la carga
+    And veo un toast de error indicando los formatos permitidos
+    And el logo actual no se modifica
+
+  Scenario 06: Tamaño inválido bloqueado
+    Given intento subir un archivo menor a 256x256 píxeles
+    When el sistema valida las dimensiones
+    Then se bloquea la carga
+    And veo un toast de error indicando el tamaño mínimo
+    And el logo actual no se modifica
+
+  Scenario 07: Fallo en la subida
+    Given Supabase Storage no responde o falla la subida
+    When el sistema intenta persistir el archivo
+    Then la operación se revierte
+    And el logo actual no se modifica
+    And veo un toast de error
+
+  Scenario 08: Reemplazo de logo existente
+    Given el club ya tiene un logo cargado
+    When subo un logo nuevo exitosamente
+    Then el archivo anterior se elimina del bucket
+    And la referencia se actualiza al nuevo archivo
+
+  Scenario 09: Quitar logo
+    Given el club tiene un logo cargado
+    When presiono "Quitar logo" y guardo los cambios
+    Then el campo logo_url queda en null
+    And el archivo se elimina del bucket
+    And el header de la app vuelve a mostrar las iniciales del club
+
+  Scenario 10: Visualización del logo en contexto
+    Given el club tiene un logo cargado
+    Then el logo aparece renderizado en el header de la app
+    And aparece en reportes exportables del club
+
+  Scenario 11: Consistencia por club activo
+    Given administro el logo desde el Club A activo
+    Then las operaciones aplican únicamente al Club A
+```
+
+---
+
+### E05 🏛️ Identidad del Club / US-48 — Validación del formato del CUIT
+
+> *Como sistema, quiero validar el formato del CUIT al guardar los datos del club, para prevenir datos inválidos en reportes oficiales.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-48 — Validación del formato del CUIT
+
+  Scenario 01: CUIT válido aceptado
+    Given el Admin ingresa un CUIT con estructura XX-XXXXXXXX-X
+    And el dígito verificador es válido según el algoritmo AFIP
+    When el sistema valida el campo al submit
+    Then el CUIT se acepta
+    And el formulario procede a guardar
+
+  Scenario 02: Estructura incorrecta del CUIT
+    Given el Admin ingresa un CUIT con menos de 11 dígitos o mal formateado
+    When el sistema valida el campo
+    Then veo un error inline "Formato de CUIT inválido"
+    And el submit se bloquea
+
+  Scenario 03: Dígito verificador incorrecto
+    Given el Admin ingresa 11 dígitos pero el dígito verificador no coincide
+    When el sistema valida el campo con el algoritmo AFIP
+    Then veo un error inline "CUIT no válido"
+    And el submit se bloquea
+
+  Scenario 04: Formateo automático al salir del campo
+    Given el Admin ingresa 11 dígitos sin guiones
+    When el foco sale del campo
+    Then el sistema formatea el valor visual a XX-XXXXXXXX-X
+
+  Scenario 05: Consistencia por club activo
+    Given valido el CUIT para el club activo
+    Then la validación aplica únicamente a los datos del club activo
+```
+
+---
+
+### E05 🏛️ Identidad del Club / US-49 — Validación del formato del email y del teléfono
+
+> *Como sistema, quiero validar el formato del email y del teléfono al guardar los datos del club, para garantizar comunicaciones efectivas.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-49 — Validación del formato del email y del teléfono
+
+  Scenario 01: Email válido aceptado
+    Given el Admin ingresa un email con estructura RFC válida
+    When el sistema valida el campo
+    Then el email se acepta
+    And el formulario procede a guardar
+
+  Scenario 02: Email con formato inválido
+    Given el Admin ingresa un email sin "@", sin dominio o con caracteres no permitidos
+    When el sistema valida el campo
+    Then veo un error inline "Email inválido"
+    And el submit se bloquea
+
+  Scenario 03: Teléfono con código de país válido
+    Given el Admin ingresa un teléfono con código de país en formato E.164 (ej. +54 221 425-8100)
+    When el sistema valida el campo
+    Then el teléfono se acepta
+    And el formulario procede a guardar
+
+  Scenario 04: Teléfono sin prefijo internacional
+    Given el Admin ingresa un teléfono sin código de país
+    When el sistema valida el campo
+    Then veo un error inline "Teléfono debe incluir código de país (ej. +54)"
+    And el submit se bloquea
+
+  Scenario 05: Teléfono con caracteres inválidos
+    Given el Admin ingresa letras o símbolos no permitidos en el teléfono
+    When el sistema valida el campo
+    Then veo un error inline "Formato de teléfono inválido"
+    And el submit se bloquea
+
+  Scenario 06: Consistencia por club activo
+    Given valido el email y el teléfono para el club activo
+    Then la validación aplica únicamente a los datos del club activo
+```
+
+---
+
+### E05 🏛️ Identidad del Club / US-50 — Optimización del logo al subirlo
+
+> *Como sistema, quiero optimizar el logo del club al subirlo a Supabase Storage, para minimizar tiempos de carga y consumo de ancho de banda.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-50 — Optimización del logo al subirlo
+
+  Scenario 01: Optimización exitosa de PNG
+    Given el Admin sube un logo PNG válido de peso original considerable
+    When el sistema procesa el archivo
+    Then se comprime a un peso reducido sin pérdida visible
+    And se guarda en Supabase Storage bajo logos/{club_id}/
+    And se actualiza la referencia en la tabla del club
+
+  Scenario 02: Optimización exitosa de SVG
+    Given el Admin sube un logo SVG válido
+    When el sistema procesa el archivo
+    Then se minifica eliminando metadata innecesaria
+    And se guarda en Supabase Storage bajo logos/{club_id}/
+    And se actualiza la referencia en la tabla del club
+
+  Scenario 03: Fallo en la optimización
+    Given el archivo no puede procesarse por error en el pipeline
+    When el sistema intenta optimizarlo
+    Then la operación se revierte
+    And el logo actual no se modifica
+    And se registra el error
+
+  Scenario 04: Limpieza del logo anterior
+    Given el club ya tenía un logo cargado
+    When el nuevo logo se persiste exitosamente
+    Then el archivo anterior se elimina del bucket
+
+  Scenario 05: Referencia consistente en DB
+    Given el logo se persiste exitosamente
+    Then la URL del logo almacenada en la tabla del club apunta al archivo optimizado en Storage
+
+  Scenario 06: Consistencia por club activo
+    Given el Admin sube un logo para el Club A
+    Then el archivo se guarda únicamente bajo logos/{club_A_id}/
+    And no afecta logos de otros clubes
+```
+
+---
+
+### E05 🏛️ Identidad del Club / US-51 — Aislamiento multitenant de la identidad del club
+
+> *Como sistema, quiero garantizar que el Admin solo pueda editar los datos del club activo en su contexto, para preservar el aislamiento entre clubes en el entorno multitenant.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-51 — Aislamiento multitenant de la identidad del club
+
+  Scenario 01: Scope correcto en lectura
+    Given soy Admin con el Club A activo en mi contexto
+    And app.current_club_id = Club A
+    When accedo a la pantalla de Identidad del Club
+    Then el formulario carga únicamente los datos del Club A
+
+  Scenario 02: Scope correcto en escritura
+    Given soy Admin con el Club A activo
+    When guardo cambios en la identidad
+    Then la operación UPDATE afecta solo al registro del Club A validado por app.current_club_id
+
+  Scenario 03: Scope correcto en carga de logo
+    Given soy Admin con el Club A activo
+    When subo un logo nuevo
+    Then el archivo se guarda en Storage bajo logos/{club_A_id}/
+    And no afecta logos de otros clubes
+
+  Scenario 04: Acceso denegado a usuarios sin rol Admin
+    Given soy un usuario con rol distinto a Admin (Tesorero, Secretaría, Prensa, Comisión, Contador)
+    When intento acceder a la pantalla de Identidad del Club
+    Then la pantalla no se renderiza
+    And soy redirigido al dashboard
+
+  Scenario 05: Cambio de club activo recarga datos
+    Given soy Admin de múltiples clubes
+    When cambio el club activo en el selector del header
+    And vuelvo a la pantalla de Identidad
+    Then el formulario recarga los datos del nuevo club activo
+
+  Scenario 06: Consistencia por club activo
+    Given administro la identidad en el Club A activo
+    Then todas las acciones y vistas aplican únicamente al Club A
+```
+
+---
+
+### E03 💰 Tesorería / US-52 — Administración de Centros de Costo
+
+> *Como usuario con rol Tesorería, quiero administrar los Centros de Costo del club (alta, edición y cierre), para imputar movimientos a conceptos específicos como deudas, eventos, jornadas, presupuestos, publicidades y sponsors.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-52 — Administración de Centros de Costo
+
+  Scenario 01: Acceso como Tesorería
+    Given tengo rol "Tesorería" en el club activo
+    When ingreso al módulo de Tesorería
+    Then veo la pestaña "Centros de Costo" junto a Resumen, Cuentas, Movimientos y Conciliación
+
+  Scenario 02: Acceso denegado sin rol Tesorería
+    Given no tengo rol "Tesorería" en el club activo
+    When ingreso al módulo de Tesorería
+    Then la pestaña "Centros de Costo" no se renderiza
+
+  Scenario 03: Visualización del listado
+    Given estoy en la pestaña "Centros de Costo"
+    Then veo una tabla con los CC del club activo con columnas Nombre, Tipo, Estado, Moneda, Monto, Avance, Fecha Inicio, Fecha Fin y Responsable
+    And puedo filtrar por Tipo, Estado y Responsable
+    And puedo buscar por Nombre
+
+  Scenario 04: Estado vacío sin CC configurados
+    Given no existen CC en el club activo
+    When accedo a la pestaña
+    Then veo un estado vacío con la acción "+ Nuevo Centro de Costo"
+
+  Scenario 05: Formulario de alta
+    When selecciono "+ Nuevo Centro de Costo"
+    Then veo un formulario con los campos Nombre, Descripción, Tipo, Estado, Fecha Inicio, Fecha Fin, Moneda, Monto, Periodicidad y Responsable
+
+  Scenario 06: Campos obligatorios base
+    Given estoy en el formulario de alta
+    Then los campos Nombre, Tipo, Estado, Fecha Inicio, Moneda y Responsable son obligatorios
+
+  Scenario 07: Monto obligatorio según Tipo
+    Given selecciono Tipo "Deuda", "Presupuesto", "Publicidad" o "Sponsor"
+    Then el campo Monto es obligatorio
+    Given selecciono Tipo "Evento" o "Jornada"
+    Then el campo Monto es opcional
+
+  Scenario 08: Periodicidad visible según Tipo
+    Given selecciono Tipo "Presupuesto", "Sponsor" o "Publicidad"
+    Then se muestra el campo Periodicidad con los valores Único, Mensual, Trimestral, Semestral y Anual
+    Given selecciono cualquier otro Tipo
+    Then el campo Periodicidad no se muestra
+
+  Scenario 09: Validación de fechas
+    Given completo Fecha Fin con un valor anterior a Fecha Inicio
+    When presiono "Guardar"
+    Then el sistema bloquea el guardado
+    And muestra un mensaje de error de fechas
+
+  Scenario 10: Nombre único por club
+    Given intento guardar un CC con un Nombre que ya existe en el club activo
+    When presiono "Guardar"
+    Then el sistema bloquea el guardado
+    And muestra el mensaje "Ya existe un Centro de Costo con ese nombre"
+
+  Scenario 11: Alta exitosa
+    Given completé todos los campos obligatorios con valores válidos
+    When presiono "Guardar"
+    Then el CC queda creado en el club activo con estado "Activo" por defecto
+    And veo un toast de confirmación
+
+  Scenario 12: Edición de CC sin movimientos enlazados
+    Given selecciono un CC sin movimientos enlazados
+    When abro el formulario de edición
+    Then todos los campos son editables
+
+  Scenario 13: Edición de CC con movimientos enlazados
+    Given selecciono un CC con al menos un movimiento enlazado
+    When abro el formulario de edición
+    Then los campos Tipo, Moneda y Fecha Inicio se muestran deshabilitados
+    And los campos Nombre, Descripción, Responsable, Estado, Fecha Fin, Monto y Periodicidad son editables
+
+  Scenario 14: Historial de auditoría
+    Given edito un CC existente
+    When guardo los cambios
+    Then el sistema registra en el historial el usuario, fecha y hora, campo modificado, valor anterior y valor nuevo
+
+  Scenario 15: Cierre de CC con fecha fin automática
+    Given edito un CC y cambio Estado de "Activo" a "Inactivo"
+    And la Fecha Fin está vacía o es posterior a hoy
+    When presiono "Guardar"
+    Then la Fecha Fin se completa automáticamente con la fecha actual
+
+  Scenario 16: Cierre de CC respeta fecha fin existente
+    Given edito un CC y cambio Estado a "Inactivo"
+    And la Fecha Fin ya tiene un valor anterior o igual a hoy
+    When presiono "Guardar"
+    Then se respeta el valor existente de Fecha Fin
+
+  Scenario 17: Badge "Deuda saldada"
+    Given existe un CC de Tipo "Deuda"
+    And la suma de egresos enlazados es mayor o igual al Monto
+    Then en el listado se muestra el badge "Deuda saldada — listo para cerrar"
+
+  Scenario 18: Badge "Presupuesto cerca del límite"
+    Given existe un CC de Tipo "Presupuesto"
+    And la suma de egresos enlazados es mayor o igual al 80% del Monto y menor al 100%
+    Then en el listado se muestra el badge "Presupuesto cerca del límite"
+
+  Scenario 19: Badge "Presupuesto superado"
+    Given existe un CC de Tipo "Presupuesto"
+    And la suma de egresos enlazados es mayor o igual al 100% del Monto
+    Then en el listado se muestra el badge "Presupuesto superado"
+
+  Scenario 20: Badge "Meta cumplida"
+    Given existe un CC de Tipo "Sponsor" o "Publicidad"
+    And la suma de ingresos enlazados es mayor o igual al Monto
+    Then en el listado se muestra el badge "Meta cumplida"
+
+  Scenario 21: Badge "CC vencido"
+    Given existe un CC con Estado "Activo" y Fecha Fin anterior a hoy
+    Then en el listado se muestra el badge "CC vencido — revisar cierre"
+
+  Scenario 22: Consistencia por club activo
+    Given administro CC en el club activo
+    Then todas las acciones y vistas aplican únicamente al club activo
+```
+
+---
+
+### E03 💰 Tesorería / US-53 — Asociación de movimientos a Centros de Costo
+
+> *Como usuario con rol Tesorería, quiero asociar un movimiento a uno o más Centros de Costo al cargarlo o editarlo, para que el movimiento impacte en los reportes de cada CC relacionado.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-53 — Asociación de movimientos a Centros de Costo
+
+  Scenario 01: Campo visible para Tesorería
+    Given tengo rol "Tesorería"
+    When cargo o edito un movimiento desde Tesorería
+    Then veo el campo "Centros de Costo" de selección múltiple
+
+  Scenario 02: Campo no visible para Secretaría
+    Given tengo rol "Secretaría"
+    When cargo un movimiento
+    Then el campo "Centros de Costo" no se renderiza
+
+  Scenario 03: Campo opcional
+    Given estoy cargando un movimiento como Tesorería
+    When guardo el movimiento sin seleccionar ningún CC
+    Then el movimiento se registra correctamente sin enlaces a CC
+
+  Scenario 04: Listado filtrado por club y estado
+    Given abro el selector de CC en el formulario de movimiento
+    Then solo veo CC del club activo con Estado "Activo"
+    And puedo filtrar los CC por Tipo dentro del selector
+
+  Scenario 05: Asociación a múltiples CC
+    Given selecciono uno o más CC en el formulario de movimiento
+    When guardo el movimiento
+    Then el movimiento queda enlazado a cada CC seleccionado
+    And el monto completo del movimiento se imputa íntegramente a cada CC
+
+  Scenario 06: Actualización de indicadores de avance
+    Given un movimiento se enlaza a un CC
+    Then el CC actualiza sus indicadores de avance según la suma de movimientos enlazados
+
+  Scenario 07: Edición de enlaces en movimiento existente
+    Given edito un movimiento ya cargado
+    When agrego o quito CC de la selección y guardo
+    Then los CC agregados reflejan el nuevo enlace en sus reportes
+    And los CC removidos dejan de contar ese movimiento
+    And la modificación queda registrada en el historial de auditoría
+
+  Scenario 08: Visualización de movimientos desde el CC
+    Given abro el detalle de un Centro de Costo
+    Then veo el listado de movimientos enlazados con Fecha, Tipo, Descripción, Cuenta, Monto y Moneda
+    And puedo acceder al detalle completo de cada movimiento
+
+  Scenario 09: Desvinculación desde el CC
+    Given desvinculo un movimiento desde el detalle del CC
+    When confirmo la desvinculación
+    Then el movimiento no se elimina
+    And solo se quita el enlace
+    And el CC actualiza sus indicadores de avance
+
+  Scenario 10: CC inactivo no aparece en el selector
+    Given existe un CC con Estado "Inactivo"
+    When cargo o edito un movimiento
+    Then el CC inactivo no aparece en el selector
+    And los movimientos previamente enlazados a ese CC se conservan
+
+  Scenario 11: Advertencia por moneda distinta
+    Given un movimiento en moneda X
+    When selecciono un CC en moneda distinta a X
+    Then veo una advertencia "La moneda del movimiento no coincide con la del CC"
+    And se permite el enlace
+
+  Scenario 12: Imputación completa a cada CC sin división
+    Given un movimiento de importe M se enlaza a N CC
+    Then cada CC recibe la imputación completa del importe M
+    And los reportes agregados entre CC pueden contener doble conteo (comportamiento esperado documentado)
+
+  Scenario 13: Consistencia por club activo
+    Given asocio CC a movimientos en el club activo
+    Then solo se listan y enlazan CC del club activo
+```
+
+### E04 👥 RRHH / US-54 — Catálogo de Estructuras Salariales
+
+> *Como Admin del club, quiero configurar el catálogo de Estructuras Salariales, para definir las posiciones rentadas del club con su remuneración estándar.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-54 — Catálogo de Estructuras Salariales
+
+  Scenario 01: Acceso como Admin o RRHH
+    Given tengo rol Admin o RRHH en el club activo
+    When accedo a "Configuración del club"
+    Then veo la solapa "RRHH"
+    And dentro veo la sección "Estructuras Salariales"
+
+  Scenario 02: Acceso denegado sin rol apropiado
+    Given no tengo rol Admin ni RRHH
+    When intento acceder a la solapa "RRHH"
+    Then la solapa no se renderiza
+
+  Scenario 03: Visualización del listado
+    Given estoy en la sección "Estructuras Salariales"
+    Then veo una tabla con columnas Nombre, Rol funcional, Actividad, Tipo de remuneración, Monto vigente, Estado y Contrato vigente asociado
+
+  Scenario 04: Alta de Estructura Salarial
+    When selecciono "+ Nueva Estructura Salarial"
+    Then veo un formulario con los campos Nombre, Rol funcional, Actividad, Tipo de remuneración (mensual fijo / por hora / por clase), Monto, Carga horaria esperada (opcional) y Estado
+
+  Scenario 05: Nombre, Rol funcional y Actividad son obligatorios
+    Given los campos Nombre, Rol funcional o Actividad están vacíos
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo errores inline en los campos vacíos
+
+  Scenario 06: Tipo de remuneración y Monto son obligatorios
+    Given el campo Tipo de remuneración o Monto están vacíos
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo errores inline en los campos vacíos
+
+  Scenario 07: Monto debe ser mayor a cero
+    Given ingreso un Monto menor o igual a cero
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo un error inline "El monto debe ser mayor a cero"
+
+  Scenario 08: Estado por defecto
+    Given no modifico el campo Estado al crear
+    When el sistema persiste la estructura
+    Then el Estado queda en "activa" por defecto
+
+  Scenario 09: Unicidad por Rol funcional y Actividad
+    Given ya existe una Estructura Salarial activa con el mismo Rol funcional y Actividad
+    When intento crear otra con los mismos valores
+    Then el sistema bloquea la acción
+    And veo un mensaje de duplicado
+
+  Scenario 10: Edición permitida
+    Given edito una Estructura Salarial existente
+    Then puedo editar Nombre, Tipo de remuneración, Estado y Carga horaria esperada
+
+  Scenario 11: Moneda heredada de la configuración del club
+    Given creo una Estructura Salarial
+    Then la Moneda se hereda de la configuración del club activo
+    And no es editable desde el formulario
+
+  Scenario 12: Estructura inactiva no disponible para contratos nuevos
+    Given existe una Estructura Salarial con Estado "inactiva"
+    When creo un contrato nuevo
+    Then la estructura inactiva no aparece en el selector
+
+  Scenario 13: Estado vacío sin Estructuras configuradas
+    Given no existen Estructuras Salariales en el club activo
+    When accedo a la sección
+    Then veo un estado vacío con la acción "+ Nueva Estructura Salarial"
+
+  Scenario 14: Consistencia por club activo
+    Given administro Estructuras Salariales en el club activo
+    Then todas las acciones y vistas aplican únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-55 — Actualización de monto con historial
+
+> *Como Admin del club, quiero actualizar el monto de una Estructura Salarial manteniendo su historial, para reflejar cambios salariales y permitir consultar la evolución del monto en el tiempo.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-55 — Actualización de monto con historial
+
+  Scenario 01: Acceso a la edición de monto
+    Given estoy viendo la ficha de una Estructura Salarial
+    When selecciono "Actualizar monto"
+    Then veo el formulario de actualización
+
+  Scenario 02: Formulario de actualización
+    Given estoy en el formulario de actualización de monto
+    Then veo los campos Monto nuevo y Fecha de vigencia
+    And la Fecha de vigencia tiene por defecto la fecha de hoy y es editable
+
+  Scenario 03: Monto nuevo es obligatorio y mayor a cero
+    Given el campo Monto está vacío o es menor o igual a cero
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo un error inline en el campo Monto
+
+  Scenario 04: Fecha de vigencia es obligatoria
+    Given el campo Fecha de vigencia está vacío
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo un error inline en el campo Fecha de vigencia
+
+  Scenario 05: Confirmación exitosa
+    Given ingreso un monto válido y una fecha de vigencia válida
+    When presiono "Guardar"
+    Then el sistema cierra la versión anterior con Fecha Fin igual a la nueva Fecha de vigencia menos un día
+    And crea una nueva versión vigente con el monto nuevo
+
+  Scenario 06: Visualización del historial
+    Given accedo al historial de la Estructura Salarial
+    Then veo todas las versiones con Monto, Fecha Inicio, Fecha Fin y Usuario que la creó
+
+  Scenario 07: Versión vigente única
+    Given existe una Estructura Salarial con historial de versiones
+    Then en cada momento solo una versión tiene Fecha Fin nula
+
+  Scenario 08: Propagación a contratos con flag usa_monto_estructura activo
+    Given existe un contrato vigente con flag usa_monto_estructura en verdadero
+    When se crea una nueva versión de monto
+    Then las liquidaciones futuras del contrato toman el monto vigente al momento de generarlas
+
+  Scenario 09: No afecta contratos con flag desactivado
+    Given existe un contrato vigente con flag usa_monto_estructura en falso
+    When se crea una nueva versión de monto
+    Then el contrato conserva su monto acordado congelado
+
+  Scenario 10: No afecta liquidaciones ya generadas
+    Given ya se generaron liquidaciones para un período
+    When se crea una nueva versión de monto
+    Then las liquidaciones preexistentes conservan el snapshot del monto original
+
+  Scenario 11: Consistencia por club activo
+    Given actualizo el monto en el club activo
+    Then la operación aplica únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-56 — CRUD de Colaboradores
+
+> *Como Admin del club, quiero dar de alta, editar y dar de baja colaboradores, para mantener el maestro de personas rentadas del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-56 — CRUD de Colaboradores
+
+  Scenario 01: Acceso como Admin o RRHH
+    Given tengo rol Admin o RRHH en el club activo
+    When accedo a la solapa "RRHH"
+    Then veo la sección "Colaboradores"
+
+  Scenario 02: Acceso denegado sin rol apropiado
+    Given no tengo rol Admin ni RRHH
+    When intento acceder a la sección
+    Then la sección no se renderiza
+
+  Scenario 03: Visualización del listado
+    Given estoy en la sección "Colaboradores"
+    Then veo una tabla con Nombre, DNI, Tipo de vínculo, Estado y Cantidad de contratos vigentes
+
+  Scenario 04: Alta de colaborador
+    When selecciono "+ Nuevo Colaborador"
+    Then veo un formulario con Nombre, DNI, CUIT/CUIL, Contacto, Tipo de vínculo (relación de dependencia / monotributista / honorarios), CBU o alias, Fecha de alta y Estado
+
+  Scenario 05: Nombre y DNI son obligatorios
+    Given los campos Nombre o DNI están vacíos
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo errores inline en los campos vacíos
+
+  Scenario 06: CUIT/CUIL es obligatorio
+    Given el campo CUIT/CUIL está vacío
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo un error inline
+
+  Scenario 07: Tipo de vínculo es obligatorio
+    Given el campo Tipo de vínculo está vacío
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo un error inline
+
+  Scenario 08: Validación de formato de CUIT/CUIL
+    Given ingreso un CUIT/CUIL con formato inválido
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo un error inline "Formato de CUIT/CUIL inválido"
+
+  Scenario 09: No se permiten duplicados de DNI o CUIT/CUIL activos
+    Given ya existe un colaborador activo con el mismo DNI o CUIT/CUIL
+    When intento crear otro
+    Then el sistema bloquea la acción
+    And veo un mensaje de duplicado
+
+  Scenario 10: Edición de datos del colaborador
+    Given selecciono un colaborador existente
+    When abro el formulario de edición
+    Then puedo modificar sus datos y guardarlos
+
+  Scenario 11: Baja manual de colaborador sin contratos vigentes
+    Given un colaborador no tiene contratos vigentes
+    When cambio su Estado a "inactivo"
+    Then el sistema registra la baja
+    And oculta al colaborador de los selectores de contratos nuevos
+
+  Scenario 12: No se puede dar de baja con contratos vigentes
+    Given un colaborador tiene contratos vigentes
+    When intento cambiar su Estado a "inactivo"
+    Then el sistema bloquea la acción
+    And muestra un mensaje indicando que primero debe finalizar los contratos
+
+  Scenario 13: Colaborador inactivo conserva historial
+    Given un colaborador está en estado "inactivo"
+    Then conserva todo su histórico de contratos, liquidaciones y pagos
+
+  Scenario 14: Reactivación de colaborador
+    Given un colaborador está en estado "inactivo"
+    When cambio su Estado a "activo"
+    Then se reactiva manteniendo toda la información previa
+
+  Scenario 15: Consistencia por club activo
+    Given administro colaboradores en el club activo
+    Then todas las acciones y vistas aplican únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-57 — Alta de contrato colaborador + Estructura Salarial
+
+> *Como Admin del club, quiero crear un contrato asociando un colaborador con una Estructura Salarial, para formalizar su vínculo rentado con el club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-57 — Alta de contrato colaborador + Estructura Salarial
+
+  Scenario 01: Acceso al alta de contrato
+    Given estoy en la ficha de un colaborador o de una Estructura Salarial
+    When selecciono "+ Nuevo Contrato"
+    Then veo el formulario de alta
+
+  Scenario 02: Formulario de alta
+    Given estoy en el formulario de alta de contrato
+    Then veo los campos Colaborador, Estructura Salarial, Fecha inicio, Fecha fin (opcional), Usa monto estándar (por defecto verdadero) y Monto acordado (visible solo si el flag está desactivado)
+
+  Scenario 03: Colaborador, Estructura Salarial y Fecha inicio son obligatorios
+    Given los campos Colaborador, Estructura Salarial o Fecha inicio están vacíos
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo errores inline en los campos vacíos
+
+  Scenario 04: Monto acordado obligatorio si flag desactivado
+    Given el flag "Usa monto estándar" está en falso
+    And el Monto acordado está vacío
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo un error inline en el campo Monto acordado
+
+  Scenario 05: Monto acordado debe ser mayor a cero
+    Given el flag "Usa monto estándar" está en falso
+    And el Monto acordado es menor o igual a cero
+    When presiono "Guardar"
+    Then el sistema bloquea el submit
+    And veo un error inline
+
+  Scenario 06: Unicidad de Estructura Salarial ocupada
+    Given ya existe un contrato vigente para una Estructura Salarial
+    When intento crear un segundo contrato vigente sobre la misma estructura
+    Then el sistema bloquea la acción
+    And muestra el mensaje "La posición ya está ocupada"
+
+  Scenario 07: Creación exitosa con flag activo
+    Given completé los campos obligatorios con el flag "Usa monto estándar" activo
+    When presiono "Guardar"
+    Then el contrato queda vigente
+    And toma el monto de la versión vigente de la Estructura Salarial
+
+  Scenario 08: Creación exitosa con flag desactivado
+    Given completé los campos obligatorios con el flag "Usa monto estándar" desactivado
+    And ingresé un Monto acordado válido
+    When presiono "Guardar"
+    Then el contrato queda vigente con el monto acordado ingresado
+    And no se actualiza automáticamente ante cambios futuros en la Estructura
+
+  Scenario 09: La Estructura pasa de vacante a ocupada
+    Given una Estructura Salarial está vacante
+    When creo un contrato vigente sobre ella
+    Then la Estructura pasa a estado "ocupada"
+
+  Scenario 10: Solo Estructuras activas sin contrato vigente son seleccionables
+    Given abro el selector de Estructura Salarial
+    Then solo veo estructuras en estado "activa" sin contrato vigente
+
+  Scenario 11: Solo colaboradores activos son seleccionables
+    Given abro el selector de Colaborador
+    Then solo veo colaboradores en estado "activo"
+
+  Scenario 12: Consistencia por club activo
+    Given creo un contrato en el club activo
+    Then la operación aplica únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-58 — Edición y finalización de contratos
+
+> *Como Admin del club, quiero editar o finalizar un contrato, para reflejar cambios en el acuerdo con el colaborador o el fin del vínculo.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-58 — Edición y finalización de contratos
+
+  Scenario 01: Acceso a la edición del contrato
+    Given estoy en la ficha de un colaborador o de una Estructura Salarial
+    When selecciono un contrato vigente y "Editar"
+    Then veo el formulario de edición
+
+  Scenario 02: Campos editables en contrato vigente
+    Given estoy editando un contrato vigente
+    Then puedo editar Fecha fin, flag "Usa monto estándar", Monto acordado (solo si flag desactivado) y adjuntos
+
+  Scenario 03: Campos no editables
+    Given estoy editando un contrato vigente
+    Then no puedo editar Colaborador ni Estructura Salarial
+    And veo un mensaje indicando que esos cambios requieren finalizar y crear uno nuevo
+
+  Scenario 04: Desactivación del flag congela el monto
+    Given el flag "Usa monto estándar" estaba activo
+    When desactivo el flag
+    Then el sistema congela el monto actual en el contrato
+    And el campo Monto acordado queda editable manualmente
+
+  Scenario 05: Reactivación del flag vuelve a leer el monto de la estructura
+    Given el flag "Usa monto estándar" estaba desactivado
+    When activo el flag
+    Then el contrato vuelve a leer el monto de la versión vigente de la Estructura Salarial
+
+  Scenario 06: Finalización manual del contrato
+    Given estoy en la ficha de un contrato vigente
+    When selecciono "Finalizar contrato" y confirmo
+    Then el estado pasa a "finalizado"
+    And la Fecha fin se completa con la fecha actual o con la indicada
+
+  Scenario 07: Al finalizar la Estructura queda vacante
+    Given finalizo un contrato vigente
+    Then la Estructura Salarial asociada pasa a estado "vacante"
+
+  Scenario 08: Contrato finalizado conserva historial de liquidaciones
+    Given un contrato fue finalizado
+    Then conserva todas las liquidaciones generadas hasta la fecha de fin
+
+  Scenario 09: No se generan liquidaciones posteriores a la fecha fin
+    Given un contrato tiene Fecha fin definida
+    When se ejecuta la generación masiva de liquidaciones para un período posterior
+    Then el sistema no genera liquidación para ese contrato
+
+  Scenario 10: Contrato finalizado no puede reactivarse
+    Given un contrato está en estado "finalizado"
+    When intento reactivarlo
+    Then el sistema bloquea la acción
+    And indica que debe crearse un contrato nuevo para renovar el vínculo
+
+  Scenario 11: Consistencia por club activo
+    Given edito o finalizo contratos en el club activo
+    Then la operación aplica únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-59 — Finalización automática de contratos por fecha fin
+
+> *Como sistema, quiero finalizar automáticamente los contratos cuya fecha fin se cumple, para mantener consistente el estado de los contratos sin intervención manual.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-59 — Finalización automática de contratos por fecha fin
+
+  Scenario 01: Ejecución diaria
+    Given existen contratos vigentes con Fecha fin igual al día actual
+    When el sistema corre el proceso diario
+    Then esos contratos pasan a estado "finalizado"
+    And sus Estructuras Salariales asociadas pasan a "vacante"
+
+  Scenario 02: Contratos sin fecha fin no son afectados
+    Given existe un contrato vigente sin Fecha fin definida
+    When el sistema corre el proceso diario
+    Then el contrato no es afectado
+
+  Scenario 03: Contratos con fecha fin futura no son afectados
+    Given existe un contrato vigente con Fecha fin futura
+    When el sistema corre el proceso diario
+    Then el contrato no es afectado
+
+  Scenario 04: Fallo en la ejecución
+    Given el proceso diario falla durante la ejecución
+    Then ningún contrato cambia de estado
+    And se registra el error en el log del sistema
+
+  Scenario 05: Registro de la acción automática
+    Given el proceso finaliza un contrato automáticamente
+    Then el historial del contrato registra la acción automática con fecha y hora
+
+  Scenario 06: Consistencia por club
+    Given el proceso recorre todos los clubes
+    Then las acciones aplican correctamente al club propietario de cada contrato
+```
+
+---
+
+### E04 👥 RRHH / US-60 — Alerta de colaboradores activos sin contratos vigentes
+
+> *Como sistema, quiero detectar colaboradores activos sin contratos vigentes y mostrar una alerta al Admin, para que evalúe darlos de baja manualmente.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-60 — Alerta de colaboradores activos sin contratos vigentes
+
+  Scenario 01: Detección de colaboradores sin contratos
+    Given existe un colaborador en estado "activo"
+    And no tiene ningún contrato vigente
+    Then el sistema lo marca con una alerta visual
+
+  Scenario 02: Alerta visible en listado y ficha
+    Given un colaborador está en la condición de alerta
+    When accedo al listado de colaboradores o a su ficha
+    Then veo la alerta visual correspondiente
+
+  Scenario 03: Colaborador con contrato vigente no tiene alerta
+    Given un colaborador activo tiene al menos un contrato vigente
+    Then no muestra alerta
+
+  Scenario 04: Acción "Dar de baja" desde la alerta
+    Given estoy viendo la alerta en la ficha del colaborador
+    When selecciono "Dar de baja"
+    Then el sistema cambia el Estado del colaborador a "inactivo"
+    And completa la fecha de baja automática
+
+  Scenario 05: Acción "Ignorar alerta"
+    Given estoy viendo la alerta en la ficha del colaborador
+    When selecciono "Ignorar"
+    Then el colaborador permanece en estado "activo"
+    And la alerta continúa visible
+
+  Scenario 06: La alerta desaparece al crear un contrato
+    Given un colaborador tenía alerta activa
+    When se le crea un contrato nuevo vigente
+    Then la alerta desaparece automáticamente
+
+  Scenario 07: Consistencia por club activo
+    Given reviso alertas en el club activo
+    Then solo veo alertas de colaboradores del club activo
+```
+
+---
+
+### E04 👥 RRHH / US-61 — Generación masiva de liquidaciones del mes
+
+> *Como Tesorero del club, quiero generar las liquidaciones del mes para todos los contratos vigentes, para preparar los pagos de la nómina en un solo paso.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-61 — Generación masiva de liquidaciones del mes
+
+  Scenario 01: Acceso con rol Tesorería, RRHH o Admin
+    Given tengo rol Tesorería, RRHH o Admin en el club activo
+    When accedo al módulo de Liquidaciones
+    Then veo la acción "Generar liquidaciones del mes"
+
+  Scenario 02: Acceso denegado sin rol apropiado
+    Given no tengo rol Tesorería, RRHH ni Admin
+    When intento acceder al módulo
+    Then la acción no se renderiza
+
+  Scenario 03: Selección de período
+    Given voy a generar las liquidaciones del mes
+    Then veo un selector de mes y año
+    And por defecto se propone el mes en curso
+
+  Scenario 04: Generación masiva exitosa
+    Given seleccioné un período válido
+    When confirmo la generación
+    Then el sistema crea una liquidación en estado "generada" por cada contrato vigente en el período
+
+  Scenario 05: Monto precargado según flag
+    Given se generan liquidaciones
+    Then las liquidaciones de contratos con flag usa_monto_estructura activo toman el monto vigente de la Estructura Salarial al momento de la generación
+    And las liquidaciones de contratos con flag desactivado toman el monto acordado del contrato
+
+  Scenario 06: Contratos por hora o por clase
+    Given un contrato es por hora o por clase
+    When se genera su liquidación
+    Then la liquidación se crea con monto en cero
+    And queda marcada como "requiere input de horas/clases"
+
+  Scenario 07: Omisión de duplicados
+    Given ya existe una liquidación no anulada para un contrato en el período
+    When corro la generación
+    Then el sistema omite ese contrato
+    And lo reporta en el resumen
+
+  Scenario 08: Generación parcial del mes
+    Given algunos contratos ya tienen liquidación
+    And otros no
+    When corro la generación
+    Then solo se crean las que faltan
+
+  Scenario 09: Sin contratos vigentes en el período
+    Given no hay contratos vigentes en el período seleccionado
+    When corro la generación
+    Then no se crea ninguna liquidación
+    And se informa al usuario
+
+  Scenario 10: Registro de la acción
+    Given finaliza la generación masiva
+    Then el sistema registra la acción con usuario, fecha y cantidad de liquidaciones generadas
+
+  Scenario 11: Resultado visible
+    Given finaliza la generación masiva
+    Then veo el listado de liquidaciones generadas
+    And puedo agruparlo por colaborador o por Estructura Salarial
+
+  Scenario 12: Consistencia por club activo
+    Given genero liquidaciones en el club activo
+    Then la operación aplica únicamente al club activo
+```
+
+### E04 👥 RRHH / US-62 — Ajustes sobre liquidación generada
+
+> *Como Tesorero del club, quiero ajustar una liquidación generada agregando adicionales, descuentos o cargando horas/clases, para reflejar correctamente lo que corresponde pagar en el mes.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-62 — Ajustes sobre liquidación generada
+
+  Scenario 01: Acceso al detalle de liquidación generada
+    Given selecciono una liquidación en estado "generada"
+    When abro su detalle
+    Then veo el monto base, los ajustes cargados, el monto final calculado y las notas
+
+  Scenario 02: Agregar ajuste
+    Given estoy en el detalle de una liquidación "generada"
+    When agrego un ajuste con tipo (adicional / descuento / reintegro), descripción y monto
+    Then el monto final se recalcula en vivo
+
+  Scenario 03: Edición de ajuste existente
+    Given existe un ajuste en la liquidación
+    When edito su monto o descripción
+    Then el monto final se recalcula en vivo
+
+  Scenario 04: Eliminación de ajuste
+    Given existe un ajuste en la liquidación
+    When lo elimino
+    Then el monto final se recalcula en vivo
+
+  Scenario 05: Carga de horas o clases
+    Given el contrato asociado es por hora o por clase
+    When cargo la cantidad de horas o clases trabajadas
+    Then el monto base se calcula multiplicando la cantidad por el valor unitario de la Estructura Salarial o del contrato
+
+  Scenario 06: Edición del monto base en contrato con flag desactivado
+    Given el contrato tiene flag usa_monto_estructura en falso
+    When edito el monto base de la liquidación
+    Then el monto final se recalcula en vivo
+
+  Scenario 07: Bloqueo de edición en estado confirmada o pagada
+    Given la liquidación está en estado "confirmada" o "pagada"
+    When intento editar ajustes
+    Then el sistema bloquea la edición
+
+  Scenario 08: Notas libres del tesorero
+    Given estoy en el detalle de una liquidación "generada"
+    When escribo notas libres
+    Then se persisten al guardar
+
+  Scenario 09: Monto final debe ser mayor o igual a cero
+    Given el monto final calculado es negativo
+    When intento guardar
+    Then el sistema bloquea el guardado
+    And solicita corregir los ajustes
+    Given el monto final calculado es cero
+    When guardo
+    Then el sistema solicita confirmación explícita
+
+  Scenario 10: Registro del historial de cambios
+    Given edito una liquidación
+    Then el historial registra quién, cuándo y qué cambió
+
+  Scenario 11: Consistencia por club activo
+    Given ajusto liquidaciones del club activo
+    Then la operación aplica únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-63 — Confirmación individual y masiva de liquidaciones
+
+> *Como Tesorero del club, quiero confirmar una o múltiples liquidaciones generadas, para marcarlas como listas para pagar y prevenir edición accidental.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-63 — Confirmación individual y masiva de liquidaciones
+
+  Scenario 01: Acceso al listado de liquidaciones generadas
+    Given tengo rol Tesorería, RRHH o Admin
+    When accedo al módulo de Liquidaciones
+    Then veo el listado filtrado por estado "generada"
+
+  Scenario 02: Selección individual o masiva
+    Given estoy en el listado de liquidaciones generadas
+    Then puedo seleccionar una o múltiples liquidaciones
+
+  Scenario 03: Confirmación individual exitosa
+    Given selecciono una liquidación válida
+    When presiono "Confirmar"
+    Then el estado pasa a "confirmada"
+    And el monto final queda bloqueado
+
+  Scenario 04: Confirmación masiva
+    Given selecciono múltiples liquidaciones válidas
+    When presiono "Confirmar"
+    Then todas las válidas pasan a "confirmada"
+    And las inválidas se reportan al usuario
+
+  Scenario 05: Bloqueo de confirmación con horas no cargadas
+    Given una liquidación es por hora o por clase con cero horas cargadas
+    When intento confirmarla
+    Then el sistema bloquea la acción
+    And pide cargar horas o clases primero
+
+  Scenario 06: Advertencia por monto cero o negativo
+    Given intento confirmar una liquidación con monto final cero o negativo
+    When presiono "Confirmar"
+    Then el sistema pide confirmación explícita antes de proceder
+
+  Scenario 07: Registro del historial de confirmación
+    Given confirmo una liquidación
+    Then el historial registra el usuario y la fecha de confirmación
+
+  Scenario 08: Liquidación confirmada no es editable salvo anulación
+    Given una liquidación está en estado "confirmada"
+    When intento editarla
+    Then el sistema bloquea la edición
+
+  Scenario 09: Consistencia por club activo
+    Given confirmo liquidaciones del club activo
+    Then la operación aplica únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-64 — Pago individual de liquidación confirmada
+
+> *Como Tesorero del club, quiero ejecutar el pago de una liquidación confirmada generando el movimiento correspondiente en Tesorería, para cerrar el ciclo de liquidación con trazabilidad completa.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-64 — Pago individual de liquidación confirmada
+
+  Scenario 01: Acceso a la acción "Pagar"
+    Given selecciono una liquidación en estado "confirmada"
+    When abro su detalle
+    Then veo la acción "Pagar"
+
+  Scenario 02: Formulario de pago
+    Given presiono "Pagar" en una liquidación confirmada
+    Then veo un formulario con Cuenta de origen, Fecha de pago, Comprobante (opcional) y Notas
+    And la Fecha de pago tiene por defecto la fecha de hoy y es editable
+
+  Scenario 03: Cuenta de origen es obligatoria
+    Given el campo Cuenta de origen está vacío
+    When presiono "Confirmar pago"
+    Then el sistema bloquea el submit
+    And veo un error inline
+
+  Scenario 04: Fecha de pago es obligatoria
+    Given el campo Fecha de pago está vacío
+    When presiono "Confirmar pago"
+    Then el sistema bloquea el submit
+    And veo un error inline
+
+  Scenario 05: Validación de saldo de la cuenta
+    Given la cuenta de origen no tiene saldo suficiente en la moneda del club
+    When presiono "Confirmar pago"
+    Then el sistema bloquea el submit según la configuración de la cuenta
+    And muestra un mensaje informativo
+
+  Scenario 06: Ejecución exitosa del pago
+    Given completé los campos obligatorios con valores válidos
+    When confirmo el pago
+    Then el sistema crea un movimiento de egreso en Tesorería con categoría "Sueldos"
+    And el movimiento tiene monto igual al monto final de la liquidación
+    And el movimiento referencia al colaborador y a la liquidación
+    And el movimiento tiene descripción autogenerada
+
+  Scenario 07: La liquidación pasa a pagada
+    Given se ejecutó el pago exitosamente
+    Then la liquidación pasa a estado "pagada"
+    And guarda el ID del movimiento generado
+
+  Scenario 08: Asociación a jornada del tesorero
+    Given el tesorero tiene una jornada abierta al momento del pago
+    Then el movimiento generado queda asociado a esa jornada
+    Given el tesorero no tiene jornada abierta
+    Then el movimiento se registra directo en Tesorería
+
+  Scenario 09: Solo liquidaciones confirmadas pueden pagarse
+    Given una liquidación está en estado distinto de "confirmada"
+    When intento pagarla
+    Then el sistema bloquea la acción
+
+  Scenario 10: No se puede pagar dos veces la misma liquidación
+    Given una liquidación ya está en estado "pagada"
+    When intento pagarla nuevamente
+    Then el sistema bloquea la acción
+
+  Scenario 11: Registro del historial de pago
+    Given ejecuté el pago exitosamente
+    Then el historial registra usuario, fecha y hora, cuenta y movimiento generado
+
+  Scenario 12: Navegación desde el movimiento
+    Given existe un movimiento generado por un pago de liquidación
+    When abro el detalle del movimiento
+    Then puedo navegar a la liquidación de origen
+
+  Scenario 13: Consistencia por club activo
+    Given ejecuto pagos en el club activo
+    Then la operación aplica únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-65 — Pago en lote de múltiples liquidaciones
+
+> *Como Tesorero del club, quiero ejecutar el pago de múltiples liquidaciones confirmadas en una sola operación, para pagar la nómina del mes de forma eficiente.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-65 — Pago en lote de múltiples liquidaciones
+
+  Scenario 01: Acceso al listado de liquidaciones confirmadas
+    Given tengo rol Tesorería, RRHH o Admin
+    When accedo al listado filtrado por estado "confirmada"
+    Then veo todas las liquidaciones pendientes de pago
+
+  Scenario 02: Selección múltiple
+    Given estoy en el listado de confirmadas
+    Then puedo seleccionar múltiples liquidaciones
+
+  Scenario 03: Formulario de pago en lote
+    Given selecciono múltiples liquidaciones y presiono "Pagar seleccionadas"
+    Then veo un formulario con Cuenta de origen, Fecha de pago y Notas comunes
+
+  Scenario 04: Cuenta y Fecha son obligatorias
+    Given los campos Cuenta de origen o Fecha de pago están vacíos
+    When presiono "Confirmar pago en lote"
+    Then el sistema bloquea el submit
+    And veo errores inline
+
+  Scenario 05: Debe haber al menos una liquidación seleccionada
+    Given no seleccioné ninguna liquidación
+    When presiono "Pagar seleccionadas"
+    Then el sistema bloquea la acción
+
+  Scenario 06: Resumen previo a confirmar
+    Given presiono "Confirmar pago en lote"
+    Then veo un resumen con cantidad de liquidaciones, monto total y cuenta de origen
+    And debo confirmar explícitamente antes de ejecutar
+
+  Scenario 07: Ejecución exitosa en lote
+    Given confirmo el pago en lote
+    When el sistema procesa la operación
+    Then crea un movimiento de egreso por cada liquidación seleccionada
+    And todas las liquidaciones pasan a "pagada"
+    And cada liquidación queda vinculada a su movimiento generado
+
+  Scenario 08: Fallo parcial revierte todo
+    Given una de las liquidaciones no puede procesarse durante la ejecución
+    When el sistema detecta el fallo
+    Then revierte toda la operación
+    And ninguna liquidación cambia de estado
+    And no se persiste ningún movimiento
+    And el intento fallido queda registrado en el log de auditoría
+
+  Scenario 09: Registro del historial por liquidación
+    Given el pago en lote se ejecutó exitosamente
+    Then cada liquidación procesada tiene su registro de historial individual
+
+  Scenario 10: Consistencia por club activo
+    Given ejecuto pagos en lote en el club activo
+    Then la operación aplica únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-66 — Anulación de liquidación
+
+> *Como Tesorero del club, quiero anular una liquidación para corregir errores, para que los montos no se contabilicen y pueda regenerarla si corresponde.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-66 — Anulación de liquidación
+
+  Scenario 01: Anulación de liquidación generada o confirmada
+    Given una liquidación está en estado "generada" o "confirmada"
+    When selecciono "Anular" y confirmo
+    Then el estado pasa a "anulada"
+    And deja de considerarse para reportes
+
+  Scenario 02: Bloqueo de anulación directa si está pagada
+    Given una liquidación está en estado "pagada"
+    When intento anularla
+    Then el sistema bloquea la acción
+    And indica que primero debe revertirse el movimiento de Tesorería asociado
+
+  Scenario 03: Anulación tras reversión del movimiento
+    Given el movimiento de Tesorería asociado fue revertido
+    When anulo la liquidación
+    Then el estado pasa a "anulada"
+    And puede regenerarse para ese contrato y período
+
+  Scenario 04: Liquidación anulada queda visible en el histórico
+    Given una liquidación fue anulada
+    Then permanece visible en el histórico marcada como anulada
+
+  Scenario 05: Registro del historial de anulación
+    Given anulo una liquidación
+    Then el historial registra usuario, fecha y motivo (texto opcional)
+
+  Scenario 06: Consistencia por club activo
+    Given anulo liquidaciones del club activo
+    Then la operación aplica únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-67 — Ficha consolidada del colaborador
+
+> *Como Tesorero del club, quiero consultar la ficha de un colaborador con todos sus contratos y pagos históricos, para tener visibilidad completa de su vínculo rentado con el club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-67 — Ficha consolidada del colaborador
+
+  Scenario 01: Acceso a la ficha desde el listado
+    Given estoy en el listado de colaboradores
+    When selecciono un colaborador
+    Then accedo a su ficha consolidada
+
+  Scenario 02: Visualización de datos personales
+    Given estoy en la ficha de un colaborador
+    Then veo Nombre, DNI, CUIT/CUIL, Contacto, Tipo de vínculo, Estado, Datos de pago y Fecha de alta
+
+  Scenario 03: Listado de contratos
+    Given estoy en la ficha de un colaborador
+    Then veo todos sus contratos (vigentes y finalizados) con Estructura Salarial, Rol, Actividad, Fechas y Monto
+
+  Scenario 04: Listado de liquidaciones
+    Given estoy en la ficha de un colaborador
+    Then veo todas sus liquidaciones con Período, Contrato, Monto final y Estado
+
+  Scenario 05: Listado de pagos efectivos
+    Given estoy en la ficha de un colaborador
+    Then veo todos los pagos efectivos con Fecha, Monto, Cuenta y acceso al movimiento de Tesorería asociado
+
+  Scenario 06: Totales consolidados
+    Given estoy en la ficha de un colaborador
+    Then veo el total pagado en el año y en el mes en curso
+
+  Scenario 07: Ficha de colaborador sin movimientos
+    Given un colaborador no tiene contratos, liquidaciones ni pagos
+    When accedo a su ficha
+    Then veo los datos personales
+    And veo estado vacío en las secciones sin datos
+
+  Scenario 08: Alerta visual si no tiene contratos vigentes
+    Given un colaborador activo no tiene contratos vigentes
+    When abro su ficha
+    Then veo la alerta visual correspondiente
+
+  Scenario 09: Acceso rápido a crear contrato nuevo
+    Given estoy en la ficha de un colaborador
+    When presiono "+ Nuevo Contrato"
+    Then accedo al formulario de alta con el colaborador preseleccionado
+
+  Scenario 10: Consistencia por club activo
+    Given consulto la ficha de un colaborador en el club activo
+    Then solo veo información del colaborador en el club activo
+```
+
+---
+
+### E04 👥 RRHH / US-68 — Dashboard del módulo RRHH
+
+> *Como Tesorero del club, quiero ver un dashboard del módulo RRHH con el estado de liquidaciones y el costo proyectado del mes, para saber qué está pendiente de procesar.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-68 — Dashboard del módulo RRHH
+
+  Scenario 01: Acceso con rol Tesorería, RRHH o Admin
+    Given tengo rol Tesorería, RRHH o Admin en el club activo
+    When accedo al módulo de RRHH
+    Then veo el dashboard con las cards de indicadores
+
+  Scenario 02: Acceso denegado sin rol apropiado
+    Given no tengo rol Tesorería, RRHH ni Admin
+    When intento acceder al dashboard
+    Then la pantalla no se renderiza
+
+  Scenario 03: Card "Liquidaciones pendientes de confirmar"
+    Given existen liquidaciones en estado "generada"
+    Then veo la card con la cantidad y el monto total
+
+  Scenario 04: Card "Liquidaciones confirmadas pendientes de pago"
+    Given existen liquidaciones en estado "confirmada"
+    Then veo la card con la cantidad y el monto total
+
+  Scenario 05: Card "Costo proyectado del mes"
+    Given existen Estructuras Salariales ocupadas en el mes en curso
+    Then veo la card con la suma de los montos vigentes
+
+  Scenario 06: Card "Ejecutado del mes"
+    Given existen liquidaciones pagadas en el mes en curso
+    Then veo la card con la suma de los montos pagados
+
+  Scenario 07: Card "Estructuras vacantes"
+    Given existen Estructuras Salariales activas sin contrato vigente
+    Then veo la card con la cantidad
+
+  Scenario 08: Card "Alertas"
+    Given existen colaboradores activos sin contratos vigentes
+    Then veo la card con la cantidad
+
+  Scenario 09: Sin datos en alguna card
+    Given no existen datos para una card
+    Then la card muestra el estado vacío correspondiente
+
+  Scenario 10: Acceso al listado filtrado desde la card
+    Given estoy en el dashboard
+    When selecciono una card
+    Then accedo al listado filtrado por la condición de la card
+
+  Scenario 11: Consistencia por club activo
+    Given consulto el dashboard del club activo
+    Then todas las cards aplican únicamente al club activo
+```
+
+---
+
+### E04 👥 RRHH / US-69 — Reportes de gasto en personal
+
+> *Como Tesorero del club, quiero ver reportes de gasto en personal por período, colaborador y actividad, para analizar la inversión en recursos humanos del club.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-69 — Reportes de gasto en personal
+
+  Scenario 01: Acceso con rol Tesorería, RRHH o Admin
+    Given tengo rol Tesorería, RRHH o Admin en el club activo
+    When accedo al módulo de Reportes de RRHH
+    Then veo el panel de reportes
+
+  Scenario 02: Acceso denegado sin rol apropiado
+    Given no tengo rol Tesorería, RRHH ni Admin
+    When intento acceder al panel
+    Then la pantalla no se renderiza
+
+  Scenario 03: Filtros disponibles
+    Given estoy en el panel de reportes
+    Then veo filtros de Rango de fechas, Colaborador, Estructura Salarial y Actividad
+
+  Scenario 04: Reporte por período
+    Given apliqué los filtros
+    When selecciono agrupación "Por período"
+    Then veo el total pagado agrupado por mes dentro del rango seleccionado
+
+  Scenario 05: Reporte por colaborador
+    Given apliqué los filtros
+    When selecciono agrupación "Por colaborador"
+    Then veo el total pagado agrupado por colaborador en el período
+
+  Scenario 06: Reporte por actividad
+    Given apliqué los filtros
+    When selecciono agrupación "Por actividad"
+    Then veo el total pagado agrupado por actividad
+
+  Scenario 07: Desvío proyectado vs ejecutado
+    Given selecciono la vista comparativa
+    Then veo mes a mes la comparación entre el costo proyectado y el ejecutado
+
+  Scenario 08: Los reportes consideran solo liquidaciones pagadas
+    Given existen liquidaciones en distintos estados
+    When consulto un reporte
+    Then solo se contabilizan las liquidaciones en estado "pagada"
+    And no se incluyen anuladas ni pendientes
+
+  Scenario 09: Sin datos en el rango
+    Given no hay liquidaciones pagadas en el rango seleccionado
+    When consulto un reporte
+    Then veo un estado vacío con mensaje informativo
+
+  Scenario 10: Exportación a CSV
+    Given estoy viendo un reporte con datos
+    When presiono "Exportar CSV"
+    Then el sistema descarga un archivo CSV con los datos visibles
+
+  Scenario 11: Consistencia por club activo
+    Given consulto reportes del club activo
+    Then solo se contabilizan liquidaciones del club activo
+```
+
 ---
 
 *Joaquin Fernandez Sinchi — Product Manager · A-CSPO | Buenos Aires, Argentina | Marzo 2026*

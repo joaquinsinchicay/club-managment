@@ -158,6 +158,7 @@ export async function updateClubIdentityAction(formData: FormData) {
     telefono: String(formData.get("telefono") ?? ""),
     colorPrimary: String(formData.get("color_primary") ?? ""),
     colorSecondary: String(formData.get("color_secondary") ?? ""),
+    currencyCode: String(formData.get("currency_code") ?? ""),
     logoFile,
     removeLogo
   });

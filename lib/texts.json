@@ -767,6 +767,13 @@
           "fundacion": "Fundacion",
           "sociedad_civil": "Sociedad civil"
         },
+        "currency_label": "Moneda del club",
+        "currency_placeholder": "Selecciona una moneda",
+        "currency_helper": "Moneda por defecto del club. Se usa en modulos que requieren una unidad monetaria canonica (ej. Estructuras Salariales).",
+        "currency_options": {
+          "ARS": "Peso argentino (ARS)",
+          "USD": "Dolar estadounidense (USD)"
+        },
         "domicilio_label": "Domicilio",
         "domicilio_placeholder": "Calle, numero, ciudad",
         "email_label": "Email de contacto",
@@ -798,6 +805,7 @@
           "invalid_telefono": "El formato del telefono no es valido.",
           "invalid_telefono_missing_prefix": "El telefono debe incluir el codigo de pais (ej. +54).",
           "invalid_color": "Los colores deben ser codigos hexadecimales validos (ej. #0EA5E9).",
+          "invalid_currency": "La moneda seleccionada no es valida.",
           "invalid_logo": "El logo debe ser PNG o SVG y pesar menos de 2 MB.",
           "invalid_logo_dimensions": "El logo debe tener al menos 256x256 pixeles.",
           "logo_upload_failed": "No pudimos subir el logo. Vuelve a intentarlo.",
