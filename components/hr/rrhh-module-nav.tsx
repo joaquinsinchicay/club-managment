@@ -26,7 +26,7 @@ export function RrhhModuleNav({ activeTab }: RrhhModuleNavProps) {
   return (
     <nav
       aria-label={texts.rrhh.module_nav.aria_label}
-      className="flex flex-wrap gap-2"
+      className="flex gap-0.5 rounded-card bg-slate-100 p-0.75"
     >
       {TAB_ORDER.map((tab) => {
         const isActive = tab.id === activeTab;
@@ -36,10 +36,10 @@ export function RrhhModuleNav({ activeTab }: RrhhModuleNavProps) {
             href={tab.href}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-10 items-center rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+              "flex-1 rounded-[7px] px-2.5 py-2 text-center text-xs font-semibold tracking-tight transition whitespace-nowrap",
               isActive
-                ? "bg-foreground text-background"
-                : "border border-border bg-card text-foreground hover:bg-secondary/40",
+                ? "bg-white text-foreground shadow-sm"
+                : "text-slate-600 hover:text-foreground",
             )}
           >
             {texts.rrhh.module_nav[tab.labelKey]}
