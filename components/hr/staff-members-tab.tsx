@@ -3,6 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import Link from "next/link";
+
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, buttonClass } from "@/components/ui/button";
@@ -245,7 +247,10 @@ export function StaffMembersTab({
               {filtered.map((m) => (
                 <DataTableRow key={m.id} density="comfortable" hoverReveal>
                   <DataTableCell>
-                    <span className="flex items-center gap-2">
+                    <Link
+                      href={`/rrhh/staff/${m.id}`}
+                      className="flex items-center gap-2 hover:underline"
+                    >
                       <Avatar
                         name={`${m.firstName} ${m.lastName}`}
                         size="sm"
@@ -261,7 +266,7 @@ export function StaffMembersTab({
                           </span>
                         ) : null}
                       </span>
-                    </span>
+                    </Link>
                   </DataTableCell>
                   <DataTableCell>
                     <span className="font-mono text-xs">{m.dni}</span>
