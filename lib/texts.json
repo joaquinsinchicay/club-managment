@@ -713,7 +713,6 @@
         "journey": "Jornada",
         "categories_activities": "Categorías",
         "members": "Usuarios",
-        "rrhh": "RRHH",
         "role_permissions": "Permisos",
         "receipt_numbering": "Numeración",
         "notifications": "Notificaciones",
@@ -1302,6 +1301,13 @@
       "members": "Colaboradores",
       "contracts": "Contratos"
     },
+    "module_nav": {
+      "aria_label": "Navegacion del modulo RRHH",
+      "resumen": "Resumen",
+      "contracts": "Contratos",
+      "staff": "Colaboradores",
+      "structures": "Estructuras"
+    },
     "home": {
       "title": "Modulo RRHH",
       "description": "Dashboard operativo de la nomina del club activo.",
@@ -1309,9 +1315,6 @@
       "settlements_title": "Liquidaciones",
       "settlements_description": "Genera, ajusta, confirma, anula y paga las liquidaciones mensuales del club activo.",
       "settlements_cta": "Ir a liquidaciones",
-      "masters_title": "Maestros",
-      "masters_description": "Administra Estructuras Salariales, Colaboradores y Contratos desde Configuracion.",
-      "masters_cta": "Abrir maestros",
       "no_access_note": "Tu rol no tiene acceso a esta seccion.",
       "upcoming_sections_note": "Pronto vas a poder ejecutar pagos, revisar fichas por colaborador, consultar el dashboard y generar reportes."
     },

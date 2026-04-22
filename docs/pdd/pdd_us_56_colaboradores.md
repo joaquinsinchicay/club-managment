@@ -23,7 +23,7 @@ Hoy no hay un registro formal de las personas que reciben remuneración del club
 
 ## 3. Objetivo funcional
 
-Dentro de la solapa `RRHH` de `/settings` (junto a Estructuras Salariales) existe una sección **`Colaboradores`** que permite a `admin` y `rrhh` listar, crear, editar, activar y desactivar personas rentadas. Cada colaborador tiene nombre, DNI, CUIT/CUIL, datos de contacto, tipo de vínculo, CBU/alias, fecha de alta y estado. La baja lógica se bloquea si hay contratos vigentes.
+Dentro del módulo `/rrhh`, la pestaña **`Colaboradores`** (ruta `/rrhh/staff`) permite a `admin` y `rrhh` listar, crear, editar, activar y desactivar personas rentadas. Cada colaborador tiene nombre, DNI, CUIT/CUIL, datos de contacto, tipo de vínculo, CBU/alias, fecha de alta y estado. La baja lógica se bloquea si hay contratos vigentes.
 
 ---
 

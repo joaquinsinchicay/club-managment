@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
@@ -54,6 +55,7 @@ export default async function RrhhPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
+      <RrhhModuleNav activeTab="resumen" />
       <header className="grid gap-1">
         <span className="text-eyebrow uppercase text-muted-foreground">
           {rrhhTexts.page_title}
@@ -202,7 +204,7 @@ export default async function RrhhPage() {
                   {summary.alertsCount}
                 </span>
                 {summary.alertsCount > 0 ? (
-                  <LinkButton href="/settings?tab=rrhh" variant="secondary" size="sm">
+                  <LinkButton href="/rrhh/staff" variant="secondary" size="sm">
                     {dashboard.card_alerts_cta}
                   </LinkButton>
                 ) : (
@@ -231,19 +233,6 @@ export default async function RrhhPage() {
             ) : (
               <p className="text-xs text-muted-foreground">{home.no_access_note}</p>
             )}
-          </CardBody>
-        </Card>
-
-        <Card padding="comfortable" tone="muted">
-          <CardHeader
-            eyebrow={rrhhTexts.placeholder_available_soon}
-            title={home.masters_title}
-            description={home.masters_description}
-          />
-          <CardBody>
-            <LinkButton href="/settings?tab=rrhh" variant="secondary">
-              {home.masters_cta}
-            </LinkButton>
           </CardBody>
         </Card>
       </section>

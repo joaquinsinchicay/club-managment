@@ -89,8 +89,8 @@ Cada card linkea al listado filtrado correspondiente.
 - Confirmadas pendientes de pago → `/rrhh/settlements?status=confirmada`.
 - Costo proyectado → `/rrhh/reports?view=projected&month=current`.
 - Ejecutado del mes → `/rrhh/settlements?status=pagada&month=current`.
-- Estructuras vacantes → `/settings/rrhh/structures?filter=vacant`.
-- Alertas → `/settings/rrhh/staff?alert=no_active_contracts`.
+- Estructuras vacantes → `/rrhh/structures?filter=vacant`.
+- Alertas → `/rrhh/staff?alert=no_active_contracts`.
 
 ### Acceso read-only para `tesoreria`
 - Ver todas las cards pero en los links que lleven a maestros (estructuras, colaboradores), el acceso puede ser de lectura o bloqueado según las reglas de cada US. El dashboard no discrimina por rol en el render de las cards.

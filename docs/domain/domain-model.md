@@ -649,6 +649,27 @@ vinculado esté `cancelled` (US-66).
   de maestros).
 - Cualquier otro rol: sin acceso.
 
+### Rutas UI del módulo
+
+Los maestros RRHH **no viven en `/settings`** (decisión arquitectural
+Fase 8 · Refinación IA). El Coordinador (`rrhh`) administra todo desde
+el módulo dedicado `/rrhh`, con sub-navegación horizontal de 4 pestañas:
+
+| Ruta | Pestaña | Guard | Contenido |
+|---|---|---|---|
+| `/rrhh` | Resumen | `canAccessHrModule` | Dashboard con 6 cards operativas (US-68) |
+| `/rrhh/contracts` | Contratos | `canAccessHrMasters` | CRUD de contratos + finalizar (US-57/58) |
+| `/rrhh/staff` | Colaboradores | `canAccessHrMasters` | CRUD de colaboradores + alerta sin contratos (US-56/60) |
+| `/rrhh/structures` | Estructuras | `canAccessHrMasters` | CRUD de estructuras salariales + versionado (US-54/55) |
+
+Rutas operativas fuera de la sub-nav principal:
+
+| Ruta | Guard | Contenido |
+|---|---|---|
+| `/rrhh/settlements` | `canOperateHrSettlements` | Listado de liquidaciones + pagos (US-61..66) |
+| `/rrhh/reports` | `canAccessHrModule` | Reportes con export CSV (US-69) |
+| `/rrhh/staff/[id]` | `canAccessHrModule` | Ficha consolidada del colaborador (US-67) |
+
 ### Reglas transversales adicionales
 
 10. Todas las mutaciones de RRHH pasan por RPCs SECURITY DEFINER o

@@ -1687,3 +1687,18 @@ mutadores registran eventos en `hr_activity_log`.
 No son RPCs: viven como queries server-side en
 `lib/services/hr-reports-service.ts` y exponen export CSV via route
 handler `POST /api/rrhh/reports/export`.
+
+### Rutas UI del módulo
+
+| Ruta | Guard | Entidades renderizadas |
+|---|---|---|
+| `/rrhh` | `canAccessHrModule` (admin, rrhh, tesoreria) | Dashboard (6 cards operativas, US-68) |
+| `/rrhh/contracts` | `canAccessHrMasters` (admin, rrhh) | `staff_contracts` + forms alta/edición/finalización |
+| `/rrhh/staff` | `canAccessHrMasters` (admin, rrhh) | `staff_members` + forms + alerta US-60 |
+| `/rrhh/structures` | `canAccessHrMasters` (admin, rrhh) | `salary_structures` + versionado US-55 |
+| `/rrhh/settlements` | `canOperateHrSettlements` (admin, rrhh, tesoreria) | `payroll_settlements` + adjustments + pagos |
+| `/rrhh/reports` | `canAccessHrModule` | Reportes con export CSV |
+| `/rrhh/staff/[id]` | `canAccessHrModule` | Ficha consolidada (US-67) |
+| `/api/rrhh/reports/export` | `canAccessHrModule` (server-side) | POST que retorna CSV con `Content-Disposition` |
+
+Los maestros (`structures`, `staff`, `contracts`) **no viven bajo `/settings`**: son parte del módulo RRHH operativo, no de Configuración del club. El rol `rrhh` accede sin requerir `admin`.

@@ -23,14 +23,14 @@ Hoy el club no tiene un lugar administrado para definir qué posiciones están h
 
 ## 3. Objetivo funcional
 
-Dentro de **`/settings`**, bajo una solapa **`RRHH`**, debe existir una sección **`Estructuras Salariales`** que permita a un Admin o RRHH listar, crear y editar estructuras. Cada estructura representa una posición rentada con: nombre descriptivo, rol funcional, actividad, tipo de remuneración (`mensual_fijo | por_hora | por_clase`), monto vigente y estado (`activa | inactiva`). El monto inicial abre automáticamente la primera versión del historial de monto (ver US-55). La moneda se hereda del club (`clubs.currency_code`).
+Dentro del módulo **`/rrhh`**, la pestaña **`Estructuras`** (ruta `/rrhh/structures`) permite a un Admin o RRHH listar, crear y editar estructuras. Cada estructura representa una posición rentada con: nombre descriptivo, rol funcional, actividad, tipo de remuneración (`mensual_fijo | por_hora | por_clase`), monto vigente y estado (`activa | inactiva`). El monto inicial abre automáticamente la primera versión del historial de monto (ver US-55). La moneda se hereda del club (`clubs.currency_code`).
 
 ---
 
 ## 4. Alcance
 
 ### Incluye
-- Solapa **`RRHH`** dentro de `/settings`, visible para roles `admin` y `rrhh`.
+- Pestaña **`Estructuras`** del módulo `/rrhh` (ruta `/rrhh/structures`), visible para roles `admin` y `rrhh`.
 - Sección `Estructuras Salariales` con listado, búsqueda por nombre, filtros por `Estado` y `Actividad`.
 - Formulario de alta con: Nombre, Rol funcional, Actividad, Tipo de remuneración, Monto inicial, Carga horaria esperada (opcional), Estado.
 - Formulario de edición con: Nombre, Tipo de remuneración, Carga horaria esperada, Estado. Rol funcional, Actividad y Monto son inmutables desde este formulario.
@@ -67,11 +67,11 @@ Usuario autenticado con membership `activo` y rol `admin` o `rrhh` en el club ac
 
 | Escenario | Resultado esperado |
 |---|---|
-| Admin abre la solapa RRHH sin estructuras | Ve el estado vacío con CTA de alta. |
+| Admin abre la pestaña Estructuras sin datos | Ve el estado vacío con CTA de alta. |
 | Admin crea una estructura válida | La estructura queda en `activa` y se crea su primera versión de monto con `start_date = hoy` y `end_date = null`. |
 | Admin edita campos permitidos | Los cambios se persisten y quedan registrados en el historial de auditoría. |
 | Admin inactiva una estructura | La estructura deja de aparecer como seleccionable al crear contratos nuevos. Contratos vigentes sobre ella no se ven afectados. |
-| Usuario sin rol `admin` ni `rrhh` | No ve la solapa RRHH ni la sección. |
+| Usuario sin rol `admin` ni `rrhh` | No ve el módulo RRHH ni la pestaña. |
 
 ---
 
@@ -112,7 +112,7 @@ Usuario autenticado con membership `activo` y rol `admin` o `rrhh` en el club ac
 
 ## 9. Flujo principal
 
-1. Admin entra a `/settings` y abre la solapa `RRHH`.
+1. Admin entra al módulo `/rrhh` y selecciona la pestaña `Estructuras`.
 2. Ve la sección `Estructuras Salariales` con filtros y botón `+ Nueva Estructura Salarial`.
 3. Admin abre el formulario de alta y completa los campos obligatorios.
 4. Admin guarda.
@@ -140,7 +140,7 @@ Usuario autenticado con membership `activo` y rol `admin` o `rrhh` en el club ac
 
 ### D. Usuario sin rol apropiado
 1. Usuario con rol distinto intenta acceder.
-2. La solapa `RRHH` no se renderiza y la ruta directa retorna 404 o redirige al dashboard.
+2. El módulo `/rrhh` redirige al dashboard; las rutas directas `/rrhh/*` no se renderizan.
 
 ---
 

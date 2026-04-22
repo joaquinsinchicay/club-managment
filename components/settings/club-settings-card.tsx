@@ -1,7 +1,5 @@
 "use client";
 
-import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
-import { RrhhTab } from "@/components/hr/rrhh-tab";
 import { Card } from "@/components/ui/card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
@@ -13,12 +11,6 @@ import { PlaceholderTab } from "@/components/settings/tabs/placeholder-tab";
 import { texts } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { ClubMember, PendingClubInvitation, TreasurySettings } from "@/lib/domain/access";
-import type {
-  SalaryStructure,
-  SalaryStructureVersion,
-} from "@/lib/domain/salary-structure";
-import type { StaffContract } from "@/lib/domain/staff-contract";
-import type { StaffMember } from "@/lib/domain/staff-member";
 import { getClubSettingsPermissions } from "@/lib/domain/authorization";
 
 type ClubSettingsCardProps = {
@@ -36,21 +28,6 @@ type ClubSettingsCardProps = {
   updateClubActivityAction: (formData: FormData) => Promise<void>;
   updateReceiptFormatAction: (formData: FormData) => Promise<void>;
   updateClubIdentityAction: (formData: FormData) => Promise<void>;
-  canAccessHr: boolean;
-  canMutateHr: boolean;
-  salaryStructures: SalaryStructure[];
-  salaryStructureVersionsByStructureId: Record<string, SalaryStructureVersion[]>;
-  staffMembers: StaffMember[];
-  staffContracts: StaffContract[];
-  createSalaryStructureAction: (formData: FormData) => Promise<RrhhActionResult>;
-  updateSalaryStructureAction: (formData: FormData) => Promise<RrhhActionResult>;
-  updateSalaryStructureAmountAction: (formData: FormData) => Promise<RrhhActionResult>;
-  createStaffMemberAction: (formData: FormData) => Promise<RrhhActionResult>;
-  updateStaffMemberAction: (formData: FormData) => Promise<RrhhActionResult>;
-  setStaffMemberStatusAction: (formData: FormData) => Promise<RrhhActionResult>;
-  createStaffContractAction: (formData: FormData) => Promise<RrhhActionResult>;
-  updateStaffContractAction: (formData: FormData) => Promise<RrhhActionResult>;
-  finalizeStaffContractAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 export function ClubSettingsCard({
@@ -67,22 +44,7 @@ export function ClubSettingsCard({
   createClubActivityAction,
   updateClubActivityAction,
   updateReceiptFormatAction,
-  updateClubIdentityAction,
-  canAccessHr,
-  canMutateHr,
-  salaryStructures,
-  salaryStructureVersionsByStructureId,
-  staffMembers,
-  staffContracts,
-  createSalaryStructureAction,
-  updateSalaryStructureAction,
-  updateSalaryStructureAmountAction,
-  createStaffMemberAction,
-  updateStaffMemberAction,
-  setStaffMemberStatusAction,
-  createStaffContractAction,
-  updateStaffContractAction,
-  finalizeStaffContractAction
+  updateClubIdentityAction
 }: ClubSettingsCardProps) {
   const activeClub = context.activeClub;
   const permissions = getClubSettingsPermissions(context.activeMembership);
@@ -143,32 +105,6 @@ export function ClubSettingsCard({
         />
       )
     },
-    canAccessHr && activeClub
-      ? {
-          id: "rrhh",
-          label: texts.settings.club.tabs.rrhh,
-          content: (
-            <RrhhTab
-              canMutate={canMutateHr}
-              clubCurrencyCode={activeClub.currencyCode}
-              activities={treasurySettings.activities}
-              salaryStructures={salaryStructures}
-              salaryStructureVersionsByStructureId={salaryStructureVersionsByStructureId}
-              staffMembers={staffMembers}
-              staffContracts={staffContracts}
-              createSalaryStructureAction={createSalaryStructureAction}
-              updateSalaryStructureAction={updateSalaryStructureAction}
-              updateSalaryStructureAmountAction={updateSalaryStructureAmountAction}
-              createStaffMemberAction={createStaffMemberAction}
-              updateStaffMemberAction={updateStaffMemberAction}
-              setStaffMemberStatusAction={setStaffMemberStatusAction}
-              createStaffContractAction={createStaffContractAction}
-              updateStaffContractAction={updateStaffContractAction}
-              finalizeStaffContractAction={finalizeStaffContractAction}
-            />
-          )
-        }
-      : null,
     {
       id: "permisos-por-rol",
       label: texts.settings.club.tabs.role_permissions,
