@@ -152,6 +152,7 @@ export function StaffMembersTab({
         </header>
 
         {alertsCount > 0 ? (
+          // check-primitives-ignore-next-line: migrar-a-FormBanner-en-pasada-b-rrhh (US-60 alert con CTA interno requiere layout split)
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50 px-4 py-3">
             <span className="text-sm text-amber-900">
               <strong>{alertsCount}</strong>{" "}

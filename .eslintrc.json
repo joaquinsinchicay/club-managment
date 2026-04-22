@@ -1,3 +1,37 @@
 {
-  "extends": ["next/core-web-vitals"]
+  "extends": ["next/core-web-vitals"],
+  "overrides": [
+    {
+      "files": ["components/**/*.tsx", "app/**/*.tsx"],
+      "excludedFiles": [
+        "components/ui/**",
+        "components/ui/**/*"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "warn",
+          {
+            "selector": "JSXOpeningElement[name.name='input']:not([attributes.0.name.name='type'][attributes.0.value.value=/^(checkbox|radio|hidden|file|search|submit|reset)$/])",
+            "message": "Usá <FormInput> de @/components/ui/modal-form en vez de <input> crudo. Los <input type='checkbox|radio|hidden|file|search'> son excepción conocida; si es text/number/date/email/password/tel/url, migrar."
+          },
+          {
+            "selector": "JSXOpeningElement[name.name='select']",
+            "message": "Usá <FormSelect> de @/components/ui/modal-form en vez de <select> crudo."
+          },
+          {
+            "selector": "JSXOpeningElement[name.name='textarea']",
+            "message": "Usá <FormTextarea> de @/components/ui/modal-form en vez de <textarea> crudo."
+          },
+          {
+            "selector": "JSXAttribute[name.name='className'][value.type='Literal'][value.value=/rounded-\\[18px\\]/]",
+            "message": "Radio rounded-[18px] es legacy del DataTable viejo. Usá <DataTable> o rounded-card."
+          },
+          {
+            "selector": "JSXAttribute[name.name='className'][value.type='Literal'][value.value=/rounded-full\\s+bg-foreground/]",
+            "message": "Filter pill hardcoded. Usá <ChipButton> o <ChipLink> de @/components/ui/chip."
+          }
+        ]
+      }
+    }
+  ]
 }

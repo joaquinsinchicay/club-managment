@@ -9,7 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "validate:docs": "node scripts/validate-docs.mjs",
-    "ci": "npm run validate:docs && npm run lint && npm run typecheck && npm run build"
+    "check:primitives": "node scripts/check-primitives.mjs",
+    "ci": "npm run validate:docs && npm run check:primitives && npm run lint && npm run typecheck && npm run build"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.1",

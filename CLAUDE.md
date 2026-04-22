@@ -522,6 +522,45 @@ Para cada US:
 5. Validar impacto en DB
 6. Implementar
 7. Validar contra AC
+8. **Auditoría de primitivos antes de cerrar** (hard-gate)
+
+### Paso 8 · Auditoría de primitivos (obligatorio)
+
+Antes de cerrar cualquier PR / commit que toque `components/**` o `app/**`:
+
+```bash
+npm run check:primitives   # gate deterministico — exit 1 si encuentra anti-patrones
+npm run lint               # ESLint con warnings sobre <input>/<select>/<textarea> crudos
+npm run typecheck
+```
+
+Los tres comandos están encadenados en `npm run ci`. Ante un hit de `check:primitives`:
+
+- **Si es un anti-patrón real** (pill hardcoded, footer de modal a mano, banner con `bg-amber-50` ad-hoc, button con `rounded-2xl bg-foreground` manual, input crudo que debería ser `<FormInput>`, empty-state con `border-dashed` sin primitivo, etc.) → migrar al primitivo correcto **en el mismo PR**. No mergear con violaciones.
+- **Si es un falso positivo justificado** → actualizar la regla en `scripts/check-primitives.mjs` en ese mismo PR (con comentario explicando por qué es excepción) o sumar al `allowFiles` de la regla.
+
+No se acepta el atajo "lo arreglo en otro PR": el script está para prevenir exactamente esa deuda.
+
+### Referencia rápida de primitivos por situación
+
+| Necesito… | Primitivo | Archivo |
+|---|---|---|
+| Modal | `<Modal>` + `<ModalFooter>` | `components/ui/modal.tsx`, `modal-footer.tsx` |
+| Campo de form (text/number/date) | `<FormInput>` | `components/ui/modal-form.tsx` |
+| Select | `<FormSelect>` | idem |
+| Textarea | `<FormTextarea>` | idem |
+| Checkbox estilo pill | `<FormCheckboxCard>` | idem |
+| Banner amarillo/rojo dentro de form | `<FormBanner variant>` | idem |
+| Pill de filtro clickable | `<ChipButton>` / `<ChipLink>` | `components/ui/chip.tsx` |
+| Tab-bar tipo segmented control | Ver `SubTabNav` en `components/dashboard/treasury-role-card.tsx` + `RrhhModuleNav` | — |
+| Tabla | `<DataTable>` + `<DataTableRow>` + `<DataTableCell>` | `components/ui/data-table.tsx` |
+| Botón | `<Button>` / `<LinkButton>` | `components/ui/button.tsx`, `link-button.tsx` |
+| Card contenedor | `<Card>` + `<CardHeader>` + `<CardBody>` | `components/ui/card.tsx` |
+| Empty state standalone | `<EmptyState>` | `components/ui/empty-state.tsx` |
+| Avatar con iniciales | `<Avatar>` + `getInitials()` | `components/ui/avatar.tsx` |
+| Tabs de `/settings` | `<SettingsTabShell>` | `components/settings/settings-tab-shell.tsx` |
+
+**Plantilla de componente nuevo**: `docs/design/component-template.md` tiene el esqueleto con imports canónicos listos para copiar.
 
 ---
 
