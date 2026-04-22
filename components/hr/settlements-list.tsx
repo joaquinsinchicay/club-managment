@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/modal-form";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { triggerClientFeedback } from "@/lib/client-feedback";
+import type { TreasuryAccount } from "@/lib/domain/access";
 import {
   PAYROLL_ADJUSTMENT_TYPES,
   currentPeriodYearMonth,
@@ -47,6 +48,7 @@ type SettlementsListProps = {
   adjustmentsBySettlementId: Record<string, PayrollSettlementAdjustment[]>;
   clubCurrencyCode: string;
   canOperate: boolean;
+  payableAccounts: TreasuryAccount[];
   generateAction: (formData: FormData) => Promise<SettlementActionResult>;
   addAdjustmentAction: (formData: FormData) => Promise<SettlementActionResult>;
   deleteAdjustmentAction: (formData: FormData) => Promise<SettlementActionResult>;
@@ -54,6 +56,8 @@ type SettlementsListProps = {
   confirmAction: (formData: FormData) => Promise<SettlementActionResult>;
   confirmBulkAction: (formData: FormData) => Promise<SettlementActionResult>;
   annulAction: (formData: FormData) => Promise<SettlementActionResult>;
+  payAction: (formData: FormData) => Promise<SettlementActionResult>;
+  payBatchAction: (formData: FormData) => Promise<SettlementActionResult>;
 };
 
 type StatusFilter = "all" | PayrollSettlementStatus;
@@ -93,6 +97,7 @@ export function SettlementsList({
   adjustmentsBySettlementId,
   clubCurrencyCode,
   canOperate,
+  payableAccounts,
   generateAction,
   addAdjustmentAction,
   deleteAdjustmentAction,
@@ -100,6 +105,8 @@ export function SettlementsList({
   confirmAction,
   confirmBulkAction,
   annulAction,
+  payAction,
+  payBatchAction,
 }: SettlementsListProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -113,11 +120,15 @@ export function SettlementsList({
   const [confirmingOne, setConfirmingOne] = useState<PayrollSettlement | null>(null);
   const [confirmingBulk, setConfirmingBulk] = useState(false);
   const [annulling, setAnnulling] = useState<PayrollSettlement | null>(null);
+  const [paying, setPaying] = useState<PayrollSettlement | null>(null);
+  const [payingBulk, setPayingBulk] = useState(false);
 
   const [genPending, setGenPending] = useState(false);
   const [confirmPending, setConfirmPending] = useState(false);
   const [bulkPending, setBulkPending] = useState(false);
   const [annulPending, setAnnulPending] = useState(false);
+  const [payPending, setPayPending] = useState(false);
+  const [payBulkPending, setPayBulkPending] = useState(false);
 
   const availablePeriods = useMemo(() => {
     const set = new Set<string>();
@@ -139,7 +150,10 @@ export function SettlementsList({
   }, [settlements, statusFilter, periodFilter]);
 
   const selectableIds = useMemo(
-    () => filtered.filter((s) => s.status === "generada").map((s) => s.id),
+    () =>
+      filtered
+        .filter((s) => s.status === "generada" || s.status === "confirmada")
+        .map((s) => s.id),
     [filtered],
   );
   const allSelected =
@@ -151,6 +165,14 @@ export function SettlementsList({
   );
   const selectedHasZero = selectedSettlements.some((s) => s.totalAmount === 0);
   const selectedTotal = selectedSettlements.reduce((acc, s) => acc + s.totalAmount, 0);
+  const selectionMode: "none" | "confirm" | "pay" | "mixed" = (() => {
+    if (selectedSettlements.length === 0) return "none";
+    const allGenerada = selectedSettlements.every((s) => s.status === "generada");
+    const allConfirmada = selectedSettlements.every((s) => s.status === "confirmada");
+    if (allGenerada) return "confirm";
+    if (allConfirmada) return "pay";
+    return "mixed";
+  })();
 
   async function runAction(
     action: (fd: FormData) => Promise<SettlementActionResult>,
@@ -240,6 +262,9 @@ export function SettlementsList({
             {sTexts.bulk_selected_prefix}
             {selectedIds.length} ·{" "}
             {formatAmount(selectedTotal, clubCurrencyCode)}
+            {selectionMode === "mixed" ? (
+              <span className="ml-2 text-xs text-amber-700">{sTexts.bulk_mixed_note}</span>
+            ) : null}
           </span>
           <div className="flex gap-2">
             <button
@@ -249,13 +274,24 @@ export function SettlementsList({
             >
               {sTexts.bulk_clear_cta}
             </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingBulk(true)}
-              className={buttonClass({ variant: "primary", size: "sm" })}
-            >
-              {sTexts.bulk_confirm_cta}
-            </button>
+            {selectionMode === "confirm" ? (
+              <button
+                type="button"
+                onClick={() => setConfirmingBulk(true)}
+                className={buttonClass({ variant: "primary", size: "sm" })}
+              >
+                {sTexts.bulk_confirm_cta}
+              </button>
+            ) : null}
+            {selectionMode === "pay" ? (
+              <button
+                type="button"
+                onClick={() => setPayingBulk(true)}
+                className={buttonClass({ variant: "primary", size: "sm" })}
+              >
+                {sTexts.bulk_pay_cta}
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -308,7 +344,7 @@ export function SettlementsList({
           </DataTableHeader>
           <DataTableBody>
             {filtered.map((s) => {
-              const selectable = s.status === "generada";
+              const selectable = s.status === "generada" || s.status === "confirmada";
               return (
                 <DataTableRow key={s.id} density="compact" hoverReveal>
                   <DataTableCell>
@@ -382,6 +418,15 @@ export function SettlementsList({
                               {sTexts.action_confirm}
                             </button>
                           </>
+                        ) : null}
+                        {s.status === "confirmada" ? (
+                          <button
+                            type="button"
+                            onClick={() => setPaying(s)}
+                            className={buttonClass({ variant: "primary", size: "sm" })}
+                          >
+                            {sTexts.action_pay}
+                          </button>
                         ) : null}
                         {(s.status === "generada" || s.status === "confirmada") ? (
                           <button
@@ -619,6 +664,161 @@ export function SettlementsList({
             onCancel={() => setConfirmingBulk(false)}
             cancelLabel={sTexts.cancel_cta}
             submitLabel={sTexts.bulk_submit_cta}
+            pendingLabel={sTexts.submit_pending}
+          />
+        </form>
+      </Modal>
+
+      {/* Pay (single) */}
+      <Modal
+        open={paying !== null}
+        onClose={() => !payPending && setPaying(null)}
+        title={sTexts.pay_modal_title}
+        description={sTexts.pay_modal_description}
+        size="md"
+        closeDisabled={payPending}
+      >
+        {paying ? (
+          <form
+            action={(fd) =>
+              runAction(payAction, fd, () => setPaying(null), setPayPending)
+            }
+            className="grid gap-4"
+          >
+            <input type="hidden" name="settlement_id" value={paying.id} />
+            <FormField>
+              <FormFieldLabel>{sTexts.col_member}</FormFieldLabel>
+              <FormReadonly>
+                {paying.staffMemberName ?? "—"} ·{" "}
+                {formatPeriodLabel(paying.periodYear, paying.periodMonth)}
+              </FormReadonly>
+            </FormField>
+            <FormField>
+              <FormFieldLabel>{sTexts.pay_amount_label}</FormFieldLabel>
+              <FormReadonly>{formatAmount(paying.totalAmount, clubCurrencyCode)}</FormReadonly>
+            </FormField>
+            <FormField>
+              <FormFieldLabel required>{sTexts.pay_account_label}</FormFieldLabel>
+              <FormSelect name="account_id" defaultValue="" required>
+                <option value="" disabled>
+                  {sTexts.pay_account_placeholder}
+                </option>
+                {payableAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </FormSelect>
+              <FormHelpText>{sTexts.pay_account_helper}</FormHelpText>
+            </FormField>
+            <FormField>
+              <FormFieldLabel required>{sTexts.pay_date_label}</FormFieldLabel>
+              <FormInput
+                type="date"
+                name="payment_date"
+                defaultValue={new Date().toISOString().slice(0, 10)}
+                required
+              />
+            </FormField>
+            <FormField>
+              <FormFieldLabel>{sTexts.pay_receipt_label}</FormFieldLabel>
+              <FormInput
+                type="text"
+                name="receipt_number"
+                maxLength={120}
+                placeholder={sTexts.pay_receipt_placeholder}
+              />
+            </FormField>
+            <FormField>
+              <FormFieldLabel>{sTexts.pay_notes_label}</FormFieldLabel>
+              <FormTextarea
+                name="notes"
+                rows={3}
+                maxLength={500}
+                placeholder={sTexts.pay_notes_placeholder}
+              />
+            </FormField>
+            <ModalFooter
+              onCancel={() => setPaying(null)}
+              cancelLabel={sTexts.cancel_cta}
+              submitLabel={sTexts.pay_submit_cta}
+              pendingLabel={sTexts.submit_pending}
+            />
+          </form>
+        ) : null}
+      </Modal>
+
+      {/* Pay (bulk) */}
+      <Modal
+        open={payingBulk}
+        onClose={() => !payBulkPending && setPayingBulk(false)}
+        title={sTexts.pay_bulk_modal_title}
+        description={sTexts.pay_bulk_modal_description}
+        size="md"
+        closeDisabled={payBulkPending}
+      >
+        <form
+          action={(fd) =>
+            runAction(
+              payBatchAction,
+              fd,
+              () => {
+                setPayingBulk(false);
+                setSelectedIds([]);
+              },
+              setPayBulkPending,
+            )
+          }
+          className="grid gap-4"
+        >
+          {selectedSettlements.map((s) => (
+            <input key={s.id} type="hidden" name="settlement_ids" value={s.id} />
+          ))}
+          <Card padding="compact" tone="muted">
+            <CardBody>
+              <div className="grid gap-1 text-sm">
+                <span>
+                  <strong>{sTexts.bulk_summary_count}:</strong> {selectedSettlements.length}
+                </span>
+                <span>
+                  <strong>{sTexts.bulk_summary_total}:</strong>{" "}
+                  {formatAmount(selectedTotal, clubCurrencyCode)}
+                </span>
+              </div>
+            </CardBody>
+          </Card>
+          <FormField>
+            <FormFieldLabel required>{sTexts.pay_account_label}</FormFieldLabel>
+            <FormSelect name="account_id" defaultValue="" required>
+              <option value="" disabled>
+                {sTexts.pay_account_placeholder}
+              </option>
+              {payableAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </FormSelect>
+          </FormField>
+          <FormField>
+            <FormFieldLabel required>{sTexts.pay_date_label}</FormFieldLabel>
+            <FormInput
+              type="date"
+              name="payment_date"
+              defaultValue={new Date().toISOString().slice(0, 10)}
+              required
+            />
+          </FormField>
+          <FormField>
+            <FormFieldLabel>{sTexts.pay_bulk_notes_label}</FormFieldLabel>
+            <FormTextarea name="notes" rows={3} maxLength={500} />
+            <FormHelpText>{sTexts.pay_bulk_notes_helper}</FormHelpText>
+          </FormField>
+          <FormBanner variant="warning">{sTexts.pay_bulk_warning}</FormBanner>
+          <ModalFooter
+            onCancel={() => setPayingBulk(false)}
+            cancelLabel={sTexts.cancel_cta}
+            submitLabel={sTexts.pay_bulk_submit_cta}
             pendingLabel={sTexts.submit_pending}
           />
         </form>

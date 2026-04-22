@@ -66,7 +66,11 @@ const SUCCESS_CODES = new Set<string>([
   "settlement_adjustment_removed",
   "settlement_hours_loaded",
   "settlement_base_amount_updated",
-  "settlement_notes_updated"
+  "settlement_notes_updated",
+
+  // Dashboard · RRHH · payments (US-64 / US-65)
+  "settlement_paid",
+  "settlement_paid_batch"
 ]);
 
 export type FeedbackDomain = "settings" | "dashboard";

@@ -12,6 +12,11 @@ import {
   updateHoursOrNotes,
   type PayrollSettlementActionCode,
 } from "@/lib/services/payroll-settlement-service";
+import {
+  payStaffSettlement,
+  payStaffSettlementsBatch,
+  type PayrollPaymentActionCode,
+} from "@/lib/services/payroll-payment-service";
 
 export type SettlementActionResult = { ok: boolean; code: string; data?: unknown };
 
@@ -178,4 +183,94 @@ export async function annulSettlementAction(
   });
   revalidatePath("/rrhh/settlements");
   return { ok: result.ok, code: toFeedbackCode(result.code) };
+}
+
+// -------------------------------------------------------------------------
+// Payments (US-64 / US-65)
+// -------------------------------------------------------------------------
+
+function toPaymentFeedbackCode(code: PayrollPaymentActionCode): string {
+  switch (code) {
+    case "paid":
+      return "settlement_paid";
+    case "paid_batch":
+      return "settlement_paid_batch";
+    case "settlement_not_found":
+      return "settlement_not_found";
+    case "account_required":
+      return "settlement_payment_account_required";
+    case "account_not_available":
+      return "settlement_payment_account_not_available";
+    case "currency_mismatch":
+      return "settlement_payment_currency_mismatch";
+    case "payment_date_required":
+      return "settlement_payment_date_required";
+    case "invalid_payment_date":
+      return "settlement_payment_invalid_date";
+    case "invalid_status":
+      return "settlement_invalid_status";
+    case "already_paid":
+      return "settlement_payment_already_paid";
+    case "invalid_total_amount":
+      return "settlement_payment_invalid_total";
+    case "sueldos_category_not_found":
+      return "settlement_payment_sueldos_category_missing";
+    case "club_not_found":
+      return "settlement_payment_club_not_found";
+    case "display_ids_mismatch":
+      return "settlement_payment_display_ids_mismatch";
+    case "partial_failure":
+      return "settlement_payment_partial_failure";
+    case "rpc_failed":
+      return "settlement_unknown_error";
+    case "forbidden":
+    case "no_active_club":
+    case "unauthenticated":
+      return "settlement_forbidden";
+    default:
+      return "settlement_unknown_error";
+  }
+}
+
+export async function payStaffSettlementAction(
+  formData: FormData,
+): Promise<SettlementActionResult> {
+  const result = await payStaffSettlement({
+    settlementId: formData.get("settlement_id"),
+    accountId: formData.get("account_id"),
+    paymentDate: formData.get("payment_date"),
+    receiptNumber: formData.get("receipt_number"),
+    notes: formData.get("notes"),
+  });
+  revalidatePath("/rrhh/settlements");
+  revalidatePath("/treasury");
+  revalidatePath("/dashboard");
+  return {
+    ok: result.ok,
+    code: toPaymentFeedbackCode(result.code),
+    data: result.ok ? result.data : undefined,
+  };
+}
+
+export async function payStaffSettlementsBatchAction(
+  formData: FormData,
+): Promise<SettlementActionResult> {
+  const ids = formData.getAll("settlement_ids").map(String).filter(Boolean);
+  const accountId = String(formData.get("account_id") ?? "");
+  const paymentDate = String(formData.get("payment_date") ?? "");
+  const notesRaw = formData.get("notes");
+  const result = await payStaffSettlementsBatch({
+    ids,
+    accountId,
+    paymentDate,
+    notes: typeof notesRaw === "string" ? notesRaw : null,
+  });
+  revalidatePath("/rrhh/settlements");
+  revalidatePath("/treasury");
+  revalidatePath("/dashboard");
+  return {
+    ok: result.ok,
+    code: toPaymentFeedbackCode(result.code),
+    data: result.ok ? result.data : undefined,
+  };
 }
