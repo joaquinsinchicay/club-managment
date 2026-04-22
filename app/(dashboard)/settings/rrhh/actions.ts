@@ -8,6 +8,18 @@ import {
   updateSalaryStructureAmount,
   type SalaryStructureActionCode,
 } from "@/lib/services/salary-structure-service";
+import {
+  createStaffMember,
+  setStaffMemberStatus,
+  updateStaffMember,
+  type StaffMemberActionCode,
+} from "@/lib/services/staff-member-service";
+import {
+  createStaffContract,
+  finalizeStaffContract,
+  updateStaffContract,
+  type StaffContractActionCode,
+} from "@/lib/services/staff-contract-service";
 
 export type RrhhActionResult = { ok: boolean; code: string };
 
@@ -139,4 +151,221 @@ export async function updateSalaryStructureAmountAction(
   });
   revalidatePath("/settings");
   return { ok: result.ok, code: toFeedbackCode(result.code) };
+}
+
+// -------------------------------------------------------------------------
+// Staff Members (US-56)
+// -------------------------------------------------------------------------
+
+function staffMemberFeedbackCode(code: StaffMemberActionCode): string {
+  switch (code) {
+    case "created":
+      return "staff_member_created";
+    case "updated":
+      return "staff_member_updated";
+    case "deactivated":
+      return "staff_member_deactivated";
+    case "reactivated":
+      return "staff_member_reactivated";
+    case "member_not_found":
+      return "staff_member_not_found";
+    case "first_name_required":
+      return "staff_member_first_name_required";
+    case "last_name_required":
+      return "staff_member_last_name_required";
+    case "dni_required":
+      return "staff_member_dni_required";
+    case "invalid_dni":
+      return "staff_member_invalid_dni";
+    case "cuit_required":
+      return "staff_member_cuit_required";
+    case "invalid_cuit_cuil":
+      return "staff_member_invalid_cuit_cuil";
+    case "invalid_cuit_dv":
+      return "staff_member_invalid_cuit_dv";
+    case "vinculo_required":
+      return "staff_member_vinculo_required";
+    case "invalid_vinculo":
+      return "staff_member_invalid_vinculo";
+    case "email_invalid":
+      return "staff_member_email_invalid";
+    case "phone_invalid":
+      return "staff_member_phone_invalid";
+    case "invalid_hire_date":
+      return "staff_member_invalid_hire_date";
+    case "invalid_status":
+      return "staff_member_invalid_status";
+    case "duplicate_dni":
+      return "staff_member_duplicate_dni";
+    case "duplicate_cuit_cuil":
+      return "staff_member_duplicate_cuit_cuil";
+    case "has_active_contracts":
+      return "staff_member_has_active_contracts";
+    case "forbidden":
+    case "no_active_club":
+    case "unauthenticated":
+      return "staff_member_forbidden";
+    default:
+      return "staff_member_unknown_error";
+  }
+}
+
+function rawStaffMemberFromFormData(formData: FormData) {
+  function read(key: string): string | undefined {
+    const raw = formData.get(key);
+    if (typeof raw !== "string") return undefined;
+    const trimmed = raw.trim();
+    return trimmed === "" ? undefined : trimmed;
+  }
+
+  return {
+    firstName: read("first_name"),
+    lastName: read("last_name"),
+    dni: read("dni"),
+    cuitCuil: read("cuit_cuil"),
+    email: read("email"),
+    phone: read("phone"),
+    vinculoType: read("vinculo_type"),
+    cbuAlias: read("cbu_alias"),
+    hireDate: read("hire_date"),
+  };
+}
+
+export async function createStaffMemberAction(formData: FormData): Promise<RrhhActionResult> {
+  const result = await createStaffMember(rawStaffMemberFromFormData(formData));
+  revalidatePath("/settings");
+  return { ok: result.ok, code: staffMemberFeedbackCode(result.code) };
+}
+
+export async function updateStaffMemberAction(formData: FormData): Promise<RrhhActionResult> {
+  const memberId = String(formData.get("staff_member_id") ?? "");
+  if (!memberId) return { ok: false, code: staffMemberFeedbackCode("member_not_found") };
+  const result = await updateStaffMember(memberId, rawStaffMemberFromFormData(formData));
+  revalidatePath("/settings");
+  return { ok: result.ok, code: staffMemberFeedbackCode(result.code) };
+}
+
+export async function setStaffMemberStatusAction(formData: FormData): Promise<RrhhActionResult> {
+  const memberId = String(formData.get("staff_member_id") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!memberId) return { ok: false, code: staffMemberFeedbackCode("member_not_found") };
+  const result = await setStaffMemberStatus(memberId, status);
+  revalidatePath("/settings");
+  return { ok: result.ok, code: staffMemberFeedbackCode(result.code) };
+}
+
+// -------------------------------------------------------------------------
+// Staff Contracts (US-57 / US-58)
+// -------------------------------------------------------------------------
+
+function staffContractFeedbackCode(code: StaffContractActionCode): string {
+  switch (code) {
+    case "created":
+      return "staff_contract_created";
+    case "updated":
+      return "staff_contract_updated";
+    case "finalized":
+      return "staff_contract_finalized";
+    case "contract_not_found":
+      return "staff_contract_not_found";
+    case "staff_member_required":
+      return "staff_contract_member_required";
+    case "structure_required":
+      return "staff_contract_structure_required";
+    case "start_date_required":
+      return "staff_contract_start_date_required";
+    case "end_date_before_start":
+      return "staff_contract_end_date_before_start";
+    case "start_date_too_old":
+      return "staff_contract_start_date_too_old";
+    case "agreed_amount_required":
+      return "staff_contract_agreed_amount_required";
+    case "agreed_amount_must_be_positive":
+      return "staff_contract_agreed_amount_must_be_positive";
+    case "frozen_amount_required":
+      return "staff_contract_frozen_amount_required";
+    case "frozen_amount_must_be_positive":
+      return "staff_contract_frozen_amount_must_be_positive";
+    case "structure_already_taken":
+      return "staff_contract_structure_already_taken";
+    case "staff_member_not_active":
+      return "staff_contract_member_not_active";
+    case "salary_structure_not_active":
+      return "staff_contract_structure_not_active";
+    case "current_version_not_found":
+      return "staff_contract_current_version_not_found";
+    case "invalid_end_date":
+      return "staff_contract_invalid_end_date";
+    case "end_date_too_far":
+      return "staff_contract_end_date_too_far";
+    case "already_finalized":
+      return "staff_contract_already_finalized";
+    case "invalid_status":
+      return "staff_contract_invalid_status";
+    case "forbidden":
+    case "no_active_club":
+    case "unauthenticated":
+      return "staff_contract_forbidden";
+    default:
+      return "staff_contract_unknown_error";
+  }
+}
+
+function rawCreateContractFromFormData(formData: FormData) {
+  function read(key: string): string | undefined {
+    const raw = formData.get(key);
+    if (typeof raw !== "string") return undefined;
+    const trimmed = raw.trim();
+    return trimmed === "" ? undefined : trimmed;
+  }
+
+  return {
+    staffMemberId: read("staff_member_id"),
+    salaryStructureId: read("salary_structure_id"),
+    startDate: read("start_date"),
+    endDate: read("end_date"),
+    usesStructureAmount: read("uses_structure_amount") ?? "true",
+    agreedAmount: read("agreed_amount"),
+  };
+}
+
+function rawUpdateContractFromFormData(formData: FormData) {
+  function read(key: string): string | undefined {
+    const raw = formData.get(key);
+    if (typeof raw !== "string") return undefined;
+    const trimmed = raw.trim();
+    return trimmed === "" ? undefined : trimmed;
+  }
+  return {
+    endDate: read("end_date"),
+    usesStructureAmount: read("uses_structure_amount"),
+    frozenAmount: read("frozen_amount"),
+  };
+}
+
+export async function createStaffContractAction(formData: FormData): Promise<RrhhActionResult> {
+  const result = await createStaffContract(rawCreateContractFromFormData(formData));
+  revalidatePath("/settings");
+  return { ok: result.ok, code: staffContractFeedbackCode(result.code) };
+}
+
+export async function updateStaffContractAction(formData: FormData): Promise<RrhhActionResult> {
+  const contractId = String(formData.get("staff_contract_id") ?? "");
+  if (!contractId) return { ok: false, code: staffContractFeedbackCode("contract_not_found") };
+  const result = await updateStaffContract(contractId, rawUpdateContractFromFormData(formData));
+  revalidatePath("/settings");
+  return { ok: result.ok, code: staffContractFeedbackCode(result.code) };
+}
+
+export async function finalizeStaffContractAction(formData: FormData): Promise<RrhhActionResult> {
+  const contractId = String(formData.get("staff_contract_id") ?? "");
+  if (!contractId) return { ok: false, code: staffContractFeedbackCode("contract_not_found") };
+  const endDate = formData.get("end_date");
+  const reason = formData.get("reason");
+  const result = await finalizeStaffContract(contractId, {
+    endDate: typeof endDate === "string" ? endDate : undefined,
+    reason: typeof reason === "string" ? reason : undefined,
+  });
+  revalidatePath("/settings");
+  return { ok: result.ok, code: staffContractFeedbackCode(result.code) };
 }

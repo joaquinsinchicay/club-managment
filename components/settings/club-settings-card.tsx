@@ -1,7 +1,7 @@
 "use client";
 
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
-import { SalaryStructuresTab } from "@/components/hr/salary-structures-tab";
+import { RrhhTab } from "@/components/hr/rrhh-tab";
 import { Card } from "@/components/ui/card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { SettingsPageLayout } from "@/components/settings/settings-page-layout";
@@ -17,6 +17,8 @@ import type {
   SalaryStructure,
   SalaryStructureVersion,
 } from "@/lib/domain/salary-structure";
+import type { StaffContract } from "@/lib/domain/staff-contract";
+import type { StaffMember } from "@/lib/domain/staff-member";
 import { getClubSettingsPermissions } from "@/lib/domain/authorization";
 
 type ClubSettingsCardProps = {
@@ -38,9 +40,17 @@ type ClubSettingsCardProps = {
   canMutateHr: boolean;
   salaryStructures: SalaryStructure[];
   salaryStructureVersionsByStructureId: Record<string, SalaryStructureVersion[]>;
+  staffMembers: StaffMember[];
+  staffContracts: StaffContract[];
   createSalaryStructureAction: (formData: FormData) => Promise<RrhhActionResult>;
   updateSalaryStructureAction: (formData: FormData) => Promise<RrhhActionResult>;
   updateSalaryStructureAmountAction: (formData: FormData) => Promise<RrhhActionResult>;
+  createStaffMemberAction: (formData: FormData) => Promise<RrhhActionResult>;
+  updateStaffMemberAction: (formData: FormData) => Promise<RrhhActionResult>;
+  setStaffMemberStatusAction: (formData: FormData) => Promise<RrhhActionResult>;
+  createStaffContractAction: (formData: FormData) => Promise<RrhhActionResult>;
+  updateStaffContractAction: (formData: FormData) => Promise<RrhhActionResult>;
+  finalizeStaffContractAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 export function ClubSettingsCard({
@@ -62,9 +72,17 @@ export function ClubSettingsCard({
   canMutateHr,
   salaryStructures,
   salaryStructureVersionsByStructureId,
+  staffMembers,
+  staffContracts,
   createSalaryStructureAction,
   updateSalaryStructureAction,
-  updateSalaryStructureAmountAction
+  updateSalaryStructureAmountAction,
+  createStaffMemberAction,
+  updateStaffMemberAction,
+  setStaffMemberStatusAction,
+  createStaffContractAction,
+  updateStaffContractAction,
+  finalizeStaffContractAction
 }: ClubSettingsCardProps) {
   const activeClub = context.activeClub;
   const permissions = getClubSettingsPermissions(context.activeMembership);
@@ -130,15 +148,23 @@ export function ClubSettingsCard({
           id: "rrhh",
           label: texts.settings.club.tabs.rrhh,
           content: (
-            <SalaryStructuresTab
-              structures={salaryStructures}
-              versionsByStructureId={salaryStructureVersionsByStructureId}
-              activities={treasurySettings.activities}
-              clubCurrencyCode={activeClub.currencyCode}
+            <RrhhTab
               canMutate={canMutateHr}
-              createAction={createSalaryStructureAction}
-              updateAction={updateSalaryStructureAction}
-              updateAmountAction={updateSalaryStructureAmountAction}
+              clubCurrencyCode={activeClub.currencyCode}
+              activities={treasurySettings.activities}
+              salaryStructures={salaryStructures}
+              salaryStructureVersionsByStructureId={salaryStructureVersionsByStructureId}
+              staffMembers={staffMembers}
+              staffContracts={staffContracts}
+              createSalaryStructureAction={createSalaryStructureAction}
+              updateSalaryStructureAction={updateSalaryStructureAction}
+              updateSalaryStructureAmountAction={updateSalaryStructureAmountAction}
+              createStaffMemberAction={createStaffMemberAction}
+              updateStaffMemberAction={updateStaffMemberAction}
+              setStaffMemberStatusAction={setStaffMemberStatusAction}
+              createStaffContractAction={createStaffContractAction}
+              updateStaffContractAction={updateStaffContractAction}
+              finalizeStaffContractAction={finalizeStaffContractAction}
             />
           )
         }

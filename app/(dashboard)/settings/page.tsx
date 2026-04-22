@@ -9,6 +9,8 @@ import {
 import { getClubMembersForActiveClub } from "@/lib/services/club-members-service";
 import { getTreasurySettingsForActiveClub } from "@/lib/services/treasury-settings-service";
 import { listSalaryStructuresWithVersionsForActiveClub } from "@/lib/services/salary-structure-service";
+import { listStaffMembersForActiveClub } from "@/lib/services/staff-member-service";
+import { listStaffContractsForActiveClub } from "@/lib/services/staff-contract-service";
 import {
   approveClubMembershipAction,
   createClubActivityAction,
@@ -23,8 +25,14 @@ import {
 } from "@/app/(dashboard)/settings/actions";
 import {
   createSalaryStructureAction,
+  createStaffContractAction,
+  createStaffMemberAction,
+  finalizeStaffContractAction,
+  setStaffMemberStatusAction,
   updateSalaryStructureAction,
-  updateSalaryStructureAmountAction
+  updateSalaryStructureAmountAction,
+  updateStaffContractAction,
+  updateStaffMemberAction
 } from "@/app/(dashboard)/settings/rrhh/actions";
 import { redirect } from "next/navigation";
 
@@ -57,9 +65,13 @@ export default async function ClubSettingsPage() {
   const canHrRead = canAccessHrMasters(context.activeMembership);
   const canHrMutate = canMutateHrMasters(context.activeMembership);
 
-  const salaryStructuresData = canHrRead
-    ? await listSalaryStructuresWithVersionsForActiveClub()
-    : null;
+  const [salaryStructuresData, staffMembersData, staffContractsData] = canHrRead
+    ? await Promise.all([
+        listSalaryStructuresWithVersionsForActiveClub(),
+        listStaffMembersForActiveClub(),
+        listStaffContractsForActiveClub(),
+      ])
+    : [null, null, null];
 
   const salaryStructures =
     salaryStructuresData && salaryStructuresData.ok ? salaryStructuresData.structures : [];
@@ -67,6 +79,10 @@ export default async function ClubSettingsPage() {
     salaryStructuresData && salaryStructuresData.ok
       ? salaryStructuresData.versionsByStructureId
       : {};
+  const staffMembers =
+    staffMembersData && staffMembersData.ok ? staffMembersData.members : [];
+  const staffContracts =
+    staffContractsData && staffContractsData.ok ? staffContractsData.contracts : [];
 
   return (
     <ClubSettingsCard
@@ -88,9 +104,17 @@ export default async function ClubSettingsPage() {
       canMutateHr={canHrMutate}
       salaryStructures={salaryStructures}
       salaryStructureVersionsByStructureId={salaryStructureVersions}
+      staffMembers={staffMembers}
+      staffContracts={staffContracts}
       createSalaryStructureAction={createSalaryStructureAction}
       updateSalaryStructureAction={updateSalaryStructureAction}
       updateSalaryStructureAmountAction={updateSalaryStructureAmountAction}
+      createStaffMemberAction={createStaffMemberAction}
+      updateStaffMemberAction={updateStaffMemberAction}
+      setStaffMemberStatusAction={setStaffMemberStatusAction}
+      createStaffContractAction={createStaffContractAction}
+      updateStaffContractAction={updateStaffContractAction}
+      finalizeStaffContractAction={finalizeStaffContractAction}
     />
   );
 }

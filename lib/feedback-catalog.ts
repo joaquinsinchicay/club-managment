@@ -43,7 +43,18 @@ const SUCCESS_CODES = new Set<string>([
   "salary_structure_created",
   "salary_structure_updated",
   "salary_structure_status_changed",
-  "salary_structure_amount_updated"
+  "salary_structure_amount_updated",
+
+  // Settings · RRHH · staff members (US-56)
+  "staff_member_created",
+  "staff_member_updated",
+  "staff_member_deactivated",
+  "staff_member_reactivated",
+
+  // Settings · RRHH · staff contracts (US-57 / US-58)
+  "staff_contract_created",
+  "staff_contract_updated",
+  "staff_contract_finalized"
 ]);
 
 export type FeedbackDomain = "settings" | "dashboard";
