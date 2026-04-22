@@ -423,6 +423,7 @@
         "ingreso": "Ingreso",
         "egreso": "Egreso"
       },
+      "sub_tab_nav_aria_label": "Sub-secciones de Tesoreria",
       "tab_resumen": "Resumen",
       "tab_cuentas": "Cuentas",
       "tab_movimientos": "Movimientos",

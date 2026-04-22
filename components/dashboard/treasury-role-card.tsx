@@ -25,6 +25,7 @@ import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
+import { SegmentedNav, type SegmentedNavItem } from "@/components/ui/segmented-nav";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
@@ -309,33 +310,20 @@ function SubTabNav({
   active: SubTab;
   onChange: (tab: SubTab) => void;
 }) {
-  const tabs: { id: SubTab; label: string }[] = [
-    { id: "resumen", label: texts.dashboard.treasury_role.tab_resumen },
-    { id: "cuentas", label: texts.dashboard.treasury_role.tab_cuentas },
-    { id: "movimientos", label: texts.dashboard.treasury_role.tab_movimientos },
-    { id: "conciliacion", label: texts.dashboard.treasury_role.tab_conciliacion },
-    { id: "cost_centers", label: texts.dashboard.treasury_role.tab_cost_centers }
+  const items: SegmentedNavItem[] = [
+    { id: "resumen", label: texts.dashboard.treasury_role.tab_resumen, onClick: () => onChange("resumen") },
+    { id: "cuentas", label: texts.dashboard.treasury_role.tab_cuentas, onClick: () => onChange("cuentas") },
+    { id: "movimientos", label: texts.dashboard.treasury_role.tab_movimientos, onClick: () => onChange("movimientos") },
+    { id: "conciliacion", label: texts.dashboard.treasury_role.tab_conciliacion, onClick: () => onChange("conciliacion") },
+    { id: "cost_centers", label: texts.dashboard.treasury_role.tab_cost_centers, onClick: () => onChange("cost_centers") }
   ];
 
   return (
-    <div className="flex gap-0.5 rounded-card bg-slate-100 p-0.75">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onChange(tab.id)}
-          aria-pressed={tab.id === active}
-          className={cn(
-            "flex-1 rounded-[7px] px-2.5 py-2 text-xs font-semibold tracking-tight transition whitespace-nowrap",
-            tab.id === active
-              ? "bg-white text-foreground shadow-sm"
-              : "text-slate-600 hover:text-foreground"
-          )}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
+    <SegmentedNav
+      items={items}
+      activeId={active}
+      ariaLabel={texts.dashboard.treasury_role.sub_tab_nav_aria_label}
+    />
   );
 }
 
