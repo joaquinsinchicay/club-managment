@@ -70,7 +70,7 @@ create table if not exists public.salary_structures (
   club_id uuid not null references public.clubs(id) on delete cascade,
   name text not null,
   functional_role text not null,
-  activity_id uuid not null references public.activities(id),
+  activity_id uuid not null references public.club_activities(id),
   remuneration_type public.salary_remuneration_type not null,
   workload_hours numeric(10,2) null,
   status public.salary_structure_status not null default 'activa',
