@@ -565,3 +565,96 @@ Reglas clave:
 
 ```
 ```
+
+---
+
+## 10. Bounded Context · RRHH (E04)
+
+Entidades y relaciones del módulo de Recursos Humanos. Los agregados
+viven en su propio contexto pero comparten identidad con el club
+activo y se integran con Tesorería a través de `treasury_movements`.
+
+### Entidades
+
+- **SalaryStructure** — posición rentada del club. Define rol
+  funcional × actividad × tipo de remuneración (mensual_fijo / por_hora
+  / por_clase). Inmutable en rol/actividad; el nombre, tipo, carga
+  horaria y estado son editables.
+- **SalaryStructureVersion** — historial de monto de cada estructura.
+  Una sola versión puede tener `end_date = null` (vigente). Inmutable.
+- **StaffMember** — persona rentada por el club. Carga DNI, CUIT/CUIL,
+  contacto, vínculo y datos de pago. Baja lógica (soft delete).
+- **StaffContract** — vincula StaffMember con SalaryStructure. Flag
+  `uses_structure_amount` elige la fuente del monto: versión vigente de
+  la estructura, o un `frozen_amount` congelado en el contrato.
+  Una estructura admite un único contrato vigente simultáneamente.
+- **PayrollSettlement** — liquidación mensual por contrato. Lifecycle:
+  `generada → confirmada → pagada` con transición lateral a `anulada`
+  desde cualquier estado vigente. Almacena monto base + ajustes + total.
+- **PayrollSettlementAdjustment** — ajuste sobre una liquidación:
+  adicional, descuento o reintegro. Un trigger recalcula
+  `adjustments_total` y `total_amount` en el padre.
+- **PayrollPaymentBatch** — agrupador de pagos en lote con trazabilidad.
+- **HrActivityLog** — audit log append-only (entidad + acción + diff).
+- **HrJobRun** — bitácora de corridas del cron diario (US-59).
+
+### Invariantes
+
+1. Unicidad por rol + actividad + estado activo en salary_structures
+   (unique parcial).
+2. Una versión vigente única por estructura.
+3. Una estructura admite a lo sumo un contrato `vigente` (enforced por
+   unique parcial).
+4. DNI y CUIT/CUIL únicos por club entre colaboradores `activo`.
+5. Una liquidación no anulada única por contrato × período.
+6. `total_amount >= 0`. Cero requiere confirmación explícita.
+7. Una liquidación pagada tiene siempre un movimiento de Tesorería
+   linkeado (unique parcial en `treasury_movements.payroll_settlement_id`).
+
+### Ciclo de vida de una liquidación
+
+```
+generada  -- hr_confirm_settlement -->  confirmada  -- hr_pay_settlement -->  pagada
+   \\                                      \\                                    |
+    \\                                      \\                                   v
+     \\                                      \\-- hr_annul_settlement -->  anulada
+      \\                                                                       ^
+       \\-- hr_annul_settlement ----------------------------------------------//
+```
+
+La transición a `anulada` desde `pagada` requiere que el movimiento
+vinculado esté `cancelled` (US-66).
+
+### Integración con Tesorería (US-64/65)
+
+- Categoría "Sueldos" del catálogo legacy se usa como `category_id`
+  del movimiento generado al pagar.
+- El movimiento hereda `daily_cash_session_id` si el tesorero tiene
+  jornada abierta al momento del pago.
+- El `display_id` sigue la convención `{CLUB_INITIALS}-MOV-{YYYY}-{seq}`.
+
+### Integración con el Job cron (US-59)
+
+- `pg_cron` dispara `hr_finalize_contracts_due_today_all_clubs()`
+  diariamente a las `5 3 * * *` hora local argentina.
+- La RPC itera contratos con `end_date = current_date`, los finaliza
+  con `finalized_reason='auto_finalized_by_end_date'` y registra
+  `CONTRACT_FINALIZED_AUTO`.
+
+### Permisos
+
+- **admin / rrhh**: acceso total (maestros + liquidaciones + pagos +
+  reportes).
+- **tesoreria**: acceso operativo a liquidaciones y pagos (sin gestión
+  de maestros).
+- Cualquier otro rol: sin acceso.
+
+### Reglas transversales adicionales
+
+10. Todas las mutaciones de RRHH pasan por RPCs SECURITY DEFINER o
+    servicios con admin client (club scope validado server-side).
+11. Ningún cliente escribe o lee `hr_job_runs` directamente.
+12. El historial de auditoría (`hr_activity_log`) es append-only.
+
+```
+```

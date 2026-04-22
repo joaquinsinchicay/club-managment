@@ -1591,3 +1591,99 @@ Puede:
 
 ```
 ```
+
+---
+
+## 12. E04 RRHH · Contratos del módulo de Recursos Humanos
+
+Las RPCs SECURITY DEFINER del módulo RRHH cumplen la convención del
+resto del sistema: cada una retorna `{ ok: boolean, code: string, ... }`
+y respeta el club scope leyendo `app.current_club_id`. Todos los
+mutadores registran eventos en `hr_activity_log`.
+
+### Estructuras Salariales (US-54/55)
+
+#### `hr_update_salary_structure_amount(p_structure_id, p_new_amount, p_effective_date)`
+- Cierra la versión vigente (`end_date = p_effective_date - 1 día`) y
+  abre una nueva vigente. Transaccional.
+- Códigos: `updated`, `structure_not_found`, `forbidden`,
+  `amount_must_be_positive`, `effective_date_required`,
+  `current_version_not_found`, `invalid_effective_date`.
+
+### Colaboradores y Contratos (US-56/57/58)
+
+#### `hr_finalize_contract(p_contract_id, p_end_date, p_reason)`
+- Cambia `status='finalizado'`, setea `finalized_at/reason/by` y libera
+  la estructura (el unique parcial ignora `finalizado`).
+- Códigos: `finalized`, `contract_not_found`, `forbidden`,
+  `already_finalized`, `invalid_end_date`, `end_date_too_far` (> 10 años).
+
+### Liquidaciones (US-61/62/63/66)
+
+#### `hr_generate_monthly_settlements(p_year, p_month)`
+- Itera contratos vigentes del período, calcula `base_amount` según
+  flag + remuneration_type, omite los que ya tienen liquidación no
+  anulada. `por_hora/por_clase` quedan con `requires_hours_input=true`
+  y `base_amount=0`.
+- Retorna `{ok, code, generated_count, skipped_count, error_count}`.
+- Códigos: `generated`, `partial`, `no_active_contracts`, `forbidden`,
+  `invalid_period`.
+
+#### `hr_confirm_settlement(p_settlement_id, p_confirm_zero)`
+- Valida horas para contratos variables, bloqueo por total<0, requiere
+  confirmación explícita para total=0. Cambia a `confirmada`.
+- Códigos: `confirmed`, `settlement_not_found`, `forbidden`,
+  `invalid_status`, `already_confirmed`, `hours_required`,
+  `total_negative`, `zero_amount_requires_confirm`.
+
+#### `hr_confirm_settlements_bulk(p_ids, p_confirm_zero)`
+- Itera cada id delegando al RPC individual. Retorna
+  `{confirmed_count, skipped_count, errors: [{id, code}]}` con fallos
+  por item sin abortar el batch.
+
+#### `hr_annul_settlement(p_settlement_id, p_reason)`
+- Para `pagada` requiere que el movement linkeado esté en
+  `status='cancelled'`. Para `generada`/`confirmada` es directo.
+- Códigos: `annulled`, `settlement_not_found`, `forbidden`,
+  `already_annulled`, `movement_still_active`.
+
+### Pagos (US-64/65)
+
+#### `hr_pay_settlement(p_settlement_id, p_account_id, p_payment_date, p_receipt_number, p_notes, p_display_id, p_batch_id)`
+- Transaccional. Crea un `treasury_movements` con
+  `status='posted'`, `movement_type='egreso'`, `category_id` resuelto a
+  la categoría "Sueldos" del club, `currency_code = clubs.currency_code`,
+  `payroll_settlement_id` y `payroll_payment_batch_id` linkeados.
+- Asocia `daily_cash_session_id` si el tesorero tiene jornada abierta
+  hoy.
+- Actualiza la liquidación a `pagada` con `paid_movement_id`.
+- El `display_id` lo calcula el service en TypeScript siguiendo la
+  convención `{CLUB_INITIALS}-MOV-{YYYY}-{seq}`.
+- Códigos: `paid`, `settlement_not_found`, `forbidden`,
+  `invalid_status`, `already_paid`, `invalid_total_amount`,
+  `club_not_found`, `account_not_available`, `currency_mismatch`,
+  `sueldos_category_not_found`, `payment_date_required`,
+  `invalid_payment_date`.
+
+#### `hr_pay_settlements_batch(p_ids, p_account_id, p_payment_date, p_notes, p_display_ids)`
+- Crea un `payroll_payment_batches`, itera delegando al RPC individual
+  pasando el `batch_id`. Si alguna liquidación falla, `RAISE EXCEPTION`
+  aborta la transacción y retorna `{ok:false, code, failed_settlement_id}`.
+- Códigos: `paid_batch`, `forbidden`, `display_ids_mismatch`,
+  `settlement_not_found`, + cualquiera de los propagados desde
+  `hr_pay_settlement`.
+
+### Job diario (US-59)
+
+#### `hr_finalize_contracts_due_today_all_clubs()`
+- Disparado por `pg_cron` (`5 3 * * *` hora local argentina).
+- Itera todos los clubes sin `app.current_club_id`, finaliza contratos
+  con `end_date = current_date` y registra `CONTRACT_FINALIZED_AUTO`
+  en `hr_activity_log`. Cierra con `hr_job_runs.status` en success /
+  partial / failed.
+
+### Reportes (US-69)
+
+No son RPCs: viven como queries server-side en
+`lib/services/hr-reports-service.ts` y exponen export CSV via route
+handler `POST /api/rrhh/reports/export`.

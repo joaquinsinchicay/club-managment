@@ -1446,3 +1446,88 @@ as $$
   )
   select coalesce((select true from deleted limit 1), false);
 $$;
+
+-- =========================================
+-- E04 RRHH · RLS policies (Fases 1-7)
+-- =========================================
+-- Todas las tablas RRHH con RLS enabled + policy club-scoped usando
+-- `app.current_club_id`. hr_job_runs deny-all (acceso via RPCs SECURITY
+-- DEFINER).
+
+alter table public.salary_structures enable row level security;
+alter table public.salary_structure_versions enable row level security;
+alter table public.staff_members enable row level security;
+alter table public.staff_contracts enable row level security;
+alter table public.payroll_settlements enable row level security;
+alter table public.payroll_settlement_adjustments enable row level security;
+alter table public.payroll_payment_batches enable row level security;
+alter table public.hr_activity_log enable row level security;
+alter table public.hr_job_runs enable row level security;
+
+-- salary_structures
+create policy salary_structures_club_scope on public.salary_structures
+  as permissive for all to authenticated
+  using (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid)
+  with check (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid);
+
+-- salary_structure_versions (scope via join con salary_structures)
+create policy salary_structure_versions_club_scope on public.salary_structure_versions
+  as permissive for all to authenticated
+  using (exists (
+    select 1 from public.salary_structures ss
+    where ss.id = salary_structure_versions.salary_structure_id
+      and ss.club_id = nullif(current_setting('app.current_club_id', true), '')::uuid
+  ))
+  with check (exists (
+    select 1 from public.salary_structures ss
+    where ss.id = salary_structure_versions.salary_structure_id
+      and ss.club_id = nullif(current_setting('app.current_club_id', true), '')::uuid
+  ));
+
+-- staff_members
+create policy staff_members_club_scope on public.staff_members
+  as permissive for all to authenticated
+  using (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid)
+  with check (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid);
+
+-- staff_contracts
+create policy staff_contracts_club_scope on public.staff_contracts
+  as permissive for all to authenticated
+  using (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid)
+  with check (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid);
+
+-- payroll_settlements
+create policy payroll_settlements_club_scope on public.payroll_settlements
+  as permissive for all to authenticated
+  using (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid)
+  with check (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid);
+
+-- payroll_settlement_adjustments (scope via join con payroll_settlements)
+create policy payroll_settlement_adjustments_club_scope on public.payroll_settlement_adjustments
+  as permissive for all to authenticated
+  using (exists (
+    select 1 from public.payroll_settlements ps
+    where ps.id = payroll_settlement_adjustments.settlement_id
+      and ps.club_id = nullif(current_setting('app.current_club_id', true), '')::uuid
+  ))
+  with check (exists (
+    select 1 from public.payroll_settlements ps
+    where ps.id = payroll_settlement_adjustments.settlement_id
+      and ps.club_id = nullif(current_setting('app.current_club_id', true), '')::uuid
+  ));
+
+-- payroll_payment_batches
+create policy payroll_payment_batches_club_scope on public.payroll_payment_batches
+  as permissive for all to authenticated
+  using (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid)
+  with check (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid);
+
+-- hr_activity_log: solo lectura (inserción via RPCs SECURITY DEFINER).
+create policy hr_activity_log_club_scope on public.hr_activity_log
+  as permissive for select to authenticated
+  using (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid);
+
+-- hr_job_runs: deny-all. RPCs SECURITY DEFINER bypassean RLS.
+create policy hr_job_runs_no_direct_access on public.hr_job_runs
+  as permissive for all to authenticated
+  using (false) with check (false);

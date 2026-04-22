@@ -86,6 +86,8 @@ color_secondary text,
 domicilio text,
 email text,
 telefono text,
+-- Moneda canónica del club (Fase 0 RRHH). Check ARS|USD, default ARS.
+currency_code text not null default 'ARS' check (currency_code in ('ARS','USD')),
 created_at timestamp default now(),
 updated_at timestamp default now()
 );
@@ -451,3 +453,245 @@ create index idx_movement_cc_cost_center on treasury_movement_cost_centers(cost_
 create index idx_movement_cc_movement on treasury_movement_cost_centers(movement_id);
 
 create index idx_cost_center_audit_cc on cost_center_audit_log(cost_center_id, changed_at desc);
+
+-- =========================================
+-- E04 RRHH · Módulo de Recursos Humanos
+-- (Fases 1-7 · US-54 a US-69)
+-- =========================================
+
+-- Enums
+create type salary_remuneration_type as enum ('mensual_fijo','por_hora','por_clase');
+create type salary_structure_status as enum ('activa','inactiva');
+create type staff_vinculo_type as enum ('relacion_dependencia','monotributista','honorarios');
+create type staff_member_status as enum ('activo','inactivo');
+create type staff_contract_status as enum ('vigente','finalizado');
+create type payroll_settlement_status as enum ('generada','confirmada','pagada','anulada');
+create type payroll_adjustment_type as enum ('adicional','descuento','reintegro');
+create type hr_job_run_status as enum ('running','success','partial','failed');
+
+-- Catálogo de posiciones rentadas del club (US-54). Unique parcial en
+-- (club_id, lower(trim(functional_role)), activity_id) where status='activa'.
+create table salary_structures (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references clubs(id) on delete cascade,
+  name text not null,
+  functional_role text not null,
+  activity_id uuid not null references club_activities(id),
+  remuneration_type salary_remuneration_type not null,
+  workload_hours numeric(10,2),
+  status salary_structure_status not null default 'activa',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by_user_id uuid references users(id),
+  updated_by_user_id uuid references users(id)
+);
+
+-- Historial de monto por estructura (US-55). Unique parcial garantiza
+-- una única versión vigente (end_date is null) por estructura.
+create table salary_structure_versions (
+  id uuid primary key default gen_random_uuid(),
+  salary_structure_id uuid not null references salary_structures(id) on delete cascade,
+  amount numeric(18,2) not null check (amount > 0),
+  start_date date not null,
+  end_date date,
+  created_at timestamptz not null default now(),
+  created_by_user_id uuid references users(id)
+);
+
+-- Vista auxiliar del monto vigente (security invoker para respetar RLS).
+create view salary_structure_current_amount with (security_invoker = true) as
+select salary_structure_id, amount
+from salary_structure_versions
+where end_date is null;
+
+-- Colaboradores del club (US-56). Unique parciales en (club_id, dni) y
+-- (club_id, cuit_cuil) where status='activo'.
+create table staff_members (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references clubs(id) on delete cascade,
+  first_name text not null,
+  last_name text not null,
+  dni text not null,
+  cuit_cuil text not null,
+  email text,
+  phone text,
+  vinculo_type staff_vinculo_type not null,
+  cbu_alias text,
+  hire_date date not null default current_date,
+  status staff_member_status not null default 'activo',
+  deactivated_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by_user_id uuid references users(id),
+  updated_by_user_id uuid references users(id)
+);
+
+-- Contratos (US-57/58). Unique parcial (salary_structure_id) where
+-- status='vigente' garantiza una única ocupación activa por estructura.
+-- Check staff_contracts_amount_coherent: si uses_structure_amount=false,
+-- frozen_amount es obligatorio.
+create table staff_contracts (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references clubs(id) on delete cascade,
+  staff_member_id uuid not null references staff_members(id),
+  salary_structure_id uuid not null references salary_structures(id),
+  start_date date not null,
+  end_date date,
+  uses_structure_amount boolean not null default true,
+  frozen_amount numeric(18,2),
+  status staff_contract_status not null default 'vigente',
+  finalized_at timestamptz,
+  finalized_reason text,
+  finalized_by_user_id uuid references users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by_user_id uuid references users(id),
+  updated_by_user_id uuid references users(id),
+  constraint staff_contracts_amount_coherent check (uses_structure_amount = true or frozen_amount is not null),
+  constraint staff_contracts_date_order check (end_date is null or end_date >= start_date)
+);
+
+-- Liquidaciones mensuales (US-61..66). Unique parcial
+-- (contract_id, period_year, period_month) where status<>'anulada'
+-- permite regenerar tras anular.
+create table payroll_settlements (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references clubs(id) on delete cascade,
+  contract_id uuid not null references staff_contracts(id),
+  period_year int not null,
+  period_month int not null check (period_month between 1 and 12),
+  base_amount numeric(18,2) not null default 0,
+  adjustments_total numeric(18,2) not null default 0,
+  total_amount numeric(18,2) not null default 0 check (total_amount >= 0),
+  hours_worked numeric(10,2) default 0,
+  classes_worked int default 0,
+  requires_hours_input boolean not null default false,
+  notes text,
+  status payroll_settlement_status not null default 'generada',
+  confirmed_at timestamptz,
+  confirmed_by_user_id uuid references users(id),
+  paid_at timestamptz,
+  paid_movement_id uuid,
+  annulled_at timestamptz,
+  annulled_by_user_id uuid references users(id),
+  annulled_reason text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by_user_id uuid references users(id),
+  updated_by_user_id uuid references users(id)
+);
+
+-- Ajustes sobre liquidaciones (US-62). Trigger hr_recalc_settlement_totals
+-- recalcula adjustments_total + total_amount en el padre tras insert/
+-- update/delete.
+create table payroll_settlement_adjustments (
+  id uuid primary key default gen_random_uuid(),
+  settlement_id uuid not null references payroll_settlements(id) on delete cascade,
+  type payroll_adjustment_type not null,
+  concept text not null,
+  amount numeric(18,2) not null check (amount > 0),
+  created_at timestamptz not null default now(),
+  created_by_user_id uuid references users(id)
+);
+
+-- Agrupador de pagos en lote (US-65). Un batch agrupa N settlements que
+-- se pagaron en una única operación transaccional.
+create table payroll_payment_batches (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references clubs(id) on delete cascade,
+  account_id uuid not null references treasury_accounts(id),
+  payment_date date not null,
+  notes text,
+  total_amount numeric(18,2) not null,
+  settlement_count int not null,
+  created_at timestamptz not null default now(),
+  created_by_user_id uuid references users(id)
+);
+
+-- Audit log append-only de RRHH. entity_type distingue la entidad
+-- (salary_structure, staff_member, staff_contract, payroll_settlement,
+-- payroll_batch). action describe el evento (CREATED, UPDATED,
+-- AMOUNT_UPDATED, CONTRACT_FINALIZED, SETTLEMENT_CONFIRMED, etc.).
+create table hr_activity_log (
+  id uuid primary key default gen_random_uuid(),
+  club_id uuid not null references clubs(id) on delete cascade,
+  entity_type text not null,
+  entity_id uuid not null,
+  action text not null,
+  payload_before jsonb,
+  payload_after jsonb,
+  performed_by_user_id uuid references users(id),
+  performed_at timestamptz not null default now()
+);
+
+-- Bitácora de corridas del job pg_cron (US-59). Sin policy RLS
+-- expuesta al cliente (deny-all); acceso restringido a RPCs SECURITY
+-- DEFINER.
+create table hr_job_runs (
+  id uuid primary key default gen_random_uuid(),
+  job_name text not null,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz,
+  status hr_job_run_status not null default 'running',
+  contracts_processed int not null default 0,
+  contracts_failed int not null default 0,
+  error_payload jsonb
+);
+
+-- Extensiones sobre treasury_movements para enlazar pagos RRHH (US-64/65).
+-- Unique parcial en payroll_settlement_id garantiza que una liquidación
+-- no pueda pagarse dos veces.
+alter table treasury_movements
+  add column payroll_settlement_id uuid references payroll_settlements(id),
+  add column payroll_payment_batch_id uuid references payroll_payment_batches(id);
+
+-- Rol rrhh agregado al enum membership_role:
+-- alter type membership_role add value 'rrhh';
+
+-- Índices RRHH
+create unique index salary_structures_unique_active_role_activity
+  on salary_structures (club_id, lower(trim(functional_role)), activity_id)
+  where status = 'activa';
+create index idx_salary_structures_club_status on salary_structures (club_id, status);
+create index idx_salary_structures_club_activity on salary_structures (club_id, activity_id);
+
+create unique index salary_structure_versions_unique_current
+  on salary_structure_versions (salary_structure_id) where end_date is null;
+create index idx_salary_structure_versions_structure_start
+  on salary_structure_versions (salary_structure_id, start_date desc);
+
+create unique index staff_members_unique_active_dni
+  on staff_members (club_id, dni) where status = 'activo';
+create unique index staff_members_unique_active_cuit
+  on staff_members (club_id, cuit_cuil) where status = 'activo';
+create index idx_staff_members_club_status on staff_members (club_id, status);
+create index idx_staff_members_club_name on staff_members (club_id, last_name, first_name);
+
+create unique index staff_contracts_unique_active_per_structure
+  on staff_contracts (salary_structure_id) where status = 'vigente';
+create index idx_staff_contracts_club_status on staff_contracts (club_id, status);
+create index idx_staff_contracts_member_status on staff_contracts (staff_member_id, status);
+create index idx_staff_contracts_active_period
+  on staff_contracts (club_id, start_date, end_date) where status = 'vigente';
+
+create unique index payroll_settlements_unique_non_annulled
+  on payroll_settlements (contract_id, period_year, period_month) where status <> 'anulada';
+create index idx_payroll_settlements_club_status on payroll_settlements (club_id, status);
+create index idx_payroll_settlements_club_period
+  on payroll_settlements (club_id, period_year, period_month);
+
+create index idx_payroll_settlement_adjustments_settlement
+  on payroll_settlement_adjustments (settlement_id);
+
+create index idx_payroll_payment_batches_club_date
+  on payroll_payment_batches (club_id, payment_date desc);
+
+create index idx_hr_activity_log_club_entity
+  on hr_activity_log (club_id, entity_type, entity_id, performed_at desc);
+
+create index idx_hr_job_runs_name_started on hr_job_runs (job_name, started_at desc);
+
+create unique index treasury_movements_unique_payroll_settlement
+  on treasury_movements (payroll_settlement_id) where payroll_settlement_id is not null;
+create index idx_treasury_movements_payroll_batch
+  on treasury_movements (payroll_payment_batch_id) where payroll_payment_batch_id is not null;
