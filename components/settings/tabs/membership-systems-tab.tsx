@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 import { Card } from "@/components/ui/card";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
@@ -51,14 +50,6 @@ function ReceiptFormatForm({ action, defaultFormat, onCancel, onSuccess }: Recei
       v === "secretaria" ? defaultFormat.visibleForSecretaria : defaultFormat.visibleForTesoreria
     )
   );
-  const searchParams = useSearchParams();
-  const feedbackCode = searchParams.get("feedback");
-
-  useEffect(() => {
-    if (feedbackCode === "receipt_format_updated") {
-      onSuccess();
-    }
-  }, [feedbackCode, onSuccess]);
 
   function handleVisibilityToggle(visibility: string, checked: boolean) {
     setSelectedVisibility((current) =>
@@ -66,8 +57,13 @@ function ReceiptFormatForm({ action, defaultFormat, onCancel, onSuccess }: Recei
     );
   }
 
+  async function handleSubmit(formData: FormData) {
+    onSuccess();
+    await action(formData);
+  }
+
   return (
-    <form action={action} className="grid gap-4">
+    <form action={handleSubmit} className="grid gap-4">
       <PendingFieldset className="grid gap-4">
         <input type="hidden" name="receipt_format_id" value={defaultFormat.id} />
 

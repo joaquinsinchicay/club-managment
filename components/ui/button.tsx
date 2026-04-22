@@ -44,7 +44,7 @@ export function buttonClass({
   className?: string;
 } = {}) {
   return cn(
-    "inline-flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-foreground/20 disabled:cursor-not-allowed disabled:opacity-60",
+    "inline-flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-foreground/10 disabled:cursor-not-allowed disabled:opacity-60",
     radiusClasses[radius],
     variantClasses[variant],
     sizeClasses[size],

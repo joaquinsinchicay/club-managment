@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 
 import { Avatar, getInitials } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
@@ -65,23 +64,25 @@ export function MembersTab({
   updateMembershipRoleAction,
   removeMembershipAction
 }: MembersTabProps) {
-  const searchParams = useSearchParams();
-  const feedbackCode = searchParams.get("feedback");
-
   const [search, setSearch] = useState("");
   const [isInviting, setIsInviting] = useState(false);
   const [editingMember, setEditingMember] = useState<ClubMember | null>(null);
   const [removingMembershipId, setRemovingMembershipId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (feedbackCode === "membership_roles_updated" || feedbackCode === "membership_approved") {
-      setEditingMember(null);
-      setIsInviting(false);
-    }
-    if (feedbackCode === "membership_removed" || feedbackCode === "self_removed") {
-      setRemovingMembershipId(null);
-    }
-  }, [feedbackCode]);
+  async function handleInvite(formData: FormData) {
+    setIsInviting(false);
+    await inviteUserAction(formData);
+  }
+
+  async function handleUpdateRoles(formData: FormData) {
+    setEditingMember(null);
+    await updateMembershipRoleAction(formData);
+  }
+
+  async function handleRemoveMembership(formData: FormData) {
+    setRemovingMembershipId(null);
+    await removeMembershipAction(formData);
+  }
 
   const removingMember = useMemo(
     () => members.find((m) => m.membershipId === removingMembershipId) ?? null,
@@ -268,7 +269,7 @@ export function MembersTab({
         description={texts.settings.club.invitations.section_description}
         onClose={() => setIsInviting(false)}
       >
-        <form action={inviteUserAction} className="grid gap-4">
+        <form action={handleInvite} className="grid gap-4">
           <PendingFieldset className="grid gap-4">
             <FormField>
               <FormFieldLabel>{texts.settings.club.invitations.email_label}</FormFieldLabel>
@@ -309,7 +310,7 @@ export function MembersTab({
         onClose={() => setEditingMember(null)}
       >
         {editingMember ? (
-          <form action={updateMembershipRoleAction} className="grid gap-4">
+          <form action={handleUpdateRoles} className="grid gap-4">
             <PendingFieldset className="grid gap-4">
               <input type="hidden" name="membership_id" value={editingMember.membershipId} />
 
@@ -356,7 +357,7 @@ export function MembersTab({
               <p className="text-sm text-muted-foreground">{removingMember.email}</p>
             </div>
 
-            <form action={removeMembershipAction}>
+            <form action={handleRemoveMembership}>
               <PendingFieldset className="contents">
                 <input type="hidden" name="membership_id" value={removingMember.membershipId} />
                 <ModalFooter

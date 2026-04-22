@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
@@ -50,14 +49,6 @@ export function ActivityForm({
         : (defaultActivity?.visibleForTesoreria ?? false)
     )
   );
-  const searchParams = useSearchParams();
-  const feedbackCode = searchParams.get("feedback");
-
-  useEffect(() => {
-    if (feedbackCode === "activity_created" || feedbackCode === "activity_updated") {
-      onSuccess();
-    }
-  }, [feedbackCode, onSuccess]);
 
   function handleVisibilityToggle(visibility: string, checked: boolean) {
     setSelectedVisibility((current) =>
@@ -65,8 +56,13 @@ export function ActivityForm({
     );
   }
 
+  async function handleSubmit(formData: FormData) {
+    onSuccess();
+    await action(formData);
+  }
+
   return (
-    <form action={action} className="flex flex-col">
+    <form action={handleSubmit} className="flex flex-col">
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 

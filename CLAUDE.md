@@ -79,7 +79,7 @@ Taxonomía de `size`:
 - `md` → `max-w-xl`. **Default**. Form simple de un solo flujo (editar movimiento, crear categoría/actividad, editar cost center).
 - `lg` → `max-w-3xl`. Forms multi-columna, listas, tablas embebidas (apertura/cierre de jornada).
 
-`panelClassName` es escape-hatch; no usar salvo excepción aprobada en code review.
+No hay escape-hatch de ancho: si la taxonomía no encaja, ampliar la taxonomía en code review.
 
 ### API canónica: `<ModalFooter>`
 ```tsx
@@ -91,16 +91,14 @@ Taxonomía de `size`:
   submitDisabled={...}
   submitVariant="primary" | "destructive" | "dark"   // default "primary"
   size="sm" | "md"              // default "md"
-  align="stretch" | "end"       // default "stretch"
 />
 ```
 
 Reglas de uso:
-- `align="stretch"` (default) → dos botones iguales en `grid-cols-2`. Úsese en confirmaciones y acciones principales (tesorería, sesión).
-- `align="end"` → botones autoancho pegados a la derecha. Úsese en forms densos (settings, cost centers) donde el full-width se ve desproporcionado.
+- Layout siempre `grid-cols-2` cuando hay `onCancel`, `grid-cols-1` cuando no. No hay prop `align` — la decisión es uniforme en toda la app.
 - **`size="md"` es obligatorio en todos los modales** — la altura/radio de botón debe ser idéntica en toda la app. `size="sm"` existe en la API pero no se usa en modales (reservado para triggers fuera de modal).
 - Para modales de **una sola acción** (Invitar), omitir `onCancel`/`cancelLabel`. La X del header sigue siendo vía de salida.
-- Nunca pasar `className` para overridear padding/radius/altura. Si el layout no encaja, discutir antes de hackear.
+- No hay `className` passthrough — el footer no se overridea.
 - `submitVariant="destructive"` en acciones destructivas (cerrar jornada, remover miembro, eliminar recurso).
 
 ### Prohibiciones explícitas
@@ -114,8 +112,7 @@ Reglas de uso:
   <button>Cancelar</button>
   <PendingSubmitButton ... />
 </div>
-// ❌ panelClassName para forzar ancho
-<Modal panelClassName="max-w-xl" />   // usar size="md"
+// ❌ override de ancho del Modal por className/style — usar size="sm|md|lg"
 // ❌ X + botón "Cerrar" textual simultáneos
 // ❌ MODAL_FOOTER_CLASSNAME (eliminado)
 ```
@@ -173,7 +170,6 @@ Catálogo (API pública):
 - Form con primitivos completos + `<ModalFooter>`: `SecretariaMovementEditForm` en `components/dashboard/treasury-operation-forms.tsx`.
 - Form con `<FormReadonly>` y banner: `OpenSessionModalForm` en `components/dashboard/open-session-modal-form.tsx`.
 - Form con `<FormCheckboxCard>` + validación inline: `CategoryForm` en `components/settings/tabs/category-form.tsx`.
-- Footer `align="end"`: `CostCenterForm` en `components/treasury/cost-centers-tab.tsx`.
 - Footer sin `onCancel` (acción única): modal "Invitar" en `components/settings/tabs/members-tab.tsx`.
 
 ---
@@ -466,9 +462,9 @@ La cookie flash `__toast` se consume una sola vez al rehidratar en el cliente. N
 
 ### Forms dentro de modales con server actions
 
-El patrón `flashToast() + redirect()` **NO sirve** dentro de modales: el modal vive en estado React del cliente, y la soft-navigation al mismo path preserva el árbol React, dejando el modal abierto con el toast detrás.
+El patrón `flashToast() + redirect()` por sí solo **NO cierra el modal**: el modal vive en estado React del cliente, y la soft-navigation al mismo path preserva el árbol React, dejando el modal abierto con el toast detrás. Hay dos patrones canónicos según cómo termine la action:
 
-**Patrón obligatorio para forms en modal**:
+**Patrón A — Action devuelve `{ok, code}` (recomendado para nuevas features)**:
 
 1. La server action devuelve `{ ok: boolean; code: string }` (no `redirect`, no `flashToast`).
 2. La action solo llama `revalidatePath(...)` para invalidar la cache.
@@ -490,7 +486,20 @@ async function handleSubmit(formData: FormData) {
 
 Ejemplo canónico: `components/dashboard/treasury-card.tsx` (función `handleCreateTreasuryMovement`).
 
-Para forms que NO viven en modal (settings, full-page) seguir usando el patrón `flashToast + redirect`.
+**Patrón B — Action hace `flashToast + redirect` (legacy, vigente en /settings)**:
+
+Cuando la action redirige (toda la familia `redirectToSettings`), el modal igual queda abierto. Para cerrarlo, el cliente envuelve la action en un thin handler que cierra el modal **antes** del await:
+
+```tsx
+async function handleEdit(formData: FormData) {
+  setEditingMember(null);            // 1. cerrar el modal optimistamente
+  await updateMembershipRoleAction(formData);   // 2. la action redirige + flashToast
+}
+```
+
+El toast llega vía cookie en la próxima render. Si la action falla, el toast traerá el código de error y el modal igual queda cerrado (el usuario lo reabre para reintentar). Este patrón está en `components/settings/tabs/members-tab.tsx`.
+
+**Prohibido**: pasar `?feedback=CODE` en la URL para señalar éxito/error al cliente. La cookie flash + el handler son suficientes.
 
 ---
 

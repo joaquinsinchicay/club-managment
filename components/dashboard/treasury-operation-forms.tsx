@@ -10,6 +10,13 @@ import {
   sanitizeLocalizedAmountInput
 } from "@/lib/amounts";
 import { ModalFooter } from "@/components/ui/modal-footer";
+import {
+  CONTROL_CLASSNAME,
+  FIELD_CLASSNAME,
+  FIELD_LABEL_CLASSNAME,
+  FORM_GRID_CLASSNAME,
+  FULL_WIDTH_FIELD_CLASSNAME,
+} from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
 import type {
   ClubActivity,
@@ -92,10 +99,9 @@ type OperationalFormCopy = {
   movement_types: Record<string, string>;
 };
 
-const FORM_GRID_CLASSNAME = "grid gap-4 sm:grid-cols-2";
-const FIELD_CLASSNAME = "grid gap-2 text-sm text-foreground";
-const FULL_WIDTH_FIELD_CLASSNAME = "sm:col-span-2";
-const CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10";
+// Variante de CONTROL_CLASSNAME para inputs/selects deshabilitados.
+// No coincide con FORM_READONLY_CLASSNAME (que es inline-flex para <div>),
+// porque acá se aplica directamente a controles de form.
 const DISABLED_CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground";
 
 type MovementFormState = {
@@ -508,8 +514,6 @@ function formatSessionDateLong(sessionDate: string): string {
   }).format(date);
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
-
-const FIELD_LABEL_CLASSNAME = "text-xs font-semibold text-foreground";
 
 export function SecretariaMovementForm({
   accounts,

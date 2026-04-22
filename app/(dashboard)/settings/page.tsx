@@ -20,13 +20,7 @@ import {
 } from "@/app/(dashboard)/settings/actions";
 import { redirect } from "next/navigation";
 
-type ClubSettingsPageProps = {
-  searchParams?: {
-    feedback?: string;
-  };
-};
-
-export default async function ClubSettingsPage({ searchParams }: ClubSettingsPageProps) {
+export default async function ClubSettingsPage() {
   const context = await getAuthenticatedSessionContext();
 
   if (!context) {

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -456,7 +455,6 @@ export function ClubTreasurySettingsManager({
   createClubActivityAction,
   updateClubActivityAction
 }: ClubTreasurySettingsManagerProps) {
-  const searchParams = useSearchParams();
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [accountCreateFormKey, setAccountCreateFormKey] = useState(0);
@@ -467,30 +465,28 @@ export function ClubTreasurySettingsManager({
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
   const [activityCreateFormKey, setActivityCreateFormKey] = useState(0);
   const availableAccountCurrencies: TreasuryCurrencyCode[] = TREASURY_CURRENCY_OPTIONS;
-  const feedbackCode = searchParams.get("feedback");
   const receiptFormat = treasurySettings.receiptFormats[0];
 
-  useEffect(() => {
-    if (feedbackCode === "account_created") {
-      setIsCreatingAccount(false);
-      setEditingAccountId(null);
-      setAccountCreateFormKey((currentKey) => currentKey + 1);
-      return;
-    }
+  async function handleCreateAccount(formData: FormData) {
+    setIsCreatingAccount(false);
+    setEditingAccountId(null);
+    setAccountCreateFormKey((k) => k + 1);
+    await createTreasuryAccountAction(formData);
+  }
 
-    if (feedbackCode === "category_created") {
-      setIsCreatingCategory(false);
-      setEditingCategoryId(null);
-      setCategoryCreateFormKey((currentKey) => currentKey + 1);
-      return;
-    }
+  async function handleCreateCategory(formData: FormData) {
+    setIsCreatingCategory(false);
+    setEditingCategoryId(null);
+    setCategoryCreateFormKey((k) => k + 1);
+    await createTreasuryCategoryAction(formData);
+  }
 
-    if (feedbackCode === "activity_created") {
-      setIsCreatingActivity(false);
-      setEditingActivityId(null);
-      setActivityCreateFormKey((currentKey) => currentKey + 1);
-    }
-  }, [feedbackCode]);
+  async function handleCreateActivity(formData: FormData) {
+    setIsCreatingActivity(false);
+    setEditingActivityId(null);
+    setActivityCreateFormKey((k) => k + 1);
+    await createClubActivityAction(formData);
+  }
 
   return (
     <div className="space-y-6">
@@ -514,7 +510,7 @@ export function ClubTreasurySettingsManager({
           <div className="mb-4">
             <TreasuryAccountForm
               key={`create-account-form-${accountCreateFormKey}`}
-              action={createTreasuryAccountAction}
+              action={handleCreateAccount}
               submitLabel={texts.settings.club.treasury.save_account_cta}
               pendingLabel={texts.settings.club.treasury.save_account_loading}
               availableCurrencies={availableAccountCurrencies}
@@ -638,7 +634,7 @@ export function ClubTreasurySettingsManager({
           <div className="mb-4">
             <TreasuryCategoryForm
               key={`create-category-form-${categoryCreateFormKey}`}
-              action={createTreasuryCategoryAction}
+              action={handleCreateCategory}
               submitLabel={texts.settings.club.treasury.save_category_cta}
               pendingLabel={texts.settings.club.treasury.save_category_loading}
             />
@@ -725,7 +721,7 @@ export function ClubTreasurySettingsManager({
           <div className="mb-4">
             <ClubActivityForm
               key={`create-activity-form-${activityCreateFormKey}`}
-              action={createClubActivityAction}
+              action={handleCreateActivity}
               submitLabel={texts.settings.club.treasury.save_activity_cta}
               pendingLabel={texts.settings.club.treasury.save_activity_loading}
             />

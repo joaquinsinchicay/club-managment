@@ -6,6 +6,33 @@ Referencia única de tokens, componentes y patterns para todos los módulos. Lo 
 
 ---
 
+## 00 · Cómo se traduce este doc al código
+
+Este archivo describe el **lenguaje visual** del producto (tokens, escalas, principios). La **implementación canónica** vive en `components/ui/` como primitivos React tokenizados. Antes de leer las secciones de tokens, dirigirse al primitivo concreto:
+
+| Necesidad | Primitivo | Ubicación |
+|---|---|---|
+| Contenedor con borde + radio + fondo | `<Card>`, `<CardHeader>`, `<CardBody>`, `<CardFooter>` | [card.tsx](../../components/ui/card.tsx) |
+| Modal | `<Modal>` + `<ModalFooter>` | [modal.tsx](../../components/ui/modal.tsx), [modal-footer.tsx](../../components/ui/modal-footer.tsx) |
+| Form fields | `<FormField>`, `<FormFieldLabel>`, `<FormSection>`, `<FormInput>`, `<FormSelect>`, `<FormTextarea>`, `<FormReadonly>`, `<FormCheckboxCard>`, `<FormBanner>`, `<FormHelpText>`, `<FormError>` | [modal-form.tsx](../../components/ui/modal-form.tsx) |
+| Tabla / lista | `<DataTable>` y subcomponentes (`Header/Body/Row/Cell/Chip/Amount/Actions/Empty`) | [data-table.tsx](../../components/ui/data-table.tsx) |
+| Botón | `<Button>` + helper `buttonClass()` | [button.tsx](../../components/ui/button.tsx) |
+| Link estilado como botón | `<LinkButton>` | [link-button.tsx](../../components/ui/link-button.tsx) |
+| Avatar + iniciales | `<Avatar>` + `getInitials()` | [avatar.tsx](../../components/ui/avatar.tsx) |
+| Chip / pill | `<Chip>`, `<ChipButton>`, `<ChipLink>`, `<DataTableChip>` | [chip.tsx](../../components/ui/chip.tsx) |
+| Badge semántico uppercase | `<StatusBadge>` | [status-badge.tsx](../../components/ui/status-badge.tsx) |
+| Pair label-value | `<MetaPill>` | [meta-pill.tsx](../../components/ui/meta-pill.tsx) |
+| Empty state standalone | `<EmptyState>` (dentro de DataTable: `<DataTableEmpty>`) | [empty-state.tsx](../../components/ui/empty-state.tsx) |
+| Feedback (toast) | `showToast()` / `triggerClientFeedback()` (cliente), `flashToast()` (server) | [lib/toast.ts](../../lib/toast.ts), [lib/client-feedback.ts](../../lib/client-feedback.ts), [lib/toast-server.ts](../../lib/toast-server.ts) |
+
+**Índice operativo del design system**: [`components/ui/README.md`](../../components/ui/README.md) — explica cuándo usar cada primitivo, su API mínima y los anti-patrones.
+
+**Reglas vinculantes** (qué está prohibido, dónde): [`/CLAUDE.md`](../../CLAUDE.md), secciones "Regla crítica: …".
+
+> Las secciones siguientes (`01 · Principios` en adelante) describen tokens y escalas. Si el primitivo de la tabla de arriba ya cubre tu caso, **no copies sus clases en código nuevo** — usá el componente.
+
+---
+
 ## 01 · Principios
 
 Lo que define el look & feel del producto.

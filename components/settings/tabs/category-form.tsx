@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
@@ -71,14 +70,6 @@ export function CategoryForm({
   const [movementType, setMovementType] = useState<TreasuryCategory["movementType"]>(
     defaultCategory?.movementType ?? "egreso"
   );
-  const searchParams = useSearchParams();
-  const feedbackCode = searchParams.get("feedback");
-
-  useEffect(() => {
-    if (feedbackCode === "category_created" || feedbackCode === "category_updated") {
-      onSuccess();
-    }
-  }, [feedbackCode, onSuccess]);
 
   useEffect(() => {
     const nextMovementType = getMovementTypeForParentCategory(selectedParentCategory);
@@ -95,9 +86,14 @@ export function CategoryForm({
     );
   }
 
+  async function handleSubmit(formData: FormData) {
+    onSuccess();
+    await action(formData);
+  }
+
   return (
     <form
-      action={action}
+      action={handleSubmit}
       onSubmit={(event) => {
         if (selectedVisibility.length === 0) {
           event.preventDefault();

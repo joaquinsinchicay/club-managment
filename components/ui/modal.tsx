@@ -3,7 +3,6 @@
 import { type ReactNode } from "react";
 
 import { texts } from "@/lib/texts";
-import { cn } from "@/lib/utils";
 import { BlockingOverlay } from "@/components/ui/overlay";
 
 type ModalSize = "sm" | "md" | "lg";
@@ -15,7 +14,6 @@ type ModalProps = {
   onClose: () => void;
   children: ReactNode;
   size?: ModalSize;
-  panelClassName?: string;
   closeDisabled?: boolean;
   hideCloseButton?: boolean;
 };
@@ -33,7 +31,6 @@ export function Modal({
   onClose,
   children,
   size = "md",
-  panelClassName,
   closeDisabled = false,
   hideCloseButton = false
 }: ModalProps) {
@@ -54,11 +51,7 @@ export function Modal({
       onEscape={closeDisabled ? undefined : onClose}
     >
       <div
-        className={cn(
-          "flex max-h-[calc(100dvh-24px)] w-full flex-col rounded-toast border border-border bg-card shadow-soft sm:max-h-[calc(100dvh-48px)]",
-          sizeClasses[size],
-          panelClassName
-        )}
+        className={`flex max-h-[calc(100dvh-24px)] w-full flex-col rounded-toast border border-border bg-card shadow-soft sm:max-h-[calc(100dvh-48px)] ${sizeClasses[size]}`}
         onClick={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
         onPointerDown={(event) => event.stopPropagation()}
