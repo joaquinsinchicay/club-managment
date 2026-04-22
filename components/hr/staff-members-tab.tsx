@@ -48,6 +48,7 @@ type StaffMembersTabProps = {
 
 type StatusFilter = "all" | StaffMemberStatus;
 type VinculoFilter = "all" | StaffVinculoType;
+type AlertFilter = "all" | "alerts_only";
 
 const smTexts = texts.rrhh.staff_members;
 
@@ -56,6 +57,14 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "activo", label: smTexts.filter_active },
   { value: "inactivo", label: smTexts.filter_inactive },
 ];
+
+/**
+ * US-60 helper: a member is in "alert" state when active but has no active
+ * contracts. Used by the filter and by the header counter.
+ */
+function isMemberInAlert(m: StaffMember): boolean {
+  return m.status === "activo" && !m.hasActiveContract;
+}
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -73,6 +82,7 @@ export function StaffMembersTab({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [vinculoFilter, setVinculoFilter] = useState<VinculoFilter>("all");
+  const [alertFilter, setAlertFilter] = useState<AlertFilter>("all");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
@@ -85,11 +95,17 @@ export function StaffMembersTab({
   const [editPending, setEditPending] = useState(false);
   const [statusPending, setStatusPending] = useState(false);
 
+  const alertsCount = useMemo(
+    () => members.filter(isMemberInAlert).length,
+    [members],
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return members.filter((m) => {
       if (statusFilter !== "all" && m.status !== statusFilter) return false;
       if (vinculoFilter !== "all" && m.vinculoType !== vinculoFilter) return false;
+      if (alertFilter === "alerts_only" && !isMemberInAlert(m)) return false;
       if (!q) return true;
       return (
         m.firstName.toLowerCase().includes(q) ||
@@ -98,7 +114,7 @@ export function StaffMembersTab({
         m.cuitCuil.includes(q)
       );
     });
-  }, [members, search, statusFilter, vinculoFilter]);
+  }, [members, search, statusFilter, vinculoFilter, alertFilter]);
 
   async function runAction(
     action: (fd: FormData) => Promise<RrhhActionResult>,
@@ -132,6 +148,33 @@ export function StaffMembersTab({
           <h2 className="text-lg font-semibold text-foreground">{smTexts.section_title}</h2>
           <p className="text-sm text-muted-foreground">{smTexts.section_description}</p>
         </header>
+
+        {alertsCount > 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50 px-4 py-3">
+            <span className="text-sm text-amber-900">
+              <strong>{alertsCount}</strong>{" "}
+              {alertsCount === 1
+                ? smTexts.alert_banner_singular
+                : smTexts.alert_banner_plural}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setAlertFilter((v) => (v === "alerts_only" ? "all" : "alerts_only"))
+              }
+              aria-pressed={alertFilter === "alerts_only"}
+              className={
+                alertFilter === "alerts_only"
+                  ? "inline-flex min-h-9 items-center rounded-full bg-amber-700 px-3 py-1.5 text-xs font-semibold text-amber-50"
+                  : "inline-flex min-h-9 items-center rounded-full border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-200"
+              }
+            >
+              {alertFilter === "alerts_only"
+                ? smTexts.alert_banner_cta_all
+                : smTexts.alert_banner_cta_only}
+            </button>
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (

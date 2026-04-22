@@ -1489,6 +1489,10 @@
       "action_deactivate": "Dar de baja",
       "action_reactivate": "Reactivar",
       "alert_no_active_contracts": "Sin contratos vigentes",
+      "alert_banner_singular": "colaborador activo sin contratos vigentes. Revisalo para darlo de baja o crear un contrato nuevo.",
+      "alert_banner_plural": "colaboradores activos sin contratos vigentes. Revisalos para darlos de baja o crear contratos nuevos.",
+      "alert_banner_cta_only": "Ver solo alertas",
+      "alert_banner_cta_all": "Ver todos",
       "status_options": {
         "activo": "Activo",
         "inactivo": "Inactivo"
