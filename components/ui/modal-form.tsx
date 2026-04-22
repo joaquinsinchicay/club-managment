@@ -179,20 +179,51 @@ const BANNER_ACCENT_BY_VARIANT: Record<FormBannerVariant, string> = {
 type FormBannerProps = HTMLAttributes<HTMLDivElement> & {
   variant?: FormBannerVariant;
   icon?: ReactNode;
+  /**
+   * Opcional. CTA o control alineado a la derecha (toggle, link, button).
+   * Cuando se informa, el banner usa layout `justify-between` en desktop
+   * y se apila en mobile — el texto queda en un <span> (no en <p>) para
+   * poder convivir con un <button> dentro del mismo banner.
+   */
+  action?: ReactNode;
   children: ReactNode;
 };
 
 export function FormBanner({
   variant = "warning",
   icon,
+  action,
   children,
   className,
   ...rest
 }: FormBannerProps) {
+  const accentClass = cn("mr-1", BANNER_ACCENT_BY_VARIANT[variant]);
+
+  if (action !== undefined) {
+    return (
+      <div
+        className={cn(
+          BANNER_CLASS_BY_VARIANT[variant],
+          "flex flex-wrap items-center justify-between gap-3",
+          className,
+        )}
+        {...rest}
+      >
+        <span className="leading-[1.5]">
+          <span className={accentClass} aria-hidden="true">
+            {icon ?? "!"}
+          </span>
+          {children}
+        </span>
+        {action}
+      </div>
+    );
+  }
+
   return (
     <div className={cn(BANNER_CLASS_BY_VARIANT[variant], className)} {...rest}>
       <p className="leading-[1.5]">
-        <span className={cn("mr-1", BANNER_ACCENT_BY_VARIANT[variant])} aria-hidden="true">
+        <span className={accentClass} aria-hidden="true">
           {icon ?? "!"}
         </span>
         {children}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { SettlementActionResult } from "@/app/(dashboard)/rrhh/settlements/actions";
 import { Button, buttonClass } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableActions,
@@ -21,6 +22,7 @@ import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FormBanner,
+  FormCheckboxCard,
   FormField,
   FormFieldLabel,
   FormHelpText,
@@ -227,24 +229,18 @@ export function SettlementsList({
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         {STATUS_FILTERS.map((f) => (
-          <button
+          <ChipButton
             key={f.value}
-            type="button"
+            active={statusFilter === f.value}
             onClick={() => setStatusFilter(f.value)}
-            aria-pressed={statusFilter === f.value}
-            className={
-              statusFilter === f.value
-                ? "inline-flex min-h-9 items-center rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background"
-                : "inline-flex min-h-9 items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary/40"
-            }
           >
             {f.label}
-          </button>
+          </ChipButton>
         ))}
         <select
           value={periodFilter}
           onChange={(e) => setPeriodFilter(e.target.value)}
-          className="inline-flex min-h-9 items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+          className="inline-flex items-center rounded-chip border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
         >
           <option value="all">{sTexts.filter_period_all}</option>
           {availablePeriods.map((p) => (
@@ -257,7 +253,11 @@ export function SettlementsList({
 
       {/* Bulk bar */}
       {canOperate && selectedIds.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-secondary/40 px-4 py-3">
+        <Card
+          tone="muted"
+          padding="none"
+          className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+        >
           <span className="text-sm font-medium text-foreground">
             {sTexts.bulk_selected_prefix}
             {selectedIds.length} ·{" "}
@@ -267,33 +267,21 @@ export function SettlementsList({
             ) : null}
           </span>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedIds([])}
-              className={buttonClass({ variant: "secondary", size: "sm" })}
-            >
+            <Button variant="secondary" size="sm" onClick={() => setSelectedIds([])}>
               {sTexts.bulk_clear_cta}
-            </button>
+            </Button>
             {selectionMode === "confirm" ? (
-              <button
-                type="button"
-                onClick={() => setConfirmingBulk(true)}
-                className={buttonClass({ variant: "primary", size: "sm" })}
-              >
+              <Button variant="primary" size="sm" onClick={() => setConfirmingBulk(true)}>
                 {sTexts.bulk_confirm_cta}
-              </button>
+              </Button>
             ) : null}
             {selectionMode === "pay" ? (
-              <button
-                type="button"
-                onClick={() => setPayingBulk(true)}
-                className={buttonClass({ variant: "primary", size: "sm" })}
-              >
+              <Button variant="primary" size="sm" onClick={() => setPayingBulk(true)}>
                 {sTexts.bulk_pay_cta}
-              </button>
+              </Button>
             ) : null}
           </div>
-        </div>
+        </Card>
       ) : null}
 
       {/* Table */}
@@ -644,21 +632,12 @@ export function SettlementsList({
             </CardBody>
           </Card>
           {selectedHasZero ? (
-            <label className="flex items-start gap-3 rounded-card border border-border bg-card px-4 py-3">
-              <input
-                type="checkbox"
-                name="confirm_zero"
-                className="mt-1 size-4 rounded border-border text-foreground focus:ring-foreground"
-              />
-              <span className="grid gap-1">
-                <span className="text-sm font-semibold text-foreground">
-                  {sTexts.bulk_confirm_zero_label}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {sTexts.bulk_confirm_zero_description}
-                </span>
-              </span>
-            </label>
+            <FormCheckboxCard
+              name="confirm_zero"
+              value="true"
+              label={sTexts.bulk_confirm_zero_label}
+              description={sTexts.bulk_confirm_zero_description}
+            />
           ) : null}
           <ModalFooter
             onCancel={() => setConfirmingBulk(false)}

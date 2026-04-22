@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
 import { Button, buttonClass } from "@/components/ui/button";
+import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableActions,
@@ -20,6 +21,7 @@ import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FormBanner,
+  FormCheckboxCard,
   FormField,
   FormFieldLabel,
   FormHelpText,
@@ -146,19 +148,13 @@ export function StaffContractsTab({
 
       <div className="flex flex-wrap gap-2">
         {STATUS_FILTERS.map((f) => (
-          <button
+          <ChipButton
             key={f.value}
-            type="button"
+            active={statusFilter === f.value}
             onClick={() => setStatusFilter(f.value)}
-            aria-pressed={statusFilter === f.value}
-            className={
-              statusFilter === f.value
-                ? "inline-flex min-h-9 items-center rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background"
-                : "inline-flex min-h-9 items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary/40"
-            }
           >
             {f.label}
-          </button>
+          </ChipButton>
         ))}
       </div>
 
@@ -422,24 +418,14 @@ function CreateContractForm({
       </div>
 
       <FormField>
-        <label className="flex items-start gap-3 rounded-card border border-border bg-card px-4 py-3">
-          <input
-            type="checkbox"
-            name="uses_structure_amount"
-            value="true"
-            checked={usesStructureAmount}
-            onChange={(e) => setUsesStructureAmount(e.target.checked)}
-            className="mt-1 size-4 rounded border-border text-foreground focus:ring-foreground"
-          />
-          <span className="grid gap-1">
-            <span className="text-sm font-semibold text-foreground">
-              {scTexts.form_uses_structure_amount_label}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {scTexts.form_uses_structure_amount_description}
-            </span>
-          </span>
-        </label>
+        <FormCheckboxCard
+          name="uses_structure_amount"
+          value="true"
+          checked={usesStructureAmount}
+          onChange={setUsesStructureAmount}
+          label={scTexts.form_uses_structure_amount_label}
+          description={scTexts.form_uses_structure_amount_description}
+        />
       </FormField>
 
       {!usesStructureAmount ? (
@@ -528,24 +514,14 @@ function EditContractForm({
       </div>
 
       <FormField>
-        <label className="flex items-start gap-3 rounded-card border border-border bg-card px-4 py-3">
-          <input
-            type="checkbox"
-            name="uses_structure_amount"
-            value="true"
-            checked={usesStructureAmount}
-            onChange={(e) => setUsesStructureAmount(e.target.checked)}
-            className="mt-1 size-4 rounded border-border text-foreground focus:ring-foreground"
-          />
-          <span className="grid gap-1">
-            <span className="text-sm font-semibold text-foreground">
-              {scTexts.form_uses_structure_amount_label}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {scTexts.form_uses_structure_amount_description}
-            </span>
-          </span>
-        </label>
+        <FormCheckboxCard
+          name="uses_structure_amount"
+          value="true"
+          checked={usesStructureAmount}
+          onChange={setUsesStructureAmount}
+          label={scTexts.form_uses_structure_amount_label}
+          description={scTexts.form_uses_structure_amount_description}
+        />
       </FormField>
 
       {!usesStructureAmount ? (

@@ -7,6 +7,7 @@ import type {
   RrhhActionResult,
 } from "@/app/(dashboard)/settings/rrhh/actions";
 import { Button, buttonClass } from "@/components/ui/button";
+import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableActions,
@@ -184,25 +185,19 @@ export function SalaryStructuresTab({
 
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
-            <button
+            <ChipButton
               key={f.value}
-              type="button"
+              active={statusFilter === f.value}
               onClick={() => setStatusFilter(f.value)}
-              aria-pressed={statusFilter === f.value}
-              className={
-                statusFilter === f.value
-                  ? "inline-flex min-h-9 items-center rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background"
-                  : "inline-flex min-h-9 items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary/40"
-              }
             >
               {f.label}
-            </button>
+            </ChipButton>
           ))}
 
           <select
             value={activityFilter}
             onChange={(e) => setActivityFilter(e.target.value)}
-            className="inline-flex min-h-9 items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+            className="inline-flex items-center rounded-chip border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
           >
             <option value="all">{ssTexts.filter_activity_all}</option>
             {activeActivities.map((a) => (

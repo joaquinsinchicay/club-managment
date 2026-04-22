@@ -8,6 +8,7 @@ import Link from "next/link";
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, buttonClass } from "@/components/ui/button";
+import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableActions,
@@ -152,53 +153,40 @@ export function StaffMembersTab({
         </header>
 
         {alertsCount > 0 ? (
-          // check-primitives-ignore-next-line: migrar-a-FormBanner-en-pasada-b-rrhh (US-60 alert con CTA interno requiere layout split)
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50 px-4 py-3">
-            <span className="text-sm text-amber-900">
-              <strong>{alertsCount}</strong>{" "}
-              {alertsCount === 1
-                ? smTexts.alert_banner_singular
-                : smTexts.alert_banner_plural}
-            </span>
-            <button
-              type="button"
-              onClick={() =>
-                setAlertFilter((v) => (v === "alerts_only" ? "all" : "alerts_only"))
-              }
-              aria-pressed={alertFilter === "alerts_only"}
-              className={
-                alertFilter === "alerts_only"
-                  ? "inline-flex min-h-9 items-center rounded-full bg-amber-700 px-3 py-1.5 text-xs font-semibold text-amber-50"
-                  : "inline-flex min-h-9 items-center rounded-full border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-200"
-              }
-            >
-              {alertFilter === "alerts_only"
-                ? smTexts.alert_banner_cta_all
-                : smTexts.alert_banner_cta_only}
-            </button>
-          </div>
+          <FormBanner
+            variant="warning"
+            action={
+              <ChipButton
+                active={alertFilter === "alerts_only"}
+                onClick={() =>
+                  setAlertFilter((v) => (v === "alerts_only" ? "all" : "alerts_only"))
+                }
+              >
+                {alertFilter === "alerts_only"
+                  ? smTexts.alert_banner_cta_all
+                  : smTexts.alert_banner_cta_only}
+              </ChipButton>
+            }
+          >
+            <strong>{alertsCount}</strong>{" "}
+            {alertsCount === 1 ? smTexts.alert_banner_singular : smTexts.alert_banner_plural}
+          </FormBanner>
         ) : null}
 
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
-            <button
+            <ChipButton
               key={f.value}
-              type="button"
+              active={statusFilter === f.value}
               onClick={() => setStatusFilter(f.value)}
-              aria-pressed={statusFilter === f.value}
-              className={
-                statusFilter === f.value
-                  ? "inline-flex min-h-9 items-center rounded-full bg-foreground px-3 py-1.5 text-xs font-semibold text-background"
-                  : "inline-flex min-h-9 items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary/40"
-              }
             >
               {f.label}
-            </button>
+            </ChipButton>
           ))}
           <select
             value={vinculoFilter}
             onChange={(e) => setVinculoFilter(e.target.value as VinculoFilter)}
-            className="inline-flex min-h-9 items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+            className="inline-flex items-center rounded-chip border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
           >
             <option value="all">{smTexts.filter_vinculo_all}</option>
             {STAFF_VINCULO_TYPES.map((v) => (
