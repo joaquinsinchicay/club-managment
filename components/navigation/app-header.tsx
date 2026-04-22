@@ -10,6 +10,7 @@ import type { SessionContext } from "@/lib/auth/service";
 import {
   canAccessDashboardSummary,
   canAccessClubSettingsNavigation,
+  canAccessHrModule,
   canOperateSecretaria,
   canOperateTesoreria
 } from "@/lib/domain/authorization";
@@ -22,12 +23,13 @@ type AppHeaderProps = {
   setActiveClubAction?: (formData: FormData) => Promise<void>;
 };
 
-type TabKey = "dashboard" | "secretaria" | "tesoreria" | "settings" | "modules";
+type TabKey = "dashboard" | "secretaria" | "tesoreria" | "rrhh" | "settings" | "modules";
 
 const TAB_COLOR_CLASS: Record<TabKey, string> = {
   dashboard:  "text-ds-green-700",
   secretaria: "text-ds-green-700",
   tesoreria:  "text-ds-blue-700",
+  rrhh:       "text-ds-amber-700",
   settings:   "text-ds-indigo-700",
   modules:    "text-ds-indigo-700",
 };
@@ -36,6 +38,7 @@ const TAB_UNDERLINE_CLASS: Record<TabKey, string> = {
   dashboard:  "bg-ds-green",
   secretaria: "bg-ds-green",
   tesoreria:  "bg-ds-blue",
+  rrhh:       "bg-ds-amber",
   settings:   "bg-ds-indigo",
   modules:    "bg-ds-indigo",
 };
@@ -45,6 +48,7 @@ function getActiveTab(pathname: string): TabKey {
   if (pathname.startsWith("/modules")) return "modules";
   if (pathname.startsWith("/treasury")) return "tesoreria";
   if (pathname.startsWith("/secretary")) return "secretaria";
+  if (pathname.startsWith("/rrhh")) return "rrhh";
   return "dashboard";
 }
 
@@ -63,6 +67,7 @@ export function AppHeader({ context }: AppHeaderProps) {
   const canDashboard  = canAccessDashboardSummary(context.activeMembership);
   const canSecretaria = canOperateSecretaria(context.activeMembership);
   const canTesoreria  = canOperateTesoreria(context.activeMembership);
+  const canRrhh       = canAccessHrModule(context.activeMembership);
   const canSettings   = canAccessClubSettingsNavigation(context.activeMembership);
 
   useEffect(() => {
@@ -73,6 +78,7 @@ export function AppHeader({ context }: AppHeaderProps) {
     canDashboard  && { key: "dashboard"  as TabKey, href: "/dashboard",  label: texts.header.navigation.dashboard },
     canSecretaria && { key: "secretaria" as TabKey, href: "/secretary",  label: texts.header.navigation.secretaria },
     canTesoreria  && { key: "tesoreria"  as TabKey, href: "/treasury",   label: texts.header.navigation.tesoreria },
+    canRrhh       && { key: "rrhh"       as TabKey, href: "/rrhh",       label: texts.header.navigation.rrhh },
     canSettings   && { key: "settings"   as TabKey, href: "/settings",   label: texts.header.navigation.settings },
     { key: "modules" as TabKey, href: "/modules", label: texts.header.navigation.modules },
   ].filter(Boolean) as { key: TabKey; href: string; label: string }[];

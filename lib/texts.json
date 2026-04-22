@@ -54,6 +54,7 @@
       "dashboard": "Dashboard",
       "secretaria": "Secretaria",
       "tesoreria": "Tesoreria",
+      "rrhh": "RRHH",
       "settings": "Configuracion",
       "modules": "Módulos"
     },
@@ -868,6 +869,7 @@
         "role_placeholder": "Selecciona un rol",
         "roles": {
           "admin": "Admin",
+          "rrhh": "RRHH",
           "secretaria": "Secretaria",
           "tesoreria": "Tesoreria"
         },
@@ -1140,5 +1142,12 @@
   "modules": {
     "eyebrow": "Plan y módulos",
     "title": "Módulos"
+  },
+  "rrhh": {
+    "page_title": "RRHH",
+    "page_description": "Modulo de recursos humanos del club. Administra estructuras salariales, colaboradores, contratos, liquidaciones y pagos de nomina.",
+    "placeholder_title": "Modulo RRHH en construccion",
+    "placeholder_description": "Estamos preparando el modulo de RRHH. Muy pronto vas a poder administrar estructuras salariales, colaboradores, contratos, liquidaciones y pagos desde aca.",
+    "placeholder_available_soon": "Disponible proximamente"
   }
 }

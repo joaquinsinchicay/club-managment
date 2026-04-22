@@ -1,7 +1,7 @@
 import type { Membership, MembershipRole } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 
-export const MEMBERSHIP_ROLES: MembershipRole[] = ["admin", "secretaria", "tesoreria"];
+export const MEMBERSHIP_ROLES: MembershipRole[] = ["admin", "rrhh", "secretaria", "tesoreria"];
 
 export function sortMembershipRoles(roles: MembershipRole[]) {
   const seen = new Set<MembershipRole>();

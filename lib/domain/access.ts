@@ -1,4 +1,4 @@
-export type MembershipRole = "admin" | "secretaria" | "tesoreria";
+export type MembershipRole = "admin" | "secretaria" | "tesoreria" | "rrhh";
 export type MembershipStatus = "pendiente_aprobacion" | "activo" | "inactivo";
 
 export type User = {

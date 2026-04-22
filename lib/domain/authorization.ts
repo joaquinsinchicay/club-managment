@@ -93,3 +93,46 @@ export function canAccessCostCenters(membership: MembershipLike) {
 export function canMutateCostCenters(membership: MembershipLike) {
   return canAccessCostCenters(membership);
 }
+
+/**
+ * HR module (E04 · US-54 a US-69).
+ *
+ * - `admin` y `rrhh` administran maestros (Estructuras Salariales,
+ *   Colaboradores, Contratos) y operan liquidaciones, pagos, dashboard y
+ *   reportes.
+ * - `tesoreria` co-opera liquidaciones, pagos y reportes pero no administra
+ *   maestros (acceso read-only en fichas relevantes).
+ */
+export function canAccessHrModule(membership: MembershipLike) {
+  const active = getActiveMembership(membership);
+  if (!active) return false;
+  return (
+    hasMembershipRole(active, "admin") ||
+    hasMembershipRole(active, "rrhh") ||
+    hasMembershipRole(active, "tesoreria")
+  );
+}
+
+export function canAccessHrMasters(membership: MembershipLike) {
+  const active = getActiveMembership(membership);
+  if (!active) return false;
+  return hasMembershipRole(active, "admin") || hasMembershipRole(active, "rrhh");
+}
+
+export function canMutateHrMasters(membership: MembershipLike) {
+  return canAccessHrMasters(membership);
+}
+
+export function canOperateHrSettlements(membership: MembershipLike) {
+  const active = getActiveMembership(membership);
+  if (!active) return false;
+  return (
+    hasMembershipRole(active, "admin") ||
+    hasMembershipRole(active, "rrhh") ||
+    hasMembershipRole(active, "tesoreria")
+  );
+}
+
+export function canOperateHrPayments(membership: MembershipLike) {
+  return canOperateHrSettlements(membership);
+}
