@@ -434,16 +434,15 @@ export function ClubTreasurySettingsManager({
         title={texts.settings.club.treasury.accounts_title}
         description={texts.settings.club.treasury.accounts_description}
         action={
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => {
               setIsCreatingAccount((current) => !current);
               setEditingAccountId(null);
             }}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {texts.settings.club.treasury.create_account_cta}
-          </button>
+          </Button>
         }
       >
         {isCreatingAccount ? (
@@ -489,15 +488,14 @@ export function ClubTreasurySettingsManager({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
                     onClick={() =>
                       setEditingAccountId((current) => (current === account.id ? null : account.id))
                     }
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
                   >
                     {texts.settings.club.treasury.edit_account_cta}
-                  </button>
+                  </Button>
                 </div>
 
                 {editingAccountId === account.id ? (
@@ -558,16 +556,15 @@ export function ClubTreasurySettingsManager({
         title={texts.settings.club.treasury.categories_title}
         description={texts.settings.club.treasury.categories_description}
         action={
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => {
               setIsCreatingCategory((current) => !current);
               setEditingCategoryId(null);
             }}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {texts.settings.club.treasury.create_category_cta}
-          </button>
+          </Button>
         }
       >
         {isCreatingCategory ? (
@@ -614,15 +611,14 @@ export function ClubTreasurySettingsManager({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
                     onClick={() =>
                       setEditingCategoryId((current) => (current === category.id ? null : category.id))
                     }
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
                   >
                     {texts.settings.club.treasury.edit_category_cta}
-                  </button>
+                  </Button>
                 </div>
 
                 {editingCategoryId === category.id ? (
@@ -645,16 +641,15 @@ export function ClubTreasurySettingsManager({
         title={texts.settings.club.treasury.activities_title}
         description={texts.settings.club.treasury.activities_description}
         action={
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => {
               setIsCreatingActivity((current) => !current);
               setEditingActivityId(null);
             }}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
           >
             {texts.settings.club.treasury.create_activity_cta}
-          </button>
+          </Button>
         }
       >
         {isCreatingActivity ? (
@@ -701,15 +696,14 @@ export function ClubTreasurySettingsManager({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
                     onClick={() =>
                       setEditingActivityId((current) => (current === activity.id ? null : activity.id))
                     }
-                    className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
                   >
                     {texts.settings.club.treasury.edit_activity_cta}
-                  </button>
+                  </Button>
                 </div>
 
                 {editingActivityId === activity.id ? (
@@ -734,33 +728,27 @@ export function ClubTreasurySettingsManager({
       >
         <div className="grid gap-4 rounded-shell border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.receipt_name_label}</span>
-              <div className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.treasury.receipt_name_label}</FormFieldLabel>
+              <FormReadonly>
                 {receiptFormat?.name ?? texts.settings.club.treasury.empty_receipt_formats}
-              </div>
-            </div>
+              </FormReadonly>
+            </FormField>
 
-            <div className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.receipt_example_label}</span>
-              <div className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
-                {receiptFormat?.example ?? DEFAULT_RECEIPT_EXAMPLE}
-              </div>
-            </div>
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.treasury.receipt_example_label}</FormFieldLabel>
+              <FormReadonly>{receiptFormat?.example ?? DEFAULT_RECEIPT_EXAMPLE}</FormReadonly>
+            </FormField>
 
-            <div className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.receipt_pattern_label}</span>
-              <div className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
-                {receiptFormat?.pattern ?? DEFAULT_RECEIPT_PATTERN}
-              </div>
-            </div>
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.treasury.receipt_pattern_label}</FormFieldLabel>
+              <FormReadonly>{receiptFormat?.pattern ?? DEFAULT_RECEIPT_PATTERN}</FormReadonly>
+            </FormField>
 
-            <div className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.receipt_min_label}</span>
-              <div className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground">
-                {DEFAULT_RECEIPT_MIN_LABEL}
-              </div>
-            </div>
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.treasury.receipt_min_label}</FormFieldLabel>
+              <FormReadonly>{DEFAULT_RECEIPT_MIN_LABEL}</FormReadonly>
+            </FormField>
           </div>
 
           <p className="text-xs leading-5 text-muted-foreground">
