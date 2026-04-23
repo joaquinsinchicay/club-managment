@@ -6,7 +6,12 @@ import { useRouter } from "next/navigation";
 import type {
   RrhhActionResult,
 } from "@/app/(dashboard)/settings/rrhh/actions";
-import { Button, buttonClass } from "@/components/ui/button";
+import {
+  formatLocalizedAmountInputOnBlur,
+  formatLocalizedAmountInputOnFocus,
+  sanitizeLocalizedAmountInput,
+} from "@/lib/amounts";
+import { buttonClass } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
@@ -19,7 +24,6 @@ import {
   DataTableHeader,
   DataTableRow,
 } from "@/components/ui/data-table";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
@@ -32,9 +36,9 @@ import {
   FormSelect,
 } from "@/components/ui/modal-form";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { SettingsTabShell } from "@/components/settings/settings-tab-shell";
 import type { ClubActivity } from "@/lib/domain/access";
 import {
+  FUNCTIONAL_ROLES,
   SALARY_REMUNERATION_TYPES,
   type SalaryRemunerationType,
   type SalaryStructure,
@@ -112,6 +116,17 @@ export function SalaryStructuresTab({
     [activities],
   );
 
+  const countsByStatus = useMemo(() => {
+    const out = new Map<SalaryStructureStatus, number>();
+    for (const s of structures) {
+      out.set(s.status, (out.get(s.status) ?? 0) + 1);
+    }
+    return out;
+  }, [structures]);
+
+  const activeCount = countsByStatus.get("activa") ?? 0;
+  const inactiveCount = countsByStatus.get("inactiva") ?? 0;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return structures.filter((s) => {
@@ -171,30 +186,55 @@ export function SalaryStructuresTab({
   }
 
   return (
-    <SettingsTabShell
-      searchPlaceholder={ssTexts.search_placeholder}
-      searchValue={search}
-      onSearch={setSearch}
-      ctaLabel={canMutate ? ssTexts.create_cta : undefined}
-      onCta={canMutate ? () => setCreateOpen(true) : undefined}
-    >
-      <section className="grid gap-3">
-        <header className="grid gap-1">
-          <h2 className="text-lg font-semibold text-foreground">{ssTexts.section_title}</h2>
-          <p className="text-sm text-muted-foreground">{ssTexts.section_description}</p>
-        </header>
+    <div className="flex flex-col gap-4">
+      <header className="flex flex-col gap-1">
+        <h2 className="text-h2 font-bold text-foreground">{ssTexts.section_title}</h2>
+        <p className="text-sm text-muted-foreground">{ssTexts.section_description}</p>
+      </header>
 
-        <div className="flex flex-wrap gap-2">
-          {STATUS_FILTERS.map((f) => (
-            <ChipButton
-              key={f.value}
-              active={statusFilter === f.value}
-              onClick={() => setStatusFilter(f.value)}
-            >
-              {f.label}
-            </ChipButton>
-          ))}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          {ssTexts.subtitle_counts
+            .replace("{active}", String(activeCount))
+            .replace("{inactive}", String(inactiveCount))}
+        </p>
+        {canMutate ? (
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className={buttonClass({ variant: "primary", size: "sm" })}
+          >
+            {ssTexts.create_cta}
+          </button>
+        ) : null}
+      </div>
 
+      <div className="rounded-card border border-border bg-card px-4 py-3">
+        <input
+          type="search"
+          placeholder={ssTexts.search_placeholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
+        />
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {STATUS_FILTERS.map((f) => {
+            const count =
+              f.value === "all"
+                ? structures.length
+                : countsByStatus.get(f.value as SalaryStructureStatus) ?? 0;
+            return (
+              <ChipButton
+                key={f.value}
+                active={statusFilter === f.value}
+                onClick={() => setStatusFilter(f.value)}
+              >
+                {f.label} · {count}
+              </ChipButton>
+            );
+          })}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. Usa tokens canonicos rounded-chip + estilo inactive de ChipButton. */}
           <select
             value={activityFilter}
@@ -209,105 +249,102 @@ export function SalaryStructuresTab({
             ))}
           </select>
         </div>
+      </div>
 
-        {filtered.length === 0 ? (
-          structures.length === 0 ? (
-            <EmptyState
-              variant="dashed"
-              title={ssTexts.empty_title}
-              description={ssTexts.empty_description}
-              action={
-                canMutate ? (
-                  <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                    {ssTexts.empty_cta}
-                  </Button>
-                ) : undefined
-              }
-            />
-          ) : (
-            <EmptyState
-              variant="dashed"
-              title={ssTexts.empty_filter_title}
-              description={ssTexts.empty_filter_description}
-            />
-          )
-        ) : (
-          <DataTable
-            density="comfortable"
-            gridColumns="minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) 120px 150px 120px 160px 44px"
-          >
-            <DataTableHeader>
-              <DataTableHeadCell>{ssTexts.col_name}</DataTableHeadCell>
-              <DataTableHeadCell>{ssTexts.col_role}</DataTableHeadCell>
-              <DataTableHeadCell>{ssTexts.col_activity}</DataTableHeadCell>
-              <DataTableHeadCell>{ssTexts.col_type}</DataTableHeadCell>
-              <DataTableHeadCell align="right">{ssTexts.col_amount}</DataTableHeadCell>
-              <DataTableHeadCell>{ssTexts.col_status}</DataTableHeadCell>
-              <DataTableHeadCell>{ssTexts.col_contract}</DataTableHeadCell>
-              <DataTableHeadCell />
-            </DataTableHeader>
+      {filtered.length === 0 ? (
+        <DataTableEmpty
+          title={structures.length === 0 ? ssTexts.empty_title : ssTexts.empty_filter_title}
+          description={
+            structures.length === 0 ? ssTexts.empty_description : ssTexts.empty_filter_description
+          }
+          action={
+            canMutate && structures.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className={buttonClass({ variant: "primary", size: "sm" })}
+              >
+                {ssTexts.create_full_cta}
+              </button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <DataTable
+          density="comfortable"
+          gridColumns="minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) 120px 150px 120px 160px 44px"
+        >
+          <DataTableHeader>
+            <DataTableHeadCell>{ssTexts.col_name}</DataTableHeadCell>
+            <DataTableHeadCell>{ssTexts.col_role}</DataTableHeadCell>
+            <DataTableHeadCell>{ssTexts.col_activity}</DataTableHeadCell>
+            <DataTableHeadCell>{ssTexts.col_type}</DataTableHeadCell>
+            <DataTableHeadCell align="right">{ssTexts.col_amount}</DataTableHeadCell>
+            <DataTableHeadCell>{ssTexts.col_status}</DataTableHeadCell>
+            <DataTableHeadCell>{ssTexts.col_contract}</DataTableHeadCell>
+            <DataTableHeadCell />
+          </DataTableHeader>
 
-            <DataTableBody>
-              {filtered.map((s) => (
-                <DataTableRow key={s.id} density="comfortable" hoverReveal>
-                  <DataTableCell>
-                    <span className="font-medium text-foreground">{s.name}</span>
-                  </DataTableCell>
-                  <DataTableCell>{s.functionalRole}</DataTableCell>
-                  <DataTableCell>{s.activityName ?? "—"}</DataTableCell>
-                  <DataTableCell>
-                    <DataTableChip tone="neutral">
-                      {ssTexts.remuneration_type_options[s.remunerationType]}
-                    </DataTableChip>
-                  </DataTableCell>
-                  <DataTableCell align="right">
-                    <span className="font-semibold text-foreground">
-                      {formatAmount(s.currentAmount, clubCurrencyCode)}
+          <DataTableBody>
+            {filtered.map((s) => (
+              <DataTableRow key={s.id} density="comfortable" hoverReveal>
+                <DataTableCell>
+                  <span className="font-medium text-foreground">{s.name}</span>
+                </DataTableCell>
+                <DataTableCell>{s.functionalRole}</DataTableCell>
+                <DataTableCell>{s.activityName ?? "—"}</DataTableCell>
+                <DataTableCell>
+                  <DataTableChip tone="neutral">
+                    {ssTexts.remuneration_type_options[s.remunerationType]}
+                  </DataTableChip>
+                </DataTableCell>
+                <DataTableCell align="right">
+                  <span className="font-semibold text-foreground">
+                    {formatAmount(s.currentAmount, clubCurrencyCode)}
+                  </span>
+                </DataTableCell>
+                <DataTableCell>
+                  <StatusBadge
+                    tone={s.status === "activa" ? "success" : "neutral"}
+                    label={ssTexts.status_options[s.status]}
+                  />
+                </DataTableCell>
+                <DataTableCell>
+                  {s.hasActiveContract ? (
+                    <span className="text-xs text-foreground">
+                      {s.activeContractStaffName ?? ssTexts.contract_assigned_generic}
                     </span>
-                  </DataTableCell>
-                  <DataTableCell>
-                    <StatusBadge
-                      tone={s.status === "activa" ? "success" : "neutral"}
-                      label={ssTexts.status_options[s.status]}
-                    />
-                  </DataTableCell>
-                  <DataTableCell>
-                    {s.hasActiveContract ? (
-                      <span className="text-xs text-foreground">
-                        {s.activeContractStaffName ?? ssTexts.contract_assigned_generic}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        {ssTexts.contract_vacant}
-                      </span>
-                    )}
-                  </DataTableCell>
-                  <DataTableCell align="right">
-                    {canMutate ? (
-                      <DataTableActions>
-                        <button
-                          type="button"
-                          onClick={() => setUpdatingAmount(s)}
-                          className={buttonClass({ variant: "secondary", size: "sm" })}
-                        >
-                          {ssTexts.action_update_amount}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditing(s)}
-                          className={buttonClass({ variant: "secondary", size: "sm" })}
-                        >
-                          {ssTexts.action_edit}
-                        </button>
-                      </DataTableActions>
-                    ) : null}
-                  </DataTableCell>
-                </DataTableRow>
-              ))}
-            </DataTableBody>
-          </DataTable>
-        )}
-      </section>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      {ssTexts.contract_vacant}
+                    </span>
+                  )}
+                </DataTableCell>
+                <DataTableCell align="right">
+                  {canMutate ? (
+                    <DataTableActions>
+                      <button
+                        type="button"
+                        onClick={() => setUpdatingAmount(s)}
+                        className={buttonClass({ variant: "secondary", size: "sm" })}
+                      >
+                        {ssTexts.action_update_amount}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditing(s)}
+                        className={buttonClass({ variant: "secondary", size: "sm" })}
+                      >
+                        {ssTexts.action_edit}
+                      </button>
+                    </DataTableActions>
+                  ) : null}
+                </DataTableCell>
+              </DataTableRow>
+            ))}
+          </DataTableBody>
+        </DataTable>
+      )}
 
       {/* Create modal */}
       <Modal
@@ -322,7 +359,6 @@ export function SalaryStructuresTab({
           <StructureFormFields
             activities={activeActivities}
             mode="create"
-            clubCurrencyCode={clubCurrencyCode}
           />
           <ModalFooter
             onCancel={() => setCreateOpen(false)}
@@ -349,7 +385,6 @@ export function SalaryStructuresTab({
               mode="edit"
               activities={activeActivities}
               structure={editing}
-              clubCurrencyCode={clubCurrencyCode}
             />
             <ModalFooter
               onCancel={() => setEditing(null)}
@@ -371,56 +406,85 @@ export function SalaryStructuresTab({
         closeDisabled={amountPending}
       >
         {updatingAmount ? (
-          <form action={handleAmountSubmit} className="grid gap-4">
-            <input type="hidden" name="salary_structure_id" value={updatingAmount.id} />
-
-            <FormField>
-              <FormFieldLabel>{ssTexts.amount_current_label}</FormFieldLabel>
-              <FormReadonly>
-                {formatAmount(updatingAmount.currentAmount, clubCurrencyCode)}
-              </FormReadonly>
-            </FormField>
-
-            <FormField>
-              <FormFieldLabel required>{ssTexts.amount_new_label}</FormFieldLabel>
-              <FormInput
-                type="number"
-                name="amount"
-                inputMode="decimal"
-                min="0.01"
-                step="0.01"
-                placeholder={ssTexts.amount_new_placeholder}
-                required
-              />
-              <FormHelpText>{ssTexts.amount_new_helper}</FormHelpText>
-            </FormField>
-
-            <FormField>
-              <FormFieldLabel required>{ssTexts.effective_date_label}</FormFieldLabel>
-              <FormInput
-                type="date"
-                name="effective_date"
-                defaultValue={todayIso()}
-                required
-              />
-              <FormHelpText>{ssTexts.effective_date_helper}</FormHelpText>
-            </FormField>
-
-            <AmountHistory
-              versions={versionsByStructureId[updatingAmount.id] ?? []}
-              currencyCode={clubCurrencyCode}
-            />
-
-            <ModalFooter
-              onCancel={() => setUpdatingAmount(null)}
-              cancelLabel={ssTexts.cancel_cta}
-              submitLabel={ssTexts.amount_submit_cta}
-              pendingLabel={ssTexts.submit_pending}
-            />
-          </form>
+          <UpdateAmountForm
+            structure={updatingAmount}
+            versions={versionsByStructureId[updatingAmount.id] ?? []}
+            currencyCode={clubCurrencyCode}
+            onSubmit={handleAmountSubmit}
+            onCancel={() => setUpdatingAmount(null)}
+          />
         ) : null}
       </Modal>
-    </SettingsTabShell>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Update amount sub-form
+ * ────────────────────────────────────────────────────────────────────────── */
+
+type UpdateAmountFormProps = {
+  structure: SalaryStructure;
+  versions: SalaryStructureVersion[];
+  currencyCode: string;
+  onSubmit: (formData: FormData) => Promise<void>;
+  onCancel: () => void;
+};
+
+function UpdateAmountForm({
+  structure,
+  versions,
+  currencyCode,
+  onSubmit,
+  onCancel,
+}: UpdateAmountFormProps) {
+  const [amountInput, setAmountInput] = useState("");
+
+  return (
+    <form action={onSubmit} className="grid gap-4">
+      <input type="hidden" name="salary_structure_id" value={structure.id} />
+
+      <FormField>
+        <FormFieldLabel>{ssTexts.amount_current_label}</FormFieldLabel>
+        <FormReadonly>{formatAmount(structure.currentAmount, currencyCode)}</FormReadonly>
+      </FormField>
+
+      <FormField>
+        <FormFieldLabel required>{ssTexts.amount_new_label}</FormFieldLabel>
+        <FormInput
+          type="text"
+          name="amount"
+          inputMode="decimal"
+          required
+          value={amountInput}
+          onChange={(e) => setAmountInput(sanitizeLocalizedAmountInput(e.target.value))}
+          onBlur={(e) => setAmountInput(formatLocalizedAmountInputOnBlur(e.target.value))}
+          onFocus={(e) => setAmountInput(formatLocalizedAmountInputOnFocus(e.target.value))}
+          onKeyDown={(e) => {
+            if (e.key === "-") e.preventDefault();
+          }}
+          placeholder={ssTexts.amount_new_placeholder}
+          className="tabular-nums"
+        />
+        <FormHelpText>{ssTexts.amount_new_helper}</FormHelpText>
+      </FormField>
+
+      <FormField>
+        <FormFieldLabel required>{ssTexts.effective_date_label}</FormFieldLabel>
+        <FormInput type="date" name="effective_date" defaultValue={todayIso()} required />
+        <FormHelpText>{ssTexts.effective_date_helper}</FormHelpText>
+      </FormField>
+
+      <AmountHistory versions={versions} currencyCode={currencyCode} />
+
+      <ModalFooter
+        onCancel={onCancel}
+        cancelLabel={ssTexts.cancel_cta}
+        submitLabel={ssTexts.amount_submit_cta}
+        pendingLabel={ssTexts.submit_pending}
+        submitDisabled={amountInput.trim().length === 0}
+      />
+    </form>
   );
 }
 
@@ -432,14 +496,12 @@ type StructureFormFieldsProps = {
   mode: "create" | "edit";
   activities: ClubActivity[];
   structure?: SalaryStructure;
-  clubCurrencyCode: string;
 };
 
 function StructureFormFields({
   mode,
   activities,
   structure,
-  clubCurrencyCode,
 }: StructureFormFieldsProps) {
   const isEdit = mode === "edit";
 
@@ -464,14 +526,16 @@ function StructureFormFields({
           {isEdit ? (
             <FormReadonly>{structure?.functionalRole}</FormReadonly>
           ) : (
-            <FormInput
-              type="text"
-              name="functional_role"
-              placeholder={ssTexts.form_role_placeholder}
-              minLength={2}
-              maxLength={120}
-              required
-            />
+            <FormSelect name="functional_role" defaultValue="" required>
+              <option value="" disabled>
+                {ssTexts.form_role_placeholder}
+              </option>
+              {FUNCTIONAL_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </FormSelect>
           )}
           {isEdit ? (
             <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
@@ -546,25 +610,7 @@ function StructureFormFields({
           <FormHelpText>{ssTexts.form_status_helper}</FormHelpText>
         </FormField>
       ) : (
-        <>
-          <FormField>
-            <FormFieldLabel required>{ssTexts.form_initial_amount_label}</FormFieldLabel>
-            <FormInput
-              type="number"
-              name="initial_amount"
-              inputMode="decimal"
-              min="0.01"
-              step="0.01"
-              placeholder={ssTexts.form_initial_amount_placeholder}
-              required
-            />
-            <FormHelpText>
-              {ssTexts.form_initial_amount_helper.replace("{currency}", clubCurrencyCode)}
-            </FormHelpText>
-          </FormField>
-
-          <input type="hidden" name="status" value="activa" />
-        </>
+        <input type="hidden" name="status" value="activa" />
       )}
     </>
   );

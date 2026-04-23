@@ -44,6 +44,8 @@ function toFeedbackCode(code: SalaryStructureActionCode): string {
       return "salary_structure_name_required";
     case "role_required":
       return "salary_structure_role_required";
+    case "invalid_functional_role":
+      return "salary_structure_invalid_functional_role";
     case "activity_required":
       return "salary_structure_activity_required";
     case "remuneration_type_required":
@@ -52,7 +54,7 @@ function toFeedbackCode(code: SalaryStructureActionCode): string {
       return "salary_structure_invalid_remuneration_type";
     case "invalid_status":
       return "salary_structure_invalid_status";
-    case "initial_amount_required":
+    case "amount_required":
       return "salary_structure_amount_required";
     case "amount_must_be_positive":
       return "salary_structure_amount_must_be_positive";
@@ -93,7 +95,6 @@ function rawCreateFromFormData(formData: FormData) {
     remunerationType: read("remuneration_type"),
     workloadHours: read("workload_hours"),
     status: read("status"),
-    initialAmount: read("initial_amount"),
   };
 }
 

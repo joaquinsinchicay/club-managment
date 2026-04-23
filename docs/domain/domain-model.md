@@ -653,22 +653,26 @@ vinculado esté `cancelled` (US-66).
 
 Los maestros RRHH **no viven en `/settings`** (decisión arquitectural
 Fase 8 · Refinación IA). El Coordinador (`rrhh`) administra todo desde
-el módulo dedicado `/rrhh`, con sub-navegación horizontal de 4 pestañas:
+el módulo dedicado `/rrhh`, con sub-navegación horizontal de 4 pestañas.
+**Todo el árbol `/rrhh/*` exige rol `rrhh` exclusivo** — ningún otro rol
+(incluido `admin`, `tesoreria`, `secretaria`) lo ve en la nav ni puede
+invocar sus endpoints. Los guards están centralizados en
+`lib/domain/authorization.ts` y todos delegan en `canAccessHrModule`.
 
 | Ruta | Pestaña | Guard | Contenido |
 |---|---|---|---|
-| `/rrhh` | Resumen | `canAccessHrModule` | Dashboard con 6 cards operativas (US-68) |
-| `/rrhh/contracts` | Contratos | `canAccessHrMasters` | CRUD de contratos + finalizar (US-57/58) |
-| `/rrhh/staff` | Colaboradores | `canAccessHrMasters` | CRUD de colaboradores + alerta sin contratos (US-56/60) |
-| `/rrhh/structures` | Estructuras | `canAccessHrMasters` | CRUD de estructuras salariales + versionado (US-54/55) |
+| `/rrhh` | Resumen | `canAccessHrModule` (rrhh only) | Dashboard con 6 cards operativas (US-68) |
+| `/rrhh/contracts` | Contratos | `canAccessHrMasters` (rrhh only) | CRUD de contratos + finalizar (US-57/58) |
+| `/rrhh/staff` | Colaboradores | `canAccessHrMasters` (rrhh only) | CRUD de colaboradores + alerta sin contratos (US-56/60) |
+| `/rrhh/structures` | Estructuras | `canAccessHrMasters` (rrhh only) | CRUD de estructuras salariales + versionado (US-54/55) |
 
 Rutas operativas fuera de la sub-nav principal:
 
 | Ruta | Guard | Contenido |
 |---|---|---|
-| `/rrhh/settlements` | `canOperateHrSettlements` | Listado de liquidaciones + pagos (US-61..66) |
-| `/rrhh/reports` | `canAccessHrModule` | Reportes con export CSV (US-69) |
-| `/rrhh/staff/[id]` | `canAccessHrModule` | Ficha consolidada del colaborador (US-67) |
+| `/rrhh/settlements` | `canOperateHrSettlements` (rrhh only) | Listado de liquidaciones + pagos (US-61..66) |
+| `/rrhh/reports` | `canAccessHrModule` (rrhh only) | Reportes con export CSV (US-69) |
+| `/rrhh/staff/[id]` | `canAccessHrModule` (rrhh only) | Ficha consolidada del colaborador (US-67) |
 
 ### Reglas transversales adicionales
 

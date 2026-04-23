@@ -97,26 +97,20 @@ export function canMutateCostCenters(membership: MembershipLike) {
 /**
  * HR module (E04 · US-54 a US-69).
  *
- * - `admin` y `rrhh` administran maestros (Estructuras Salariales,
- *   Colaboradores, Contratos) y operan liquidaciones, pagos, dashboard y
- *   reportes.
- * - `tesoreria` co-opera liquidaciones, pagos y reportes pero no administra
- *   maestros (acceso read-only en fichas relevantes).
+ * Acceso restringido exclusivamente al rol `rrhh`. Ningún otro rol (incluido
+ * `admin` y `tesoreria`) ve el módulo en la nav ni puede invocar sus
+ * endpoints. Si más adelante el negocio necesita co-operación parcial desde
+ * tesorería, agregar un rol combinado o flag explícito — no ampliar estos
+ * guards.
  */
 export function canAccessHrModule(membership: MembershipLike) {
   const active = getActiveMembership(membership);
   if (!active) return false;
-  return (
-    hasMembershipRole(active, "admin") ||
-    hasMembershipRole(active, "rrhh") ||
-    hasMembershipRole(active, "tesoreria")
-  );
+  return hasMembershipRole(active, "rrhh");
 }
 
 export function canAccessHrMasters(membership: MembershipLike) {
-  const active = getActiveMembership(membership);
-  if (!active) return false;
-  return hasMembershipRole(active, "admin") || hasMembershipRole(active, "rrhh");
+  return canAccessHrModule(membership);
 }
 
 export function canMutateHrMasters(membership: MembershipLike) {
@@ -124,13 +118,7 @@ export function canMutateHrMasters(membership: MembershipLike) {
 }
 
 export function canOperateHrSettlements(membership: MembershipLike) {
-  const active = getActiveMembership(membership);
-  if (!active) return false;
-  return (
-    hasMembershipRole(active, "admin") ||
-    hasMembershipRole(active, "rrhh") ||
-    hasMembershipRole(active, "tesoreria")
-  );
+  return canAccessHrModule(membership);
 }
 
 export function canOperateHrPayments(membership: MembershipLike) {

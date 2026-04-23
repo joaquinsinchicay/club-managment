@@ -22,6 +22,44 @@ export type SalaryRemunerationType = (typeof SALARY_REMUNERATION_TYPES)[number];
 export const SALARY_STRUCTURE_STATUSES = ["activa", "inactiva"] as const;
 export type SalaryStructureStatus = (typeof SALARY_STRUCTURE_STATUSES)[number];
 
+/**
+ * Catalogo cerrado de roles funcionales. La UI renderiza este listado como
+ * un select y el service valida que `functional_role` sea uno de estos
+ * valores antes de persistir. Cambiar este listado requiere coordinar con
+ * reports/liquidaciones que proyectan la columna `functional_role`.
+ */
+export const FUNCTIONAL_ROLES = [
+  "Abogado",
+  "Administrativo",
+  "Analista de Vídeo",
+  "Ayudante de Campo",
+  "Ayudante de Preparador Físico",
+  "Contador",
+  "Coordinador",
+  "Delegado",
+  "Director Técnico",
+  "Entrenador de Arqueros",
+  "Intendente",
+  "Jugador",
+  "Kinesiólogo",
+  "Médico",
+  "Nutricionista",
+  "Personal de Limpieza",
+  "Prensa",
+  "Preparador Físico",
+  "Profesor",
+  "Psicólogo Deportivo",
+  "Sereno / Seguridad",
+  "Utilero",
+] as const;
+export type FunctionalRole = (typeof FUNCTIONAL_ROLES)[number];
+
+export function isFunctionalRole(value: unknown): value is FunctionalRole {
+  return (
+    typeof value === "string" && (FUNCTIONAL_ROLES as readonly string[]).includes(value)
+  );
+}
+
 export type SalaryStructure = {
   id: string;
   clubId: string;

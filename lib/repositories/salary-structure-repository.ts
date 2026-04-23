@@ -189,7 +189,6 @@ export type CreateSalaryStructureInput = {
   remunerationType: SalaryRemunerationType;
   workloadHours: number | null;
   status: SalaryStructureStatus;
-  initialAmount: number;
   createdByUserId: string;
 };
 
@@ -420,27 +419,9 @@ export const salaryStructureRepository = {
 
     const structureRow = structureData as StructureRow;
 
-    // 2. Open the first version with `start_date = today, end_date = null`.
-    const { error: versionErr } = await supabase
-      .from("salary_structure_versions")
-      .insert({
-        salary_structure_id: structureRow.id,
-        amount: input.initialAmount,
-        start_date: new Date().toISOString().slice(0, 10),
-        end_date: null,
-        created_by_user_id: input.createdByUserId,
-      });
-
-    if (versionErr) {
-      // Best-effort cleanup of the orphan structure so we don't leave
-      // inconsistent state when the version insert fails.
-      await supabase.from("salary_structures").delete().eq("id", structureRow.id);
-      return throwWriteFailure(
-        "create_salary_structure.version",
-        { clubId: input.clubId, structureId: structureRow.id },
-        versionErr,
-      );
-    }
+    // La estructura se crea sin versión de sueldo. El sueldo vigente se
+    // gestiona aparte via `updateCurrentAmount()` ("Actualizar monto"),
+    // que abre la primera version cuando el Coordinador lo define.
 
     // Re-read enriched so we include current_amount and activity name.
     const created = await this.getById(input.clubId, structureRow.id);

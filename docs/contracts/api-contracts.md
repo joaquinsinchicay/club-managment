@@ -1692,13 +1692,13 @@ handler `POST /api/rrhh/reports/export`.
 
 | Ruta | Guard | Entidades renderizadas |
 |---|---|---|
-| `/rrhh` | `canAccessHrModule` (admin, rrhh, tesoreria) | Dashboard (6 cards operativas, US-68) |
-| `/rrhh/contracts` | `canAccessHrMasters` (admin, rrhh) | `staff_contracts` + forms alta/edición/finalización |
-| `/rrhh/staff` | `canAccessHrMasters` (admin, rrhh) | `staff_members` + forms + alerta US-60 |
-| `/rrhh/structures` | `canAccessHrMasters` (admin, rrhh) | `salary_structures` + versionado US-55 |
-| `/rrhh/settlements` | `canOperateHrSettlements` (admin, rrhh, tesoreria) | `payroll_settlements` + adjustments + pagos |
-| `/rrhh/reports` | `canAccessHrModule` | Reportes con export CSV |
-| `/rrhh/staff/[id]` | `canAccessHrModule` | Ficha consolidada (US-67) |
-| `/api/rrhh/reports/export` | `canAccessHrModule` (server-side) | POST que retorna CSV con `Content-Disposition` |
+| `/rrhh` | `canAccessHrModule` (rrhh only) | Dashboard (6 cards operativas, US-68) |
+| `/rrhh/contracts` | `canAccessHrMasters` (rrhh only) | `staff_contracts` + forms alta/edición/finalización |
+| `/rrhh/staff` | `canAccessHrMasters` (rrhh only) | `staff_members` + forms + alerta US-60 |
+| `/rrhh/structures` | `canAccessHrMasters` (rrhh only) | `salary_structures` + versionado US-55. **Sin sueldo inicial**: la estructura se crea y el sueldo se define despues via "Actualizar monto" (primera version abierta por la RPC `hr_update_salary_structure_amount`). `functional_role` es un catalogo cerrado (ver `FUNCTIONAL_ROLES` en `lib/domain/salary-structure.ts`). |
+| `/rrhh/settlements` | `canOperateHrSettlements` (rrhh only) | `payroll_settlements` + adjustments + pagos |
+| `/rrhh/reports` | `canAccessHrModule` (rrhh only) | Reportes con export CSV |
+| `/rrhh/staff/[id]` | `canAccessHrModule` (rrhh only) | Ficha consolidada (US-67) |
+| `/api/rrhh/reports/export` | `canAccessHrModule` (server-side, rrhh only) | POST que retorna CSV con `Content-Disposition` |
 
-Los maestros (`structures`, `staff`, `contracts`) **no viven bajo `/settings`**: son parte del módulo RRHH operativo, no de Configuración del club. El rol `rrhh` accede sin requerir `admin`.
+Los maestros (`structures`, `staff`, `contracts`) **no viven bajo `/settings`**: son parte del módulo RRHH operativo. **El acceso al módulo RRHH está restringido al rol `rrhh` exclusivo**: ni `admin` ni `tesoreria` ni `secretaria` ven el tab ni pueden invocar endpoints del módulo. Si se requiere co-operación parcial, sumar un rol combinado en el membership — no ampliar los guards.

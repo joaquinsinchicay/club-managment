@@ -36,7 +36,7 @@ Si hay conflicto:
 ## 📍 Ubicación canónica de módulos
 
 - **Configuración (`/settings`)**: ajustes del club (datos, categorías, actividades, usuarios, sistema de socios, etc.). Solo accede el rol `admin`.
-- **Módulo RRHH (`/rrhh`)**: todo lo del bounded context RRHH (Resumen, Contratos, Colaboradores, Estructuras, Liquidaciones, Reportes, Fichas). Accede `admin`, `rrhh` y — con guards más permisivos — `tesoreria`. **Los maestros (Estructuras, Colaboradores, Contratos) NO viven en `/settings`** — el Coordinador de RRHH los administra directamente desde el módulo.
+- **Módulo RRHH (`/rrhh`)**: todo lo del bounded context RRHH (Resumen, Contratos, Colaboradores, Estructuras, Liquidaciones, Reportes, Fichas). **Acceso restringido al rol `rrhh` exclusivo** — ni `admin` ni `tesoreria` ni `secretaria` ven el módulo ni pueden invocar sus endpoints. Todos los guards (`canAccessHrModule`, `canAccessHrMasters`, `canMutateHrMasters`, `canOperateHrSettlements`, `canOperateHrPayments`) delegan en el mismo check. **Los maestros (Estructuras, Colaboradores, Contratos) NO viven en `/settings`** — el Coordinador de RRHH los administra directamente desde el módulo.
 - Cualquier nueva entidad operativa de un módulo debe alojarse en la ruta de ese módulo, no en Configuración.
 
 ---

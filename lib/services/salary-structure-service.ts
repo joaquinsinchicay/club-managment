@@ -23,6 +23,7 @@ import {
   canMutateHrMasters,
 } from "@/lib/domain/authorization";
 import {
+  isFunctionalRole,
   isSalaryRemunerationType,
   isSalaryStructureStatus,
   normalizeFunctionalRole,
@@ -53,11 +54,12 @@ export type SalaryStructureActionCode =
   // validation
   | "name_required"
   | "role_required"
+  | "invalid_functional_role"
   | "activity_required"
   | "remuneration_type_required"
   | "invalid_remuneration_type"
   | "invalid_status"
-  | "initial_amount_required"
+  | "amount_required"
   | "amount_must_be_positive"
   | "invalid_workload_hours"
   | "duplicate_role_activity"
@@ -181,7 +183,6 @@ export type CreateSalaryStructureRawInput = {
   remunerationType?: unknown;
   workloadHours?: unknown;
   status?: unknown;
-  initialAmount?: unknown;
 };
 
 export type UpdateSalaryStructureRawInput = {
@@ -198,7 +199,6 @@ type ValidatedCreateInput = {
   remunerationType: SalaryRemunerationType;
   workloadHours: number | null;
   status: SalaryStructureStatus;
-  initialAmount: number;
 };
 
 type ValidatedUpdateInput = {
@@ -217,18 +217,18 @@ function validateCreateInput(raw: CreateSalaryStructureRawInput):
   const remunerationTypeRaw =
     typeof raw.remunerationType === "string" ? raw.remunerationType.trim() : "";
   const statusRaw = typeof raw.status === "string" ? raw.status.trim() : "activa";
-  const initialAmount = normalizeAmount(raw.initialAmount);
   const workloadHours = normalizeAmount(raw.workloadHours);
 
   if (!name) return { ok: false, code: "name_required" };
   if (!functionalRole) return { ok: false, code: "role_required" };
+  if (!isFunctionalRole(functionalRole)) {
+    return { ok: false, code: "invalid_functional_role" };
+  }
   if (!activityId) return { ok: false, code: "activity_required" };
   if (!remunerationTypeRaw) return { ok: false, code: "remuneration_type_required" };
   if (!isSalaryRemunerationType(remunerationTypeRaw)) {
     return { ok: false, code: "invalid_remuneration_type" };
   }
-  if (initialAmount === null) return { ok: false, code: "initial_amount_required" };
-  if (initialAmount <= 0) return { ok: false, code: "amount_must_be_positive" };
   if (workloadHours !== null && workloadHours < 0) {
     return { ok: false, code: "invalid_workload_hours" };
   }
@@ -243,7 +243,6 @@ function validateCreateInput(raw: CreateSalaryStructureRawInput):
       remunerationType: remunerationTypeRaw,
       workloadHours,
       status,
-      initialAmount,
     },
   };
 }
@@ -396,7 +395,6 @@ export async function createSalaryStructure(
       remunerationType: input.remunerationType,
       workloadHours: input.workloadHours,
       status: input.status,
-      initialAmount: input.initialAmount,
       createdByUserId: ctx.userId,
     });
 
@@ -413,7 +411,6 @@ export async function createSalaryStructure(
         remuneration_type: created.remunerationType,
         workload_hours: created.workloadHours,
         status: created.status,
-        initial_amount: input.initialAmount,
       },
     });
 
@@ -510,7 +507,7 @@ export async function updateSalaryStructureAmount(
   const amount = normalizeAmount(raw.amount);
   const effectiveDate = normalizeIsoDate(raw.effectiveDate);
 
-  if (amount === null) return err<{ versionId: string | null }>("initial_amount_required");
+  if (amount === null) return err<{ versionId: string | null }>("amount_required");
   if (amount <= 0) return err<{ versionId: string | null }>("amount_must_be_positive");
   if (!effectiveDate) return err<{ versionId: string | null }>("effective_date_required");
 

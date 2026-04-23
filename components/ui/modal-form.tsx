@@ -119,6 +119,11 @@ type FormSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   children: ReactNode;
 };
 
+// Normaliza el render del <select>: appearance-none + chevron SVG externo
+// para que mida y se vea exactamente igual que <FormInput>.
+const SELECT_CHEVRON_CLASSNAME =
+  "appearance-none bg-[url('data:image/svg+xml;utf8,<svg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%2216%22%20height=%2216%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22currentColor%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22><polyline%20points=%226%209%2012%2015%2018%209%22/></svg>')] bg-no-repeat bg-[right_1rem_center] pr-10";
+
 export const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(function FormSelect(
   { className, children, ...rest },
   ref,
@@ -126,7 +131,12 @@ export const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(functio
   return (
     <select
       ref={ref}
-      className={cn(CONTROL_CLASSNAME, CONTROL_DISABLED_CLASSNAME, className)}
+      className={cn(
+        CONTROL_CLASSNAME,
+        CONTROL_DISABLED_CLASSNAME,
+        SELECT_CHEVRON_CLASSNAME,
+        className,
+      )}
       {...rest}
     >
       {children}
