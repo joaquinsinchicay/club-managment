@@ -554,6 +554,8 @@
         "audit_log_updated": "Actualizacion",
         "audit_log_closed": "Cierre",
         "detail_back_cta": "Volver a Centros de Costo",
+        "detail_badges_section_title": "Indicadores",
+        "detail_badges_empty": "Sin indicadores",
         "detail_movements_title": "Movimientos enlazados",
         "detail_movements_empty": "Todavia no hay movimientos imputados a este Centro de Costo.",
         "detail_movements_column_date": "Fecha",

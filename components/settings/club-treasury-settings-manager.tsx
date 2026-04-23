@@ -370,7 +370,7 @@ function SettingsSectionShell({
   children
 }: SettingsSectionShellProps) {
   return (
-    <section className="rounded-toast border border-border/70 bg-card p-5 shadow-soft sm:p-6">
+    <Card className="rounded-toast border-border/70 shadow-soft">
       <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           {eyebrow ? <StatusBadge label={eyebrow} tone="neutral" /> : null}
@@ -382,7 +382,7 @@ function SettingsSectionShell({
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
       <div className="mt-5">{children}</div>
-    </section>
+    </Card>
   );
 }
 

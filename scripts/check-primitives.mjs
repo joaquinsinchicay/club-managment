@@ -107,6 +107,21 @@ const RULES = [
     // no es filter pill. Permitir hasta migrar a primitivo dedicado de icon-badge.
     allowFiles: ["components/ui/", "components/settings/tabs/club-data-tab.tsx"],
   },
+  {
+    // Gap G — shell de <Card> hardcoded en <section>/<article> con rounded-(card|shell|toast|dialog)
+    // + border + bg-card. El patrón canónico es `<Card>` de @/components/ui/card que ya incluye
+    // rounded-shell + border + bg-card.
+    //
+    // Nota: Excluye <div> porque atrapa compound inputs (badge + input con rounded-card wrapper),
+    // mini info boxes nested dentro de cards, y color pickers — todos casos legítimos donde
+    // <Card> es over-engineering. Si un <div> con chrome de card es realmente un Card top-level,
+    // migralo manualmente o envolvelo en <section>/<article>.
+    id: "card-shell-hardcoded",
+    pattern: /<(section|article)[^>]*className="[^"]*rounded-(card|shell|toast|dialog)\b[^"]*\bborder\b[^"]*\bbg-card\b/,
+    message: "Shell de card hardcoded en <section|article>. Usá <Card>/<CardHeader>/<CardBody> de @/components/ui/card.",
+    // placeholder-tab renderiza un layout 'coming soon' que no encaja como Card.
+    allowFiles: ["components/ui/", "components/settings/tabs/placeholder-tab.tsx"],
+  },
 ];
 
 /**
