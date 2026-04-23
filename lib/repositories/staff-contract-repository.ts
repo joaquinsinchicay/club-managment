@@ -197,7 +197,7 @@ async function fetchEnrichedMaps(
     const { data, error } = await supabase
       .from("salary_structures")
       .select(
-        "id,name,functional_role,remuneration_type,activity_id,activity:activities(name)",
+        "id,name,functional_role,remuneration_type,activity_id,activity:club_activities(name)",
       )
       .in("id", opts.structureIds)
       .eq("club_id", opts.clubId);

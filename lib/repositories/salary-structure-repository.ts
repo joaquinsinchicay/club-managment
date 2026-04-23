@@ -15,11 +15,14 @@ import {
   MissingSupabaseAdminConfigError,
   createRequiredAdminSupabaseClient,
 } from "@/lib/supabase/admin";
-import type {
-  SalaryRemunerationType,
-  SalaryStructure,
-  SalaryStructureStatus,
-  SalaryStructureVersion,
+import {
+  isSalaryDivision,
+  type SalaryDivision,
+  type SalaryPaymentType,
+  type SalaryRemunerationType,
+  type SalaryStructure,
+  type SalaryStructureStatus,
+  type SalaryStructureVersion,
 } from "@/lib/domain/salary-structure";
 
 // -------------------------------------------------------------------------
@@ -108,7 +111,9 @@ type StructureRow = {
   club_id: string;
   name: string;
   functional_role: string;
-  activity_id: string;
+  activity_id: string | null;
+  divisions: string[] | null;
+  payment_type: SalaryPaymentType;
   remuneration_type: SalaryRemunerationType;
   workload_hours: number | string | null;
   status: SalaryStructureStatus;
@@ -137,12 +142,14 @@ type StructureWithExtras = StructureRow & {
 };
 
 const STRUCTURE_COLUMNS =
-  "id,club_id,name,functional_role,activity_id,remuneration_type,workload_hours,status,created_at,updated_at,created_by_user_id,updated_by_user_id";
+  "id,club_id,name,functional_role,activity_id,divisions,payment_type,remuneration_type,workload_hours,status,created_at,updated_at,created_by_user_id,updated_by_user_id";
 
 const VERSION_COLUMNS =
   "id,salary_structure_id,amount,start_date,end_date,created_at,created_by_user_id";
 
 function mapStructure(row: StructureWithExtras): SalaryStructure {
+  const rawDivisions = Array.isArray(row.divisions) ? row.divisions : [];
+  const divisions = rawDivisions.filter(isSalaryDivision);
   return {
     id: row.id,
     clubId: row.club_id,
@@ -150,6 +157,8 @@ function mapStructure(row: StructureWithExtras): SalaryStructure {
     functionalRole: row.functional_role,
     activityId: row.activity_id,
     activityName: row.activity_name,
+    divisions,
+    paymentType: row.payment_type,
     remunerationType: row.remuneration_type,
     workloadHours: row.workload_hours === null ? null : Number(row.workload_hours),
     status: row.status,
@@ -186,6 +195,8 @@ export type CreateSalaryStructureInput = {
   name: string;
   functionalRole: string;
   activityId: string | null;
+  divisions: SalaryDivision[];
+  paymentType: SalaryPaymentType;
   remunerationType: SalaryRemunerationType;
   workloadHours: number | null;
   status: SalaryStructureStatus;
@@ -214,6 +225,7 @@ export type ExistsByRoleActivityInput = {
   clubId: string;
   functionalRole: string;
   activityId: string | null;
+  divisions: SalaryDivision[];
   excludingStructureId?: string | null;
 };
 
@@ -238,7 +250,7 @@ export type RecordActivityInput = {
  */
 const STRUCTURE_WITH_EXTRAS_SELECT = `
   id,club_id,name,functional_role,activity_id,remuneration_type,workload_hours,status,created_at,updated_at,created_by_user_id,updated_by_user_id,
-  activity:activities(name),
+  activity:club_activities(name),
   current_version:salary_structure_versions!inner(id,amount,end_date),
   active_contract:staff_contracts!left(id,staff_member:staff_members(first_name,last_name))
 `;
@@ -253,7 +265,7 @@ async function fetchStructureWithExtras(
   // the other two in separate queries.
   let baseQuery = supabase
     .from("salary_structures")
-    .select(`${STRUCTURE_COLUMNS},activity:activities(name)`)
+    .select(`${STRUCTURE_COLUMNS},activity:club_activities(name)`)
     .eq("club_id", params.clubId)
     .order("created_at", { ascending: false });
 
@@ -370,7 +382,10 @@ export const salaryStructureRepository = {
     const supabase = requireAdminClient("exists_by_role_activity", input);
     let query = supabase
       .from("salary_structures")
-      .select("id,functional_role,activity_id,status", { count: "exact", head: false })
+      .select("id,functional_role,activity_id,divisions,status", {
+        count: "exact",
+        head: false,
+      })
       .eq("club_id", input.clubId)
       .eq("status", "activa");
 
@@ -388,9 +403,14 @@ export const salaryStructureRepository = {
     if (error) throwReadFailure("exists_by_role_activity", input, error);
 
     const normalized = input.functionalRole.trim().toLowerCase();
+    const expectedDivisions = [...input.divisions].sort();
     return (data ?? []).some(
-      (row: { functional_role: string }) =>
-        row.functional_role.trim().toLowerCase() === normalized,
+      (row: { functional_role: string; divisions: string[] | null }) => {
+        if (row.functional_role.trim().toLowerCase() !== normalized) return false;
+        const rowDivisions = [...(row.divisions ?? [])].sort();
+        if (rowDivisions.length !== expectedDivisions.length) return false;
+        return rowDivisions.every((v, i) => v === expectedDivisions[i]);
+      },
     );
   },
 
@@ -405,6 +425,8 @@ export const salaryStructureRepository = {
         name: input.name,
         functional_role: input.functionalRole,
         activity_id: input.activityId,
+        divisions: input.divisions,
+        payment_type: input.paymentType,
         remuneration_type: input.remunerationType,
         workload_hours: input.workloadHours,
         status: input.status,

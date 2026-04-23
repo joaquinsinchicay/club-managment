@@ -23,15 +23,22 @@ import {
   canMutateHrMasters,
 } from "@/lib/domain/authorization";
 import {
+  composeStructureName,
   isFunctionalRole,
+  isSalaryDivision,
+  isSalaryPaymentType,
   isSalaryRemunerationType,
   isSalaryStructureStatus,
   normalizeFunctionalRole,
+  sortDivisions,
+  type SalaryDivision,
+  type SalaryPaymentType,
   type SalaryRemunerationType,
   type SalaryStructure,
   type SalaryStructureStatus,
   type SalaryStructureVersion,
 } from "@/lib/domain/salary-structure";
+import { accessRepository } from "@/lib/repositories/access-repository";
 import {
   isSalaryStructureRepositoryInfraError,
   salaryStructureRepository,
@@ -56,6 +63,9 @@ export type SalaryStructureActionCode =
   | "role_required"
   | "invalid_functional_role"
   | "activity_required"
+  | "invalid_divisions"
+  | "payment_type_required"
+  | "invalid_payment_type"
   | "remuneration_type_required"
   | "invalid_remuneration_type"
   | "invalid_status"
@@ -177,9 +187,10 @@ function normalizeIsoDate(raw: unknown): string | null {
 // -------------------------------------------------------------------------
 
 export type CreateSalaryStructureRawInput = {
-  name?: unknown;
   functionalRole?: unknown;
   activityId?: unknown;
+  divisions?: unknown;
+  paymentType?: unknown;
   remunerationType?: unknown;
   workloadHours?: unknown;
   status?: unknown;
@@ -193,9 +204,10 @@ export type UpdateSalaryStructureRawInput = {
 };
 
 type ValidatedCreateInput = {
-  name: string;
   functionalRole: string;
   activityId: string | null;
+  divisions: SalaryDivision[];
+  paymentType: SalaryPaymentType;
   remunerationType: SalaryRemunerationType;
   workloadHours: number | null;
   status: SalaryStructureStatus;
@@ -208,22 +220,59 @@ type ValidatedUpdateInput = {
   status: SalaryStructureStatus;
 };
 
+/**
+ * Parsea divisiones desde FormData: el form envía repeticiones de la key
+ * "divisions" (vía getAll), o un JSON stringified. Acepta ambos formatos.
+ */
+function parseDivisions(raw: unknown): SalaryDivision[] | "invalid" {
+  if (raw === undefined || raw === null || raw === "") return [];
+  let candidates: unknown[];
+  if (Array.isArray(raw)) {
+    candidates = raw;
+  } else if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return "invalid";
+      candidates = parsed;
+    } catch {
+      return "invalid";
+    }
+  } else {
+    return "invalid";
+  }
+  const divisions: SalaryDivision[] = [];
+  for (const item of candidates) {
+    if (!isSalaryDivision(item)) return "invalid";
+    if (!divisions.includes(item)) divisions.push(item);
+  }
+  return sortDivisions(divisions);
+}
+
 function validateCreateInput(raw: CreateSalaryStructureRawInput):
   | { ok: true; input: ValidatedCreateInput }
   | { ok: false; code: SalaryStructureActionCode } {
-  const name = normalizeText(raw.name, 120);
   const functionalRole = normalizeText(raw.functionalRole, 120);
   const activityId = normalizeId(raw.activityId);
   const remunerationTypeRaw =
     typeof raw.remunerationType === "string" ? raw.remunerationType.trim() : "";
+  const paymentTypeRaw =
+    typeof raw.paymentType === "string" ? raw.paymentType.trim() : "";
   const statusRaw = typeof raw.status === "string" ? raw.status.trim() : "activa";
   const workloadHours = normalizeAmount(raw.workloadHours);
 
-  if (!name) return { ok: false, code: "name_required" };
   if (!functionalRole) return { ok: false, code: "role_required" };
   if (!isFunctionalRole(functionalRole)) {
     return { ok: false, code: "invalid_functional_role" };
   }
+
+  const divisions = parseDivisions(raw.divisions);
+  if (divisions === "invalid") return { ok: false, code: "invalid_divisions" };
+
+  if (!paymentTypeRaw) return { ok: false, code: "payment_type_required" };
+  if (!isSalaryPaymentType(paymentTypeRaw)) {
+    return { ok: false, code: "invalid_payment_type" };
+  }
+
   if (!remunerationTypeRaw) return { ok: false, code: "remuneration_type_required" };
   if (!isSalaryRemunerationType(remunerationTypeRaw)) {
     return { ok: false, code: "invalid_remuneration_type" };
@@ -236,9 +285,10 @@ function validateCreateInput(raw: CreateSalaryStructureRawInput):
   return {
     ok: true,
     input: {
-      name,
       functionalRole,
       activityId: activityId ?? null,
+      divisions,
+      paymentType: paymentTypeRaw,
       remunerationType: remunerationTypeRaw,
       workloadHours,
       status,
@@ -378,19 +428,35 @@ export async function createSalaryStructure(
   const input = validation.input;
 
   try {
-    // Check uniqueness by normalized functional_role + activity_id.
+    // Check uniqueness por rol + divisiones + actividad (null-safe).
     const duplicate = await salaryStructureRepository.existsByRoleActivity({
       clubId: ctx.clubId,
       functionalRole: input.functionalRole,
       activityId: input.activityId,
+      divisions: input.divisions,
     });
     if (duplicate) return err<{ structure: SalaryStructure }>("duplicate_role_activity");
 
+    // El Nombre se deriva automáticamente — necesitamos el nombre de la
+    // actividad si hay activityId para construirlo.
+    let activityName: string | null = null;
+    if (input.activityId) {
+      const activities = await accessRepository.listClubActivitiesForClub(ctx.clubId);
+      activityName = activities.find((a) => a.id === input.activityId)?.name ?? null;
+    }
+    const derivedName = composeStructureName(
+      input.functionalRole,
+      input.divisions,
+      activityName,
+    );
+
     const created = await salaryStructureRepository.create({
       clubId: ctx.clubId,
-      name: input.name,
+      name: derivedName,
       functionalRole: input.functionalRole,
       activityId: input.activityId,
+      divisions: input.divisions,
+      paymentType: input.paymentType,
       remunerationType: input.remunerationType,
       workloadHours: input.workloadHours,
       status: input.status,
@@ -407,6 +473,8 @@ export async function createSalaryStructure(
         name: created.name,
         functional_role: created.functionalRole,
         activity_id: created.activityId,
+        divisions: created.divisions,
+        payment_type: created.paymentType,
         remuneration_type: created.remunerationType,
         workload_hours: created.workloadHours,
         status: created.status,

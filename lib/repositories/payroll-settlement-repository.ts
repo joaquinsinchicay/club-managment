@@ -157,7 +157,7 @@ async function fetchEnrichment(
   const { data, error } = await supabase
     .from("staff_contracts")
     .select(
-      "id,staff_member_id,salary_structure_id,staff_member:staff_members(first_name,last_name),structure:salary_structures(name,functional_role,remuneration_type,activity_id,activity:activities(name))",
+      "id,staff_member_id,salary_structure_id,staff_member:staff_members(first_name,last_name),structure:salary_structures(name,functional_role,remuneration_type,activity_id,activity:club_activities(name))",
     )
     .in("id", contractIds)
     .eq("club_id", clubId);

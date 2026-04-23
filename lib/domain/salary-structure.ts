@@ -28,6 +28,64 @@ export type SalaryStructureStatus = (typeof SALARY_STRUCTURE_STATUSES)[number];
  * valores antes de persistir. Cambiar este listado requiere coordinar con
  * reports/liquidaciones que proyectan la columna `functional_role`.
  */
+/**
+ * Catalogo cerrado de divisiones/categorias deportivas del club. Una
+ * estructura salarial puede aplicar a varias divisiones (ej. DT 4ta+5ta+6ta).
+ * El orden del array importa para la unicidad: dos estructuras con las
+ * mismas divisiones en distinto orden siguen siendo la misma combinacion
+ * — la UI siempre ordena segun este catalogo antes de persistir.
+ */
+export const SALARY_DIVISIONS = [
+  "1ra",
+  "3ra",
+  "4ta",
+  "5ta",
+  "6ta",
+  "7ma",
+  "8va",
+  "2012",
+  "2013",
+  "2014",
+  "2015",
+  "2016",
+  "2017",
+  "2018",
+  "2019",
+  "Senior",
+] as const;
+export type SalaryDivision = (typeof SALARY_DIVISIONS)[number];
+
+export function isSalaryDivision(value: unknown): value is SalaryDivision {
+  return (
+    typeof value === "string" && (SALARY_DIVISIONS as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Naturaleza contable del pago. Complemento de `remuneration_type` (que
+ * define la mecanica: mensual_fijo, por_hora, por_clase). Ambas coexisten
+ * porque un Sueldo puede ser mensual_fijo o por_hora, y un Viatico puede
+ * ser por_clase — son dimensiones independientes.
+ */
+export const SALARY_PAYMENT_TYPES = ["sueldo", "viatico", "honorarios"] as const;
+export type SalaryPaymentType = (typeof SALARY_PAYMENT_TYPES)[number];
+
+export function isSalaryPaymentType(value: unknown): value is SalaryPaymentType {
+  return (
+    typeof value === "string" && (SALARY_PAYMENT_TYPES as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Ordena divisiones segun el catalogo canonico para que la unicidad
+ * (rol + divisiones + actividad) sea estable independientemente del orden
+ * de seleccion en la UI.
+ */
+export function sortDivisions(divisions: readonly SalaryDivision[]): SalaryDivision[] {
+  const indexOf = (d: SalaryDivision) => SALARY_DIVISIONS.indexOf(d);
+  return [...divisions].sort((a, b) => indexOf(a) - indexOf(b));
+}
+
 export const FUNCTIONAL_ROLES = [
   "Abogado",
   "Administrativo",
@@ -65,8 +123,10 @@ export type SalaryStructure = {
   clubId: string;
   name: string;
   functionalRole: string;
-  activityId: string;
+  activityId: string | null;
   activityName: string | null;
+  divisions: SalaryDivision[];
+  paymentType: SalaryPaymentType;
   remunerationType: SalaryRemunerationType;
   workloadHours: number | null;
   status: SalaryStructureStatus;
@@ -141,4 +201,27 @@ export function remunerationTypeShortLabel(type: SalaryRemunerationType): string
  */
 export function requiresWorkloadHours(type: SalaryRemunerationType): boolean {
   return type === "por_hora" || type === "por_clase";
+}
+
+/**
+ * Compone el nombre de una estructura a partir de sus partes operativas.
+ * La UI y el service usan el mismo helper para mantener consistencia
+ * entre preview (client) y persistencia (server). Ejemplos:
+ *   ("DT", ["4ta"], "FUTSAL AFA")   → "DT 4ta FUTSAL AFA"
+ *   ("Administrativo", [], null)     → "Administrativo"
+ *   ("Profesor", ["4ta","5ta"], "Boxeo") → "Profesor 4ta/5ta Boxeo"
+ */
+export function composeStructureName(
+  functionalRole: string,
+  divisions: readonly SalaryDivision[],
+  activityName: string | null | undefined,
+): string {
+  const parts: string[] = [functionalRole.trim()];
+  if (divisions.length > 0) {
+    parts.push(sortDivisions(divisions).join("/"));
+  }
+  if (activityName && activityName.trim()) {
+    parts.push(activityName.trim());
+  }
+  return parts.filter(Boolean).join(" ");
 }

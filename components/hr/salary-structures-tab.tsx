@@ -38,8 +38,14 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { ClubActivity } from "@/lib/domain/access";
 import {
+  composeStructureName,
   FUNCTIONAL_ROLES,
+  SALARY_DIVISIONS,
+  SALARY_PAYMENT_TYPES,
   SALARY_REMUNERATION_TYPES,
+  sortDivisions,
+  type SalaryDivision,
+  type SalaryPaymentType,
   type SalaryRemunerationType,
   type SalaryStructure,
   type SalaryStructureStatus,
@@ -272,12 +278,14 @@ export function SalaryStructuresTab({
       ) : (
         <DataTable
           density="comfortable"
-          gridColumns="minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) 120px 150px 120px 160px 44px"
+          gridColumns="minmax(0,1.4fr) minmax(0,1fr) 140px minmax(0,1fr) 110px 130px 120px 120px 140px 44px"
         >
           <DataTableHeader>
             <DataTableHeadCell>{ssTexts.col_name}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_role}</DataTableHeadCell>
+            <DataTableHeadCell>{ssTexts.col_divisions}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_activity}</DataTableHeadCell>
+            <DataTableHeadCell>{ssTexts.col_payment_type}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_type}</DataTableHeadCell>
             <DataTableHeadCell align="right">{ssTexts.col_amount}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_status}</DataTableHeadCell>
@@ -292,7 +300,19 @@ export function SalaryStructuresTab({
                   <span className="font-medium text-foreground">{s.name}</span>
                 </DataTableCell>
                 <DataTableCell>{s.functionalRole}</DataTableCell>
+                <DataTableCell>
+                  {s.divisions.length === 0 ? (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  ) : (
+                    <span className="text-xs text-foreground">{s.divisions.join(" / ")}</span>
+                  )}
+                </DataTableCell>
                 <DataTableCell>{s.activityName ?? "—"}</DataTableCell>
+                <DataTableCell>
+                  <DataTableChip tone="neutral">
+                    {ssTexts.payment_type_options[s.paymentType]}
+                  </DataTableChip>
+                </DataTableCell>
                 <DataTableCell>
                   <DataTableChip tone="neutral">
                     {ssTexts.remuneration_type_options[s.remunerationType]}
@@ -498,13 +518,150 @@ type StructureFormFieldsProps = {
   structure?: SalaryStructure;
 };
 
-function StructureFormFields({
-  mode,
-  activities,
-  structure,
-}: StructureFormFieldsProps) {
-  const isEdit = mode === "edit";
+function StructureFormFields(props: StructureFormFieldsProps) {
+  if (props.mode === "create") {
+    return <CreateStructureFields activities={props.activities} />;
+  }
+  return <EditStructureFields structure={props.structure!} />;
+}
 
+function CreateStructureFields({ activities }: { activities: ClubActivity[] }) {
+  const [role, setRole] = useState<string>("");
+  const [divisions, setDivisions] = useState<SalaryDivision[]>([]);
+  const [activityId, setActivityId] = useState<string>("");
+
+  const activityName = useMemo(
+    () => activities.find((a) => a.id === activityId)?.name ?? null,
+    [activities, activityId],
+  );
+  const namePreview = role ? composeStructureName(role, divisions, activityName) : "";
+
+  function toggleDivision(value: SalaryDivision, checked: boolean) {
+    setDivisions((prev) => {
+      const next = checked ? [...prev, value] : prev.filter((d) => d !== value);
+      return sortDivisions(next);
+    });
+  }
+
+  return (
+    <>
+      <FormField>
+        <FormFieldLabel>{ssTexts.form_name_preview_label}</FormFieldLabel>
+        <FormReadonly>{namePreview || "—"}</FormReadonly>
+        <FormHelpText>{ssTexts.form_name_preview_hint}</FormHelpText>
+      </FormField>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField>
+          <FormFieldLabel required>{ssTexts.form_role_label}</FormFieldLabel>
+          <FormSelect
+            name="functional_role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            required
+          >
+            <option value="" disabled>
+              {ssTexts.form_role_placeholder}
+            </option>
+            {FUNCTIONAL_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </FormSelect>
+          <FormHelpText>{ssTexts.form_role_helper}</FormHelpText>
+        </FormField>
+
+        <FormField>
+          <FormFieldLabel>{ssTexts.form_activity_label}</FormFieldLabel>
+          <FormSelect
+            name="activity_id"
+            value={activityId}
+            onChange={(e) => setActivityId(e.target.value)}
+          >
+            <option value="">{ssTexts.form_activity_placeholder}</option>
+            {activities.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </FormSelect>
+        </FormField>
+      </div>
+
+      <FormField>
+        <FormFieldLabel>{ssTexts.form_divisions_label}</FormFieldLabel>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {SALARY_DIVISIONS.map((d) => {
+            const checked = divisions.includes(d);
+            return (
+              <label
+                key={d}
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-card border border-border bg-card px-3 py-2 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50"
+              >
+                <input
+                  type="checkbox"
+                  name="divisions"
+                  value={d}
+                  checked={checked}
+                  onChange={(e) => toggleDivision(d, e.target.checked)}
+                  className="size-4 rounded border-border text-foreground focus:ring-foreground"
+                />
+                <span className="font-medium">{d}</span>
+              </label>
+            );
+          })}
+        </div>
+        <FormHelpText>{ssTexts.form_divisions_helper}</FormHelpText>
+      </FormField>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField>
+          <FormFieldLabel required>{ssTexts.form_payment_type_label}</FormFieldLabel>
+          <FormSelect name="payment_type" defaultValue="sueldo" required>
+            {SALARY_PAYMENT_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {ssTexts.payment_type_options[t]}
+              </option>
+            ))}
+          </FormSelect>
+          <FormHelpText>{ssTexts.form_payment_type_helper}</FormHelpText>
+        </FormField>
+
+        <FormField>
+          <FormFieldLabel required>{ssTexts.form_remuneration_type_label}</FormFieldLabel>
+          <FormSelect name="remuneration_type" defaultValue="" required>
+            <option value="" disabled>
+              {ssTexts.form_remuneration_type_placeholder}
+            </option>
+            {SALARY_REMUNERATION_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {ssTexts.remuneration_type_options[t]}
+              </option>
+            ))}
+          </FormSelect>
+        </FormField>
+      </div>
+
+      <FormField>
+        <FormFieldLabel>{ssTexts.form_workload_hours_label}</FormFieldLabel>
+        <FormInput
+          type="number"
+          name="workload_hours"
+          inputMode="decimal"
+          min="0"
+          step="0.5"
+          placeholder={ssTexts.form_workload_hours_placeholder}
+        />
+        <FormHelpText>{ssTexts.form_workload_hours_helper}</FormHelpText>
+      </FormField>
+
+      <input type="hidden" name="status" value="activa" />
+    </>
+  );
+}
+
+function EditStructureFields({ structure }: { structure: SalaryStructure }) {
   return (
     <>
       <FormField>
@@ -512,7 +669,7 @@ function StructureFormFields({
         <FormInput
           type="text"
           name="name"
-          defaultValue={structure?.name ?? ""}
+          defaultValue={structure.name}
           placeholder={ssTexts.form_name_placeholder}
           minLength={2}
           maxLength={120}
@@ -522,45 +679,31 @@ function StructureFormFields({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField>
-          <FormFieldLabel required>{ssTexts.form_role_label}</FormFieldLabel>
-          {isEdit ? (
-            <FormReadonly>{structure?.functionalRole}</FormReadonly>
-          ) : (
-            <FormSelect name="functional_role" defaultValue="" required>
-              <option value="" disabled>
-                {ssTexts.form_role_placeholder}
-              </option>
-              {FUNCTIONAL_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </FormSelect>
-          )}
-          {isEdit ? (
-            <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
-          ) : (
-            <FormHelpText>{ssTexts.form_role_helper}</FormHelpText>
-          )}
+          <FormFieldLabel>{ssTexts.form_role_label}</FormFieldLabel>
+          <FormReadonly>{structure.functionalRole}</FormReadonly>
+          <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
         </FormField>
 
         <FormField>
           <FormFieldLabel>{ssTexts.form_activity_label}</FormFieldLabel>
-          {isEdit ? (
-            <FormReadonly>{structure?.activityName ?? "—"}</FormReadonly>
-          ) : (
-            <FormSelect name="activity_id" defaultValue="">
-              <option value="">{ssTexts.form_activity_placeholder}</option>
-              {activities.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </FormSelect>
-          )}
-          {isEdit ? (
-            <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
-          ) : null}
+          <FormReadonly>{structure.activityName ?? "—"}</FormReadonly>
+          <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
+        </FormField>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField>
+          <FormFieldLabel>{ssTexts.form_divisions_label}</FormFieldLabel>
+          <FormReadonly>
+            {structure.divisions.length === 0 ? "—" : structure.divisions.join(" / ")}
+          </FormReadonly>
+          <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
+        </FormField>
+
+        <FormField>
+          <FormFieldLabel>{ssTexts.form_payment_type_label}</FormFieldLabel>
+          <FormReadonly>{ssTexts.payment_type_options[structure.paymentType]}</FormReadonly>
+          <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
         </FormField>
       </div>
 
@@ -569,7 +712,7 @@ function StructureFormFields({
           <FormFieldLabel required>{ssTexts.form_remuneration_type_label}</FormFieldLabel>
           <FormSelect
             name="remuneration_type"
-            defaultValue={structure?.remunerationType ?? ""}
+            defaultValue={structure.remunerationType}
             required
           >
             <option value="" disabled>
@@ -591,25 +734,21 @@ function StructureFormFields({
             inputMode="decimal"
             min="0"
             step="0.5"
-            defaultValue={structure?.workloadHours ?? ""}
+            defaultValue={structure.workloadHours ?? ""}
             placeholder={ssTexts.form_workload_hours_placeholder}
           />
           <FormHelpText>{ssTexts.form_workload_hours_helper}</FormHelpText>
         </FormField>
       </div>
 
-      {isEdit ? (
-        <FormField>
-          <FormFieldLabel required>{ssTexts.form_status_label}</FormFieldLabel>
-          <FormSelect name="status" defaultValue={structure?.status ?? "activa"} required>
-            <option value="activa">{ssTexts.status_options.activa}</option>
-            <option value="inactiva">{ssTexts.status_options.inactiva}</option>
-          </FormSelect>
-          <FormHelpText>{ssTexts.form_status_helper}</FormHelpText>
-        </FormField>
-      ) : (
-        <input type="hidden" name="status" value="activa" />
-      )}
+      <FormField>
+        <FormFieldLabel required>{ssTexts.form_status_label}</FormFieldLabel>
+        <FormSelect name="status" defaultValue={structure.status} required>
+          <option value="activa">{ssTexts.status_options.activa}</option>
+          <option value="inactiva">{ssTexts.status_options.inactiva}</option>
+        </FormSelect>
+        <FormHelpText>{ssTexts.form_status_helper}</FormHelpText>
+      </FormField>
     </>
   );
 }

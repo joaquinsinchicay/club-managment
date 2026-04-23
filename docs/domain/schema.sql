@@ -462,6 +462,7 @@ create index idx_cost_center_audit_cc on cost_center_audit_log(cost_center_id, c
 -- Enums
 create type salary_remuneration_type as enum ('mensual_fijo','por_hora','por_clase');
 create type salary_structure_status as enum ('activa','inactiva');
+create type salary_payment_type as enum ('sueldo','viatico','honorarios');
 create type staff_vinculo_type as enum ('relacion_dependencia','monotributista','honorarios');
 create type staff_member_status as enum ('activo','inactivo');
 create type staff_contract_status as enum ('vigente','finalizado');
@@ -470,13 +471,19 @@ create type payroll_adjustment_type as enum ('adicional','descuento','reintegro'
 create type hr_job_run_status as enum ('running','success','partial','failed');
 
 -- Catálogo de posiciones rentadas del club (US-54). Unique parcial en
--- (club_id, lower(trim(functional_role)), activity_id) where status='activa'.
+-- (club_id, lower(trim(functional_role)), divisions, coalesce(activity_id::text, ''))
+-- where status='activa'. El name se deriva automáticamente de
+-- functional_role + divisions + activity_name; en edit se puede override.
+-- activity_id es nullable: existen roles sin actividad deportiva
+-- (abogado, administrativo, prensa, sereno, etc.).
 create table salary_structures (
   id uuid primary key default gen_random_uuid(),
   club_id uuid not null references clubs(id) on delete cascade,
   name text not null,
   functional_role text not null,
-  activity_id uuid not null references club_activities(id),
+  activity_id uuid references club_activities(id),
+  divisions text[] not null default '{}',
+  payment_type salary_payment_type not null default 'sueldo',
   remuneration_type salary_remuneration_type not null,
   workload_hours numeric(10,2),
   status salary_structure_status not null default 'activa',
@@ -649,8 +656,13 @@ alter table treasury_movements
 -- alter type membership_role add value 'rrhh';
 
 -- Índices RRHH
-create unique index salary_structures_unique_active_role_activity
-  on salary_structures (club_id, lower(trim(functional_role)), activity_id)
+create unique index salary_structures_unique_active_role_div_activity
+  on salary_structures (
+    club_id,
+    lower(trim(functional_role)),
+    divisions,
+    coalesce(activity_id::text, '')
+  )
   where status = 'activa';
 create index idx_salary_structures_club_status on salary_structures (club_id, status);
 create index idx_salary_structures_club_activity on salary_structures (club_id, activity_id);

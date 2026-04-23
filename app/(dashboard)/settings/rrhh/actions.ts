@@ -48,6 +48,12 @@ function toFeedbackCode(code: SalaryStructureActionCode): string {
       return "salary_structure_invalid_functional_role";
     case "activity_required":
       return "salary_structure_activity_required";
+    case "invalid_divisions":
+      return "salary_structure_invalid_divisions";
+    case "payment_type_required":
+      return "salary_structure_payment_type_required";
+    case "invalid_payment_type":
+      return "salary_structure_invalid_payment_type";
     case "remuneration_type_required":
       return "salary_structure_remuneration_type_required";
     case "invalid_remuneration_type":
@@ -88,10 +94,16 @@ function rawCreateFromFormData(formData: FormData) {
     return trimmed === "" ? undefined : trimmed;
   }
 
+  // Soporta ambas formas de envío: getAll (checkboxes) o un JSON stringified.
+  const divisionsMulti = formData
+    .getAll("divisions")
+    .filter((v): v is string => typeof v === "string" && v !== "");
+
   return {
-    name: read("name"),
     functionalRole: read("functional_role"),
     activityId: read("activity_id"),
+    divisions: divisionsMulti.length > 0 ? divisionsMulti : read("divisions"),
+    paymentType: read("payment_type"),
     remunerationType: read("remuneration_type"),
     workloadHours: read("workload_hours"),
     status: read("status"),
