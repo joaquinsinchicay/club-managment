@@ -7,7 +7,7 @@ import Link from "next/link";
 
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
 import { Avatar } from "@/components/ui/avatar";
-import { Button, buttonClass } from "@/components/ui/button";
+import { buttonClass } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
@@ -15,11 +15,12 @@ import {
   DataTableBody,
   DataTableCell,
   DataTableChip,
+  DataTableEmpty,
   DataTableHeadCell,
   DataTableHeader,
   DataTableRow,
 } from "@/components/ui/data-table";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
@@ -30,7 +31,6 @@ import {
   FormInput,
   FormSelect,
 } from "@/components/ui/modal-form";
-import { SettingsTabShell } from "@/components/settings/settings-tab-shell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import {
@@ -46,7 +46,6 @@ type StaffMembersTabProps = {
   canMutate: boolean;
   createAction: (formData: FormData) => Promise<RrhhActionResult>;
   updateAction: (formData: FormData) => Promise<RrhhActionResult>;
-  setStatusAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 type StatusFilter = "all" | StaffMemberStatus;
@@ -78,7 +77,6 @@ export function StaffMembersTab({
   canMutate,
   createAction,
   updateAction,
-  setStatusAction,
 }: StaffMembersTabProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -89,19 +87,24 @@ export function StaffMembersTab({
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
-  const [confirmingStatus, setConfirmingStatus] = useState<{
-    member: StaffMember;
-    nextStatus: StaffMemberStatus;
-  } | null>(null);
 
   const [createPending, setCreatePending] = useState(false);
   const [editPending, setEditPending] = useState(false);
-  const [statusPending, setStatusPending] = useState(false);
 
   const alertsCount = useMemo(
     () => members.filter(isMemberInAlert).length,
     [members],
   );
+
+  const countsByStatus = useMemo(() => {
+    const out = new Map<StaffMemberStatus, number>();
+    for (const m of members) {
+      out.set(m.status, (out.get(m.status) ?? 0) + 1);
+    }
+    return out;
+  }, [members]);
+  const activeCount = countsByStatus.get("activo") ?? 0;
+  const inactiveCount = countsByStatus.get("inactivo") ?? 0;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -114,7 +117,7 @@ export function StaffMembersTab({
         m.firstName.toLowerCase().includes(q) ||
         m.lastName.toLowerCase().includes(q) ||
         m.dni.includes(q) ||
-        m.cuitCuil.includes(q)
+        (m.cuitCuil?.includes(q) ?? false)
       );
     });
   }, [members, search, statusFilter, vinculoFilter, alertFilter]);
@@ -139,51 +142,77 @@ export function StaffMembersTab({
   }
 
   return (
-    <SettingsTabShell
-      searchPlaceholder={smTexts.search_placeholder}
-      searchValue={search}
-      onSearch={setSearch}
-      ctaLabel={canMutate ? smTexts.create_cta : undefined}
-      onCta={canMutate ? () => setCreateOpen(true) : undefined}
-    >
-      <section className="grid gap-3">
-        <header className="grid gap-1">
-          <h2 className="text-lg font-semibold text-foreground">{smTexts.section_title}</h2>
-          <p className="text-sm text-muted-foreground">{smTexts.section_description}</p>
-        </header>
+    <div className="flex flex-col gap-4">
+      <header className="flex flex-col gap-1">
+        <h2 className="text-h2 font-bold text-foreground">{smTexts.section_title}</h2>
+        <p className="text-sm text-muted-foreground">{smTexts.section_description}</p>
+      </header>
 
-        {alertsCount > 0 ? (
-          <FormBanner
-            variant="warning"
-            action={
-              <ChipButton
-                active={alertFilter === "alerts_only"}
-                onClick={() =>
-                  setAlertFilter((v) => (v === "alerts_only" ? "all" : "alerts_only"))
-                }
-              >
-                {alertFilter === "alerts_only"
-                  ? smTexts.alert_banner_cta_all
-                  : smTexts.alert_banner_cta_only}
-              </ChipButton>
-            }
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          {smTexts.subtitle_counts
+            .replace("{active}", String(activeCount))
+            .replace("{inactive}", String(inactiveCount))}
+        </p>
+        {canMutate ? (
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className={buttonClass({ variant: "primary", size: "sm" })}
           >
-            <strong>{alertsCount}</strong>{" "}
-            {alertsCount === 1 ? smTexts.alert_banner_singular : smTexts.alert_banner_plural}
-          </FormBanner>
+            {smTexts.create_cta}
+          </button>
         ) : null}
+      </div>
 
-        <div className="flex flex-wrap gap-2">
-          {STATUS_FILTERS.map((f) => (
+      {alertsCount > 0 ? (
+        <FormBanner
+          variant="warning"
+          action={
             <ChipButton
-              key={f.value}
-              active={statusFilter === f.value}
-              onClick={() => setStatusFilter(f.value)}
+              active={alertFilter === "alerts_only"}
+              onClick={() =>
+                setAlertFilter((v) => (v === "alerts_only" ? "all" : "alerts_only"))
+              }
             >
-              {f.label}
+              {alertFilter === "alerts_only"
+                ? smTexts.alert_banner_cta_all
+                : smTexts.alert_banner_cta_only}
             </ChipButton>
-          ))}
-          {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. Usa tokens canonicos rounded-chip + estilo inactive de ChipButton. */}
+          }
+        >
+          <strong>{alertsCount}</strong>{" "}
+          {alertsCount === 1 ? smTexts.alert_banner_singular : smTexts.alert_banner_plural}
+        </FormBanner>
+      ) : null}
+
+      <div className="rounded-card border border-border bg-card px-4 py-3">
+        <input
+          type="search"
+          placeholder={smTexts.search_placeholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
+        />
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {STATUS_FILTERS.map((f) => {
+            const count =
+              f.value === "all"
+                ? members.length
+                : countsByStatus.get(f.value as StaffMemberStatus) ?? 0;
+            return (
+              <ChipButton
+                key={f.value}
+                active={statusFilter === f.value}
+                onClick={() => setStatusFilter(f.value)}
+              >
+                {f.label} · {count}
+              </ChipButton>
+            );
+          })}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. */}
           <select
             value={vinculoFilter}
             onChange={(e) => setVinculoFilter(e.target.value as VinculoFilter)}
@@ -197,125 +226,106 @@ export function StaffMembersTab({
             ))}
           </select>
         </div>
+      </div>
 
-        {filtered.length === 0 ? (
-          members.length === 0 ? (
-            <EmptyState
-              variant="dashed"
-              title={smTexts.empty_title}
-              description={smTexts.empty_description}
-              action={
-                canMutate ? (
-                  <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                    {smTexts.empty_cta}
-                  </Button>
-                ) : undefined
-              }
-            />
-          ) : (
-            <EmptyState
-              variant="dashed"
-              title={smTexts.empty_filter_title}
-              description={smTexts.empty_filter_description}
-            />
-          )
-        ) : (
-          <DataTable
-            density="comfortable"
-            gridColumns="minmax(0,1.5fr) 130px 150px 140px 120px 120px 80px"
-          >
-            <DataTableHeader>
-              <DataTableHeadCell>{smTexts.col_name}</DataTableHeadCell>
-              <DataTableHeadCell>{smTexts.col_dni}</DataTableHeadCell>
-              <DataTableHeadCell>{smTexts.col_cuit}</DataTableHeadCell>
-              <DataTableHeadCell>{smTexts.col_vinculo}</DataTableHeadCell>
-              <DataTableHeadCell align="center">{smTexts.col_contracts}</DataTableHeadCell>
-              <DataTableHeadCell>{smTexts.col_status}</DataTableHeadCell>
-              <DataTableHeadCell />
-            </DataTableHeader>
-            <DataTableBody>
-              {filtered.map((m) => (
-                <DataTableRow key={m.id} density="comfortable" hoverReveal>
-                  <DataTableCell>
-                    <Link
-                      href={`/rrhh/staff/${m.id}`}
-                      className="flex items-center gap-2 hover:underline"
-                    >
-                      <Avatar
-                        name={`${m.firstName} ${m.lastName}`}
-                        size="sm"
-                        tone="neutral"
-                      />
-                      <span className="grid leading-tight">
-                        <span className="font-medium text-foreground">
-                          {m.firstName} {m.lastName}
-                        </span>
-                        {m.status === "activo" && !m.hasActiveContract ? (
-                          <span className="text-xs text-ds-amber-700">
-                            {smTexts.alert_no_active_contracts}
-                          </span>
-                        ) : null}
-                      </span>
-                    </Link>
-                  </DataTableCell>
-                  <DataTableCell>
-                    <span className="font-mono text-xs">{m.dni}</span>
-                  </DataTableCell>
-                  <DataTableCell>
-                    <span className="font-mono text-xs">{m.cuitCuil}</span>
-                  </DataTableCell>
-                  <DataTableCell>
-                    <DataTableChip tone="neutral">
-                      {smTexts.vinculo_options[m.vinculoType]}
-                    </DataTableChip>
-                  </DataTableCell>
-                  <DataTableCell align="center">
-                    <span className="text-sm font-medium text-foreground">
-                      {m.activeContractCount}
-                    </span>
-                  </DataTableCell>
-                  <DataTableCell>
-                    <StatusBadge
-                      tone={m.status === "activo" ? "success" : "neutral"}
-                      label={smTexts.status_options[m.status]}
+      {filtered.length === 0 ? (
+        <DataTableEmpty
+          title={members.length === 0 ? smTexts.empty_title : smTexts.empty_filter_title}
+          description={
+            members.length === 0 ? smTexts.empty_description : smTexts.empty_filter_description
+          }
+          action={
+            canMutate && members.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className={buttonClass({ variant: "primary", size: "sm" })}
+              >
+                {smTexts.empty_cta}
+              </button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <DataTable
+          density="comfortable"
+          gridColumns="minmax(0,1.6fr) 130px 150px 150px 100px 110px 44px"
+        >
+          <DataTableHeader>
+            <DataTableHeadCell>{smTexts.col_name}</DataTableHeadCell>
+            <DataTableHeadCell>{smTexts.col_dni}</DataTableHeadCell>
+            <DataTableHeadCell>{smTexts.col_cuit}</DataTableHeadCell>
+            <DataTableHeadCell>{smTexts.col_vinculo}</DataTableHeadCell>
+            <DataTableHeadCell align="center">{smTexts.col_contracts}</DataTableHeadCell>
+            <DataTableHeadCell>{smTexts.col_status}</DataTableHeadCell>
+            <DataTableHeadCell />
+          </DataTableHeader>
+          <DataTableBody>
+            {filtered.map((m) => (
+              <DataTableRow key={m.id} density="comfortable" hoverReveal>
+                <DataTableCell>
+                  <Link
+                    href={`/rrhh/staff/${m.id}`}
+                    className="flex items-center gap-2 hover:underline"
+                  >
+                    <Avatar
+                      name={`${m.firstName} ${m.lastName}`}
+                      size="sm"
+                      tone="neutral"
                     />
-                  </DataTableCell>
-                  <DataTableCell align="right">
-                    {canMutate ? (
-                      <DataTableActions>
-                        <button
-                          type="button"
-                          onClick={() => setEditing(m)}
-                          className={buttonClass({ variant: "secondary", size: "sm" })}
-                        >
-                          {smTexts.action_edit}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setConfirmingStatus({
-                              member: m,
-                              nextStatus: m.status === "activo" ? "inactivo" : "activo",
-                            })
-                          }
-                          className={buttonClass({
-                            variant: m.status === "activo" ? "destructive" : "secondary",
-                            size: "sm",
-                          })}
-                        >
-                          {m.status === "activo"
-                            ? smTexts.action_deactivate
-                            : smTexts.action_reactivate}
-                        </button>
-                      </DataTableActions>
-                    ) : null}
-                  </DataTableCell>
-                </DataTableRow>
-              ))}
-            </DataTableBody>
-          </DataTable>
-        )}
-      </section>
+                    <span className="grid leading-tight">
+                      <span className="font-medium text-foreground">
+                        {m.firstName} {m.lastName}
+                      </span>
+                      {m.status === "activo" && !m.hasActiveContract ? (
+                        <span className="text-xs text-ds-amber-700">
+                          {smTexts.alert_no_active_contracts}
+                        </span>
+                      ) : null}
+                    </span>
+                  </Link>
+                </DataTableCell>
+                <DataTableCell>
+                  <span className="font-mono text-xs">{m.dni}</span>
+                </DataTableCell>
+                <DataTableCell>
+                  {m.cuitCuil ? (
+                    <span className="font-mono text-xs">{m.cuitCuil}</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </DataTableCell>
+                <DataTableCell>
+                  <DataTableChip tone="neutral">
+                    {smTexts.vinculo_options[m.vinculoType]}
+                  </DataTableChip>
+                </DataTableCell>
+                <DataTableCell align="center">
+                  <span className="text-sm font-medium text-foreground">
+                    {m.activeContractCount}
+                  </span>
+                </DataTableCell>
+                <DataTableCell>
+                  <StatusBadge
+                    tone={m.status === "activo" ? "success" : "neutral"}
+                    label={smTexts.status_options[m.status]}
+                  />
+                </DataTableCell>
+                <DataTableCell align="right">
+                  {canMutate ? (
+                    <DataTableActions>
+                      <EditIconButton
+                        label={smTexts.action_edit}
+                        onClick={() => setEditing(m)}
+                      />
+                    </DataTableActions>
+                  ) : null}
+                </DataTableCell>
+              </DataTableRow>
+            ))}
+          </DataTableBody>
+        </DataTable>
+      )}
 
       {/* Create */}
       <Modal
@@ -370,63 +380,7 @@ export function StaffMembersTab({
         ) : null}
       </Modal>
 
-      {/* Confirm status change */}
-      <Modal
-        open={confirmingStatus !== null}
-        onClose={() => !statusPending && setConfirmingStatus(null)}
-        title={
-          confirmingStatus?.nextStatus === "inactivo"
-            ? smTexts.deactivate_modal_title
-            : smTexts.reactivate_modal_title
-        }
-        size="sm"
-        closeDisabled={statusPending}
-      >
-        {confirmingStatus ? (
-          <form
-            action={(fd) =>
-              runAction(
-                setStatusAction,
-                fd,
-                () => setConfirmingStatus(null),
-                setStatusPending,
-              )
-            }
-            className="grid gap-4"
-          >
-            <input type="hidden" name="staff_member_id" value={confirmingStatus.member.id} />
-            <input type="hidden" name="status" value={confirmingStatus.nextStatus} />
-            <FormBanner
-              variant={confirmingStatus.nextStatus === "inactivo" ? "destructive" : "info"}
-            >
-              {confirmingStatus.nextStatus === "inactivo"
-                ? smTexts.deactivate_warning
-                : smTexts.reactivate_warning}
-            </FormBanner>
-            <p className="text-sm text-foreground">
-              {confirmingStatus.member.firstName} {confirmingStatus.member.lastName}
-              {" · "}
-              <span className="text-muted-foreground">
-                DNI {confirmingStatus.member.dni}
-              </span>
-            </p>
-            <ModalFooter
-              onCancel={() => setConfirmingStatus(null)}
-              cancelLabel={smTexts.cancel_cta}
-              submitLabel={
-                confirmingStatus.nextStatus === "inactivo"
-                  ? smTexts.deactivate_submit_cta
-                  : smTexts.reactivate_submit_cta
-              }
-              pendingLabel={smTexts.submit_pending}
-              submitVariant={
-                confirmingStatus.nextStatus === "inactivo" ? "destructive" : "primary"
-              }
-            />
-          </form>
-        ) : null}
-      </Modal>
-    </SettingsTabShell>
+    </div>
   );
 }
 
@@ -467,20 +421,22 @@ function StaffMemberFormFields({ member }: StaffMemberFormFieldsProps) {
             type="text"
             name="dni"
             inputMode="numeric"
+            pattern="\d{7,8}"
+            minLength={7}
+            maxLength={8}
             defaultValue={member?.dni ?? ""}
             required
           />
           <FormHelpText>{smTexts.form_dni_helper}</FormHelpText>
         </FormField>
         <FormField>
-          <FormFieldLabel required>{smTexts.form_cuit_label}</FormFieldLabel>
+          <FormFieldLabel>{smTexts.form_cuit_label}</FormFieldLabel>
           <FormInput
             type="text"
             name="cuit_cuil"
             inputMode="numeric"
             defaultValue={member?.cuitCuil ?? ""}
             placeholder={smTexts.form_cuit_placeholder}
-            required
           />
           <FormHelpText>{smTexts.form_cuit_helper}</FormHelpText>
         </FormField>
@@ -506,7 +462,6 @@ function StaffMemberFormFields({ member }: StaffMemberFormFieldsProps) {
             defaultValue={member?.phone ?? ""}
             placeholder={smTexts.form_phone_placeholder}
           />
-          <FormHelpText>{smTexts.form_phone_helper}</FormHelpText>
         </FormField>
       </div>
 

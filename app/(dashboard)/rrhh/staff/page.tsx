@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 
 import {
   createStaffMemberAction,
-  setStaffMemberStatusAction,
   updateStaffMemberAction,
 } from "@/app/(dashboard)/settings/rrhh/actions";
 import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
@@ -29,7 +28,6 @@ export default async function RrhhStaffPage() {
         canMutate={canMutate}
         createAction={createStaffMemberAction}
         updateAction={updateStaffMemberAction}
-        setStatusAction={setStaffMemberStatusAction}
       />
     </main>
   );

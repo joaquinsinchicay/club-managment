@@ -47,7 +47,6 @@ export type StaffMemberActionCode =
   | "last_name_required"
   | "dni_required"
   | "invalid_dni"
-  | "cuit_required"
   | "invalid_cuit_cuil"
   | "invalid_cuit_dv"
   | "vinculo_required"
@@ -157,7 +156,7 @@ type ValidatedMemberInput = {
   firstName: string;
   lastName: string;
   dni: string;
-  cuitCuil: string;
+  cuitCuil: string | null;
   email: string | null;
   phone: string | null;
   vinculoType: StaffVinculoType;
@@ -188,11 +187,18 @@ function validateMemberInput(
   if (!dni) return { ok: false, code: "dni_required" };
   if (!isValidDniShape(dni)) return { ok: false, code: "invalid_dni" };
 
-  const cuitDigits = normalizeCuit(cuitRaw);
-  const cuit = formatCuit(cuitDigits);
-  if (!cuit) return { ok: false, code: "cuit_required" };
-  if (!hasValidCuitShape(cuit)) return { ok: false, code: "invalid_cuit_cuil" };
-  if (!hasValidCuitDv(cuitDigits)) return { ok: false, code: "invalid_cuit_dv" };
+  // CUIT/CUIL es opcional. Si viene, validamos shape + digito verificador;
+  // si no viene, lo persistimos como null.
+  let cuit: string | null = null;
+  if (cuitRaw.trim()) {
+    const cuitDigits = normalizeCuit(cuitRaw);
+    const formatted = formatCuit(cuitDigits);
+    if (!formatted || !hasValidCuitShape(formatted)) {
+      return { ok: false, code: "invalid_cuit_cuil" };
+    }
+    if (!hasValidCuitDv(cuitDigits)) return { ok: false, code: "invalid_cuit_dv" };
+    cuit = formatted;
+  }
 
   if (!vinculoRaw) return { ok: false, code: "vinculo_required" };
   if (!isStaffVinculoType(vinculoRaw)) return { ok: false, code: "invalid_vinculo" };

@@ -190,8 +190,6 @@ function staffMemberFeedbackCode(code: StaffMemberActionCode): string {
       return "staff_member_dni_required";
     case "invalid_dni":
       return "staff_member_invalid_dni";
-    case "cuit_required":
-      return "staff_member_cuit_required";
     case "invalid_cuit_cuil":
       return "staff_member_invalid_cuit_cuil";
     case "invalid_cuit_dv":

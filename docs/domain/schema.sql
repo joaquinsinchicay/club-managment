@@ -519,7 +519,7 @@ create table staff_members (
   first_name text not null,
   last_name text not null,
   dni text not null,
-  cuit_cuil text not null,
+  cuit_cuil text,
   email text,
   phone text,
   vinculo_type staff_vinculo_type not null,

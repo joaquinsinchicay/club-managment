@@ -92,7 +92,7 @@ type MemberRow = {
   first_name: string;
   last_name: string;
   dni: string;
-  cuit_cuil: string;
+  cuit_cuil: string | null;
   email: string | null;
   phone: string | null;
   vinculo_type: StaffVinculoType;
@@ -142,7 +142,7 @@ export type CreateStaffMemberInput = {
   firstName: string;
   lastName: string;
   dni: string;
-  cuitCuil: string;
+  cuitCuil: string | null;
   email: string | null;
   phone: string | null;
   vinculoType: StaffVinculoType;
@@ -159,7 +159,7 @@ export type UpdateStaffMemberInput = {
     firstName?: string;
     lastName?: string;
     dni?: string;
-    cuitCuil?: string;
+    cuitCuil?: string | null;
     email?: string | null;
     phone?: string | null;
     vinculoType?: StaffVinculoType;

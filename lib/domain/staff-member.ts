@@ -26,7 +26,7 @@ export type StaffMember = {
   firstName: string;
   lastName: string;
   dni: string;
-  cuitCuil: string;
+  cuitCuil: string | null;
   email: string | null;
   phone: string | null;
   vinculoType: StaffVinculoType;
