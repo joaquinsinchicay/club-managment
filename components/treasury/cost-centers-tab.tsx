@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
-import { Chip } from "@/components/ui/chip";
+import { Chip, ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableBody,
@@ -720,42 +720,28 @@ export function CostCentersTab({
           {TYPE_FILTER_ORDER.map((opt) => {
             const count =
               opt.value === "all" ? costCenters.length : countsByType.get(opt.value) ?? 0;
-            const active = typeFilter === opt.value;
             return (
-              <button
+              <ChipButton
                 key={opt.value}
-                type="button"
+                active={typeFilter === opt.value}
                 onClick={() => setTypeFilter(opt.value)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-medium",
-                  active
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-card text-foreground hover:bg-secondary/40"
-                )}
               >
                 {opt.label} · {count}
-              </button>
+              </ChipButton>
             );
           })}
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {STATUS_FILTER_ORDER.map((opt) => {
             const count = countsByStatus.get(opt.value) ?? 0;
-            const active = statusFilter === opt.value;
             return (
-              <button
+              <ChipButton
                 key={opt.value}
-                type="button"
+                active={statusFilter === opt.value}
                 onClick={() => setStatusFilter(opt.value)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-medium",
-                  active
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-card text-foreground hover:bg-secondary/40"
-                )}
               >
                 {opt.label} · {count}
-              </button>
+              </ChipButton>
             );
           })}
         </div>

@@ -2,9 +2,18 @@
 
 import { useState } from "react";
 
+import { Button, buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MetaPill } from "@/components/ui/meta-pill";
+import {
+  FormCheckboxCard,
+  FormField,
+  FormFieldLabel,
+  FormInput,
+  FormReadonly,
+  FormSelect,
+} from "@/components/ui/modal-form";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type {
@@ -92,65 +101,46 @@ function ClubActivityForm({
       <PendingFieldset className="grid gap-4">
         {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.activity_name_label}</span>
-          <input
-            type="text"
-            name="name"
-            defaultValue={defaultActivity?.name ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+        <FormField>
+          <FormFieldLabel>{texts.settings.club.treasury.activity_name_label}</FormFieldLabel>
+          <FormInput type="text" name="name" defaultValue={defaultActivity?.name ?? ""} />
+        </FormField>
 
-        <fieldset className="grid gap-3">
-          <legend className="text-sm font-medium text-foreground">
-            {texts.settings.club.treasury.account_visibility_label}
-          </legend>
+        <div className="grid gap-3">
+          <FormFieldLabel>{texts.settings.club.treasury.account_visibility_label}</FormFieldLabel>
           <div className="grid gap-3 sm:grid-cols-2">
             {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
-              <label
+              <FormCheckboxCard
                 key={`activity-visibility-${visibility}`}
-                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-              >
-                <input
-                  type="checkbox"
-                  name="visibility"
-                  value={visibility}
-                  defaultChecked={
-                    visibility === "secretaria"
-                      ? (defaultActivity?.visibleForSecretaria ?? true)
-                      : (defaultActivity?.visibleForTesoreria ?? false)
-                  }
-                  className="size-4 rounded border-border"
-                />
-                <span className="font-medium">
-                  {texts.settings.club.treasury.account_visibility_options[visibility]}
-                </span>
-              </label>
+                name="visibility"
+                value={visibility}
+                label={texts.settings.club.treasury.account_visibility_options[visibility]}
+                defaultChecked={
+                  visibility === "secretaria"
+                    ? (defaultActivity?.visibleForSecretaria ?? true)
+                    : (defaultActivity?.visibleForTesoreria ?? false)
+                }
+              />
             ))}
           </div>
-        </fieldset>
+        </div>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-          <select
-            name="emoji"
-            defaultValue={defaultActivity?.emoji ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+        <FormField>
+          <FormFieldLabel>{texts.settings.club.treasury.emoji_label}</FormFieldLabel>
+          <FormSelect name="emoji" defaultValue={defaultActivity?.emoji ?? ""}>
             <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
             {getEmojiOptions(TREASURY_ACTIVITY_EMOJI_OPTIONS, defaultActivity?.emoji).map((emoji) => (
               <option key={`activity-emoji-${emoji}`} value={emoji}>
                 {emoji}
               </option>
             ))}
-          </select>
-        </label>
+          </FormSelect>
+        </FormField>
 
         <PendingSubmitButton
           idleLabel={submitLabel}
           pendingLabel={pendingLabel}
-          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+          className={buttonClass({ variant: "primary", className: "sm:justify-self-end" })}
         />
       </PendingFieldset>
     </form>
@@ -208,23 +198,14 @@ function TreasuryAccountForm({
       <PendingFieldset className="grid gap-4">
         {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.account_name_label}</span>
-          <input
-            type="text"
-            name="name"
-            defaultValue={defaultAccount?.name ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          />
-        </label>
+        <FormField>
+          <FormFieldLabel>{texts.settings.club.treasury.account_name_label}</FormFieldLabel>
+          <FormInput type="text" name="name" defaultValue={defaultAccount?.name ?? ""} />
+        </FormField>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.account_type_label}</span>
-          <select
-            name="account_type"
-            defaultValue={defaultAccount?.accountType ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+        <FormField>
+          <FormFieldLabel>{texts.settings.club.treasury.account_type_label}</FormFieldLabel>
+          <FormSelect name="account_type" defaultValue={defaultAccount?.accountType ?? ""}>
             <option value="" disabled>
               {texts.settings.club.treasury.account_type_placeholder}
             </option>
@@ -233,74 +214,52 @@ function TreasuryAccountForm({
             <option value="billetera_virtual">
               {texts.settings.club.treasury.account_types.billetera_virtual}
             </option>
-          </select>
-        </label>
+          </FormSelect>
+        </FormField>
 
-        <fieldset className="grid gap-3">
-          <legend className="text-sm font-medium text-foreground">
-            {texts.settings.club.treasury.account_visibility_label}
-          </legend>
+        <div className="grid gap-3">
+          <FormFieldLabel>{texts.settings.club.treasury.account_visibility_label}</FormFieldLabel>
           <div className="grid gap-3 sm:grid-cols-2">
             {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
-              <label
+              <FormCheckboxCard
                 key={`account-visibility-${visibility}`}
-                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-              >
-                <input
-                  type="checkbox"
-                  name="visibility"
-                  value={visibility}
-                  defaultChecked={
-                    visibility === "secretaria"
-                      ? (defaultAccount?.visibleForSecretaria ?? true)
-                      : (defaultAccount?.visibleForTesoreria ?? false)
-                  }
-                  className="size-4 rounded border-border"
-                />
-                <span className="font-medium">
-                  {texts.settings.club.treasury.account_visibility_options[visibility]}
-                </span>
-              </label>
+                name="visibility"
+                value={visibility}
+                label={texts.settings.club.treasury.account_visibility_options[visibility]}
+                defaultChecked={
+                  visibility === "secretaria"
+                    ? (defaultAccount?.visibleForSecretaria ?? true)
+                    : (defaultAccount?.visibleForTesoreria ?? false)
+                }
+              />
             ))}
           </div>
-        </fieldset>
+        </div>
 
-        <label className="grid gap-2 text-sm text-foreground">
-          <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-          <select
-            name="emoji"
-            defaultValue={defaultAccount?.emoji ?? ""}
-            className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-          >
+        <FormField>
+          <FormFieldLabel>{texts.settings.club.treasury.emoji_label}</FormFieldLabel>
+          <FormSelect name="emoji" defaultValue={defaultAccount?.emoji ?? ""}>
             <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
             {getEmojiOptions(TREASURY_ACCOUNT_EMOJI_OPTIONS, defaultAccount?.emoji).map((emoji) => (
               <option key={`account-emoji-${emoji}`} value={emoji}>
                 {emoji}
               </option>
             ))}
-          </select>
-        </label>
+          </FormSelect>
+        </FormField>
 
-        <fieldset className="grid gap-3">
-          <legend className="text-sm font-medium text-foreground">
-            {texts.settings.club.treasury.account_currencies_label}
-          </legend>
+        <div className="grid gap-3">
+          <FormFieldLabel>{texts.settings.club.treasury.account_currencies_label}</FormFieldLabel>
           <div className="grid gap-3 sm:grid-cols-3">
             {availableCurrencies.map((currencyCode) => (
-              <label
+              <FormCheckboxCard
                 key={`account-currency-${currencyCode}`}
-                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-              >
-                <input
-                  type="checkbox"
-                  name="currencies"
-                  value={currencyCode}
-                  checked={selectedCurrencies.includes(currencyCode)}
-                  onChange={(event) => handleCurrencyToggle(currencyCode, event.target.checked)}
-                  className="size-4 rounded border-border"
-                />
-                <span className="font-medium">{getCurrencyLabel(currencyCode)}</span>
-              </label>
+                name="currencies"
+                value={currencyCode}
+                label={getCurrencyLabel(currencyCode)}
+                checked={selectedCurrencies.includes(currencyCode)}
+                onChange={(checked) => handleCurrencyToggle(currencyCode, checked)}
+              />
             ))}
           </div>
           {currenciesTouched && selectedCurrencies.length === 0 ? (
@@ -308,13 +267,13 @@ function TreasuryAccountForm({
               {texts.settings.club.treasury.feedback.account_currencies_required}
             </p>
           ) : null}
-        </fieldset>
+        </div>
 
         <PendingSubmitButton
           idleLabel={submitLabel}
           pendingLabel={pendingLabel}
           disabled={selectedCurrencies.length === 0}
-          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+          className={buttonClass({ variant: "primary", className: "sm:justify-self-end" })}
         />
       </PendingFieldset>
     </form>
@@ -347,67 +306,48 @@ function TreasuryCategoryForm({
           </>
         ) : (
           <>
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.category_name_label}</span>
-              <input
-                type="text"
-                name="name"
-                defaultValue={defaultCategory?.name ?? ""}
-                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-              />
-            </label>
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.treasury.category_name_label}</FormFieldLabel>
+              <FormInput type="text" name="name" defaultValue={defaultCategory?.name ?? ""} />
+            </FormField>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.treasury.emoji_label}</span>
-              <select
-                name="emoji"
-                defaultValue={defaultCategory?.emoji ?? ""}
-                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-              >
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.treasury.emoji_label}</FormFieldLabel>
+              <FormSelect name="emoji" defaultValue={defaultCategory?.emoji ?? ""}>
                 <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
                 {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
                   <option key={`category-emoji-${emoji}`} value={emoji}>
                     {emoji}
                   </option>
                 ))}
-              </select>
-            </label>
+              </FormSelect>
+            </FormField>
           </>
         )}
 
-        <fieldset className="grid gap-3">
-          <legend className="text-sm font-medium text-foreground">
-            {texts.settings.club.treasury.account_visibility_label}
-          </legend>
+        <div className="grid gap-3">
+          <FormFieldLabel>{texts.settings.club.treasury.account_visibility_label}</FormFieldLabel>
           <div className="grid gap-3 sm:grid-cols-2">
             {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
-              <label
+              <FormCheckboxCard
                 key={`category-visibility-${visibility}`}
-                className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-              >
-                <input
-                  type="checkbox"
-                  name="visibility"
-                  value={visibility}
-                  defaultChecked={
-                    visibility === "secretaria"
-                      ? (defaultCategory?.visibleForSecretaria ?? true)
-                      : (defaultCategory?.visibleForTesoreria ?? false)
-                  }
-                  className="size-4 rounded border-border"
-                />
-                <span className="font-medium">
-                  {texts.settings.club.treasury.account_visibility_options[visibility]}
-                </span>
-              </label>
+                name="visibility"
+                value={visibility}
+                label={texts.settings.club.treasury.account_visibility_options[visibility]}
+                defaultChecked={
+                  visibility === "secretaria"
+                    ? (defaultCategory?.visibleForSecretaria ?? true)
+                    : (defaultCategory?.visibleForTesoreria ?? false)
+                }
+              />
             ))}
           </div>
-        </fieldset>
+        </div>
 
         <PendingSubmitButton
           idleLabel={submitLabel}
           pendingLabel={pendingLabel}
-          className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:justify-self-end"
+          className={buttonClass({ variant: "primary", className: "sm:justify-self-end" })}
         />
       </PendingFieldset>
     </form>

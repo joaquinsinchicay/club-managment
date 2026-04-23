@@ -28,6 +28,7 @@ import {
   FormHelpText,
   FormInput,
   FormReadonly,
+  FormSection,
   FormSelect,
 } from "@/components/ui/modal-form";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -583,9 +584,7 @@ function AmountHistory({ versions, currencyCode }: AmountHistoryProps) {
   }
   return (
     <section className="grid gap-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        {ssTexts.amount_history_title}
-      </p>
+      <FormSection>{ssTexts.amount_history_title}</FormSection>
       <DataTable density="compact" gridColumns="minmax(0,1fr) 130px 130px 90px">
         <DataTableHeader>
           <DataTableHeadCell align="right">{ssTexts.amount_history_amount}</DataTableHeadCell>

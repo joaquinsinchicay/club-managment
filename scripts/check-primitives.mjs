@@ -26,19 +26,13 @@ const EXCLUDE_DIRS = new Set([
 ]);
 
 /**
- * Reglas de anti-patron. Cada una tiene:
+ * Reglas line-based. Cada una tiene:
  *   id: slug
  *   pattern: RegExp (se aplica linea por linea)
  *   message: mensaje al reportar
  *   allowFiles?: [string] — paths permitidos (primitivos o casos especiales). Substring match.
  */
 const RULES = [
-  {
-    // Solo dispara en <button> / <a> / <Link> para no atrapar badges decorativos (<span>/<div>).
-    id: "chip-button-hardcoded",
-    pattern: /<(button|a|Link)[^>]*className="[^"]*rounded-full[^"]*bg-foreground[^"]*"/,
-    message: "Filter pill hardcoded. Usá <ChipButton> o <ChipLink> de @/components/ui/chip.",
-  },
   {
     id: "legacy-datatable-shell",
     pattern: /rounded-\[18px\]/,
@@ -67,12 +61,6 @@ const RULES = [
     allowFiles: ["components/settings/tabs/placeholder-tab.tsx"],
   },
   {
-    id: "heavy-button-hardcoded",
-    pattern: /<button[^>]*className="[^"]*rounded-(xl|2xl|card|full)[^"]*bg-foreground[^"]*"/,
-    message: "Button hardcoded. Usá <Button variant=...> de @/components/ui/button o buttonClass().",
-    allowFiles: ["components/ui/"],
-  },
-  {
     id: "card-shell-hardcoded",
     pattern: /className="[^"]*rounded-\[26px\][^"]*"/,
     message: "Card shell hardcoded. Usá <Card>/<CardHeader>/<CardBody> de @/components/ui/card.",
@@ -81,6 +69,127 @@ const RULES = [
     id: "hardcoded-spanish-copy",
     pattern: />(Cancelar|Guardar|Confirmar|Eliminar|Cerrar|Aceptar|Crear)<\/button>/,
     message: "Texto hardcoded en boton. Usar texts.* de lib/texts.json.",
+    allowFiles: ["components/ui/"],
+  },
+  {
+    // Gap C — section header reimplementando el estilo canónico de <FormSection>
+    // (uppercase + tracking-[0.14em] + text-muted-foreground).
+    id: "form-section-hardcoded",
+    pattern: /className="[^"]*\buppercase\b[^"]*tracking-\[0\.14em\][^"]*text-muted-foreground/,
+    message: "Section header hardcoded. Usá <FormSection> de @/components/ui/modal-form.",
+    allowFiles: ["components/ui/"],
+  },
+  {
+    // Gap D — botón "Cerrar" textual en body de modal. CLAUDE.md prohibe esto:
+    // "La X del header siempre visible. No agregar botones textuales 'Cerrar' dentro del body".
+    // Flag cualquier referencia a texts.*.close_cta — sólo existe para ser usado en el body de un modal.
+    id: "modal-close-cta-in-body",
+    pattern: /\.close_cta\b/,
+    message: "Texto close_cta usado en JSX. La X del header es la vía de salida — eliminar el botón 'Cerrar' del body.",
+    // lib/texts.json no se escanea (no es .tsx); la entrada puede quedar pero no referenciarse.
+    allowFiles: [],
+  },
+  {
+    // Gap E — BlockingOverlay sólo debe usarse dentro de @/components/ui/modal.
+    id: "blocking-overlay-outside-modal",
+    pattern: /\bBlockingOverlay\b/,
+    message: "BlockingOverlay solo puede usarse dentro de @/components/ui/modal. Migrar el diálogo a <Modal>.",
+    allowFiles: ["components/ui/"],
+  },
+  {
+    // Gap F — filter pill con bg-foreground + text-background (active state canónico de <ChipButton>).
+    // Captura el patrón usado con cn() donde el string literal vive dentro de un array de clases
+    // condicionales — el linter antiguo no matcheaba porque <button> estaba en otra línea.
+    id: "filter-pill-cn-hardcoded",
+    pattern: /"[^"]*\bbg-foreground\s+text-background\b[^"]*"/,
+    message: "Filter pill/active state hardcoded (bg-foreground text-background). Usá <ChipButton active> de @/components/ui/chip.",
+    // club-data-tab.tsx usa bg-foreground text-background en un badge decorativo de "editar avatar",
+    // no es filter pill. Permitir hasta migrar a primitivo dedicado de icon-badge.
+    allowFiles: ["components/ui/", "components/settings/tabs/club-data-tab.tsx"],
+  },
+];
+
+/**
+ * Reglas JSX-aware. Usan `findJsxBlocks` para resolver el opening tag completo
+ * (manejan multi-linea). Cada regla apunta a un tag específico.
+ *
+ * Reemplazan las reglas line-based antiguas `chip-button-hardcoded` y
+ * `heavy-button-hardcoded` que sólo matcheaban opening tags en una sola línea.
+ */
+const JSX_RULES = [
+  // Gap A — inputs/selects/textareas crudos con estilo canónico de FormInput/FormSelect/FormTextarea.
+  // settings-tab-shell.tsx es un primitivo compartido (search input del shell de /settings),
+  // no un form de dominio. Queda fuera del alcance de FormInput.
+  {
+    tag: "input",
+    id: "form-input-hardcoded",
+    pattern: /className="[^"]*rounded-(2xl|card)[^"]*bg-card/,
+    message: "Input hardcoded. Usá <FormInput> de @/components/ui/modal-form.",
+    allowFiles: ["components/ui/", "components/settings/settings-tab-shell.tsx"],
+  },
+  {
+    tag: "select",
+    id: "form-select-hardcoded",
+    pattern: /className="[^"]*rounded-(2xl|card)[^"]*bg-card/,
+    message: "Select hardcoded. Usá <FormSelect> de @/components/ui/modal-form.",
+    allowFiles: ["components/ui/"],
+  },
+  {
+    tag: "textarea",
+    id: "form-textarea-hardcoded",
+    pattern: /className="[^"]*rounded-(2xl|card)[^"]*bg-card/,
+    message: "Textarea hardcoded. Usá <FormTextarea> de @/components/ui/modal-form.",
+    allowFiles: ["components/ui/"],
+  },
+  // Gap B — heavy button hardcoded (cubre multi-linea y distintos wrappers).
+  {
+    tag: "button",
+    id: "heavy-button-hardcoded",
+    pattern: /className="[^"]*rounded-(xl|2xl|card|full)[^"]*bg-foreground/,
+    message: "Button hardcoded. Usá <Button variant=...> de @/components/ui/button o buttonClass().",
+    allowFiles: ["components/ui/"],
+  },
+  {
+    tag: "PendingSubmitButton",
+    id: "pending-submit-button-hardcoded",
+    pattern: /className="[^"]*rounded-(xl|2xl|card|full)[^"]*bg-foreground/,
+    message: "PendingSubmitButton con className hardcoded. Usar buttonClass() de @/components/ui/button.",
+    allowFiles: ["components/ui/"],
+  },
+  {
+    tag: "Link",
+    id: "heavy-link-hardcoded",
+    pattern: /className="[^"]*rounded-(xl|2xl|card|full)[^"]*bg-foreground/,
+    message: "Link con estilo de botón hardcoded. Usar <LinkButton> de @/components/ui/link-button.",
+    allowFiles: ["components/ui/"],
+  },
+  {
+    tag: "a",
+    id: "heavy-a-hardcoded",
+    pattern: /className="[^"]*rounded-(xl|2xl|card|full)[^"]*bg-foreground/,
+    message: "<a> con estilo de botón hardcoded. Usar <LinkButton> de @/components/ui/link-button.",
+    allowFiles: ["components/ui/"],
+  },
+  // Chip-button hardcoded multi-linea (subsume la regla line-based antigua).
+  {
+    tag: "button",
+    id: "chip-button-hardcoded",
+    pattern: /className="[^"]*\brounded-full\b[^"]*\bbg-foreground\b/,
+    message: "Chip button hardcoded. Usá <ChipButton> de @/components/ui/chip.",
+    allowFiles: ["components/ui/"],
+  },
+  {
+    tag: "a",
+    id: "chip-a-hardcoded",
+    pattern: /className="[^"]*\brounded-full\b[^"]*\bbg-foreground\b/,
+    message: "Chip <a> hardcoded. Usá <ChipLink> de @/components/ui/chip.",
+    allowFiles: ["components/ui/"],
+  },
+  {
+    tag: "Link",
+    id: "chip-link-hardcoded",
+    pattern: /className="[^"]*\brounded-full\b[^"]*\bbg-foreground\b/,
+    message: "Chip Link hardcoded. Usá <ChipLink> de @/components/ui/chip.",
     allowFiles: ["components/ui/"],
   },
 ];
@@ -101,10 +210,12 @@ function listFiles() {
 // El motivo es obligatorio (no se acepta supresión vacía). Ideal para debt flagueada de migración.
 const IGNORE_RE = /check-primitives-ignore-next-line:\s*\S+/;
 
-function checkFile(file, rules) {
+function checkFile(file, rules, jsxRules) {
   const content = readFileSync(file, "utf8");
   const lines = content.split("\n");
   const hits = [];
+
+  // Reglas line-based.
   for (const rule of rules) {
     if (rule.allowFiles?.some((allow) => file.includes(allow))) continue;
     for (let i = 0; i < lines.length; i++) {
@@ -117,8 +228,36 @@ function checkFile(file, rules) {
     }
   }
 
-  // Reglas JSX-aware sobre <Modal> — el parser resuelve opening-tag multi-linea
-  // ignorando arrow functions (`=>`) en props.
+  // Reglas JSX-aware — matchean contra el opening text completo (multi-linea).
+  // Agrupamos por tag para no repetir parseo.
+  const tagsSeen = new Set();
+  const blocksByTag = new Map();
+  for (const rule of jsxRules) {
+    tagsSeen.add(rule.tag);
+  }
+  for (const tag of tagsSeen) {
+    blocksByTag.set(tag, findJsxBlocks(content, tag));
+  }
+  for (const rule of jsxRules) {
+    if (rule.allowFiles?.some((allow) => file.includes(allow))) continue;
+    const blocks = blocksByTag.get(rule.tag) ?? [];
+    for (const block of blocks) {
+      const { openingText, start } = block;
+      const prev = start > 1 ? lines[start - 2] : "";
+      if (IGNORE_RE.test(prev)) continue;
+      if (rule.pattern.test(openingText)) {
+        hits.push({
+          file,
+          line: start,
+          rule: rule.id,
+          message: rule.message,
+          snippet: openingText.split("\n")[0].trim(),
+        });
+      }
+    }
+  }
+
+  // Reglas JSX-aware sobre <Modal> — prop `size` obligatoria, prohibido `hideCloseButton`.
   const modalBlocks = findJsxBlocks(content, "Modal");
   for (const block of modalBlocks) {
     const { openingText, start } = block;
@@ -153,7 +292,7 @@ function main() {
   const files = listFiles();
   const allHits = [];
   for (const file of files) {
-    allHits.push(...checkFile(file, RULES));
+    allHits.push(...checkFile(file, RULES, JSX_RULES));
   }
 
   if (allHits.length === 0) {

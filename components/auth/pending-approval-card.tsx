@@ -1,4 +1,5 @@
 import { AppHeader } from "@/components/navigation/app-header";
+import { Card, CardBody } from "@/components/ui/card";
 import { CardShell } from "@/components/ui/card-shell";
 import type { SessionContext } from "@/lib/auth/service";
 import { texts } from "@/lib/texts";
@@ -19,10 +20,12 @@ export function PendingApprovalCard({ context }: PendingApprovalCardProps) {
           description={texts.auth.pending_approval.description}
         >
           <div className="space-y-4 text-sm text-muted-foreground">
-            <div className="rounded-2xl border border-border bg-secondary/70 p-4">
-              <p className="font-medium text-foreground">{context.user.fullName}</p>
-              <p>{context.user.email}</p>
-            </div>
+            <Card tone="muted" padding="compact">
+              <CardBody>
+                <p className="font-medium text-foreground">{context.user.fullName}</p>
+                <p>{context.user.email}</p>
+              </CardBody>
+            </Card>
             <p>{texts.auth.pending_approval.next_step}</p>
           </div>
         </CardShell>

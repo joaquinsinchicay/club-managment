@@ -6,6 +6,7 @@ import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormInput } from "@/components/ui/modal-form";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
@@ -177,7 +178,7 @@ export function DailySessionBalanceCard({
 
                           <label className="grid gap-2 text-sm text-foreground">
                             <span className="font-medium">{texts.dashboard.treasury.declared_balance_label}</span>
-                            <input
+                            <FormInput
                               type="text"
                               name="declared_balance"
                               inputMode="decimal"
@@ -209,7 +210,6 @@ export function DailySessionBalanceCard({
                                   )
                                 );
                               }}
-                              className="min-h-11 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground"
                             />
                           </label>
 

@@ -10,9 +10,11 @@ import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableActions,
+  DataTableAmount,
   DataTableBody,
   DataTableCell,
   DataTableChip,
+  DataTableEmpty,
   DataTableHeadCell,
   DataTableHeader,
   DataTableRow,
@@ -28,6 +30,7 @@ import {
   FormHelpText,
   FormInput,
   FormReadonly,
+  FormSection,
   FormSelect,
   FormTextarea,
 } from "@/components/ui/modal-form";
@@ -529,7 +532,6 @@ export function SettlementsList({
             settlement={editingDetail}
             adjustments={adjustmentsBySettlementId[editingDetail.id] ?? []}
             clubCurrencyCode={clubCurrencyCode}
-            onClose={() => setEditingDetail(null)}
             addAdjustmentAction={addAdjustmentAction}
             deleteAdjustmentAction={deleteAdjustmentAction}
             updateHoursOrNotesAction={updateHoursOrNotesAction}
@@ -856,7 +858,6 @@ type SettlementDetailBodyProps = {
   settlement: PayrollSettlement;
   adjustments: PayrollSettlementAdjustment[];
   clubCurrencyCode: string;
-  onClose: () => void;
   addAdjustmentAction: (formData: FormData) => Promise<SettlementActionResult>;
   deleteAdjustmentAction: (formData: FormData) => Promise<SettlementActionResult>;
   updateHoursOrNotesAction: (formData: FormData) => Promise<SettlementActionResult>;
@@ -866,7 +867,6 @@ function SettlementDetailBody({
   settlement,
   adjustments,
   clubCurrencyCode,
-  onClose,
   addAdjustmentAction,
   deleteAdjustmentAction,
   updateHoursOrNotesAction,
@@ -970,14 +970,10 @@ function SettlementDetailBody({
 
       {/* Adjustments */}
       <section className="grid gap-2">
-        <header className="flex items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {sTexts.adjustments_section_title}
-          </p>
-        </header>
+        <FormSection>{sTexts.adjustments_section_title}</FormSection>
 
         {adjustments.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{sTexts.adjustments_empty}</p>
+          <DataTableEmpty title={sTexts.adjustments_empty} />
         ) : (
           <DataTable density="compact" gridColumns="100px minmax(0,1fr) 110px 40px">
             <DataTableHeader>
@@ -998,16 +994,11 @@ function SettlementDetailBody({
                   </DataTableCell>
                   <DataTableCell>{a.concept}</DataTableCell>
                   <DataTableCell align="right">
-                    <span
-                      className={
-                        a.type === "descuento"
-                          ? "font-semibold text-destructive"
-                          : "font-semibold text-foreground"
-                      }
-                    >
-                      {a.type === "descuento" ? "−" : "+"}
-                      {formatAmount(a.amount, clubCurrencyCode)}
-                    </span>
+                    <DataTableAmount
+                      type={a.type === "descuento" ? "egreso" : "ingreso"}
+                      currencyCode={clubCurrencyCode}
+                      amount={a.amount}
+                    />
                   </DataTableCell>
                   <DataTableCell align="right">
                     <DataTableActions>
@@ -1066,16 +1057,6 @@ function SettlementDetailBody({
           </button>
         </div>
       </form>
-
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onClose}
-          className={buttonClass({ variant: "secondary" })}
-        >
-          {sTexts.close_cta}
-        </button>
-      </div>
     </div>
   );
 }
@@ -1089,44 +1070,48 @@ function AddAdjustmentForm({ settlementId, onSubmit }: AddAdjustmentFormProps) {
   const [type, setType] = useState<PayrollAdjustmentType>("adicional");
 
   return (
-    <form
-      action={(fd) => onSubmit(fd)}
-      className="grid gap-3 rounded-card border border-border bg-card p-3 sm:grid-cols-[110px_minmax(0,1fr)_130px_auto] sm:items-end"
-    >
-      <input type="hidden" name="settlement_id" value={settlementId} />
-      <FormField>
-        <FormFieldLabel required>{sTexts.adjustments_col_type}</FormFieldLabel>
-        <FormSelect
-          name="type"
-          value={type}
-          onChange={(e) => setType(e.target.value as PayrollAdjustmentType)}
-          required
+    <Card padding="compact">
+      <CardBody>
+        <form
+          action={(fd) => onSubmit(fd)}
+          className="grid gap-3 sm:grid-cols-[110px_minmax(0,1fr)_130px_auto] sm:items-end"
         >
-          {PAYROLL_ADJUSTMENT_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {sTexts.adjustment_type_options[t]}
-            </option>
-          ))}
-        </FormSelect>
-      </FormField>
-      <FormField>
-        <FormFieldLabel required>{sTexts.adjustments_col_concept}</FormFieldLabel>
-        <FormInput type="text" name="concept" maxLength={200} required />
-      </FormField>
-      <FormField>
-        <FormFieldLabel required>{sTexts.adjustments_col_amount}</FormFieldLabel>
-        <FormInput
-          type="number"
-          name="amount"
-          inputMode="decimal"
-          min="0.01"
-          step="0.01"
-          required
-        />
-      </FormField>
-      <button type="submit" className={buttonClass({ variant: "primary" })}>
-        {sTexts.adjustment_add_cta}
-      </button>
-    </form>
+          <input type="hidden" name="settlement_id" value={settlementId} />
+          <FormField>
+            <FormFieldLabel required>{sTexts.adjustments_col_type}</FormFieldLabel>
+            <FormSelect
+              name="type"
+              value={type}
+              onChange={(e) => setType(e.target.value as PayrollAdjustmentType)}
+              required
+            >
+              {PAYROLL_ADJUSTMENT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {sTexts.adjustment_type_options[t]}
+                </option>
+              ))}
+            </FormSelect>
+          </FormField>
+          <FormField>
+            <FormFieldLabel required>{sTexts.adjustments_col_concept}</FormFieldLabel>
+            <FormInput type="text" name="concept" maxLength={200} required />
+          </FormField>
+          <FormField>
+            <FormFieldLabel required>{sTexts.adjustments_col_amount}</FormFieldLabel>
+            <FormInput
+              type="number"
+              name="amount"
+              inputMode="decimal"
+              min="0.01"
+              step="0.01"
+              required
+            />
+          </FormField>
+          <button type="submit" className={buttonClass({ variant: "primary" })}>
+            {sTexts.adjustment_add_cta}
+          </button>
+        </form>
+      </CardBody>
+    </Card>
   );
 }

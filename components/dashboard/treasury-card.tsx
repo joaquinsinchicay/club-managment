@@ -16,9 +16,11 @@ import {
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
+import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
   DataTableBody,
+  DataTableEmpty,
   DataTableRow,
 } from "@/components/ui/data-table";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
@@ -412,41 +414,31 @@ function MovementsCard({
       {/* Filter chips */}
       {card.accounts.length > 1 && !isDataUnresolved && card.movements.length > 0 ? (
         <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-hide">
-          <button
-            type="button"
+          <ChipButton
+            active={activeFilter === null}
             onClick={() => onFilterChange(null)}
-            className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 text-meta font-semibold transition",
-              activeFilter === null
-                ? "bg-foreground text-background"
-                : "bg-secondary text-muted-foreground hover:text-foreground"
-            )}
+            className="shrink-0"
           >
             {texts.dashboard.treasury.movements_filter_all_accounts}
-          </button>
+          </ChipButton>
           {card.accounts.map((account) => (
-            <button
+            <ChipButton
               key={account.accountId}
-              type="button"
+              active={activeFilter === account.accountId}
               onClick={() => onFilterChange(account.accountId)}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-meta font-semibold transition",
-                activeFilter === account.accountId
-                  ? "bg-foreground text-background"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              )}
+              className="shrink-0"
             >
               {account.name}
-            </button>
+            </ChipButton>
           ))}
         </div>
       ) : null}
 
       <div className="border-t border-border">
         {isSessionUnresolved || isDataUnresolved ? (
-          <p className="px-4 py-4 text-xs text-muted-foreground">{texts.dashboard.treasury.movements_unresolved}</p>
+          <DataTableEmpty title={texts.dashboard.treasury.movements_unresolved} />
         ) : filteredMovements.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-muted-foreground">{texts.dashboard.treasury.movements_empty}</p>
+          <DataTableEmpty title={texts.dashboard.treasury.movements_empty} />
         ) : (
           <SecretariaMovementList
             items={filteredMovements.map((movement) => ({

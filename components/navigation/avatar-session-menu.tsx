@@ -1,12 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getInitials } from "@/components/ui/avatar";
-import { BlockingOverlay } from "@/components/ui/overlay";
-import { Spinner } from "@/components/ui/pending-form";
+import { Modal } from "@/components/ui/modal";
+import { ModalFooter } from "@/components/ui/modal-footer";
 import { texts } from "@/lib/texts";
 
 type AvatarSessionMenuProps = {
@@ -24,7 +23,6 @@ export function AvatarSessionMenu({
   const fallbackDescriptionId = "avatar-fallback-description";
   const [isOpen, setIsOpen] = useState(false);
   const [isConfirmingSignOut, setIsConfirmingSignOut] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const initials = useMemo(() => getInitials(fullName, email), [email, fullName]);
 
   useEffect(() => {
@@ -87,7 +85,7 @@ export function AvatarSessionMenu({
         <div
           role="menu"
           aria-label={texts.header.avatar_menu.menu_aria_label}
-          className="absolute right-0 top-14 z-20 min-w-56 rounded-3xl border border-border bg-card p-2 shadow-soft"
+          className="absolute right-0 top-14 z-20 min-w-56 rounded-dialog border border-border bg-card p-2 shadow-soft"
         >
           <button
             type="button"
@@ -96,64 +94,30 @@ export function AvatarSessionMenu({
               setIsOpen(false);
               setIsConfirmingSignOut(true);
             }}
-            className="w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-destructive transition hover:bg-destructive/10"
+            className="w-full rounded-btn px-4 py-3 text-left text-sm font-medium text-destructive transition hover:bg-destructive/10"
           >
             {texts.header.avatar_menu.sign_out}
           </button>
         </div>
       ) : null}
 
-      {isConfirmingSignOut ? (
-        <BlockingOverlay
-          open
-          className="z-30 bg-foreground/40"
-          contentClassName="items-center justify-center px-4"
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="sign-out-dialog-title"
-            aria-describedby="sign-out-dialog-description"
-            className="w-full max-w-sm rounded-toast border border-border bg-card p-6 shadow-soft"
-          >
-            <h2 id="sign-out-dialog-title" className="text-xl font-semibold text-card-foreground">
-              {texts.auth.sign_out.confirm_title}
-            </h2>
-            <p
-              id="sign-out-dialog-description"
-              className="mt-2 text-sm leading-6 text-muted-foreground"
-            >
-              {texts.auth.sign_out.confirm_description}
-            </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                disabled={isSigningOut}
-                onClick={() => setIsConfirmingSignOut(false)}
-                className="min-h-11 rounded-2xl border border-border bg-secondary px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
-              >
-                {texts.auth.sign_out.cancel_cta}
-              </button>
-              <Link
-                href="/auth/sign-out"
-                aria-disabled={isSigningOut}
-                onClick={() => setIsSigningOut(true)}
-                className="flex min-h-11 items-center justify-center rounded-2xl bg-destructive px-4 py-3 text-center text-sm font-semibold text-primary-foreground transition hover:opacity-95 aria-disabled:opacity-60"
-              >
-                {isSigningOut ? (
-                  <>
-                    <Spinner />
-                    <span>{texts.auth.sign_out.loading}</span>
-                  </>
-                ) : (
-                  texts.auth.sign_out.confirm_cta
-                )}
-              </Link>
-            </div>
-          </div>
-        </BlockingOverlay>
-      ) : null}
+      <Modal
+        open={isConfirmingSignOut}
+        onClose={() => setIsConfirmingSignOut(false)}
+        title={texts.auth.sign_out.confirm_title}
+        description={texts.auth.sign_out.confirm_description}
+        size="sm"
+      >
+        <form action="/auth/sign-out" method="get">
+          <ModalFooter
+            onCancel={() => setIsConfirmingSignOut(false)}
+            cancelLabel={texts.auth.sign_out.cancel_cta}
+            submitLabel={texts.auth.sign_out.confirm_cta}
+            pendingLabel={texts.auth.sign_out.loading}
+            submitVariant="destructive"
+          />
+        </form>
+      </Modal>
     </div>
   );
 }

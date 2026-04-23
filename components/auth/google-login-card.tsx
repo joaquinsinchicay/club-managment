@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { buttonClass } from "@/components/ui/button";
 import { CardShell } from "@/components/ui/card-shell";
 import { GoogleLogo } from "@/components/ui/google-logo";
 import { Spinner } from "@/components/ui/pending-form";
@@ -20,7 +21,11 @@ export function GoogleLoginCard() {
         <div className="space-y-4">
           <a
             aria-disabled={isRedirecting}
-            className="grid min-h-11 w-full grid-cols-[20px_minmax(0,1fr)_20px] items-center gap-3 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+            className={buttonClass({
+              variant: "primary",
+              fullWidth: true,
+              className: "grid grid-cols-[20px_minmax(0,1fr)_20px] gap-3",
+            })}
             href="/auth/google/start"
             onClick={() => setIsRedirecting(true)}
           >

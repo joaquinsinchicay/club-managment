@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 
+import { Button, buttonClass } from "@/components/ui/button";
+import {
+  FormField,
+  FormFieldLabel,
+  FormInput,
+  FormSelect,
+} from "@/components/ui/modal-form";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type { MembershipRole } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
@@ -28,36 +35,27 @@ export function ClubInvitationManager({ inviteUserAction }: ClubInvitationManage
         </div>
 
         {!isOpen ? (
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
-          >
+          <Button variant="primary" onClick={() => setIsOpen(true)}>
             {texts.settings.club.invitations.toggle_cta}
-          </button>
+          </Button>
         ) : null}
       </div>
 
       {isOpen ? (
         <form action={inviteUserAction} className="mt-5 grid gap-4">
           <PendingFieldset className="grid gap-4">
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.invitations.email_label}</span>
-              <input
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.invitations.email_label}</FormFieldLabel>
+              <FormInput
                 type="email"
                 name="email"
                 placeholder={texts.settings.club.invitations.email_placeholder}
-                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
               />
-            </label>
+            </FormField>
 
-            <label className="grid gap-2 text-sm text-foreground">
-              <span className="font-medium">{texts.settings.club.invitations.role_label}</span>
-              <select
-                name="role"
-                defaultValue=""
-                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground"
-              >
+            <FormField>
+              <FormFieldLabel>{texts.settings.club.invitations.role_label}</FormFieldLabel>
+              <FormSelect name="role" defaultValue="">
                 <option value="" disabled>
                   {texts.settings.club.members.role_placeholder}
                 </option>
@@ -66,22 +64,22 @@ export function ClubInvitationManager({ inviteUserAction }: ClubInvitationManage
                     {texts.settings.club.members.roles[role]}
                   </option>
                 ))}
-              </select>
-            </label>
+              </FormSelect>
+            </FormField>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <PendingSubmitButton
                 idleLabel={texts.settings.club.invitations.invite_cta}
                 pendingLabel={texts.settings.club.invitations.invite_loading}
-                className="min-h-11 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
+                className={buttonClass({ variant: "primary", fullWidth: true })}
               />
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                fullWidth
                 onClick={() => setIsOpen(false)}
-                className="min-h-11 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-secondary"
               >
                 {texts.settings.club.invitations.cancel_cta}
-              </button>
+              </Button>
             </div>
           </PendingFieldset>
         </form>
