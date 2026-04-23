@@ -25,7 +25,7 @@ export function PageContentHeader({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-3">
           {eyebrow ? (
-            <p className="text-meta font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            <p className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
               {eyebrow}
             </p>
           ) : null}

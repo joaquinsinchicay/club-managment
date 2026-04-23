@@ -183,8 +183,8 @@ function progressPercent(cc: CostCenter, agg: CostCenterAggregates): number {
 function progressBarColor(cc: CostCenter, agg: CostCenterAggregates): string {
   const pct = progressPercent(cc, agg);
   if (cc.type === "deuda" && cc.amount && agg.totalEgreso >= cc.amount) return "bg-emerald-500";
-  if (cc.type === "presupuesto" && pct >= 100) return "bg-rose-500";
-  if (cc.type === "presupuesto" && pct >= 80) return "bg-amber-500";
+  if (cc.type === "presupuesto" && pct >= 100) return "bg-ds-rose-500";
+  if (cc.type === "presupuesto" && pct >= 80) return "bg-ds-amber-500";
   if ((cc.type === "sponsor" || cc.type === "publicidad") && cc.amount && agg.totalIngreso >= cc.amount)
     return "bg-emerald-500";
   return "bg-slate-400";
@@ -268,7 +268,7 @@ function KpiGrid({
             <p className="text-h2 font-bold tabular-nums">—</p>
           ) : (
             [...debtByCurrency.entries()].map(([code, value]) => (
-              <p key={code} className="text-sm font-semibold tabular-nums text-rose-600">
+              <p key={code} className="text-sm font-semibold tabular-nums text-ds-rose-600">
                 {formatCurrency(value, code)}
               </p>
             ))

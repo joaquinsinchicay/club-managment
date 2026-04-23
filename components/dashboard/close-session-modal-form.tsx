@@ -170,7 +170,7 @@ export function CloseSessionModalForm({
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_egresos}</p>
-            <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-red-700">
+            <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-ds-red-700">
               − {formatLocalizedAmount(summary.egresos)}
             </p>
           </div>

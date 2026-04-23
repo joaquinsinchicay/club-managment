@@ -39,7 +39,7 @@ export function ActiveClubSelector({
             defaultValue={activeClubId}
             onChange={() => formRef.current?.requestSubmit()}
             className={cn(
-              "min-h-11 rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground",
+              "min-h-11 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground",
               inline &&
                 "min-h-0 border-0 bg-transparent px-0 py-0 text-[15px] font-semibold tracking-tight text-foreground focus:outline-none focus:ring-0"
             )}

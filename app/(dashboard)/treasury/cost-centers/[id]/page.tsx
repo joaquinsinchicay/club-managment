@@ -178,7 +178,7 @@ export default async function CostCenterDetailPage({ params }: PageProps) {
               badges.map((b) => (
                 <span
                   key={b.kind}
-                  className="inline-flex items-center rounded-[4px] border border-border bg-slate-50 px-2 py-0.5 text-xs font-medium"
+                  className="inline-flex items-center rounded-xs border border-border bg-ds-slate-050 px-2 py-0.5 text-xs font-medium"
                 >
                   {BADGE_LABEL[b.kind]}
                 </span>
@@ -205,10 +205,10 @@ export default async function CostCenterDetailPage({ params }: PageProps) {
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="font-semibold tabular-nums">{formatDate(mov.movementDate)}</span>
                     <span
-                      className={`rounded-[4px] px-1.5 py-0.5 text-eyebrow font-semibold uppercase ${
+                      className={`rounded-xs px-1.5 py-0.5 text-eyebrow font-semibold uppercase ${
                         mov.movementType === "ingreso"
                           ? "bg-emerald-50 text-emerald-700"
-                          : "bg-rose-50 text-rose-700"
+                          : "bg-ds-rose-050 text-ds-rose-700"
                       }`}
                     >
                       {mov.movementType}
@@ -258,7 +258,7 @@ export default async function CostCenterDetailPage({ params }: PageProps) {
             {auditLog.map((entry) => (
               <li key={entry.id} className="flex flex-col gap-1 px-4 py-3">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-semibold uppercase tracking-wide">
+                  <span className="font-semibold uppercase tracking-wider">
                     {AUDIT_ACTION_LABEL[entry.actionType]}
                   </span>
                   <span>{formatDateTime(entry.changedAt)}</span>

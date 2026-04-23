@@ -250,7 +250,7 @@ export function StaffMembersTab({
                           {m.firstName} {m.lastName}
                         </span>
                         {m.status === "activo" && !m.hasActiveContract ? (
-                          <span className="text-xs text-amber-700">
+                          <span className="text-xs text-ds-amber-700">
                             {smTexts.alert_no_active_contracts}
                           </span>
                         ) : null}

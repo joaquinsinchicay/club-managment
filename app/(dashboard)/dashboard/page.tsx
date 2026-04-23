@@ -90,7 +90,7 @@ export default async function DashboardPage() {
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-2">
-                  <p className="text-meta font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  <p className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                     {texts.header.navigation.secretaria}
                   </p>
                   <h2 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-border bg-secondary/50 p-4">
+              <div className="rounded-card border border-border bg-secondary/50 p-4">
                 <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   {texts.dashboard.overview.total_balance_label}
                 </p>
@@ -134,7 +134,7 @@ export default async function DashboardPage() {
           <Card as="article" padding="compact">
             <div className="space-y-4">
               <div className="space-y-2">
-                <p className="text-meta font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                <p className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                   {texts.header.navigation.tesoreria}
                 </p>
                 <h2 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -143,7 +143,7 @@ export default async function DashboardPage() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-border bg-secondary/50 p-4">
+                <div className="rounded-card border border-border bg-secondary/50 p-4">
                   <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     {texts.dashboard.overview.visible_accounts_label}
                   </p>
@@ -152,7 +152,7 @@ export default async function DashboardPage() {
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-border bg-secondary/50 p-4">
+                <div className="rounded-card border border-border bg-secondary/50 p-4">
                   <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     {texts.dashboard.overview.recent_movements_label}
                   </p>
@@ -166,7 +166,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-border bg-secondary/50 p-4">
+              <div className="rounded-card border border-border bg-secondary/50 p-4">
                 <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   {texts.dashboard.overview.total_balance_label}
                 </p>
@@ -186,7 +186,7 @@ export default async function DashboardPage() {
           <Card as="article" padding="compact">
             <div className="space-y-4">
               <div className="space-y-2">
-                <p className="text-meta font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                <p className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                   {texts.dashboard.overview.settings_title}
                 </p>
                 <h2 className="text-2xl font-semibold tracking-tight text-foreground">

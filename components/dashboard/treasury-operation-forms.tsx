@@ -609,7 +609,7 @@ export function SecretariaMovementForm({
                     isSelected
                       ? isIngreso
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : "border-red-200 bg-red-50 text-red-700"
+                        : "border-ds-red-200 bg-ds-red-050 text-ds-red-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
                 >
@@ -937,7 +937,7 @@ export function SecretariaMovementEditForm({
                     isSelected
                       ? isIngreso
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : "border-red-200 bg-red-50 text-red-700"
+                        : "border-ds-red-200 bg-ds-red-050 text-ds-red-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
                 >
@@ -1900,7 +1900,7 @@ export function TreasuryRoleMovementForm({
                     isSelected
                       ? isIngreso
                         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : "border-red-200 bg-red-50 text-red-700"
+                        : "border-ds-red-200 bg-ds-red-050 text-ds-red-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
                 >
@@ -2126,7 +2126,7 @@ export function TreasuryRoleMovementForm({
                         className="size-4 rounded border-border text-foreground focus:ring-foreground"
                       />
                       <span className="flex-1 truncate font-medium">{cc.name}</span>
-                      <span className="rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">
+                      <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-slate-700">
                         {cc.type}
                       </span>
                       <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -2134,7 +2134,7 @@ export function TreasuryRoleMovementForm({
                       </span>
                       {selected && currencyMismatch ? (
                         <span
-                          className="rounded-[4px] bg-amber-50 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-amber-700"
+                          className="rounded-xs bg-ds-amber-050 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-amber-700"
                           title={ccCopy.movements_cost_centers_currency_mismatch}
                         >
                           ⚠

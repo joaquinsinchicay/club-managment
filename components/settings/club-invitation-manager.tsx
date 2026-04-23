@@ -16,7 +16,7 @@ export function ClubInvitationManager({ inviteUserAction }: ClubInvitationManage
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <section className="rounded-[24px] border border-border bg-secondary/50 p-4">
+    <section className="rounded-shell border border-border bg-secondary/50 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <h2 className="text-lg font-semibold text-foreground">

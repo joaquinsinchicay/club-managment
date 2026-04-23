@@ -145,9 +145,9 @@ export function AccountDetailCard({
                 {detail.balances.map((balance) => (
                   <div
                     key={`${detail.account.accountId}-${balance.currencyCode}`}
-                    className="rounded-xl border border-border bg-card px-4 py-4"
+                    className="rounded-card border border-border bg-card px-4 py-4"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                       {balance.currencyCode}
                     </p>
                     <p className="mt-1 text-xl font-semibold tracking-tight text-foreground">
@@ -244,7 +244,7 @@ export function AccountDetailCard({
                   ))}
 
                   {totalPages > 1 ? (
-                    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-3 rounded-card border border-border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="space-y-1">
                         <p className="text-sm font-semibold text-foreground">
                           {formatPaginationText(texts.dashboard.treasury.detail_pagination_status, {

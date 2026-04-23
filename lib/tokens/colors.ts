@@ -25,11 +25,30 @@ export const dsColors = {
 
   // Módulos semánticos — apuntan a CSS vars para respetar tema claro/oscuro
   green:  { base: "var(--green)",  "050": "var(--green-050)",  "700": "var(--green-700)"  },
-  red:    { base: "var(--red)",    "050": "var(--red-050)",    "700": "var(--red-700)"    },
-  amber:  { base: "var(--amber)",  "050": "var(--amber-050)",  "700": "var(--amber-700)"  },
+  red:    {
+    base:  "var(--red)",
+    "050": "var(--red-050)",
+    "100": "var(--red-100)",
+    "200": "var(--red-200)",
+    "500": "var(--red-500)",
+    "700": "var(--red-700)",
+  },
+  amber:  {
+    base:  "var(--amber)",
+    "050": "var(--amber-050)",
+    "500": "var(--amber-500)",
+    "700": "var(--amber-700)",
+  },
   blue:   { base: "var(--blue)",   "050": "var(--blue-050)",   "700": "var(--blue-700)"   },
   indigo: { base: "var(--indigo)", "050": "var(--indigo-050)", "700": "var(--indigo-700)" },
   teal:   { base: "var(--teal)",   "050": "var(--teal-050)",   "700": "var(--teal-700)"   },
   purple: { base: "var(--purple)", "050": "var(--purple-050)", "700": "var(--purple-700)" },
   pink:   { base: "var(--pink)",   "050": "var(--pink-050)",   "700": "var(--pink-700)"   },
+  rose:   {
+    base:  "var(--rose)",
+    "050": "var(--rose-050)",
+    "500": "var(--rose-500)",
+    "600": "var(--rose-600)",
+    "700": "var(--rose-700)",
+  },
 } as const;

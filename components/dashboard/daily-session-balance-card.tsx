@@ -150,7 +150,7 @@ export function DailySessionBalanceCard({
                     return (
                       <article
                         key={`${draft.accountId}-${draft.currencyCode}`}
-                        className="rounded-xl border border-border bg-secondary/40 p-4"
+                        className="rounded-card border border-border bg-secondary/40 p-4"
                       >
                         <input type="hidden" name="account_id" value={draft.accountId} />
                         <input type="hidden" name="currency_code" value={draft.currencyCode} />
@@ -158,7 +158,7 @@ export function DailySessionBalanceCard({
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-sm font-semibold text-foreground">{draft.accountName}</p>
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                            <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                               {draft.currencyCode}
                             </p>
                           </div>
@@ -166,8 +166,8 @@ export function DailySessionBalanceCard({
                         </div>
 
                         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                          <div className="rounded-xl border border-border bg-card px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                          <div className="rounded-card border border-border bg-card px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                               {texts.dashboard.treasury.expected_balance_label}
                             </p>
                             <p className="mt-1 text-base font-semibold text-foreground">
@@ -209,12 +209,12 @@ export function DailySessionBalanceCard({
                                   )
                                 );
                               }}
-                              className="min-h-11 rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground"
+                              className="min-h-11 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground"
                             />
                           </label>
 
-                          <div className="rounded-xl border border-border bg-card px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                          <div className="rounded-card border border-border bg-card px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                               {texts.dashboard.treasury.difference_label}
                             </p>
                             <p className="mt-1 text-base font-semibold text-foreground">
@@ -237,7 +237,7 @@ export function DailySessionBalanceCard({
                 </div>
 
                 {adjustments.length > 0 ? (
-                  <div className="rounded-xl border border-border bg-card p-4">
+                  <div className="rounded-card border border-border bg-card p-4">
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold text-foreground">
                         {texts.dashboard.treasury.adjustment_preview_title}
@@ -251,7 +251,7 @@ export function DailySessionBalanceCard({
                       {adjustments.map((adjustment) => (
                         <div
                           key={`${adjustment.accountId}-${adjustment.currencyCode}`}
-                          className="rounded-xl border border-border bg-secondary/40 px-4 py-3"
+                          className="rounded-card border border-border bg-secondary/40 px-4 py-3"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <p className="text-sm font-semibold text-foreground">{adjustment.accountName}</p>

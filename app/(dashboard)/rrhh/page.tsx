@@ -197,7 +197,7 @@ export default async function RrhhPage() {
                 <span
                   className={
                     summary.alertsCount > 0
-                      ? "text-h2 font-semibold text-amber-700"
+                      ? "text-h2 font-semibold text-ds-amber-700"
                       : "text-h2 font-semibold text-foreground"
                   }
                 >

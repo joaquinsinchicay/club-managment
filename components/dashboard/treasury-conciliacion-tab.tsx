@@ -104,7 +104,7 @@ function KpiTile({
 }) {
   const valueTone =
     tone === "warning"
-      ? "text-amber-700"
+      ? "text-ds-amber-700"
       : tone === "success"
         ? "text-success"
         : "text-foreground";

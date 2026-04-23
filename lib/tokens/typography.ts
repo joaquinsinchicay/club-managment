@@ -26,11 +26,15 @@ export const dsFontSize = {
 } as const;
 
 export const dsLetterSpacing = {
-  eyebrow:      "0.08em",
-  badge:        "0.06em",
-  label:        "0.04em",
-  chip:         "0.03em",
-  "eyebrow-sm": "0.06em",
-  "wide-sm":    "0.02em",
-  wider:        "0.10em",
+  eyebrow:        "0.08em",
+  badge:          "0.06em",
+  label:          "0.04em",
+  chip:           "0.03em",
+  "eyebrow-sm":   "0.06em",
+  "wide-sm":      "0.02em",
+  wider:          "0.10em",
+  // Uppercase section headers de <FormSection> — forms/modales.
+  section:        "0.14em",
+  // Eyebrow uppercase de <CardHeader> y derivados — cards/dashboard sections.
+  "card-eyebrow": "0.18em",
 } as const;

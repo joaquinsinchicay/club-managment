@@ -57,6 +57,15 @@ const categories = {
 const DESTRUCTIVE_TITLE_RE =
   /(eliminar|remover|cerrar jornada|anular|dar de baja|borrar|finalizar|desactivar|closing_title|close_session|remove_|delete_|annul_|deactivate_|finalize_|destroy_)/i;
 
+// Supresión inline igual que check-primitives.mjs — `check-primitives-ignore-next-line: <motivo>`
+// aplica también al auditor para unificar el mecanismo de excepción.
+const IGNORE_RE = /check-primitives-ignore-next-line:\s*\S+/;
+
+function isSuppressed(lines, lineIdx) {
+  const prev = lineIdx > 0 ? lines[lineIdx - 1] : "";
+  return IGNORE_RE.test(prev);
+}
+
 function auditFile(file) {
   const content = readFileSync(file, "utf8");
   const lines = content.split("\n");
@@ -64,6 +73,7 @@ function auditFile(file) {
   // A. Modales
   const modalBlocks = findJsxBlocks(content, "Modal");
   for (const block of modalBlocks) {
+    if (isSuppressed(lines, block.start - 1)) continue;
     const opening = block.openingText;
     // A1: size explicito
     if (!/\bsize=/.test(opening)) {
@@ -97,21 +107,36 @@ function auditFile(file) {
 
   // A4: ModalFooter con className o size="sm"
   for (let i = 0; i < lines.length; i++) {
+    if (isSuppressed(lines, i)) continue;
     if (/<ModalFooter[\s\S]*?(className=|size="sm")/.test(lines[i])) {
       categories.A4.items.push({ file, line: i + 1, snippet: lines[i].trim() });
     }
   }
 
-  // B1: tracking uppercase distinto de 0.14em
+  // B1: uppercase con tracking NO reconocido por design system.
+  // Tokens permitidos (ver lib/tokens/typography.ts):
+  //   tracking-[0.14em] (FormSection), tracking-[0.18em] (CardHeader eyebrow),
+  //   tracking-[0.08em] (eyebrow inline), tracking-section, tracking-card-eyebrow,
+  //   tracking-eyebrow, tracking-wider, tracking-badge.
   for (let i = 0; i < lines.length; i++) {
+    if (isSuppressed(lines, i)) continue;
     const line = lines[i];
-    if (/uppercase[\s\S]*tracking-\[0\.0[^1]/.test(line) || /uppercase[\s\S]*tracking-\[0\.(1[^4]|2)/.test(line)) {
+    if (!/uppercase/.test(line)) continue;
+    const trackingMatch = line.match(/tracking-\[?([^\]"\s]+)\]?/);
+    if (!trackingMatch) continue;
+    const val = trackingMatch[1];
+    const allowed = [
+      "0.14em", "0.18em", "0.08em",
+      "section", "card-eyebrow", "eyebrow", "wider", "badge", "label", "chip",
+    ];
+    if (!allowed.includes(val)) {
       categories.B1.items.push({ file, line: i + 1, snippet: line.trim().slice(0, 160) });
     }
   }
 
   // B2: focus ring /20 o /30
   for (let i = 0; i < lines.length; i++) {
+    if (isSuppressed(lines, i)) continue;
     if (/focus[^"]*ring-foreground\/(20|30)/.test(lines[i])) {
       categories.B2.items.push({ file, line: i + 1, snippet: lines[i].trim().slice(0, 160) });
     }
@@ -119,16 +144,21 @@ function auditFile(file) {
 
   // B3: radios fuera de token (rounded-xl / rounded-[4px] / rounded-[24px] / rounded-[7px] fuera de SegmentedNav)
   for (let i = 0; i < lines.length; i++) {
+    if (isSuppressed(lines, i)) continue;
     const line = lines[i];
     if (/rounded-xl|rounded-\[4px\]|rounded-\[24px\]/.test(line)) {
       categories.B3.items.push({ file, line: i + 1, snippet: line.trim().slice(0, 160) });
     }
   }
 
-  // B4: slate/amber/rose hardcoded (salvo SegmentedNav fuera de components/ui)
+  // B4: slate/amber/rose/red Tailwind-direct colors — no-ds-token. Permite los
+  // ds-tokens correspondientes (text-ds-*, bg-ds-*, border-ds-*) y clases de
+  // utility no-coloreadas que casualmente matchean el shorthand.
   for (let i = 0; i < lines.length; i++) {
+    if (isSuppressed(lines, i)) continue;
     const line = lines[i];
-    if (/(text-slate-[4-7]00|bg-slate-100|text-amber-[4-9]00|bg-amber-[0-9]00|text-rose-[4-9]00|bg-rose-[0-9]00|text-red-[4-9]00|bg-red-[0-9]00)/.test(line)) {
+    if (/(text-slate-[4-7]00|bg-slate-100|text-amber-[4-9]00|bg-amber-[0-9]00|text-rose-[4-9]00|bg-rose-[0-9]00|text-red-[4-9]00|bg-red-[0-9]00)/.test(line) &&
+        !/text-ds-|bg-ds-|border-ds-/.test(line)) {
       categories.B4.items.push({ file, line: i + 1, snippet: line.trim().slice(0, 160) });
     }
   }
@@ -136,6 +166,7 @@ function auditFile(file) {
   // C. DataTable
   const tables = findJsxBlocks(content, "DataTable");
   for (const block of tables) {
+    if (isSuppressed(lines, block.start - 1)) continue;
     const opening = block.openingText;
     if (!/\bdensity=/.test(opening)) {
       categories.C1.items.push({ file, line: block.start, snippet: opening.split("\n")[0].trim() });

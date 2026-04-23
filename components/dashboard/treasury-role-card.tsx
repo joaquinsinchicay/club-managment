@@ -333,7 +333,7 @@ function SubTabNav({
 
 function CurrencyChip({ code }: { code: string }) {
   return (
-    <span className="inline-flex shrink-0 items-center rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-eyebrow font-semibold text-slate-600">
+    <span className="inline-flex shrink-0 items-center rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-eyebrow font-semibold text-ds-slate-600">
       {code}
     </span>
   );
@@ -381,7 +381,7 @@ function KpiGrid({
             ))
           )}
         </div>
-        <p className="mt-1.5 text-meta text-slate-500">
+        <p className="mt-1.5 text-meta text-ds-slate-500">
           {accountCount} {texts.dashboard.treasury_role.kpi_accounts_count_label}
         </p>
       </div>
@@ -456,7 +456,7 @@ function KpiGrid({
         <p className="mt-2 text-[2rem] font-bold leading-none tracking-tight text-ds-blue-700 tabular-nums">
           {pendingConciliationCount}
         </p>
-        <p className="mt-1.5 text-meta text-slate-500">
+        <p className="mt-1.5 text-meta text-ds-slate-500">
           {texts.dashboard.treasury_role.kpi_pending_conciliation_meta}
         </p>
       </div>
@@ -610,7 +610,7 @@ function TreasuryRoleMovementGroups({
     <div className="grid gap-4">
       {groups.map((group) => (
         <section key={group.movementDate} className="space-y-3">
-          <div className="rounded-xl border border-border bg-card px-4 py-3">
+          <div className="rounded-card border border-border bg-card px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {texts.dashboard.treasury_role.date_label}
             </p>

@@ -208,7 +208,7 @@ function SessionCard({
         <div
           className={cn(
             "flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold",
-            isUnresolved ? "bg-slate-100 text-slate-500" : cn(cfg.iconBg, cfg.iconColor)
+            isUnresolved ? "bg-ds-slate-100 text-ds-slate-500" : cn(cfg.iconBg, cfg.iconColor)
           )}
           aria-hidden="true"
         >
@@ -865,6 +865,7 @@ export function TreasuryCard({
         />
       </Modal>
 
+      {/* check-primitives-ignore-next-line: submitVariant="destructive" vive en CloseSessionModalForm L320 (cross-file) */}
       <Modal
         open={activeModal === "close_session" && closeSessionValidation !== null}
         onClose={() => setActiveModal(null)}

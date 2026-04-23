@@ -263,7 +263,7 @@ export function SettlementsList({
             {selectedIds.length} ·{" "}
             {formatAmount(selectedTotal, clubCurrencyCode)}
             {selectionMode === "mixed" ? (
-              <span className="ml-2 text-xs text-amber-700">{sTexts.bulk_mixed_note}</span>
+              <span className="ml-2 text-xs text-ds-amber-700">{sTexts.bulk_mixed_note}</span>
             ) : null}
           </span>
           <div className="flex gap-2">
@@ -370,7 +370,7 @@ export function SettlementsList({
                   <DataTableCell align="right">
                     {formatAmount(s.baseAmount, clubCurrencyCode)}
                     {s.requiresHoursInput ? (
-                      <span className="ml-2 text-[10px] font-semibold uppercase text-amber-700">
+                      <span className="ml-2 text-[10px] font-semibold uppercase text-ds-amber-700">
                         {sTexts.requires_hours_badge}
                       </span>
                     ) : null}
