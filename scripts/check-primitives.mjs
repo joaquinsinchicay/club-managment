@@ -109,18 +109,18 @@ const RULES = [
   },
   {
     // Gap G — shell de <Card> hardcoded en <section>/<article> con rounded-(card|shell|toast|dialog)
-    // + border + bg-card. El patrón canónico es `<Card>` de @/components/ui/card que ya incluye
-    // rounded-shell + border + bg-card.
+    // + border + bg-(card|secondary/XX). El primitivo `<Card>` de @/components/ui/card ya
+    // compone rounded-shell + border + bg-card, y soporta tone="muted" para bg-secondary/40
+    // (con className override para bg-secondary/30 ó /50).
     //
     // Nota: Excluye <div> porque atrapa compound inputs (badge + input con rounded-card wrapper),
     // mini info boxes nested dentro de cards, y color pickers — todos casos legítimos donde
     // <Card> es over-engineering. Si un <div> con chrome de card es realmente un Card top-level,
     // migralo manualmente o envolvelo en <section>/<article>.
     id: "card-shell-hardcoded",
-    pattern: /<(section|article)[^>]*className="[^"]*rounded-(card|shell|toast|dialog)\b[^"]*\bborder\b[^"]*\bbg-card\b/,
-    message: "Shell de card hardcoded en <section|article>. Usá <Card>/<CardHeader>/<CardBody> de @/components/ui/card.",
-    // placeholder-tab renderiza un layout 'coming soon' que no encaja como Card.
-    allowFiles: ["components/ui/", "components/settings/tabs/placeholder-tab.tsx"],
+    pattern: /<(section|article)[^>]*className="[^"]*rounded-(card|shell|toast|dialog)\b[^"]*\bborder\b[^"]*\bbg-(card|secondary\/\d+)\b/,
+    message: "Shell de card hardcoded en <section|article>. Usá <Card tone=default|muted>/<CardHeader>/<CardBody> de @/components/ui/card.",
+    allowFiles: ["components/ui/"],
   },
 ];
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Button, buttonClass } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   FormField,
   FormFieldLabel,
@@ -23,7 +24,7 @@ export function ClubInvitationManager({ inviteUserAction }: ClubInvitationManage
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <section className="rounded-shell border border-border bg-secondary/50 p-4">
+    <Card tone="muted" padding="compact" className="bg-secondary/50">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <h2 className="text-lg font-semibold text-foreground">
@@ -84,6 +85,6 @@ export function ClubInvitationManager({ inviteUserAction }: ClubInvitationManage
           </PendingFieldset>
         </form>
       ) : null}
-    </section>
+    </Card>
   );
 }
