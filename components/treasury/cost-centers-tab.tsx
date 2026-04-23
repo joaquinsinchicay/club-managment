@@ -803,7 +803,7 @@ export function CostCentersTab({
         open={modalState !== null}
         onClose={() => setModalState(null)}
         title={modalState?.mode === "edit" ? tCC.form_edit_title : tCC.form_create_title}
-        hideCloseButton
+        size="md"
       >
         {modalState && (
           <CostCenterForm

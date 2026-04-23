@@ -1230,7 +1230,6 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.movement_form_title}
         description={texts.dashboard.treasury_role.movement_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
-        hideCloseButton
         size="md"
       >
         <TreasuryRoleMovementForm
@@ -1287,7 +1286,6 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.fx_form_title}
         description={texts.dashboard.treasury_role.fx_form_description}
         closeDisabled={isMovementSubmissionPending || isMovementUpdatePending || isFxSubmissionPending}
-        hideCloseButton
         size="md"
       >
         <TreasuryRoleFxForm
@@ -1309,7 +1307,6 @@ export function TreasuryRoleCard({
           isFxSubmissionPending ||
           isTransferSubmissionPending
         }
-        hideCloseButton
         size="md"
       >
         <AccountTransferForm
@@ -1328,7 +1325,6 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.accounts_tab_create_title}
         description={texts.settings.club.treasury.create_account_description}
         closeDisabled={isAccountSubmissionPending}
-        hideCloseButton
         size="md"
       >
         <TreasuryAccountForm
@@ -1349,7 +1345,6 @@ export function TreasuryRoleCard({
         title={texts.dashboard.treasury_role.accounts_tab_edit_title}
         description={texts.settings.club.treasury.edit_account_description}
         closeDisabled={isAccountSubmissionPending}
-        hideCloseButton
         size="md"
       >
         {editingAccount ? (

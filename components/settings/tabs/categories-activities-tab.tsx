@@ -258,7 +258,7 @@ export function CategoriesActivitiesTab({
         open={isCreatingCategory}
         title={treasuryTexts.create_category_cta}
         onClose={() => setIsCreatingCategory(false)}
-        hideCloseButton
+        size="md"
       >
         <CategoryForm
           action={createTreasuryCategoryAction}
@@ -273,7 +273,7 @@ export function CategoriesActivitiesTab({
         open={editingCategory !== null}
         title={treasuryTexts.edit_category_cta}
         onClose={() => setEditingCategory(null)}
-        hideCloseButton
+        size="md"
       >
         {editingCategory ? (
           <CategoryForm
@@ -292,7 +292,7 @@ export function CategoriesActivitiesTab({
         open={isCreatingActivity}
         title={treasuryTexts.create_activity_cta}
         onClose={() => setIsCreatingActivity(false)}
-        hideCloseButton
+        size="md"
       >
         <ActivityForm
           action={createClubActivityAction}
@@ -307,7 +307,7 @@ export function CategoriesActivitiesTab({
         open={editingActivity !== null}
         title={treasuryTexts.edit_activity_cta}
         onClose={() => setEditingActivity(null)}
-        hideCloseButton
+        size="md"
       >
         {editingActivity ? (
           <ActivityForm

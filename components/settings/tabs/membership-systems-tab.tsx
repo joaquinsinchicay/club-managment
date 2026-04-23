@@ -165,6 +165,7 @@ export function MembershipSystemsTab({ receiptFormats, updateReceiptFormatAction
         open={isEditing}
         title={texts.settings.club.treasury.edit_receipt_format_cta}
         onClose={() => setIsEditing(false)}
+        size="md"
       >
         <ReceiptFormatForm
           key={receiptFormat.id}

@@ -753,7 +753,6 @@ export function TreasuryCard({
         title={texts.dashboard.treasury.movement_form_title}
         description={texts.dashboard.treasury.movement_form_description}
         closeDisabled={isMovementSubmissionPending}
-        hideCloseButton
         size="md"
       >
         <SecretariaMovementForm
@@ -780,7 +779,6 @@ export function TreasuryCard({
         title={texts.dashboard.treasury.edit_form_title}
         description={texts.dashboard.treasury.edit_form_description}
         closeDisabled={isMovementUpdatePending}
-        hideCloseButton
         size="md"
       >
         {selectedMovement ? (
@@ -812,7 +810,6 @@ export function TreasuryCard({
         title={texts.dashboard.treasury.transfer_form_title}
         description={texts.dashboard.treasury.edit_form_description}
         closeDisabled={isMovementUpdatePending}
-        hideCloseButton
         size="md"
       >
         {selectedMovement && selectedMovement.transferReference !== null ? (() => {
@@ -856,7 +853,6 @@ export function TreasuryCard({
         title={texts.dashboard.treasury.transfer_form_title}
         description={texts.dashboard.treasury.transfer_form_description}
         closeDisabled={isTransferSubmissionPending}
-        hideCloseButton
         size="md"
       >
         <AccountTransferForm
@@ -875,7 +871,6 @@ export function TreasuryCard({
         title={texts.dashboard.treasury.closing_title}
         description={texts.dashboard.treasury.closing_description}
         closeDisabled={isSessionClosePending}
-        hideCloseButton
         size="lg"
       >
         {closeSessionValidation ? (
@@ -895,7 +890,6 @@ export function TreasuryCard({
         title={texts.dashboard.treasury.opening_title}
         description={texts.dashboard.treasury.opening_description}
         closeDisabled={isSessionOpenPending}
-        hideCloseButton
         size="lg"
       >
         {openSessionValidation ? (

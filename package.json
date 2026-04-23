@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "validate:docs": "node scripts/validate-docs.mjs",
     "check:primitives": "node scripts/check-primitives.mjs",
+    "audit:design": "node scripts/audit-design-system.mjs",
     "ci": "npm run validate:docs && npm run check:primitives && npm run lint && npm run typecheck && npm run build"
   },
   "dependencies": {
