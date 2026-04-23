@@ -16,6 +16,9 @@ import {
   FIELD_LABEL_CLASSNAME,
   FORM_GRID_CLASSNAME,
   FULL_WIDTH_FIELD_CLASSNAME,
+  FormInput,
+  FormSelect,
+  FormTextarea,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
 import type {
@@ -255,23 +258,21 @@ function MovementFormFields({
       {showMovementDateInput ? (
         <FormField>
           <span className={FIELD_LABEL_CLASSNAME}>{copy.date_label}</span>
-          <input
+          <FormInput
             type="date"
             name="movement_date"
             value={formState.movementDate ?? ""}
             onChange={(event) => onChange({ movementDate: event.target.value })}
-            className={CONTROL_CLASSNAME}
           />
         </FormField>
       ) : null}
 
       <FormField>
         <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.account_label, copy)}</span>
-        <select
+        <FormSelect
           name="account_id"
           value={formState.accountId}
           onChange={(event) => onChange({ accountId: event.target.value })}
-          className={CONTROL_CLASSNAME}
         >
           <option value="" disabled>
             {copy.account_placeholder}
@@ -281,16 +282,15 @@ function MovementFormFields({
               {account.name}
             </option>
           ))}
-        </select>
+        </FormSelect>
       </FormField>
 
       <FormField>
         <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.movement_type_label, copy)}</span>
-        <select
+        <FormSelect
           name="movement_type"
           value={formState.movementType}
           onChange={(event) => onChange({ movementType: event.target.value })}
-          className={CONTROL_CLASSNAME}
         >
           <option value="" disabled>
             {copy.movement_type_placeholder}
@@ -300,17 +300,16 @@ function MovementFormFields({
               {copy.movement_types[movementType]}
             </option>
           ))}
-        </select>
+        </FormSelect>
       </FormField>
 
       <FormField>
         <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.category_label, copy)}</span>
-        <select
+        <FormSelect
           name="category_id"
           value={formState.categoryId}
           disabled={!formState.movementType}
           onChange={(event) => onChange({ categoryId: event.target.value })}
-          className={formState.movementType ? CONTROL_CLASSNAME : DISABLED_CONTROL_CLASSNAME}
         >
           <option value="" disabled>
             {copy.category_placeholder}
@@ -320,18 +319,17 @@ function MovementFormFields({
               {category.subCategoryName}
             </option>
           ))}
-        </select>
+        </FormSelect>
       </FormField>
 
       {formState.categoryId ? (
         <FormField>
           <span className={FIELD_LABEL_CLASSNAME}>{copy.parent_category_label}</span>
-          <input
+          <FormInput
             type="text"
             value={availableCategories.find((c) => c.id === formState.categoryId)?.parentCategory ?? ""}
             disabled
             readOnly
-            className={DISABLED_CONTROL_CLASSNAME}
           />
         </FormField>
       ) : null}
@@ -339,11 +337,10 @@ function MovementFormFields({
       {activities.length > 0 ? (
         <FormField>
           <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
-          <select
+          <FormSelect
             name="activity_id"
             value={formState.activityId}
             onChange={(event) => onChange({ activityId: event.target.value })}
-            className={CONTROL_CLASSNAME}
           >
             <option value="">{copy.activity_placeholder}</option>
             {activities.map((activity) => (
@@ -351,14 +348,14 @@ function MovementFormFields({
                 {activity.name}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </FormField>
       ) : null}
 
       {receiptFormats.length > 0 ? (
         <FormField fullWidth>
           <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
-          <input
+          <FormInput
             type="text"
             name="receipt_number"
             value={formState.receiptNumber}
@@ -376,29 +373,26 @@ function MovementFormFields({
                 }
               }
             }}
-            className={CONTROL_CLASSNAME}
           />
         </FormField>
       ) : null}
 
       <FormField fullWidth>
         <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.concept_label, copy)}</span>
-        <input
+        <FormInput
           type="text"
           name="concept"
           value={formState.concept}
           onChange={(event) => onChange({ concept: event.target.value })}
-          className={CONTROL_CLASSNAME}
         />
       </FormField>
 
       <FormField>
         <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.currency_label, copy)}</span>
-        <select
+        <FormSelect
           name="currency_code"
           value={formState.currencyCode}
           onChange={(event) => onChange({ currencyCode: event.target.value })}
-          className={CONTROL_CLASSNAME}
           disabled={availableCurrencies.length === 0}
         >
           <option value="" disabled>
@@ -409,12 +403,12 @@ function MovementFormFields({
               {currency.currencyCode}
             </option>
           ))}
-        </select>
+        </FormSelect>
       </FormField>
 
       <FormField>
         <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.amount_label, copy)}</span>
-        <input
+        <FormInput
           type="text"
           name="amount"
           inputMode="decimal"
@@ -427,7 +421,6 @@ function MovementFormFields({
               event.preventDefault();
             }
           }}
-          className={CONTROL_CLASSNAME}
         />
       </FormField>
     </>
@@ -629,17 +622,16 @@ export function SecretariaMovementForm({
         {/* CUENTA */}
         <label className="grid gap-2">
           <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.account_label, copy)}</span>
-          <select
+          <FormSelect
             name="account_id"
             value={formState.accountId}
             onChange={(e) => setFormState((s) => ({ ...s, accountId: e.target.value }))}
-            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>{copy.account_placeholder}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
-          </select>
+          </FormSelect>
         </label>
 
         {/* MONTO */}
@@ -647,17 +639,16 @@ export function SecretariaMovementForm({
           <p className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.amount_label, copy)}</p>
           <div className="flex gap-2">
             {hasMultipleCurrencies ? (
-              <select
+              <FormSelect
                 name="currency_code"
                 value={formState.currencyCode}
-                onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))}
-                className={cn(CONTROL_CLASSNAME, "w-24 shrink-0")}
+                onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))} className="w-24 shrink-0"
               >
                 <option value="" disabled>{copy.currency_placeholder}</option>
                 {availableCurrencies.map((c) => (
                   <option key={c.currencyCode} value={c.currencyCode}>{c.currencyCode}</option>
                 ))}
-              </select>
+              </FormSelect>
             ) : (
               <>
                 <input type="hidden" name="currency_code" value={formState.currencyCode} />
@@ -666,7 +657,7 @@ export function SecretariaMovementForm({
                 </div>
               </>
             )}
-            <input
+            <FormInput
               type="text"
               name="amount"
               inputMode="decimal"
@@ -675,8 +666,7 @@ export function SecretariaMovementForm({
               onBlur={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnBlur(e.target.value) }))}
               onFocus={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnFocus(e.target.value) }))}
               onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
-              placeholder="0,00"
-              className={cn(CONTROL_CLASSNAME, "flex-1 text-right tabular-nums")}
+              placeholder="0,00" className="flex-1 text-right tabular-nums"
             />
           </div>
           <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.amount_helper_text}</p>
@@ -686,28 +676,26 @@ export function SecretariaMovementForm({
         <div className="grid grid-cols-2 gap-3">
           <label className="grid gap-2">
             <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.category_label, copy)}</span>
-            <select
+            <FormSelect
               name="category_id"
               value={formState.categoryId}
               disabled={!formState.movementType}
               onChange={(e) => setFormState((s) => ({ ...s, categoryId: e.target.value }))}
-              className={formState.movementType ? CONTROL_CLASSNAME : DISABLED_CONTROL_CLASSNAME}
             >
               <option value="" disabled>{copy.category_placeholder}</option>
               {availableCategories.map((c) => (
                 <option key={c.id} value={c.id}>{c.subCategoryName}</option>
               ))}
-            </select>
+            </FormSelect>
           </label>
           <label className="grid gap-2">
             <span className={FIELD_LABEL_CLASSNAME}>{copy.parent_category_label}</span>
-            <input
+            <FormInput
               type="text"
               value={selectedParentCategory}
               disabled
               readOnly
               placeholder="—"
-              className={DISABLED_CONTROL_CLASSNAME}
             />
           </label>
         </div>
@@ -718,21 +706,20 @@ export function SecretariaMovementForm({
           <div className="grid grid-cols-2 gap-3">
             <label className="grid gap-2">
               <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
-              <select
+              <FormSelect
                 name="activity_id"
                 value={formState.activityId}
                 onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
-                className={CONTROL_CLASSNAME}
               >
                 <option value="">{copy.activity_placeholder}</option>
                 {activities.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
-              </select>
+              </FormSelect>
             </label>
             <label className="grid gap-2">
               <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
-              <input
+              <FormInput
                 type="text"
                 name="receipt_number"
                 value={formState.receiptNumber}
@@ -745,7 +732,6 @@ export function SecretariaMovementForm({
                     if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
                   }
                 }}
-                className={CONTROL_CLASSNAME}
               />
             </label>
           </div>
@@ -754,23 +740,22 @@ export function SecretariaMovementForm({
             {activities.length > 0 ? (
               <label className="grid gap-2">
                 <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
-                <select
+                <FormSelect
                   name="activity_id"
                   value={formState.activityId}
                   onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
-                  className={CONTROL_CLASSNAME}
                 >
                   <option value="">{copy.activity_placeholder}</option>
                   {activities.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
-                </select>
+                </FormSelect>
               </label>
             ) : null}
             {receiptFormats.length > 0 ? (
               <label className="grid gap-2">
                 <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
-                <input
+                <FormInput
                   type="text"
                   name="receipt_number"
                   value={formState.receiptNumber}
@@ -783,7 +768,6 @@ export function SecretariaMovementForm({
                       if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
                     }
                   }}
-                  className={CONTROL_CLASSNAME}
                 />
               </label>
             ) : null}
@@ -793,13 +777,12 @@ export function SecretariaMovementForm({
         {/* CONCEPTO */}
         <label className="grid gap-2">
           <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.concept_label, copy)}</span>
-          <input
+          <FormInput
             type="text"
             name="concept"
             value={formState.concept}
             onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
             placeholder={texts.dashboard.treasury.concept_placeholder}
-            className={CONTROL_CLASSNAME}
           />
         </label>
 
@@ -906,12 +889,11 @@ export function SecretariaMovementEditForm({
         <div className="grid gap-1.5">
           <p className={FIELD_LABEL_CLASSNAME}>{copy.date_label}</p>
           {editableMovementDate ? (
-            <input
+            <FormInput
               type="date"
               name="movement_date"
               value={formState.movementDate ?? ""}
               onChange={(e) => setFormState((s) => ({ ...s, movementDate: e.target.value }))}
-              className={CONTROL_CLASSNAME}
             />
           ) : (
             <div className={cn(DISABLED_CONTROL_CLASSNAME, "font-medium text-foreground")}>
@@ -957,17 +939,16 @@ export function SecretariaMovementEditForm({
         {/* CUENTA */}
         <label className="grid gap-2">
           <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.account_label, copy)}</span>
-          <select
+          <FormSelect
             name="account_id"
             value={formState.accountId}
             onChange={(e) => setFormState((s) => ({ ...s, accountId: e.target.value }))}
-            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>{copy.account_placeholder}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
-          </select>
+          </FormSelect>
         </label>
 
         {/* MONTO */}
@@ -975,17 +956,16 @@ export function SecretariaMovementEditForm({
           <p className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.amount_label, copy)}</p>
           <div className="flex gap-2">
             {hasMultipleCurrencies ? (
-              <select
+              <FormSelect
                 name="currency_code"
                 value={formState.currencyCode}
-                onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))}
-                className={cn(CONTROL_CLASSNAME, "w-24 shrink-0")}
+                onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))} className="w-24 shrink-0"
               >
                 <option value="" disabled>{copy.currency_placeholder}</option>
                 {availableCurrencies.map((c) => (
                   <option key={c.currencyCode} value={c.currencyCode}>{c.currencyCode}</option>
                 ))}
-              </select>
+              </FormSelect>
             ) : (
               <>
                 <input type="hidden" name="currency_code" value={formState.currencyCode} />
@@ -994,7 +974,7 @@ export function SecretariaMovementEditForm({
                 </div>
               </>
             )}
-            <input
+            <FormInput
               type="text"
               name="amount"
               inputMode="decimal"
@@ -1002,8 +982,7 @@ export function SecretariaMovementEditForm({
               onChange={(e) => setFormState((s) => ({ ...s, amount: sanitizeAmountInput(e.target.value) }))}
               onBlur={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnBlur(e.target.value) }))}
               onFocus={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnFocus(e.target.value) }))}
-              onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
-              className={cn(CONTROL_CLASSNAME, "flex-1 text-right tabular-nums")}
+              onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }} className="flex-1 text-right tabular-nums"
             />
           </div>
         </div>
@@ -1012,28 +991,26 @@ export function SecretariaMovementEditForm({
         <div className="grid grid-cols-2 gap-3">
           <label className="grid gap-2">
             <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.category_label, copy)}</span>
-            <select
+            <FormSelect
               name="category_id"
               value={formState.categoryId}
               disabled={!formState.movementType}
               onChange={(e) => setFormState((s) => ({ ...s, categoryId: e.target.value }))}
-              className={formState.movementType ? CONTROL_CLASSNAME : DISABLED_CONTROL_CLASSNAME}
             >
               <option value="" disabled>{copy.category_placeholder}</option>
               {availableCategories.map((c) => (
                 <option key={c.id} value={c.id}>{c.subCategoryName}</option>
               ))}
-            </select>
+            </FormSelect>
           </label>
           <label className="grid gap-2">
             <span className={FIELD_LABEL_CLASSNAME}>{copy.parent_category_label}</span>
-            <input
+            <FormInput
               type="text"
               value={selectedParentCategory}
               disabled
               readOnly
               placeholder="—"
-              className={DISABLED_CONTROL_CLASSNAME}
             />
           </label>
         </div>
@@ -1044,21 +1021,20 @@ export function SecretariaMovementEditForm({
           <div className="grid grid-cols-2 gap-3">
             <label className="grid gap-2">
               <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
-              <select
+              <FormSelect
                 name="activity_id"
                 value={formState.activityId}
                 onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
-                className={CONTROL_CLASSNAME}
               >
                 <option value="">{copy.activity_placeholder}</option>
                 {activities.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
-              </select>
+              </FormSelect>
             </label>
             <label className="grid gap-2">
               <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
-              <input
+              <FormInput
                 type="text"
                 name="receipt_number"
                 value={formState.receiptNumber}
@@ -1071,7 +1047,6 @@ export function SecretariaMovementEditForm({
                     if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
                   }
                 }}
-                className={CONTROL_CLASSNAME}
               />
             </label>
           </div>
@@ -1080,23 +1055,22 @@ export function SecretariaMovementEditForm({
             {activities.length > 0 ? (
               <label className="grid gap-2">
                 <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
-                <select
+                <FormSelect
                   name="activity_id"
                   value={formState.activityId}
                   onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
-                  className={CONTROL_CLASSNAME}
                 >
                   <option value="">{copy.activity_placeholder}</option>
                   {activities.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
-                </select>
+                </FormSelect>
               </label>
             ) : null}
             {receiptFormats.length > 0 ? (
               <label className="grid gap-2">
                 <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
-                <input
+                <FormInput
                   type="text"
                   name="receipt_number"
                   value={formState.receiptNumber}
@@ -1109,7 +1083,6 @@ export function SecretariaMovementEditForm({
                       if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
                     }
                   }}
-                  className={CONTROL_CLASSNAME}
                 />
               </label>
             ) : null}
@@ -1119,12 +1092,11 @@ export function SecretariaMovementEditForm({
         {/* CONCEPTO */}
         <label className="grid gap-2">
           <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.concept_label, copy)}</span>
-          <input
+          <FormInput
             type="text"
             name="concept"
             value={formState.concept}
             onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
-            className={CONTROL_CLASSNAME}
           />
         </label>
 
@@ -1245,17 +1217,16 @@ export function AccountTransferEditForm({
           <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label, texts.dashboard.treasury)}
           </span>
-          <select
+          <FormSelect
             name="source_account_id"
             value={formState.sourceAccountId}
             onChange={(e) => setFormState((s) => ({ ...s, sourceAccountId: e.target.value }))}
-            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>{texts.dashboard.treasury.transfer_source_account_placeholder}</option>
             {sourceAccounts.map((account) => (
               <option key={`source-${account.id}`} value={account.id}>{account.name}</option>
             ))}
-          </select>
+          </FormSelect>
         </label>
 
         {/* MONEDA + IMPORTE */}
@@ -1266,17 +1237,16 @@ export function AccountTransferEditForm({
                 {getRequiredLabel(texts.dashboard.treasury.currency_label, texts.dashboard.treasury)}
               </span>
               {hasMultipleCurrencies ? (
-                <select
+                <FormSelect
                   name="currency_code"
                   value={formState.currencyCode}
                   onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))}
-                  className={CONTROL_CLASSNAME}
                 >
                   <option value="" disabled>{texts.dashboard.treasury.currency_placeholder}</option>
                   {availableCurrencies.map((c) => (
                     <option key={`transfer-${c.currencyCode}`} value={c.currencyCode}>{c.currencyCode}</option>
                   ))}
-                </select>
+                </FormSelect>
               ) : (
                 <>
                   <input type="hidden" name="currency_code" value={formState.currencyCode} />
@@ -1290,7 +1260,7 @@ export function AccountTransferEditForm({
               <span className={FIELD_LABEL_CLASSNAME}>
                 {getRequiredLabel(texts.dashboard.treasury.amount_label, texts.dashboard.treasury)}
               </span>
-              <input
+              <FormInput
                 type="text"
                 name="amount"
                 inputMode="decimal"
@@ -1299,8 +1269,7 @@ export function AccountTransferEditForm({
                 onBlur={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnBlur(e.target.value) }))}
                 onFocus={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnFocus(e.target.value) }))}
                 onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
-                placeholder="0,00"
-                className={cn(CONTROL_CLASSNAME, "text-right tabular-nums")}
+                placeholder="0,00" className="text-right tabular-nums"
               />
             </label>
           </div>
@@ -1312,13 +1281,12 @@ export function AccountTransferEditForm({
             <span className={FIELD_LABEL_CLASSNAME}>
               {getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label, texts.dashboard.treasury)}
             </span>
-            <select
+            <FormSelect
               name="target_account_id"
               value={formState.targetAccountId}
               onChange={(e) => setFormState((s) => ({ ...s, targetAccountId: e.target.value }))}
               aria-describedby="edit-transfer-target-account-error"
-              aria-invalid={targetAccountCurrencyError ? "true" : undefined}
-              className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
+              aria-invalid={targetAccountCurrencyError ? "true" : undefined} className={cn(targetAccountCurrencyError && "border-destructive/25")}
             >
               <option value="" disabled>{texts.dashboard.treasury.transfer_target_account_placeholder}</option>
               {targetAccounts
@@ -1326,7 +1294,7 @@ export function AccountTransferEditForm({
                 .map((account) => (
                   <option key={`target-${account.id}`} value={account.id}>{account.name}</option>
                 ))}
-            </select>
+            </FormSelect>
           </label>
           {targetAccountCurrencyError ? (
             <span id="edit-transfer-target-account-error" aria-live="polite" className="text-meta text-destructive">
@@ -1342,13 +1310,12 @@ export function AccountTransferEditForm({
           <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.concept_label, texts.dashboard.treasury)}
           </span>
-          <input
+          <FormInput
             type="text"
             name="concept"
             value={formState.concept}
             onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
             placeholder={texts.dashboard.treasury.transfer_concept_placeholder}
-            className={CONTROL_CLASSNAME}
           />
         </label>
 
@@ -1440,17 +1407,16 @@ export function AccountTransferForm({
           <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label, texts.dashboard.treasury)}
           </span>
-          <select
+          <FormSelect
             name="source_account_id"
             value={formState.sourceAccountId}
             onChange={(e) => setFormState((s) => ({ ...s, sourceAccountId: e.target.value }))}
-            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>{texts.dashboard.treasury.transfer_source_account_placeholder}</option>
             {sourceAccounts.map((account) => (
               <option key={`source-${account.id}`} value={account.id}>{account.name}</option>
             ))}
-          </select>
+          </FormSelect>
         </label>
 
         {/* MONEDA + IMPORTE */}
@@ -1461,17 +1427,16 @@ export function AccountTransferForm({
                 {getRequiredLabel(texts.dashboard.treasury.currency_label, texts.dashboard.treasury)}
               </span>
               {hasMultipleCurrencies ? (
-                <select
+                <FormSelect
                   name="currency_code"
                   value={formState.currencyCode}
                   onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))}
-                  className={CONTROL_CLASSNAME}
                 >
                   <option value="" disabled>{texts.dashboard.treasury.currency_placeholder}</option>
                   {availableCurrencies.map((c) => (
                     <option key={`transfer-${c.currencyCode}`} value={c.currencyCode}>{c.currencyCode}</option>
                   ))}
-                </select>
+                </FormSelect>
               ) : (
                 <>
                   <input type="hidden" name="currency_code" value={formState.currencyCode} />
@@ -1485,7 +1450,7 @@ export function AccountTransferForm({
               <span className={FIELD_LABEL_CLASSNAME}>
                 {getRequiredLabel(texts.dashboard.treasury.amount_label, texts.dashboard.treasury)}
               </span>
-              <input
+              <FormInput
                 type="text"
                 name="amount"
                 inputMode="decimal"
@@ -1494,8 +1459,7 @@ export function AccountTransferForm({
                 onBlur={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnBlur(e.target.value) }))}
                 onFocus={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnFocus(e.target.value) }))}
                 onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
-                placeholder="0,00"
-                className={cn(CONTROL_CLASSNAME, "text-right tabular-nums")}
+                placeholder="0,00" className="text-right tabular-nums"
               />
             </label>
           </div>
@@ -1507,13 +1471,12 @@ export function AccountTransferForm({
             <span className={FIELD_LABEL_CLASSNAME}>
               {getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label, texts.dashboard.treasury)}
             </span>
-            <select
+            <FormSelect
               name="target_account_id"
               value={formState.targetAccountId}
               onChange={(e) => setFormState((s) => ({ ...s, targetAccountId: e.target.value }))}
               aria-describedby="transfer-target-account-error"
-              aria-invalid={targetAccountCurrencyError ? "true" : undefined}
-              className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
+              aria-invalid={targetAccountCurrencyError ? "true" : undefined} className={cn(targetAccountCurrencyError && "border-destructive/25")}
             >
               <option value="" disabled>{texts.dashboard.treasury.transfer_target_account_placeholder}</option>
               {targetAccounts
@@ -1521,7 +1484,7 @@ export function AccountTransferForm({
                 .map((account) => (
                   <option key={`target-${account.id}`} value={account.id}>{account.name}</option>
                 ))}
-            </select>
+            </FormSelect>
           </label>
           {targetAccountCurrencyError ? (
             <span id="transfer-target-account-error" aria-live="polite" className="text-meta text-destructive">
@@ -1537,13 +1500,12 @@ export function AccountTransferForm({
           <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.concept_label, texts.dashboard.treasury)}
           </span>
-          <input
+          <FormInput
             type="text"
             name="concept"
             value={formState.concept}
             onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
             placeholder={texts.dashboard.treasury.transfer_concept_placeholder}
-            className={CONTROL_CLASSNAME}
           />
         </label>
 
@@ -1642,23 +1604,22 @@ export function ConsolidationTransferEditForm({
       <PendingFieldset className={FORM_GRID_CLASSNAME}>
         <FormField>
           <span className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury.date_label}</span>
-          <input type="text" value={transfer.movementDate} disabled className={DISABLED_CONTROL_CLASSNAME} />
+          <FormInput type="text" value={transfer.movementDate} disabled />
         </FormField>
 
         <FormField fullWidth>
           <span className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury.detail_transfer_label}</span>
-          <input type="text" value={transfer.transferReference} disabled className={DISABLED_CONTROL_CLASSNAME} />
+          <FormInput type="text" value={transfer.transferReference} disabled />
         </FormField>
 
         <FormField>
           <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.transfer_source_account_label, texts.dashboard.treasury)}
           </span>
-          <select
+          <FormSelect
             name="source_account_id"
             value={formState.sourceAccountId}
             onChange={(event) => setFormState((current) => ({ ...current, sourceAccountId: event.target.value }))}
-            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>
               {texts.dashboard.treasury.transfer_source_account_placeholder}
@@ -1668,20 +1629,19 @@ export function ConsolidationTransferEditForm({
                 {account.name}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </FormField>
 
         <FormField>
           <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.transfer_target_account_label, texts.dashboard.treasury)}
           </span>
-          <select
+          <FormSelect
             name="target_account_id"
             value={formState.targetAccountId}
             onChange={(event) => setFormState((current) => ({ ...current, targetAccountId: event.target.value }))}
             aria-describedby={targetAccountCurrencyError ? "edit-transfer-target-account-error" : undefined}
-            aria-invalid={targetAccountCurrencyError ? "true" : undefined}
-            className={cn(CONTROL_CLASSNAME, targetAccountCurrencyError && "border-destructive/25")}
+            aria-invalid={targetAccountCurrencyError ? "true" : undefined} className={cn(targetAccountCurrencyError && "border-destructive/25")}
           >
             <option value="" disabled>
               {texts.dashboard.treasury.transfer_target_account_placeholder}
@@ -1691,7 +1651,7 @@ export function ConsolidationTransferEditForm({
                 {account.name}
               </option>
             ))}
-          </select>
+          </FormSelect>
           {targetAccountCurrencyError ? (
             <span
               id="edit-transfer-target-account-error"
@@ -1707,12 +1667,11 @@ export function ConsolidationTransferEditForm({
           <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.currency_label, texts.dashboard.treasury)}
           </span>
-          <select
+          <FormSelect
             name="currency_code"
             value={formState.currencyCode}
             onChange={(event) => setFormState((current) => ({ ...current, currencyCode: event.target.value }))}
-            disabled={availableCurrencies.length === 0}
-            className={cn(CONTROL_CLASSNAME, "disabled:text-muted-foreground")}
+            disabled={availableCurrencies.length === 0} className="disabled:text-muted-foreground"
           >
             <option value="" disabled>
               {texts.dashboard.treasury.currency_placeholder}
@@ -1722,19 +1681,18 @@ export function ConsolidationTransferEditForm({
                 {currency.currencyCode}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </FormField>
 
         <FormField fullWidth>
           <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.concept_label, texts.dashboard.treasury)}
           </span>
-          <input
+          <FormInput
             type="text"
             name="concept"
             value={formState.concept}
             onChange={(event) => setFormState((current) => ({ ...current, concept: event.target.value }))}
-            className={CONTROL_CLASSNAME}
           />
         </FormField>
 
@@ -1742,7 +1700,7 @@ export function ConsolidationTransferEditForm({
           <span className={FIELD_LABEL_CLASSNAME}>
             {getRequiredLabel(texts.dashboard.treasury.amount_label, texts.dashboard.treasury)}
           </span>
-          <input
+          <FormInput
             type="text"
             name="amount"
             inputMode="decimal"
@@ -1757,7 +1715,6 @@ export function ConsolidationTransferEditForm({
                 event.preventDefault();
               }
             }}
-            className={CONTROL_CLASSNAME}
           />
         </FormField>
 
@@ -1920,17 +1877,16 @@ export function TreasuryRoleMovementForm({
         {/* CUENTA */}
         <label className="grid gap-2">
           <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.account_label, copy)}</span>
-          <select
+          <FormSelect
             name="account_id"
             value={formState.accountId}
             onChange={(e) => setFormState((s) => ({ ...s, accountId: e.target.value }))}
-            className={CONTROL_CLASSNAME}
           >
             <option value="" disabled>{copy.account_placeholder}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
-          </select>
+          </FormSelect>
         </label>
 
         {/* MONTO */}
@@ -1938,17 +1894,16 @@ export function TreasuryRoleMovementForm({
           <p className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.amount_label, copy)}</p>
           <div className="flex gap-2">
             {hasMultipleCurrencies ? (
-              <select
+              <FormSelect
                 name="currency_code"
                 value={formState.currencyCode}
-                onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))}
-                className={cn(CONTROL_CLASSNAME, "w-24 shrink-0")}
+                onChange={(e) => setFormState((s) => ({ ...s, currencyCode: e.target.value }))} className="w-24 shrink-0"
               >
                 <option value="" disabled>{copy.currency_placeholder}</option>
                 {availableCurrencies.map((c) => (
                   <option key={c.currencyCode} value={c.currencyCode}>{c.currencyCode}</option>
                 ))}
-              </select>
+              </FormSelect>
             ) : (
               <>
                 <input type="hidden" name="currency_code" value={formState.currencyCode} />
@@ -1957,7 +1912,7 @@ export function TreasuryRoleMovementForm({
                 </div>
               </>
             )}
-            <input
+            <FormInput
               type="text"
               name="amount"
               inputMode="decimal"
@@ -1966,8 +1921,7 @@ export function TreasuryRoleMovementForm({
               onBlur={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnBlur(e.target.value) }))}
               onFocus={(e) => setFormState((s) => ({ ...s, amount: normalizeAmountInputOnFocus(e.target.value) }))}
               onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
-              placeholder="0,00"
-              className={cn(CONTROL_CLASSNAME, "flex-1 text-right tabular-nums")}
+              placeholder="0,00" className="flex-1 text-right tabular-nums"
             />
           </div>
           <p className="text-meta text-muted-foreground">{texts.dashboard.treasury.amount_helper_text}</p>
@@ -1977,28 +1931,26 @@ export function TreasuryRoleMovementForm({
         <div className="grid grid-cols-2 gap-3">
           <label className="grid gap-2">
             <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.category_label, copy)}</span>
-            <select
+            <FormSelect
               name="category_id"
               value={formState.categoryId}
               disabled={!formState.movementType}
               onChange={(e) => setFormState((s) => ({ ...s, categoryId: e.target.value }))}
-              className={formState.movementType ? CONTROL_CLASSNAME : DISABLED_CONTROL_CLASSNAME}
             >
               <option value="" disabled>{copy.category_placeholder}</option>
               {availableCategories.map((c) => (
                 <option key={c.id} value={c.id}>{c.subCategoryName}</option>
               ))}
-            </select>
+            </FormSelect>
           </label>
           <label className="grid gap-2">
             <span className={FIELD_LABEL_CLASSNAME}>{copy.parent_category_label}</span>
-            <input
+            <FormInput
               type="text"
               value={selectedParentCategory}
               disabled
               readOnly
               placeholder="—"
-              className={DISABLED_CONTROL_CLASSNAME}
             />
           </label>
         </div>
@@ -2009,21 +1961,20 @@ export function TreasuryRoleMovementForm({
           <div className="grid grid-cols-2 gap-3">
             <label className="grid gap-2">
               <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
-              <select
+              <FormSelect
                 name="activity_id"
                 value={formState.activityId}
                 onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
-                className={CONTROL_CLASSNAME}
               >
                 <option value="">{copy.activity_placeholder}</option>
                 {activities.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
-              </select>
+              </FormSelect>
             </label>
             <label className="grid gap-2">
               <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
-              <input
+              <FormInput
                 type="text"
                 name="receipt_number"
                 value={formState.receiptNumber}
@@ -2036,7 +1987,6 @@ export function TreasuryRoleMovementForm({
                     if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
                   }
                 }}
-                className={CONTROL_CLASSNAME}
               />
             </label>
           </div>
@@ -2045,23 +1995,22 @@ export function TreasuryRoleMovementForm({
             {activities.length > 0 ? (
               <label className="grid gap-2">
                 <span className={FIELD_LABEL_CLASSNAME}>{copy.activity_label}</span>
-                <select
+                <FormSelect
                   name="activity_id"
                   value={formState.activityId}
                   onChange={(e) => setFormState((s) => ({ ...s, activityId: e.target.value }))}
-                  className={CONTROL_CLASSNAME}
                 >
                   <option value="">{copy.activity_placeholder}</option>
                   {activities.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
-                </select>
+                </FormSelect>
               </label>
             ) : null}
             {receiptFormats.length > 0 ? (
               <label className="grid gap-2">
                 <span className={FIELD_LABEL_CLASSNAME}>{receiptFormats[0]?.name ?? copy.receipt_label}</span>
-                <input
+                <FormInput
                   type="text"
                   name="receipt_number"
                   value={formState.receiptNumber}
@@ -2074,7 +2023,6 @@ export function TreasuryRoleMovementForm({
                       if (value === "" || /^[a-zA-Z0-9]*$/.test(value)) setFormState((s) => ({ ...s, receiptNumber: value }));
                     }
                   }}
-                  className={CONTROL_CLASSNAME}
                 />
               </label>
             ) : null}
@@ -2084,13 +2032,12 @@ export function TreasuryRoleMovementForm({
         {/* CONCEPTO */}
         <label className="grid gap-2">
           <span className={FIELD_LABEL_CLASSNAME}>{getRequiredLabel(copy.concept_label, copy)}</span>
-          <input
+          <FormInput
             type="text"
             name="concept"
             value={formState.concept}
             onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
             placeholder={texts.dashboard.treasury.concept_placeholder}
-            className={CONTROL_CLASSNAME}
           />
         </label>
 
@@ -2305,17 +2252,16 @@ export function TreasuryRoleFxForm({
               {texts.dashboard.treasury_role.fx_source_account_label}
               <span className="text-destructive" aria-hidden="true"> *</span>
             </p>
-            <select
+            <FormSelect
               name="source_account_id"
               value={formState.sourceAccountId}
               onChange={(e) => setFormState((s) => ({ ...s, sourceAccountId: e.target.value }))}
-              className={CONTROL_CLASSNAME}
             >
               <option value="" disabled>{texts.dashboard.treasury_role.fx_source_account_placeholder}</option>
               {accounts.map((account) => (
                 <option key={`fx-source-${account.id}`} value={account.id}>{account.name}</option>
               ))}
-            </select>
+            </FormSelect>
           </div>
           <div className="flex flex-col gap-1.5">
             <p className={FIELD_LABEL_CLASSNAME}>
@@ -2326,6 +2272,7 @@ export function TreasuryRoleFxForm({
               <span className="flex shrink-0 items-center border-r border-border bg-secondary/50 px-3 text-sm font-semibold text-muted-foreground">
                 {sourceCurrencyCode}
               </span>
+              {/* eslint-disable-next-line no-restricted-syntax -- Compound input (badge + input transparente): <FormInput> no soporta el layout inline con badge pegado. */}
               <input
                 type="text"
                 name="source_amount"
@@ -2352,6 +2299,7 @@ export function TreasuryRoleFxForm({
             <span className="flex shrink-0 items-center border-r border-border bg-secondary/50 px-3 text-sm font-semibold text-muted-foreground">
               1 USD =
             </span>
+            {/* eslint-disable-next-line no-restricted-syntax -- Compound input (badge + input transparente): <FormInput> no soporta el layout inline con badge pegado. */}
             <input
               type="text"
               inputMode="decimal"
@@ -2374,17 +2322,16 @@ export function TreasuryRoleFxForm({
               {texts.dashboard.treasury_role.fx_target_account_label}
               <span className="text-destructive" aria-hidden="true"> *</span>
             </p>
-            <select
+            <FormSelect
               name="target_account_id"
               value={formState.targetAccountId}
               onChange={(e) => setFormState((s) => ({ ...s, targetAccountId: e.target.value }))}
-              className={CONTROL_CLASSNAME}
             >
               <option value="" disabled>{texts.dashboard.treasury_role.fx_target_account_placeholder}</option>
               {accounts.map((account) => (
                 <option key={`fx-target-${account.id}`} value={account.id}>{account.name}</option>
               ))}
-            </select>
+            </FormSelect>
           </div>
           <div className="flex flex-col gap-1.5">
             <p className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.fx_target_amount_label}</p>
@@ -2405,13 +2352,12 @@ export function TreasuryRoleFxForm({
         {/* CONCEPTO */}
         <div className="flex flex-col gap-1.5">
           <p className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.concept_label}</p>
-          <input
+          <FormInput
             type="text"
             name="concept"
             value={formState.concept}
             onChange={(e) => setFormState((s) => ({ ...s, concept: e.target.value }))}
             placeholder={texts.dashboard.treasury_role.fx_concept_placeholder}
-            className={CONTROL_CLASSNAME}
           />
         </div>
 

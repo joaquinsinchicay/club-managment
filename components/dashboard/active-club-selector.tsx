@@ -3,6 +3,7 @@
 import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
+import { FormSelect } from "@/components/ui/modal-form";
 import { PendingFieldset, PendingStatusText } from "@/components/ui/pending-form";
 import type { AvailableClub } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
@@ -34,22 +35,22 @@ export function ActiveClubSelector({
           >
             {texts.dashboard.club_selector.label}
           </span>
-          <select
+          <FormSelect
             name="club_id"
             defaultValue={activeClubId}
             onChange={() => formRef.current?.requestSubmit()}
-            className={cn(
-              "min-h-11 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground",
-              inline &&
-                "min-h-0 border-0 bg-transparent px-0 py-0 text-[15px] font-semibold tracking-tight text-foreground focus:outline-none focus:ring-0"
-            )}
+            className={
+              inline
+                ? "min-h-0 border-0 bg-transparent px-0 py-0 text-[15px] font-semibold tracking-tight focus:ring-0"
+                : undefined
+            }
           >
             {clubs.map((club) => (
               <option key={club.id} value={club.id}>
                 {club.name}
               </option>
             ))}
-          </select>
+          </FormSelect>
         </label>
         <PendingStatusText
           idleLabel={texts.dashboard.club_selector.helper}

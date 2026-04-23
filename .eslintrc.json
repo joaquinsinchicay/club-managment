@@ -11,8 +11,8 @@
         "no-restricted-syntax": [
           "warn",
           {
-            "selector": "JSXOpeningElement[name.name='input']:not([attributes.0.name.name='type'][attributes.0.value.value=/^(checkbox|radio|hidden|file|search|submit|reset)$/])",
-            "message": "Usá <FormInput> de @/components/ui/modal-form en vez de <input> crudo. Los <input type='checkbox|radio|hidden|file|search'> son excepción conocida; si es text/number/date/email/password/tel/url, migrar."
+            "selector": "JSXOpeningElement[name.name='input']:not(:has(JSXAttribute[name.name='type'][value.value=/^(checkbox|radio|hidden|file|search|submit|reset|color|range)$/]))",
+            "message": "Usá <FormInput> de @/components/ui/modal-form en vez de <input> crudo. Los <input type='checkbox|radio|hidden|file|search|color|range'> son excepción conocida; si es text/number/date/email/password/tel/url, migrar."
           },
           {
             "selector": "JSXOpeningElement[name.name='select']",

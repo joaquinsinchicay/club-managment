@@ -63,6 +63,7 @@ function InitialBalanceField({
       <span className="inline-flex min-w-12 justify-center rounded-card bg-secondary/40 px-3 py-2 text-xs font-semibold tracking-[0.14em] text-muted-foreground">
         {code}
       </span>
+      {/* eslint-disable-next-line no-restricted-syntax -- Compound input con badge de moneda: <FormInput> no soporta el layout inline (label pill + input transparente right-aligned). */}
       <input
         type="text"
         name={`initial_balance[${code}]`}

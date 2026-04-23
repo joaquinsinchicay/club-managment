@@ -195,6 +195,7 @@ export function SalaryStructuresTab({
             </ChipButton>
           ))}
 
+          {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. Usa tokens canonicos rounded-chip + estilo inactive de ChipButton. */}
           <select
             value={activityFilter}
             onChange={(e) => setActivityFilter(e.target.value)}

@@ -240,6 +240,7 @@ export function SettlementsList({
             {f.label}
           </ChipButton>
         ))}
+        {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. Usa tokens canonicos rounded-chip + estilo inactive de ChipButton. */}
         <select
           value={periodFilter}
           onChange={(e) => setPeriodFilter(e.target.value)}

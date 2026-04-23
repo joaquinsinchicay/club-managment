@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/data-table";
 import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormInput } from "@/components/ui/modal-form";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
@@ -324,12 +325,12 @@ export function TreasuryConciliacionTab({
               <span className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {texts.dashboard.treasury_role.conciliacion_date_label}
               </span>
-              <input
+              <FormInput
                 type="date"
                 name="date"
                 value={selectedDate}
                 onChange={(event) => setSelectedDate(event.target.value)}
-                className="min-h-11 rounded-btn border border-border bg-card px-4 py-2.5 text-sm text-foreground"
+                className="rounded-btn py-2.5"
               />
             </label>
             <button
