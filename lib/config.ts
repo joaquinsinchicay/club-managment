@@ -1,6 +1,19 @@
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 
+function resolveDevAuthBypassEnabled() {
+  if (process.env.NODE_ENV !== "development") {
+    return false;
+  }
+
+  const flag = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS;
+  return flag === "true" || flag === "1";
+}
+
 function resolveAuthProviderMode() {
+  if (resolveDevAuthBypassEnabled()) {
+    return "mock";
+  }
+
   const configuredMode = process.env.AUTH_PROVIDER_MODE;
   const hasSupabaseConfig = hasSupabaseBrowserConfig();
   const isVercelDeployment = process.env.VERCEL === "1";
@@ -25,6 +38,7 @@ function resolveCanonicalAppUrl() {
 
 export const appConfig = {
   authProviderMode: resolveAuthProviderMode(),
+  devAuthBypassEnabled: resolveDevAuthBypassEnabled(),
   supabaseProjectRef: process.env.SUPABASE_PROJECT_REF ?? "qfiyxpaxbdhbeapksyjp",
   canonicalAppUrl: resolveCanonicalAppUrl()
 } as const;

@@ -25,6 +25,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type AuthServiceClient = ReturnType<typeof createServerSupabaseClient>;
 
+const DEV_BYPASS_SEED_EMAIL = "active.user@example.com";
+
 export type SessionContext = {
   user: User;
   memberships: Membership[];
@@ -165,6 +167,23 @@ async function resolveDestinationForUser(
 }
 
 async function getAuthenticatedIdentity(): Promise<AuthIdentity | null> {
+  if (appConfig.devAuthBypassEnabled) {
+    const user = await accessRepository.findUserByEmail(DEV_BYPASS_SEED_EMAIL);
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+  }
+
   if (appConfig.authProviderMode === "mock") {
     const userId = await getCurrentAuthUserId();
 

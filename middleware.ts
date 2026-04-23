@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+import { appConfig } from "@/lib/config";
 import { getSupabaseEnv, hasSupabaseBrowserConfig } from "@/lib/supabase/env";
 
 type MiddlewareCookieToSet = {
@@ -10,7 +11,7 @@ type MiddlewareCookieToSet = {
 };
 
 export async function middleware(request: NextRequest) {
-  if (!hasSupabaseBrowserConfig()) {
+  if (appConfig.devAuthBypassEnabled || !hasSupabaseBrowserConfig()) {
     return NextResponse.next({
       request
     });
