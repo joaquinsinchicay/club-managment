@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type {
@@ -45,6 +45,7 @@ import {
 } from "@/lib/domain/salary-structure";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import { texts } from "@/lib/texts";
+import { cn } from "@/lib/utils";
 
 type SalaryStructuresTabProps = {
   structures: SalaryStructure[];
@@ -230,11 +231,10 @@ export function SalaryStructuresTab({
       ) : (
         <DataTable
           density="comfortable"
-          gridColumns="minmax(0,1.6fr) minmax(0,1.1fr) 130px minmax(0,1fr) 120px 140px 110px minmax(0,1fr) 44px"
+          gridColumns="minmax(0,1.6fr) 140px minmax(0,1fr) 120px 140px 110px minmax(0,1fr) 44px"
         >
           <DataTableHeader>
             <DataTableHeadCell>{ssTexts.col_name}</DataTableHeadCell>
-            <DataTableHeadCell>{ssTexts.col_role}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_divisions}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_activity}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_payment_type}</DataTableHeadCell>
@@ -250,7 +250,6 @@ export function SalaryStructuresTab({
                 <DataTableCell>
                   <span className="font-medium text-foreground">{s.name}</span>
                 </DataTableCell>
-                <DataTableCell>{s.functionalRole}</DataTableCell>
                 <DataTableCell>
                   {s.divisions.length === 0 ? (
                     <span className="text-xs text-muted-foreground">—</span>
@@ -384,13 +383,6 @@ function CreateStructureFields({ activities }: { activities: ClubActivity[] }) {
   );
   const namePreview = role ? composeStructureName(role, divisions, activityName) : "";
 
-  function toggleDivision(value: SalaryDivision, checked: boolean) {
-    setDivisions((prev) => {
-      const next = checked ? [...prev, value] : prev.filter((d) => d !== value);
-      return sortDivisions(next);
-    });
-  }
-
   return (
     <>
       <FormField>
@@ -417,7 +409,6 @@ function CreateStructureFields({ activities }: { activities: ClubActivity[] }) {
               </option>
             ))}
           </FormSelect>
-          <FormHelpText>{ssTexts.form_role_helper}</FormHelpText>
         </FormField>
 
         <FormField>
@@ -439,27 +430,11 @@ function CreateStructureFields({ activities }: { activities: ClubActivity[] }) {
 
       <FormField>
         <FormFieldLabel>{ssTexts.form_divisions_label}</FormFieldLabel>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {SALARY_DIVISIONS.map((d) => {
-            const checked = divisions.includes(d);
-            return (
-              <label
-                key={d}
-                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-card border border-border bg-card px-3 py-2 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50"
-              >
-                <input
-                  type="checkbox"
-                  name="divisions"
-                  value={d}
-                  checked={checked}
-                  onChange={(e) => toggleDivision(d, e.target.checked)}
-                  className="size-4 rounded border-border text-foreground focus:ring-foreground"
-                />
-                <span className="font-medium">{d}</span>
-              </label>
-            );
-          })}
-        </div>
+        <DivisionsMultiSelect
+          value={divisions}
+          onChange={setDivisions}
+          placeholder={ssTexts.form_divisions_placeholder}
+        />
         <FormHelpText>{ssTexts.form_divisions_helper}</FormHelpText>
       </FormField>
 
@@ -598,6 +573,111 @@ function EditStructureFields({ structure }: { structure: SalaryStructure }) {
         <FormHelpText>{ssTexts.form_status_helper}</FormHelpText>
       </FormField>
     </>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * DivisionsMultiSelect — dropdown con checkboxes interno
+ * ────────────────────────────────────────────────────────────────────────── */
+
+type DivisionsMultiSelectProps = {
+  value: SalaryDivision[];
+  onChange: (next: SalaryDivision[]) => void;
+  placeholder: string;
+};
+
+function DivisionsMultiSelect({ value, onChange, placeholder }: DivisionsMultiSelectProps) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: PointerEvent) {
+      if (!wrapperRef.current) return;
+      if (!wrapperRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  function toggle(division: SalaryDivision) {
+    if (value.includes(division)) {
+      onChange(sortDivisions(value.filter((d) => d !== division)));
+    } else {
+      onChange(sortDivisions([...value, division]));
+    }
+  }
+
+  const label = value.length === 0 ? placeholder : value.join(", ");
+  const isPlaceholder = value.length === 0;
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      {/* Hidden inputs para FormData — serializan cada division como name="divisions" */}
+      {value.map((d) => (
+        <input key={d} type="hidden" name="divisions" value={d} />
+      ))}
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={cn(
+          "h-11 w-full rounded-card border border-border bg-card px-4 text-left text-sm focus:outline-none focus:ring-2 focus:ring-foreground/10",
+          "flex items-center justify-between gap-2",
+          isPlaceholder ? "text-muted-foreground" : "text-foreground",
+        )}
+      >
+        <span className="truncate">{label}</span>
+        <svg
+          className="size-4 shrink-0 text-muted-foreground"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <polyline points="6 9 12 15 18 9" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          className="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-card border border-border bg-card p-1 shadow-lg"
+        >
+          {SALARY_DIVISIONS.map((d) => {
+            const checked = value.includes(d);
+            return (
+              <label
+                key={d}
+                role="option"
+                aria-selected={checked}
+                className="flex min-h-10 cursor-pointer items-center gap-2 rounded-btn px-3 py-2 text-sm text-foreground transition hover:bg-secondary/60"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(d)}
+                  className="size-4 rounded border-border text-foreground focus:ring-foreground"
+                />
+                <span className="font-medium">{d}</span>
+              </label>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
