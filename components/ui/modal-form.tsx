@@ -14,8 +14,13 @@ export const FORM_GRID_CLASSNAME = "grid gap-4 sm:grid-cols-2";
 export const FORM_GRID_PADDING_CLASSNAME = "px-5 py-5";
 export const FIELD_CLASSNAME = "grid gap-2 text-sm text-foreground";
 export const FULL_WIDTH_FIELD_CLASSNAME = "sm:col-span-2";
+// Altura fija (44px + 2px border = 46px). Usamos `h-11` en lugar de
+// `min-h-11 py-3` para que <input> y <select appearance-none> rindan
+// exactamente al mismo alto — cuando dejamos que el line-height calcule
+// el box, los selects pintaban 1px mas cortos que los inputs. Los textareas
+// overrideen esto (ver FormTextarea).
 export const CONTROL_CLASSNAME =
-  "min-h-11 w-full rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10";
+  "h-11 w-full rounded-card border border-border bg-card px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10";
 export const CONTROL_DISABLED_CLASSNAME = "disabled:opacity-60";
 export const FIELD_LABEL_CLASSNAME = "text-xs font-semibold text-foreground";
 export const FORM_SECTION_LABEL_CLASSNAME =
@@ -23,7 +28,7 @@ export const FORM_SECTION_LABEL_CLASSNAME =
 export const FORM_HELP_TEXT_CLASSNAME = "text-xs text-muted-foreground";
 export const FORM_ERROR_CLASSNAME = "text-xs font-medium text-destructive";
 export const FORM_READONLY_CLASSNAME =
-  "inline-flex min-h-11 w-full items-center rounded-card border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground";
+  "inline-flex h-11 w-full items-center rounded-card border border-border bg-secondary/40 px-4 text-sm text-muted-foreground";
 export const FORM_CHECKBOX_CARD_CLASSNAME =
   "flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50";
 export const FORM_BANNER_WARNING_CLASSNAME =
@@ -146,6 +151,8 @@ export const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(functio
 
 type FormTextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement>;
 
+// Textarea override: quita el `h-11` del CONTROL_CLASSNAME para que pueda
+// crecer segun `rows` + permite resize vertical. Mantiene `py-3` propio.
 export const FormTextarea = forwardRef<HTMLTextAreaElement, FormTextareaProps>(function FormTextarea(
   { className, rows = 3, ...rest },
   ref,
@@ -154,7 +161,12 @@ export const FormTextarea = forwardRef<HTMLTextAreaElement, FormTextareaProps>(f
     <textarea
       ref={ref}
       rows={rows}
-      className={cn(CONTROL_CLASSNAME, "resize-y", CONTROL_DISABLED_CLASSNAME, className)}
+      className={cn(
+        CONTROL_CLASSNAME,
+        "!h-auto min-h-[5rem] py-3 resize-y",
+        CONTROL_DISABLED_CLASSNAME,
+        className,
+      )}
       {...rest}
     />
   );

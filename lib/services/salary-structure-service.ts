@@ -195,7 +195,7 @@ export type UpdateSalaryStructureRawInput = {
 type ValidatedCreateInput = {
   name: string;
   functionalRole: string;
-  activityId: string;
+  activityId: string | null;
   remunerationType: SalaryRemunerationType;
   workloadHours: number | null;
   status: SalaryStructureStatus;
@@ -224,7 +224,6 @@ function validateCreateInput(raw: CreateSalaryStructureRawInput):
   if (!isFunctionalRole(functionalRole)) {
     return { ok: false, code: "invalid_functional_role" };
   }
-  if (!activityId) return { ok: false, code: "activity_required" };
   if (!remunerationTypeRaw) return { ok: false, code: "remuneration_type_required" };
   if (!isSalaryRemunerationType(remunerationTypeRaw)) {
     return { ok: false, code: "invalid_remuneration_type" };
@@ -239,7 +238,7 @@ function validateCreateInput(raw: CreateSalaryStructureRawInput):
     input: {
       name,
       functionalRole,
-      activityId,
+      activityId: activityId ?? null,
       remunerationType: remunerationTypeRaw,
       workloadHours,
       status,

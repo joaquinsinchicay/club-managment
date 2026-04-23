@@ -185,7 +185,7 @@ export type CreateSalaryStructureInput = {
   clubId: string;
   name: string;
   functionalRole: string;
-  activityId: string;
+  activityId: string | null;
   remunerationType: SalaryRemunerationType;
   workloadHours: number | null;
   status: SalaryStructureStatus;
@@ -213,7 +213,7 @@ export type ListSalaryStructuresFilters = {
 export type ExistsByRoleActivityInput = {
   clubId: string;
   functionalRole: string;
-  activityId: string;
+  activityId: string | null;
   excludingStructureId?: string | null;
 };
 
@@ -372,8 +372,13 @@ export const salaryStructureRepository = {
       .from("salary_structures")
       .select("id,functional_role,activity_id,status", { count: "exact", head: false })
       .eq("club_id", input.clubId)
-      .eq("activity_id", input.activityId)
       .eq("status", "activa");
+
+    if (input.activityId === null) {
+      query = query.is("activity_id", null);
+    } else {
+      query = query.eq("activity_id", input.activityId);
+    }
 
     if (input.excludingStructureId) {
       query = query.neq("id", input.excludingStructureId);

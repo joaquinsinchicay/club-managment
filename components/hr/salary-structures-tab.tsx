@@ -545,14 +545,12 @@ function StructureFormFields({
         </FormField>
 
         <FormField>
-          <FormFieldLabel required>{ssTexts.form_activity_label}</FormFieldLabel>
+          <FormFieldLabel>{ssTexts.form_activity_label}</FormFieldLabel>
           {isEdit ? (
             <FormReadonly>{structure?.activityName ?? "—"}</FormReadonly>
           ) : (
-            <FormSelect name="activity_id" defaultValue="" required>
-              <option value="" disabled>
-                {ssTexts.form_activity_placeholder}
-              </option>
+            <FormSelect name="activity_id" defaultValue="">
+              <option value="">{ssTexts.form_activity_placeholder}</option>
               {activities.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
