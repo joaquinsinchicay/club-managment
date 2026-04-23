@@ -6,11 +6,6 @@ import { useRouter } from "next/navigation";
 import type {
   RrhhActionResult,
 } from "@/app/(dashboard)/settings/rrhh/actions";
-import {
-  formatLocalizedAmountInputOnBlur,
-  formatLocalizedAmountInputOnFocus,
-  sanitizeLocalizedAmountInput,
-} from "@/lib/amounts";
 import { buttonClass } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
 import {
@@ -32,9 +27,9 @@ import {
   FormHelpText,
   FormInput,
   FormReadonly,
-  FormSection,
   FormSelect,
 } from "@/components/ui/modal-form";
+import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { ClubActivity } from "@/lib/domain/access";
 import {
@@ -45,24 +40,18 @@ import {
   SALARY_REMUNERATION_TYPES,
   sortDivisions,
   type SalaryDivision,
-  type SalaryPaymentType,
-  type SalaryRemunerationType,
   type SalaryStructure,
   type SalaryStructureStatus,
-  type SalaryStructureVersion,
 } from "@/lib/domain/salary-structure";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import { texts } from "@/lib/texts";
 
 type SalaryStructuresTabProps = {
   structures: SalaryStructure[];
-  versionsByStructureId: Record<string, SalaryStructureVersion[]>;
   activities: ClubActivity[];
-  clubCurrencyCode: string;
   canMutate: boolean;
   createAction: (formData: FormData) => Promise<RrhhActionResult>;
   updateAction: (formData: FormData) => Promise<RrhhActionResult>;
-  updateAmountAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 type StatusFilter = "all" | SalaryStructureStatus;
@@ -75,32 +64,12 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "inactiva", label: ssTexts.filter_inactive },
 ];
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function formatAmount(amount: number | null | undefined, currencyCode: string): string {
-  if (amount === null || amount === undefined) return "—";
-  try {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: currencyCode,
-      minimumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${currencyCode} ${amount.toFixed(2)}`;
-  }
-}
-
 export function SalaryStructuresTab({
   structures,
-  versionsByStructureId,
   activities,
-  clubCurrencyCode,
   canMutate,
   createAction,
   updateAction,
-  updateAmountAction,
 }: SalaryStructuresTabProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -111,11 +80,9 @@ export function SalaryStructuresTab({
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<SalaryStructure | null>(null);
-  const [updatingAmount, setUpdatingAmount] = useState<SalaryStructure | null>(null);
 
   const [createPending, setCreatePending] = useState(false);
   const [editPending, setEditPending] = useState(false);
-  const [amountPending, setAmountPending] = useState(false);
 
   const activeActivities = useMemo(
     () => activities.filter((a) => a.visibleForSecretaria || a.visibleForTesoreria),
@@ -173,21 +140,6 @@ export function SalaryStructuresTab({
       }
     } finally {
       setEditPending(false);
-    }
-  }
-
-  async function handleAmountSubmit(formData: FormData) {
-    if (!updatingAmount) return;
-    setAmountPending(true);
-    try {
-      const result = await updateAmountAction(formData);
-      triggerClientFeedback("settings", result.code);
-      if (result.ok) {
-        setUpdatingAmount(null);
-        startTransition(() => router.refresh());
-      }
-    } finally {
-      setAmountPending(false);
     }
   }
 
@@ -278,7 +230,7 @@ export function SalaryStructuresTab({
       ) : (
         <DataTable
           density="comfortable"
-          gridColumns="minmax(0,1.4fr) minmax(0,1fr) 140px minmax(0,1fr) 110px 130px 120px 120px 140px 44px"
+          gridColumns="minmax(0,1.6fr) minmax(0,1.1fr) 130px minmax(0,1fr) 120px 140px 110px minmax(0,1fr) 44px"
         >
           <DataTableHeader>
             <DataTableHeadCell>{ssTexts.col_name}</DataTableHeadCell>
@@ -287,7 +239,6 @@ export function SalaryStructuresTab({
             <DataTableHeadCell>{ssTexts.col_activity}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_payment_type}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_type}</DataTableHeadCell>
-            <DataTableHeadCell align="right">{ssTexts.col_amount}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_status}</DataTableHeadCell>
             <DataTableHeadCell>{ssTexts.col_contract}</DataTableHeadCell>
             <DataTableHeadCell />
@@ -318,11 +269,6 @@ export function SalaryStructuresTab({
                     {ssTexts.remuneration_type_options[s.remunerationType]}
                   </DataTableChip>
                 </DataTableCell>
-                <DataTableCell align="right">
-                  <span className="font-semibold text-foreground">
-                    {formatAmount(s.currentAmount, clubCurrencyCode)}
-                  </span>
-                </DataTableCell>
                 <DataTableCell>
                   <StatusBadge
                     tone={s.status === "activa" ? "success" : "neutral"}
@@ -343,20 +289,10 @@ export function SalaryStructuresTab({
                 <DataTableCell align="right">
                   {canMutate ? (
                     <DataTableActions>
-                      <button
-                        type="button"
-                        onClick={() => setUpdatingAmount(s)}
-                        className={buttonClass({ variant: "secondary", size: "sm" })}
-                      >
-                        {ssTexts.action_update_amount}
-                      </button>
-                      <button
-                        type="button"
+                      <EditIconButton
+                        label={ssTexts.action_edit}
                         onClick={() => setEditing(s)}
-                        className={buttonClass({ variant: "secondary", size: "sm" })}
-                      >
-                        {ssTexts.action_edit}
-                      </button>
+                      />
                     </DataTableActions>
                   ) : null}
                 </DataTableCell>
@@ -416,95 +352,7 @@ export function SalaryStructuresTab({
         ) : null}
       </Modal>
 
-      {/* Amount update modal */}
-      <Modal
-        open={updatingAmount !== null}
-        onClose={() => !amountPending && setUpdatingAmount(null)}
-        title={ssTexts.amount_modal_title}
-        description={ssTexts.amount_modal_description}
-        size="md"
-        closeDisabled={amountPending}
-      >
-        {updatingAmount ? (
-          <UpdateAmountForm
-            structure={updatingAmount}
-            versions={versionsByStructureId[updatingAmount.id] ?? []}
-            currencyCode={clubCurrencyCode}
-            onSubmit={handleAmountSubmit}
-            onCancel={() => setUpdatingAmount(null)}
-          />
-        ) : null}
-      </Modal>
     </div>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
- * Update amount sub-form
- * ────────────────────────────────────────────────────────────────────────── */
-
-type UpdateAmountFormProps = {
-  structure: SalaryStructure;
-  versions: SalaryStructureVersion[];
-  currencyCode: string;
-  onSubmit: (formData: FormData) => Promise<void>;
-  onCancel: () => void;
-};
-
-function UpdateAmountForm({
-  structure,
-  versions,
-  currencyCode,
-  onSubmit,
-  onCancel,
-}: UpdateAmountFormProps) {
-  const [amountInput, setAmountInput] = useState("");
-
-  return (
-    <form action={onSubmit} className="grid gap-4">
-      <input type="hidden" name="salary_structure_id" value={structure.id} />
-
-      <FormField>
-        <FormFieldLabel>{ssTexts.amount_current_label}</FormFieldLabel>
-        <FormReadonly>{formatAmount(structure.currentAmount, currencyCode)}</FormReadonly>
-      </FormField>
-
-      <FormField>
-        <FormFieldLabel required>{ssTexts.amount_new_label}</FormFieldLabel>
-        <FormInput
-          type="text"
-          name="amount"
-          inputMode="decimal"
-          required
-          value={amountInput}
-          onChange={(e) => setAmountInput(sanitizeLocalizedAmountInput(e.target.value))}
-          onBlur={(e) => setAmountInput(formatLocalizedAmountInputOnBlur(e.target.value))}
-          onFocus={(e) => setAmountInput(formatLocalizedAmountInputOnFocus(e.target.value))}
-          onKeyDown={(e) => {
-            if (e.key === "-") e.preventDefault();
-          }}
-          placeholder={ssTexts.amount_new_placeholder}
-          className="tabular-nums"
-        />
-        <FormHelpText>{ssTexts.amount_new_helper}</FormHelpText>
-      </FormField>
-
-      <FormField>
-        <FormFieldLabel required>{ssTexts.effective_date_label}</FormFieldLabel>
-        <FormInput type="date" name="effective_date" defaultValue={todayIso()} required />
-        <FormHelpText>{ssTexts.effective_date_helper}</FormHelpText>
-      </FormField>
-
-      <AmountHistory versions={versions} currencyCode={currencyCode} />
-
-      <ModalFooter
-        onCancel={onCancel}
-        cancelLabel={ssTexts.cancel_cta}
-        submitLabel={ssTexts.amount_submit_cta}
-        pendingLabel={ssTexts.submit_pending}
-        submitDisabled={amountInput.trim().length === 0}
-      />
-    </form>
   );
 }
 
@@ -753,48 +601,3 @@ function EditStructureFields({ structure }: { structure: SalaryStructure }) {
   );
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
- * Amount history table
- * ────────────────────────────────────────────────────────────────────────── */
-
-type AmountHistoryProps = {
-  versions: SalaryStructureVersion[];
-  currencyCode: string;
-};
-
-function AmountHistory({ versions, currencyCode }: AmountHistoryProps) {
-  if (versions.length === 0) {
-    return null;
-  }
-  return (
-    <section className="grid gap-2">
-      <FormSection>{ssTexts.amount_history_title}</FormSection>
-      <DataTable density="compact" gridColumns="minmax(0,1fr) 130px 130px 90px">
-        <DataTableHeader>
-          <DataTableHeadCell align="right">{ssTexts.amount_history_amount}</DataTableHeadCell>
-          <DataTableHeadCell>{ssTexts.amount_history_start}</DataTableHeadCell>
-          <DataTableHeadCell>{ssTexts.amount_history_end}</DataTableHeadCell>
-          <DataTableHeadCell />
-        </DataTableHeader>
-        <DataTableBody>
-          {versions.map((v) => (
-            <DataTableRow key={v.id} density="compact">
-              <DataTableCell align="right">
-                <span className="font-semibold text-foreground">
-                  {formatAmount(v.amount, currencyCode)}
-                </span>
-              </DataTableCell>
-              <DataTableCell>{v.startDate}</DataTableCell>
-              <DataTableCell>{v.endDate ?? "—"}</DataTableCell>
-              <DataTableCell>
-                {v.endDate === null ? (
-                  <StatusBadge tone="success" label={ssTexts.amount_history_current_badge} />
-                ) : null}
-              </DataTableCell>
-            </DataTableRow>
-          ))}
-        </DataTableBody>
-      </DataTable>
-    </section>
-  );
-}
