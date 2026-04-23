@@ -14,6 +14,8 @@ import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { relative } from "node:path";
 
+import { findJsxBlocks } from "./lib/jsx-parser.mjs";
+
 const ROOT = process.cwd();
 
 const SCAN_GLOBS = ["components", "app"];
@@ -114,6 +116,36 @@ function checkFile(file, rules) {
       }
     }
   }
+
+  // Reglas JSX-aware sobre <Modal> — el parser resuelve opening-tag multi-linea
+  // ignorando arrow functions (`=>`) en props.
+  const modalBlocks = findJsxBlocks(content, "Modal");
+  for (const block of modalBlocks) {
+    const { openingText, start } = block;
+    const prev = start > 1 ? lines[start - 2] : "";
+    if (IGNORE_RE.test(prev)) continue;
+    if (!/\bsize=/.test(openingText)) {
+      hits.push({
+        file,
+        line: start,
+        rule: "modal-missing-size",
+        message:
+          "Modal sin prop `size` explicita. Agregar `size=\"sm|md|lg\"` (ver taxonomia en CLAUDE.md).",
+        snippet: openingText.split("\n")[0].trim(),
+      });
+    }
+    if (/\bhideCloseButton\b/.test(openingText)) {
+      hits.push({
+        file,
+        line: start,
+        rule: "modal-hideclose-forbidden",
+        message:
+          "Modal con `hideCloseButton` — prohibido. La X del header es la via de salida garantizada de todo modal.",
+        snippet: openingText.split("\n")[0].trim(),
+      });
+    }
+  }
+
   return hits;
 }
 

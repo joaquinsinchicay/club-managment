@@ -16,6 +16,8 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { dirname, relative } from "node:path";
 
+import { findJsxBlocks } from "./lib/jsx-parser.mjs";
+
 const ROOT = process.cwd();
 const SCAN_GLOBS = ["components", "app"];
 const EXCLUDE_PREFIX = ["components/ui/", "node_modules/", ".next/"];
@@ -32,64 +34,7 @@ function listFiles() {
     .filter((f) => !EXCLUDE_PREFIX.some((p) => f.startsWith(p)));
 }
 
-// Encuentra el opening-tag completo de un componente JSX dado (ej. "Modal").
-// Retorna { start, end, openingText, blockText } donde openingText es todo
-// entre "<Tag" y el ">" que cierra la apertura — resolviendo arrow functions
-// como `=>` dentro de props via tracking del contador de llaves.
-function findJsxBlocks(content, openingTag) {
-  const lines = content.split("\n");
-  const blocks = [];
-  const openRe = new RegExp(`^\\s*<${openingTag}(\\s|>|$)`);
-  const closeTagRe = new RegExp(`</${openingTag}>`);
-
-  for (let i = 0; i < lines.length; i++) {
-    if (!openRe.test(lines[i])) continue;
-
-    // Reconstruir el source desde lines[i] hasta encontrar el cierre del
-    // opening-tag (">" al nivel 0 de braces). Luego seguir hasta </Tag>.
-    let chars = "";
-    for (let k = i; k < lines.length; k++) chars += lines[k] + "\n";
-
-    let braces = 0;
-    let openingEndIdx = -1;
-    // Empezar DESPUES de "<Tag" (encontrar el primer char tras el prefix).
-    const prefix = `<${openingTag}`;
-    const startPrefix = chars.indexOf(prefix);
-    for (let p = startPrefix + prefix.length; p < chars.length; p++) {
-      const c = chars[p];
-      if (c === "{") braces++;
-      else if (c === "}") braces--;
-      else if (c === ">" && braces === 0) {
-        // Self-closing "/>" o cierre de opening ">".
-        openingEndIdx = p;
-        break;
-      }
-    }
-    if (openingEndIdx === -1) continue;
-
-    const openingText = chars.slice(startPrefix, openingEndIdx + 1);
-    const selfClosing = chars[openingEndIdx - 1] === "/";
-
-    // Cantidad de saltos de línea dentro del opening para calcular endLine.
-    const openingLines = openingText.split("\n").length;
-    const openingStartLine = i + 1;
-    const openingEndLine = i + openingLines;
-
-    // Encontrar </Tag> si no es self-closing.
-    let closeLine = openingEndLine;
-    if (!selfClosing) {
-      for (let k = openingEndLine; k < lines.length; k++) {
-        if (closeTagRe.test(lines[k])) {
-          closeLine = k + 1;
-          break;
-        }
-      }
-    }
-    const blockText = lines.slice(i, closeLine).join("\n");
-    blocks.push({ start: openingStartLine, end: closeLine, openingText, blockText });
-  }
-  return blocks;
-}
+// Parser JSX vive en ./lib/jsx-parser.mjs (compartido con check-primitives).
 
 const categories = {
   A1: { title: "Modal sin `size` explicito", items: [] },
@@ -201,17 +146,30 @@ function auditFile(file) {
     }
   }
 
-  // D1: <span className="text-xs font-semibold"> que simule FormFieldLabel
+  // D1: <span className="text-xs font-semibold"> que simule FormFieldLabel.
+  // Excluye chips/badges inline: cualquier span con radius (rounded-*) o background
+  // explicito (bg-secondary|slate|amber|rose|red|blue|green) es un chip, no un label.
+  // Excluye tracking "de chip" (0.08em) porque FormFieldLabel no lleva tracking.
   for (let i = 0; i < lines.length; i++) {
-    if (/<span\s+className="[^"]*text-xs\s+font-semibold[^"]*(text-foreground|uppercase)/.test(lines[i])) {
-      categories.D1.items.push({ file, line: i + 1, snippet: lines[i].trim().slice(0, 160) });
+    const line = lines[i];
+    const matches = /<span\s+className="[^"]*text-xs\s+font-semibold[^"]*(text-foreground|uppercase)/.test(line);
+    const isChip =
+      /rounded-(\[|card|shell|chip|btn|toast|dialog|full)/.test(line) ||
+      /bg-(secondary|slate|amber|rose|red|blue|green)/.test(line) ||
+      /tracking-\[0\.0[0-9]em\]/.test(line);
+    if (matches && !isChip) {
+      categories.D1.items.push({ file, line: i + 1, snippet: line.trim().slice(0, 160) });
     }
   }
 
-  // E2: strings de feedback inline tipicos post-accion (conservador; ruidoso si hay muchos)
+  // E2: strings de feedback inline sospechosos. Ignora comentarios (// o *).
   for (let i = 0; i < lines.length; i++) {
-    if (/(registrado|guardado exito|guardado correctamente|se confirm|se actualiz|se elimin|se cre[óo]|correctamente)/i.test(lines[i]) && !/toast|flashToast|triggerClientFeedback/i.test(lines[i])) {
-      categories.E2.items.push({ file, line: i + 1, snippet: lines[i].trim().slice(0, 160) });
+    const line = lines[i];
+    const trimmed = line.trim();
+    const isComment = trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*");
+    if (isComment) continue;
+    if (/(registrado|guardado exito|guardado correctamente|se confirm|se actualiz|se elimin|se cre[óo]|correctamente)/i.test(line) && !/toast|flashToast|triggerClientFeedback/i.test(line)) {
+      categories.E2.items.push({ file, line: i + 1, snippet: line.trim().slice(0, 160) });
     }
   }
 

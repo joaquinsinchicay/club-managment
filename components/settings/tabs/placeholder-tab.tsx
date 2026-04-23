@@ -1,3 +1,4 @@
+import { FormSection } from "@/components/ui/modal-form";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { texts } from "@/lib/texts";
 
@@ -12,9 +13,7 @@ export function PlaceholderTab({ eyebrow, title, description }: PlaceholderTabPr
     <section className="rounded-shell border border-dashed border-border bg-secondary/30 p-6 sm:p-8">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {eyebrow}
-          </span>
+          <FormSection>{eyebrow}</FormSection>
           <StatusBadge
             label={texts.settings.club.placeholders.coming_soon_badge}
             tone="warning"

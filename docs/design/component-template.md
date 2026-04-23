@@ -5,6 +5,7 @@
 > hardcodeadas que el primitivo podría haber resuelto, el componente está mal.
 >
 > **Recordá**: `npm run check:primitives` debe pasar antes de commitear.
+> Para auditar drift del design system más amplio (tracking, radios, colores, etc.), correr `npm run audit:design`.
 
 ---
 
@@ -154,7 +155,8 @@ export function MyFeatureTab({ items }: Props) {
         </DataTable>
       )}
 
-      {/* Modal con Modal + ModalFooter + FormField/FormInput — NADA a mano */}
+      {/* Modal con Modal + ModalFooter + FormField/FormInput — NADA a mano.
+          size es OBLIGATORIO. NO usar hideCloseButton — la X siempre visible. */}
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -259,7 +261,8 @@ export function MyFeatureTab({ items }: Props) {
 - [ ] El feedback post-acción es por toast (`triggerClientFeedback` / `flashToast`), no inline.
 - [ ] Modal con `size` explícito + `<ModalFooter>`.
 - [ ] Empty state con `<DataTableEmpty>` o `<EmptyState>`.
-- [ ] `npm run check:primitives` pasa en verde.
+- [ ] `npm run check:primitives` pasa en verde (incluye reglas JSX-aware de Modal).
+- [ ] Si tocás un modal: `size` explícito y SIN `hideCloseButton`.
 - [ ] `npm run lint` sin errores nuevos.
 - [ ] `npm run typecheck` en verde.
 

@@ -2,7 +2,33 @@
 
 Reporte generado por `scripts/audit-design-system.mjs`. No es gate — es inspector.
 
-**Total hits**: 77.
+**Total hits actuales**: 68 (post-remediación).
+**Total hits iniciales**: 100.
+**Hits remediados**: 32.
+
+## Triaje y decisiones (Fase 2)
+
+Origen del reporte: el usuario observó que unos modales mostraban X (`/rrhh/contracts`) y otros no (`/treasury` "Cargar movimiento"). Auditoría completa reveló que el gap se extendía a otras convenciones.
+
+Decisiones tomadas durante la remediación:
+
+**Remediado (Fase 2.1 — commit `6178eea`)**
+- A1 · 6 modales sin `size` → agregado `size="md"` explícito.
+- A2 · 16 modales con `hideCloseButton` → removido. Nueva convención uniforme: **siempre mostrar X** en todos los modales.
+- A3 · 2 hits → verificados como falsos positivos; ambos usan `submitVariant="destructive"` en subcomponente o en expresión dinámica (heurística mejorada del auditor).
+
+**Remediado (Fase 2.2)**
+- B2 · 2 focus rings `/20`, `/30` → `/10`.
+- C1 · 1 DataTable sin `density` → `density="comfortable"` explícito.
+- D1 · 2 labels `<span>` reales → migrados a `<FormSection>` (`club-data-tab.tsx`, `placeholder-tab.tsx`).
+
+**Diferido a backlog (requiere token refactor o caso-a-caso)**
+- B1 · 23 hits de `tracking-[0.22em|0.18em|0.16em|0.08em]`. Los tokens actuales (`tracking-eyebrow` 0.08em, `tracking-badge` 0.06em, `tracking-wider` 0.10em) no incluyen un nombre semántico para 0.14em o 0.18em, que son los dos valores canónicos de facto. Se propone como tarea futura extender `lib/tokens/typography.ts` con `tracking-section` (0.14em) y `tracking-card-eyebrow` (0.18em) y luego migrar consumidores.
+- B3 · 25 hits de `rounded-xl|rounded-[4px]|rounded-[24px]`. Algunos son legítimos (chips pequeños ⚠ inline de 4px), otros son drift real (card shells en settings-manager y dashboard). Necesita revisión caso-a-caso y posible nuevo token `rounded-xs` (4px) para chips small.
+- B4 · 19 hits de `text-amber-*|bg-amber-*|bg-rose-*|text-red-*`. Casi todos son semánticos (error/warning) que actualmente viven inline. Requiere estrategia: o bien migrar a tokens de status (`text-status-warning`) o aceptar el uso directo en contextos limitados y documentar.
+
+**Falsos positivos conocidos**
+- A3 · `treasury-card.tsx:868` Modal "Cerrar jornada" delega a `CloseSessionModalForm` que SÍ usa `submitVariant="destructive"` (L320). El auditor no cruza archivos; limitación documentada.
 
 ## Resumen por categoría
 
@@ -13,13 +39,13 @@ Reporte generado por `scripts/audit-design-system.mjs`. No es gate — es inspec
 | A3 | Modal destructivo sin `submitVariant="destructive"` | 1 |
 | A4 | ModalFooter con className/size override | 0 |
 | B1 | Section-header uppercase con tracking distinto de 0.14em (fuera de primitivos) | 23 |
-| B2 | Focus rings fuera de ring-foreground/10 | 2 |
+| B2 | Focus rings fuera de ring-foreground/10 | 0 |
 | B3 | Radios fuera del token (rounded-xl/[4px]/[24px]/[7px] fuera de primitivos) | 25 |
 | B4 | Colores slate/amber/rose hardcoded fuera de primitivos | 19 |
-| C1 | DataTable sin `density` explicito | 1 |
+| C1 | DataTable sin `density` explicito | 0 |
 | C2 | DataTable con Header pero sin `gridColumns` | 0 |
-| D1 | Label como <span> en lugar de <FormFieldLabel> | 5 |
-| E2 | Strings de feedback inline post-accion sospechosos | 1 |
+| D1 | Label como <span> en lugar de <FormFieldLabel> | 0 |
+| E2 | Strings de feedback inline post-accion sospechosos | 0 |
 | F1 | Sub-nav segmented reimplementado a mano (sin SegmentedNav) | 0 |
 
 ## A1 · Modal sin `size` explicito
@@ -94,13 +120,7 @@ Reporte generado por `scripts/audit-design-system.mjs`. No es gate — es inspec
 
 ## B2 · Focus rings fuera de ring-foreground/10
 
-### [components/settings/tabs/categories-activities-tab.tsx](components/settings/tabs/categories-activities-tab.tsx)
-
-- **L241** · `className="group relative inline-flex min-h-8 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 pr-8 text-sm font-semibold text-foregroun`
-
-### [components/settings/tabs/club-data-tab.tsx](components/settings/tabs/club-data-tab.tsx)
-
-- **L124** · `? "cursor-pointer hover:ring-2 hover:ring-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30"`
+✓ Sin hallazgos.
 
 ## B3 · Radios fuera del token (rounded-xl/[4px]/[24px]/[7px] fuera de primitivos)
 
@@ -209,9 +229,7 @@ Reporte generado por `scripts/audit-design-system.mjs`. No es gate — es inspec
 
 ## C1 · DataTable sin `density` explicito
 
-### [components/dashboard/movement-list.tsx](components/dashboard/movement-list.tsx)
-
-- **L59** · `<DataTable gridColumns={GRID_COLUMNS}>`
+✓ Sin hallazgos.
 
 ## C2 · DataTable con Header pero sin `gridColumns`
 
@@ -219,25 +237,11 @@ Reporte generado por `scripts/audit-design-system.mjs`. No es gate — es inspec
 
 ## D1 · Label como <span> en lugar de <FormFieldLabel>
 
-### [components/dashboard/treasury-operation-forms.tsx](components/dashboard/treasury-operation-forms.tsx)
-
-- **L900** · `<span className="rounded-card bg-secondary px-2 py-0.5 text-xs font-semibold tabular-nums text-foreground">`
-- **L2129** · `<span className="rounded-[4px] bg-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">`
-- **L2132** · `<span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">`
-
-### [components/settings/tabs/club-data-tab.tsx](components/settings/tabs/club-data-tab.tsx)
-
-- **L327** · `<span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">`
-
-### [components/settings/tabs/placeholder-tab.tsx](components/settings/tabs/placeholder-tab.tsx)
-
-- **L15** · `<span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">`
+✓ Sin hallazgos.
 
 ## E2 · Strings de feedback inline post-accion sospechosos
 
-### [components/treasury/account-form.tsx](components/treasury/account-form.tsx)
-
-- **L142** · `// bloqueados para no romper la consistencia de movimientos ya registrados.`
+✓ Sin hallazgos.
 
 ## F1 · Sub-nav segmented reimplementado a mano (sin SegmentedNav)
 

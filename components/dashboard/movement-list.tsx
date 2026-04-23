@@ -56,7 +56,7 @@ export function MovementList({
   createdByLabel
 }: MovementListProps) {
   return (
-    <DataTable gridColumns={GRID_COLUMNS}>
+    <DataTable density="comfortable" gridColumns={GRID_COLUMNS}>
       <DataTableHeader>
         <DataTableHeadCell>{conceptLabel}</DataTableHeadCell>
         <DataTableHeadCell align="right">{amountLabel}</DataTableHeadCell>

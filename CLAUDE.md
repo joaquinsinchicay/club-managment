@@ -67,7 +67,8 @@ CORRECTO:
 
 ### Primitivos obligatorios
 - Todo modal usa `@/components/ui/modal`. Prohibido re-implementar overlay/panel con `BlockingOverlay`, `<div fixed>`, portales manuales o wrappers propios.
-- El primitivo ya renderiza un botón de cerrar con icono `X` en el header. **No agregar** botones textuales "Cerrar" dentro del body.
+- El primitivo renderiza un botón de cerrar con icono `X` en el header. **Siempre está visible** — la X es la vía de salida garantizada de cualquier modal.
+- **No agregar** botones textuales "Cerrar" dentro del body.
 - Todo form dentro de un modal usa `@/components/ui/modal-footer` para los botones de acción. Reimplementar el footer a mano está **prohibido**.
 
 ### API canónica: `<Modal>`
@@ -77,11 +78,12 @@ CORRECTO:
   onClose={...}
   title={...}
   description={...}         // opcional
-  size="sm" | "md" | "lg"   // default "md"
-  hideCloseButton           // opcional; usar si el footer ya tiene Cancelar
+  size="sm" | "md" | "lg"   // OBLIGATORIO (no hay default — declararlo siempre)
   closeDisabled             // durante submit
 >
 ```
+
+**⚠️ Prohibido `hideCloseButton`**. La prop existe en el primitivo por razones de compatibilidad legacy pero no debe usarse en código nuevo. El gate `check:primitives` (regla `modal-hideclose-forbidden`) lo bloquea. Historia: se invirtió la convención en commit `6178eea` — antes era "ocultá la X si hay Cancelar"; ahora es "siempre X" para que todo modal tenga vía de salida consistente independientemente de si su footer tiene botón Cancelar.
 Taxonomía de `size`:
 - `sm` → `max-w-md`. Confirmaciones irreversibles, modales de 1 campo (Invitar, Eliminar miembro, Confirmar remoción).
 - `md` → `max-w-xl`. **Default**. Form simple de un solo flujo (editar movimiento, crear categoría/actividad, editar cost center).
@@ -123,6 +125,8 @@ Reglas de uso:
 // ❌ override de ancho del Modal por className/style — usar size="sm|md|lg"
 // ❌ X + botón "Cerrar" textual simultáneos
 // ❌ MODAL_FOOTER_CLASSNAME (eliminado)
+// ❌ hideCloseButton — prohibido en código nuevo (bloqueado por check:primitives)
+// ❌ <Modal> sin prop size — size es obligatorio (bloqueado por check:primitives)
 ```
 
 ### Primitivos de form obligatorios
@@ -166,7 +170,7 @@ Catálogo (API pública):
 ### Checklist para modales nuevos o modificados
 - [ ] `<Modal>` con `size` explícito apropiado a la taxonomía.
 - [ ] `<ModalFooter>` con labels desde `texts.*` (nunca hardcoded).
-- [ ] Si el footer tiene Cancelar, considerar `hideCloseButton` para evitar doble salida.
+- [ ] NO usar `hideCloseButton`. La X del header siempre visible.
 - [ ] `submitVariant="destructive"` para acciones destructivas.
 - [ ] Todos los campos usan `<FormFieldLabel>`, `<FormInput>`, `<FormSelect>`, `<FormTextarea>`, `<FormReadonly>`, `<FormCheckboxCard>`, `<FormSection>`, `<FormBanner>`, `<FormError>`, `<FormHelpText>`. No hay clases hardcodeadas.
 - [ ] Si el submit depende de validación client-side, `submitDisabled` conectado.

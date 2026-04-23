@@ -9,6 +9,7 @@ import {
   FormFieldLabel,
   FormHelpText,
   FormInput,
+  FormSection,
   FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
@@ -121,7 +122,7 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
                 className={cn(
                   "group relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border transition",
                   canEdit
-                    ? "cursor-pointer hover:ring-2 hover:ring-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30"
+                    ? "cursor-pointer hover:ring-2 hover:ring-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10"
                     : "cursor-not-allowed opacity-70"
                 )}
                 aria-label={
@@ -324,9 +325,7 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
           </div>
 
           <div className="grid gap-2 rounded-card border border-border bg-card px-4 py-3 text-sm">
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              {identityTexts.color_preview_label}
-            </span>
+            <FormSection>{identityTexts.color_preview_label}</FormSection>
             <div className="flex items-center gap-3">
               <span
                 className="h-8 w-8 rounded-full border border-border"

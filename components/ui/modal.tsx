@@ -15,6 +15,12 @@ type ModalProps = {
   children: ReactNode;
   size?: ModalSize;
   closeDisabled?: boolean;
+  /**
+   * @deprecated Prohibido en código nuevo. La X del header es la vía de salida
+   * garantizada de todo modal. Prop conservada solo para compatibilidad con
+   * renders legacy mientras dure la transición. Bloqueado por
+   * `scripts/check-primitives.mjs` regla `modal-hideclose-forbidden`.
+   */
   hideCloseButton?: boolean;
 };
 
