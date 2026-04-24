@@ -3,7 +3,13 @@ import { forwardRef, type AnchorHTMLAttributes, type ReactNode } from "react";
 
 import { buttonClass } from "@/components/ui/button";
 
-type LinkButtonVariant = "primary" | "secondary" | "destructive" | "dark";
+type LinkButtonVariant =
+  | "primary"
+  | "secondary"
+  | "destructive"
+  | "destructive-outline"
+  | "dark"
+  | "accent-rrhh";
 type LinkButtonSize = "sm" | "md";
 type LinkButtonRadius = "btn" | "xl";
 

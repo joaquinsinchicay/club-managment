@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
 
-import {
-  createStaffMemberAction,
-  updateStaffMemberAction,
-} from "@/app/(dashboard)/settings/rrhh/actions";
+import { createStaffMemberAction } from "@/app/(dashboard)/settings/rrhh/actions";
 import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
 import { StaffMembersTab } from "@/components/hr/staff-members-tab";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
@@ -27,7 +24,6 @@ export default async function RrhhStaffPage() {
         members={members}
         canMutate={canMutate}
         createAction={createStaffMemberAction}
-        updateAction={updateStaffMemberAction}
       />
     </main>
   );

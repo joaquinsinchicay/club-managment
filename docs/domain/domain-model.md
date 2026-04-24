@@ -800,5 +800,51 @@ aquí para que no se pierdan:
 - **"Aprobó: {nombre}" por revisión** — requiere join a `profiles` /
   `users` por `created_by_user_id`. Hoy guardamos sólo el id.
 
+### Ficha del colaborador (`/rrhh/staff/[id]`)
+
+Misma estructura visual que la ficha de contrato (breadcrumb + header
+card + layout dos columnas). El listado `/rrhh/staff` ya no expone
+edición inline: cada fila tiene únicamente un icon "Ver ficha" que
+navega a esta ruta. La edición se hace desde el header de la ficha
+mediante el CTA "Editar datos" (modal con `StaffMemberFormFields`
++ `updateStaffMemberAction`).
+
+Cards implementadas:
+
+- **Header** — breadcrumb "Colaboradores · {nombre}", Avatar + nombre
+  + meta (DNI, CUIT, email), chips (con/sin contrato vigente, tipo
+  de vínculo), CTAs: `+ Nuevo contrato` (link a `/rrhh/contracts`)
+  y `Editar datos` (modal, sólo si `canMutateHrMasters`).
+- **Datos personales** — `dl` con nombre completo, DNI, CUIT/CUIL,
+  tipo de vínculo, fecha de alta.
+- **Contacto** — email y teléfono.
+- **Datos bancarios** — CBU/alias.
+- **Contratos** — DataTable compact con estructura (link a
+  `/rrhh/contracts/[id]`), desde, hasta, monto vigente, estado.
+- **Liquidaciones** — DataTable compact con período, estructura,
+  total y estado.
+- **Antigüedad en el club** — card lateral accent-rrhh con cálculo
+  de años · meses desde `hire_date` + fecha de alta formateada.
+- **Totales** — año acumulado y mes corriente (heredados de
+  `getStaffProfile`).
+
+#### TODO ficha de colaborador (diferido a iteraciones posteriores)
+
+El mockup incluye features que requieren esquema nuevo sobre
+`staff_members` y/o aggregations adicionales:
+
+- **Nacimiento / edad** — campo `birth_date` en `staff_members`.
+- **Estado civil, nacionalidad** — columnas nuevas.
+- **Domicilio** (calle, CP, localidad) — columnas nuevas (o una
+  sub-tabla `staff_addresses`).
+- **Datos bancarios detallados** (banco, tipo de cuenta, CBU
+  completo, alias separado) — hoy sólo `cbu_alias` consolidado.
+- **"Dar de baja..."** CTA — baja lógica del colaborador; hoy no
+  existe endpoint en `staff-member-service`. Se difiere hasta
+  definir políticas de retención de datos.
+- **Actividad reciente** (timeline de revisiones + liquidaciones +
+  contratos) — requiere agregación + ordenamiento cronológico de
+  múltiples fuentes; por ahora la info vive en cards separadas.
+
 ```
 ```
