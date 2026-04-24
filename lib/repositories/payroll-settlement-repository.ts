@@ -554,13 +554,8 @@ export const payrollSettlementRepository = {
     month: number;
   }): Promise<{ ok: boolean; code: string; generatedCount: number; skippedCount: number; errorCount: number }> {
     const supabase = requireAdminClient("rpc_hr_generate_monthly_settlements", params);
-    const { error: setErr } = await supabase.rpc("set_current_club", {
-      p_club_id: params.clubId,
-    });
-    if (setErr && setErr.code !== "42883") {
-      console.warn("[payroll-settlement-repo] set_current_club failed", setErr);
-    }
     const { data, error } = await supabase.rpc("hr_generate_monthly_settlements", {
+      p_club_id: params.clubId,
       p_year: params.year,
       p_month: params.month,
     });
