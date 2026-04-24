@@ -1,13 +1,11 @@
 /**
  * Domain entity and pure helpers for Staff Members (US-56).
  *
- * Staff members are the master catalog of people paid by the club. Each
- * person has identity, contact and payment data, a `vinculo_type` and a
- * soft-delete style `status` (`activo | inactivo`). The service layer
- * blocks deactivation while the member has active contracts (US-58).
- *
- * Module is effect-free; only types, enums and helpers used by the UI,
- * the service layer and the repository.
+ * Staff members are the master catalog of people paid by the club. Cada
+ * persona tiene datos personales, vinculo contable y datos de pago. El
+ * unico concepto de baja es la "alerta de contratos": un colaborador
+ * sin contratos vigentes se marca visualmente pero NO cambia estado —
+ * el concepto activo/inactivo fue removido de este módulo.
  */
 
 export const STAFF_VINCULO_TYPES = [
@@ -16,9 +14,6 @@ export const STAFF_VINCULO_TYPES = [
   "honorarios",
 ] as const;
 export type StaffVinculoType = (typeof STAFF_VINCULO_TYPES)[number];
-
-export const STAFF_MEMBER_STATUSES = ["activo", "inactivo"] as const;
-export type StaffMemberStatus = (typeof STAFF_MEMBER_STATUSES)[number];
 
 export type StaffMember = {
   id: string;
@@ -32,10 +27,8 @@ export type StaffMember = {
   vinculoType: StaffVinculoType;
   cbuAlias: string | null;
   hireDate: string;
-  status: StaffMemberStatus;
   activeContractCount: number;
   hasActiveContract: boolean;
-  deactivatedAt: string | null;
   createdAt: string;
   updatedAt: string;
   createdByUserId: string | null;
@@ -46,13 +39,6 @@ export function isStaffVinculoType(value: unknown): value is StaffVinculoType {
   return (
     typeof value === "string" &&
     (STAFF_VINCULO_TYPES as readonly string[]).includes(value)
-  );
-}
-
-export function isStaffMemberStatus(value: unknown): value is StaffMemberStatus {
-  return (
-    typeof value === "string" &&
-    (STAFF_MEMBER_STATUSES as readonly string[]).includes(value)
   );
 }
 

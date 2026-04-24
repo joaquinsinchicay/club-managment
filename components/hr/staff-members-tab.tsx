@@ -31,12 +31,10 @@ import {
   FormInput,
   FormSelect,
 } from "@/components/ui/modal-form";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import {
   STAFF_VINCULO_TYPES,
   type StaffMember,
-  type StaffMemberStatus,
   type StaffVinculoType,
 } from "@/lib/domain/staff-member";
 import { texts } from "@/lib/texts";
@@ -48,24 +46,17 @@ type StaffMembersTabProps = {
   updateAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
-type StatusFilter = "all" | StaffMemberStatus;
 type VinculoFilter = "all" | StaffVinculoType;
 type AlertFilter = "all" | "alerts_only";
 
 const smTexts = texts.rrhh.staff_members;
 
-const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: smTexts.filter_all },
-  { value: "activo", label: smTexts.filter_active },
-  { value: "inactivo", label: smTexts.filter_inactive },
-];
-
 /**
- * US-60 helper: a member is in "alert" state when active but has no active
- * contracts. Used by the filter and by the header counter.
+ * US-60 helper: un colaborador está "en alerta" cuando no tiene contratos
+ * vigentes. Usado por el filtro de alertas y el banner de conteo.
  */
 function isMemberInAlert(m: StaffMember): boolean {
-  return m.status === "activo" && !m.hasActiveContract;
+  return !m.hasActiveContract;
 }
 
 function todayIso() {
@@ -81,7 +72,6 @@ export function StaffMembersTab({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [vinculoFilter, setVinculoFilter] = useState<VinculoFilter>("all");
   const [alertFilter, setAlertFilter] = useState<AlertFilter>("all");
 
@@ -96,20 +86,9 @@ export function StaffMembersTab({
     [members],
   );
 
-  const countsByStatus = useMemo(() => {
-    const out = new Map<StaffMemberStatus, number>();
-    for (const m of members) {
-      out.set(m.status, (out.get(m.status) ?? 0) + 1);
-    }
-    return out;
-  }, [members]);
-  const activeCount = countsByStatus.get("activo") ?? 0;
-  const inactiveCount = countsByStatus.get("inactivo") ?? 0;
-
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return members.filter((m) => {
-      if (statusFilter !== "all" && m.status !== statusFilter) return false;
       if (vinculoFilter !== "all" && m.vinculoType !== vinculoFilter) return false;
       if (alertFilter === "alerts_only" && !isMemberInAlert(m)) return false;
       if (!q) return true;
@@ -120,7 +99,7 @@ export function StaffMembersTab({
         (m.cuitCuil?.includes(q) ?? false)
       );
     });
-  }, [members, search, statusFilter, vinculoFilter, alertFilter]);
+  }, [members, search, vinculoFilter, alertFilter]);
 
   async function runAction(
     action: (fd: FormData) => Promise<RrhhActionResult>,
@@ -150,9 +129,7 @@ export function StaffMembersTab({
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {smTexts.subtitle_counts
-            .replace("{active}", String(activeCount))
-            .replace("{inactive}", String(inactiveCount))}
+          {smTexts.subtitle_counts.replace("{total}", String(members.length))}
         </p>
         {canMutate ? (
           <button
@@ -195,23 +172,6 @@ export function StaffMembersTab({
           className="w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
         />
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {STATUS_FILTERS.map((f) => {
-            const count =
-              f.value === "all"
-                ? members.length
-                : countsByStatus.get(f.value as StaffMemberStatus) ?? 0;
-            return (
-              <ChipButton
-                key={f.value}
-                active={statusFilter === f.value}
-                onClick={() => setStatusFilter(f.value)}
-              >
-                {f.label} · {count}
-              </ChipButton>
-            );
-          })}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
           {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. */}
           <select
             value={vinculoFilter}
@@ -249,7 +209,7 @@ export function StaffMembersTab({
       ) : (
         <DataTable
           density="comfortable"
-          gridColumns="minmax(0,1.6fr) 130px 150px 150px 100px 110px 44px"
+          gridColumns="minmax(0,1.8fr) 130px 150px 160px 100px 44px"
         >
           <DataTableHeader>
             <DataTableHeadCell>{smTexts.col_name}</DataTableHeadCell>
@@ -257,7 +217,6 @@ export function StaffMembersTab({
             <DataTableHeadCell>{smTexts.col_cuit}</DataTableHeadCell>
             <DataTableHeadCell>{smTexts.col_vinculo}</DataTableHeadCell>
             <DataTableHeadCell align="center">{smTexts.col_contracts}</DataTableHeadCell>
-            <DataTableHeadCell>{smTexts.col_status}</DataTableHeadCell>
             <DataTableHeadCell />
           </DataTableHeader>
           <DataTableBody>
@@ -277,7 +236,7 @@ export function StaffMembersTab({
                       <span className="font-medium text-foreground">
                         {m.firstName} {m.lastName}
                       </span>
-                      {m.status === "activo" && !m.hasActiveContract ? (
+                      {!m.hasActiveContract ? (
                         <span className="text-xs text-ds-amber-700">
                           {smTexts.alert_no_active_contracts}
                         </span>
@@ -304,12 +263,6 @@ export function StaffMembersTab({
                   <span className="text-sm font-medium text-foreground">
                     {m.activeContractCount}
                   </span>
-                </DataTableCell>
-                <DataTableCell>
-                  <StatusBadge
-                    tone={m.status === "activo" ? "success" : "neutral"}
-                    label={smTexts.status_options[m.status]}
-                  />
                 </DataTableCell>
                 <DataTableCell align="right">
                   {canMutate ? (

@@ -1,20 +1,19 @@
 /**
  * Service layer for Staff Members (US-56).
  *
- * Orchestrates authorization, validation, CRUD and the deactivation rule
- * that blocks members with active contracts (US-56 Scenario 12).
+ * Orchestrates authorization, validation y CRUD del maestro de colaboradores.
+ * El concepto de activo/inactivo fue removido; los colaboradores se crean y
+ * se editan, pero no se dan de baja desde este flujo.
  */
 
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import type { Membership } from "@/lib/domain/access";
 import { canAccessHrMasters, canMutateHrMasters } from "@/lib/domain/authorization";
 import {
-  isStaffMemberStatus,
   isStaffVinculoType,
   normalizeDni,
   isValidDniShape,
   type StaffMember,
-  type StaffMemberStatus,
   type StaffVinculoType,
 } from "@/lib/domain/staff-member";
 import {
@@ -40,8 +39,6 @@ export type StaffMemberActionCode =
   | "forbidden"
   | "created"
   | "updated"
-  | "deactivated"
-  | "reactivated"
   | "member_not_found"
   | "first_name_required"
   | "last_name_required"
@@ -54,10 +51,8 @@ export type StaffMemberActionCode =
   | "email_invalid"
   | "phone_invalid"
   | "invalid_hire_date"
-  | "invalid_status"
   | "duplicate_dni"
   | "duplicate_cuit_cuil"
-  | "has_active_contracts"
   | "unknown_error";
 
 export type StaffMemberActionResult<T = void> =
@@ -392,58 +387,3 @@ export async function updateStaffMember(
   }
 }
 
-export async function setStaffMemberStatus(
-  memberId: string,
-  status: string,
-): Promise<StaffMemberActionResult<{ member: StaffMember }>> {
-  const guard = await guardMutate();
-  if (!guard.ok) return err<{ member: StaffMember }>(guard.code);
-  const ctx = guard.context;
-
-  if (!isStaffMemberStatus(status)) return err<{ member: StaffMember }>("invalid_status");
-  const nextStatus: StaffMemberStatus = status;
-
-  try {
-    const existing = await staffMemberRepository.getById(ctx.clubId, memberId);
-    if (!existing) return err<{ member: StaffMember }>("member_not_found");
-
-    if (nextStatus === existing.status) {
-      return ok<{ member: StaffMember }>(
-        nextStatus === "activo" ? "reactivated" : "deactivated",
-        { member: existing },
-      );
-    }
-
-    if (nextStatus === "inactivo") {
-      const hasActive = await staffMemberRepository.hasActiveContracts(ctx.clubId, memberId);
-      if (hasActive) return err<{ member: StaffMember }>("has_active_contracts");
-    }
-
-    const updated = await staffMemberRepository.setStatus({
-      memberId,
-      clubId: ctx.clubId,
-      status: nextStatus,
-      updatedByUserId: ctx.userId,
-    });
-    if (!updated) return err<{ member: StaffMember }>("member_not_found");
-
-    await staffMemberRepository.recordActivity({
-      clubId: ctx.clubId,
-      entityId: memberId,
-      action: nextStatus === "inactivo" ? "DEACTIVATED" : "REACTIVATED",
-      actorUserId: ctx.userId,
-      payloadBefore: { status: existing.status },
-      payloadAfter: { status: updated.status },
-    });
-
-    return ok<{ member: StaffMember }>(
-      nextStatus === "inactivo" ? "deactivated" : "reactivated",
-      { member: updated },
-    );
-  } catch (error) {
-    if (isStaffMemberRepositoryInfraError(error)) {
-      console.error("[staff-member-service.set-status]", error);
-    }
-    return err<{ member: StaffMember }>("unknown_error");
-  }
-}

@@ -75,18 +75,17 @@ export default async function StaffProfilePage({
           </h1>
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
             <span>DNI {profile.member.dni}</span>
-            <span>·</span>
-            <span>CUIT {profile.member.cuitCuil}</span>
-            <span>·</span>
-            <StatusBadge
-              tone={profile.member.status === "activo" ? "success" : "neutral"}
-              label={texts.rrhh.staff_members.status_options[profile.member.status]}
-            />
+            {profile.member.cuitCuil ? (
+              <>
+                <span>·</span>
+                <span>CUIT {profile.member.cuitCuil}</span>
+              </>
+            ) : null}
           </div>
         </div>
       </header>
 
-      {profile.member.status === "activo" && !profile.hasActiveContract ? (
+      {!profile.hasActiveContract ? (
         <FormBanner variant="warning">{profileTexts.alert_no_active_contracts}</FormBanner>
       ) : null}
 
@@ -143,12 +142,6 @@ export default async function StaffProfilePage({
             <div>
               <dt className="text-xs text-muted-foreground">{profileTexts.personal_hire_date}</dt>
               <dd className="text-foreground">{profile.member.hireDate}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">{profileTexts.personal_status}</dt>
-              <dd className="text-foreground">
-                {texts.rrhh.staff_members.status_options[profile.member.status]}
-              </dd>
             </div>
           </dl>
         </CardBody>

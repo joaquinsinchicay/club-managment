@@ -97,11 +97,9 @@ export function StaffContractsTab({
   const [editPending, setEditPending] = useState(false);
   const [finalizePending, setFinalizePending] = useState(false);
 
-  // For the create flow: only active members + active structures without active contract.
-  const activeMembers = useMemo(
-    () => members.filter((m) => m.status === "activo"),
-    [members],
-  );
+  // Para el create flow: todos los colaboradores (no hay concepto de
+  // activo/inactivo) + estructuras activas sin contrato vigente.
+  const activeMembers = members;
   const availableStructures = useMemo(
     () =>
       structures.filter((s) => s.status === "activa" && !s.hasActiveContract),

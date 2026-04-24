@@ -229,9 +229,6 @@ export async function createStaffContract(
     ]);
 
     if (!member) return err<{ contract: StaffContract }>("staff_member_required");
-    if (member.status !== "activo") {
-      return err<{ contract: StaffContract }>("staff_member_not_active");
-    }
     if (!structure) return err<{ contract: StaffContract }>("structure_required");
     if (structure.status !== "activa") {
       return err<{ contract: StaffContract }>("salary_structure_not_active");

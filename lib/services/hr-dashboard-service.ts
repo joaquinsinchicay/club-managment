@@ -108,9 +108,7 @@ export async function getHrDashboardSummary(): Promise<HrDashboardResult> {
       (s) => s.status === "activa" && !s.hasActiveContract,
     ).length;
 
-    const alertsCount = staffMembers.filter(
-      (m) => m.status === "activo" && !m.hasActiveContract,
-    ).length;
+    const alertsCount = staffMembers.filter((m) => !m.hasActiveContract).length;
 
     return {
       ok: true,

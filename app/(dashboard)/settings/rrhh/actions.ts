@@ -10,7 +10,6 @@ import {
 } from "@/lib/services/salary-structure-service";
 import {
   createStaffMember,
-  setStaffMemberStatus,
   updateStaffMember,
   type StaffMemberActionCode,
 } from "@/lib/services/staff-member-service";
@@ -176,10 +175,6 @@ function staffMemberFeedbackCode(code: StaffMemberActionCode): string {
       return "staff_member_created";
     case "updated":
       return "staff_member_updated";
-    case "deactivated":
-      return "staff_member_deactivated";
-    case "reactivated":
-      return "staff_member_reactivated";
     case "member_not_found":
       return "staff_member_not_found";
     case "first_name_required":
@@ -204,14 +199,10 @@ function staffMemberFeedbackCode(code: StaffMemberActionCode): string {
       return "staff_member_phone_invalid";
     case "invalid_hire_date":
       return "staff_member_invalid_hire_date";
-    case "invalid_status":
-      return "staff_member_invalid_status";
     case "duplicate_dni":
       return "staff_member_duplicate_dni";
     case "duplicate_cuit_cuil":
       return "staff_member_duplicate_cuit_cuil";
-    case "has_active_contracts":
-      return "staff_member_has_active_contracts";
     case "forbidden":
     case "no_active_club":
     case "unauthenticated":
@@ -252,15 +243,6 @@ export async function updateStaffMemberAction(formData: FormData): Promise<RrhhA
   const memberId = String(formData.get("staff_member_id") ?? "");
   if (!memberId) return { ok: false, code: staffMemberFeedbackCode("member_not_found") };
   const result = await updateStaffMember(memberId, rawStaffMemberFromFormData(formData));
-  revalidatePath("/settings");
-  return { ok: result.ok, code: staffMemberFeedbackCode(result.code) };
-}
-
-export async function setStaffMemberStatusAction(formData: FormData): Promise<RrhhActionResult> {
-  const memberId = String(formData.get("staff_member_id") ?? "");
-  const status = String(formData.get("status") ?? "");
-  if (!memberId) return { ok: false, code: staffMemberFeedbackCode("member_not_found") };
-  const result = await setStaffMemberStatus(memberId, status);
   revalidatePath("/settings");
   return { ok: result.ok, code: staffMemberFeedbackCode(result.code) };
 }

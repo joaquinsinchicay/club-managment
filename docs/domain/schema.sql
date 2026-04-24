@@ -464,7 +464,6 @@ create type salary_remuneration_type as enum ('mensual_fijo','por_hora','por_cla
 create type salary_structure_status as enum ('activa','inactiva');
 create type salary_payment_type as enum ('sueldo','viatico','honorarios');
 create type staff_vinculo_type as enum ('relacion_dependencia','monotributista','honorarios');
-create type staff_member_status as enum ('activo','inactivo');
 create type staff_contract_status as enum ('vigente','finalizado');
 create type payroll_settlement_status as enum ('generada','confirmada','pagada','anulada');
 create type payroll_adjustment_type as enum ('adicional','descuento','reintegro');
@@ -511,8 +510,10 @@ select salary_structure_id, amount
 from salary_structure_versions
 where end_date is null;
 
--- Colaboradores del club (US-56). Unique parciales en (club_id, dni) y
--- (club_id, cuit_cuil) where status='activo'.
+-- Colaboradores del club (US-56). Unique en (club_id, dni) y unique parcial en
+-- (club_id, cuit_cuil) where cuit_cuil is not null.
+-- No se maneja soft-delete: los colaboradores se crean y se editan pero no
+-- se dan de baja.
 create table staff_members (
   id uuid primary key default gen_random_uuid(),
   club_id uuid not null references clubs(id) on delete cascade,
@@ -525,8 +526,6 @@ create table staff_members (
   vinculo_type staff_vinculo_type not null,
   cbu_alias text,
   hire_date date not null default current_date,
-  status staff_member_status not null default 'activo',
-  deactivated_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by_user_id uuid references users(id),
@@ -672,11 +671,10 @@ create unique index salary_structure_versions_unique_current
 create index idx_salary_structure_versions_structure_start
   on salary_structure_versions (salary_structure_id, start_date desc);
 
-create unique index staff_members_unique_active_dni
-  on staff_members (club_id, dni) where status = 'activo';
-create unique index staff_members_unique_active_cuit
-  on staff_members (club_id, cuit_cuil) where status = 'activo';
-create index idx_staff_members_club_status on staff_members (club_id, status);
+create unique index staff_members_unique_dni
+  on staff_members (club_id, dni);
+create unique index staff_members_unique_cuit
+  on staff_members (club_id, cuit_cuil) where cuit_cuil is not null;
 create index idx_staff_members_club_name on staff_members (club_id, last_name, first_name);
 
 create unique index staff_contracts_unique_active_per_structure

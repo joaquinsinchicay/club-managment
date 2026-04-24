@@ -16,7 +16,6 @@ import {
 } from "@/lib/supabase/admin";
 import type {
   StaffMember,
-  StaffMemberStatus,
   StaffVinculoType,
 } from "@/lib/domain/staff-member";
 
@@ -98,8 +97,6 @@ type MemberRow = {
   vinculo_type: StaffVinculoType;
   cbu_alias: string | null;
   hire_date: string;
-  status: StaffMemberStatus;
-  deactivated_at: string | null;
   created_at: string;
   updated_at: string;
   created_by_user_id: string | null;
@@ -107,7 +104,7 @@ type MemberRow = {
 };
 
 const MEMBER_COLUMNS =
-  "id,club_id,first_name,last_name,dni,cuit_cuil,email,phone,vinculo_type,cbu_alias,hire_date,status,deactivated_at,created_at,updated_at,created_by_user_id,updated_by_user_id";
+  "id,club_id,first_name,last_name,dni,cuit_cuil,email,phone,vinculo_type,cbu_alias,hire_date,created_at,updated_at,created_by_user_id,updated_by_user_id";
 
 function mapMember(row: MemberRow, activeContractCount: number): StaffMember {
   return {
@@ -122,10 +119,8 @@ function mapMember(row: MemberRow, activeContractCount: number): StaffMember {
     vinculoType: row.vinculo_type,
     cbuAlias: row.cbu_alias,
     hireDate: row.hire_date,
-    status: row.status,
     activeContractCount,
     hasActiveContract: activeContractCount > 0,
-    deactivatedAt: row.deactivated_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdByUserId: row.created_by_user_id,
@@ -168,15 +163,7 @@ export type UpdateStaffMemberInput = {
   };
 };
 
-export type SetStaffMemberStatusInput = {
-  memberId: string;
-  clubId: string;
-  status: StaffMemberStatus;
-  updatedByUserId: string;
-};
-
 export type ListStaffMembersFilters = {
-  status?: StaffMemberStatus | null;
   vinculoType?: StaffVinculoType | null;
   search?: string | null;
 };
@@ -215,7 +202,6 @@ export const staffMemberRepository = {
       .order("last_name", { ascending: true })
       .order("first_name", { ascending: true });
 
-    if (filters.status) query = query.eq("status", filters.status);
     if (filters.vinculoType) query = query.eq("vinculo_type", filters.vinculoType);
     if (filters.search) {
       const escaped = filters.search.replace(/[%_]/g, (m) => `\\${m}`);
@@ -285,7 +271,6 @@ export const staffMemberRepository = {
         .from("staff_members")
         .select("id", { count: "exact", head: true })
         .eq("club_id", input.clubId)
-        .eq("status", "activo")
         .eq("dni", input.dni);
       if (input.excludingMemberId) q = q.neq("id", input.excludingMemberId);
       const { count, error } = await q;
@@ -298,7 +283,6 @@ export const staffMemberRepository = {
         .from("staff_members")
         .select("id", { count: "exact", head: true })
         .eq("club_id", input.clubId)
-        .eq("status", "activo")
         .eq("cuit_cuil", input.cuitCuil);
       if (input.excludingMemberId) q = q.neq("id", input.excludingMemberId);
       const { count, error } = await q;
@@ -307,18 +291,6 @@ export const staffMemberRepository = {
     }
 
     return { dniTaken, cuitTaken };
-  },
-
-  async hasActiveContracts(clubId: string, memberId: string): Promise<boolean> {
-    const supabase = requireAdminClient("has_active_contracts", { clubId, memberId });
-    const { count, error } = await supabase
-      .from("staff_contracts")
-      .select("id", { count: "exact", head: true })
-      .eq("club_id", clubId)
-      .eq("staff_member_id", memberId)
-      .eq("status", "vigente");
-    if (error) throwReadFailure("has_active_contracts", { clubId, memberId }, error);
-    return (count ?? 0) > 0;
   },
 
   async create(input: CreateStaffMemberInput): Promise<StaffMember> {
@@ -336,7 +308,6 @@ export const staffMemberRepository = {
         vinculo_type: input.vinculoType,
         cbu_alias: input.cbuAlias,
         hire_date: input.hireDate,
-        status: "activo",
         created_by_user_id: input.createdByUserId,
         updated_by_user_id: input.createdByUserId,
       })
@@ -374,30 +345,6 @@ export const staffMemberRepository = {
       .eq("id", input.memberId)
       .eq("club_id", input.clubId);
     if (error) return throwWriteFailure("update_staff_member", input, error);
-
-    return this.getById(input.clubId, input.memberId);
-  },
-
-  async setStatus(input: SetStaffMemberStatusInput): Promise<StaffMember | null> {
-    const supabase = requireAdminClient("set_staff_member_status", {
-      clubId: input.clubId,
-      memberId: input.memberId,
-      status: input.status,
-    });
-
-    const patch: Record<string, unknown> = {
-      status: input.status,
-      updated_at: new Date().toISOString(),
-      updated_by_user_id: input.updatedByUserId,
-      deactivated_at: input.status === "inactivo" ? new Date().toISOString() : null,
-    };
-
-    const { error } = await supabase
-      .from("staff_members")
-      .update(patch)
-      .eq("id", input.memberId)
-      .eq("club_id", input.clubId);
-    if (error) return throwWriteFailure("set_staff_member_status", input, error);
 
     return this.getById(input.clubId, input.memberId);
   },
