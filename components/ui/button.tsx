@@ -2,7 +2,13 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "primary" | "secondary" | "destructive" | "dark";
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "destructive"
+  | "destructive-outline"
+  | "dark"
+  | "accent-rrhh";
 type ButtonSize = "sm" | "md";
 type ButtonRadius = "btn" | "xl";
 
@@ -17,7 +23,10 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-foreground text-background hover:opacity-90",
   secondary: "border border-border bg-card text-foreground hover:bg-secondary",
   destructive: "bg-destructive text-white hover:opacity-90",
+  "destructive-outline":
+    "border border-red-200 bg-card text-ds-red-700 hover:bg-ds-red-050",
   dark: "bg-ds-slate-900 text-white hover:bg-black",
+  "accent-rrhh": "bg-ds-pink text-white hover:bg-ds-pink-700",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

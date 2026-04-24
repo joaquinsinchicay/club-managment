@@ -335,7 +335,7 @@ export function ContractDetailView({
               <button
                 type="button"
                 onClick={() => setReviseOpen(true)}
-                className={buttonClass({ variant: "primary", size: "md" })}
+                className={buttonClass({ variant: "accent-rrhh", size: "md" })}
               >
                 {cdTexts.new_revision_cta_plus}
               </button>
@@ -351,7 +351,7 @@ export function ContractDetailView({
               <button
                 type="button"
                 onClick={() => setFinalizeOpen(true)}
-                className={buttonClass({ variant: "destructive", size: "md" })}
+                className={buttonClass({ variant: "destructive-outline", size: "md" })}
               >
                 {cdTexts.finalize_contract_cta}
               </button>
@@ -419,7 +419,7 @@ export function ContractDetailView({
                   <button
                     type="button"
                     onClick={() => setReviseOpen(true)}
-                    className={buttonClass({ variant: "primary", size: "sm" })}
+                    className={buttonClass({ variant: "accent-rrhh", size: "sm" })}
                   >
                     {cdTexts.history_new_cta}
                   </button>
@@ -466,10 +466,9 @@ export function ContractDetailView({
                               {rangeLabel}
                             </span>
                             {isCurrent ? (
-                              <StatusBadge
-                                tone="success"
-                                label={cdTexts.history_current_badge}
-                              />
+                              <DataTableChip tone="income">
+                                {cdTexts.history_current_badge}
+                              </DataTableChip>
                             ) : null}
                             {!prior ? (
                               <DataTableChip tone="neutral">
@@ -579,9 +578,9 @@ export function ContractDetailView({
 
         <aside className="flex flex-col gap-6">
           {/* Monto vigente */}
-          <Card padding="comfortable" tone="muted">
+          <Card padding="comfortable" tone="accent-rrhh">
             <div className="flex min-w-0 flex-col gap-3">
-              <p className="break-words text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="break-words text-xs font-semibold uppercase tracking-[0.18em] text-ds-pink-700">
                 {currentAmountEyebrow}
               </p>
               <p className="break-words text-2xl font-bold tabular-nums text-foreground sm:text-h1">
@@ -594,7 +593,7 @@ export function ContractDetailView({
                 <button
                   type="button"
                   onClick={() => setReviseOpen(true)}
-                  className={buttonClass({ variant: "primary", size: "md" })}
+                  className={buttonClass({ variant: "accent-rrhh", size: "md" })}
                 >
                   {cdTexts.new_revision_cta}
                 </button>

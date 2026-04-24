@@ -3,7 +3,7 @@ import { type ElementType, type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type CardPadding = "none" | "compact" | "comfortable";
-type CardTone = "default" | "muted";
+type CardTone = "default" | "muted" | "accent-rrhh";
 
 type CardProps = HTMLAttributes<HTMLElement> & {
   as?: ElementType;
@@ -20,6 +20,7 @@ const paddingClasses: Record<CardPadding, string> = {
 const toneClasses: Record<CardTone, string> = {
   default: "bg-card",
   muted: "bg-secondary/40",
+  "accent-rrhh": "bg-ds-pink-050 border-ds-pink-050",
 };
 
 export function Card({
