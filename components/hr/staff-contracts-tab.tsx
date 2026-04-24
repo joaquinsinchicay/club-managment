@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
-import { Button, buttonClass } from "@/components/ui/button";
+import { buttonClass } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
 import {
   DataTable,
@@ -12,11 +12,12 @@ import {
   DataTableBody,
   DataTableCell,
   DataTableChip,
+  DataTableEmpty,
   DataTableHeadCell,
   DataTableHeader,
   DataTableRow,
 } from "@/components/ui/data-table";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
@@ -87,6 +88,7 @@ export function StaffContractsTab({
 }: StaffContractsTabProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("vigente");
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -106,10 +108,28 @@ export function StaffContractsTab({
     [structures],
   );
 
+  const countsByStatus = useMemo(() => {
+    const out = new Map<StaffContractStatus, number>();
+    for (const c of contracts) {
+      out.set(c.status, (out.get(c.status) ?? 0) + 1);
+    }
+    return out;
+  }, [contracts]);
+  const vigenteCount = countsByStatus.get("vigente") ?? 0;
+  const finalizadoCount = countsByStatus.get("finalizado") ?? 0;
+
   const filtered = useMemo(() => {
-    if (statusFilter === "all") return contracts;
-    return contracts.filter((c) => c.status === statusFilter);
-  }, [contracts, statusFilter]);
+    const q = search.trim().toLowerCase();
+    return contracts.filter((c) => {
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        (c.staffMemberName ?? "").toLowerCase().includes(q) ||
+        (c.salaryStructureName ?? "").toLowerCase().includes(q) ||
+        (c.salaryStructureRole ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [contracts, search, statusFilter]);
 
   async function runAction(
     action: (fd: FormData) => Promise<RrhhActionResult>,
@@ -131,52 +151,74 @@ export function StaffContractsTab({
   }
 
   return (
-    <section className="grid gap-4">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="grid gap-1">
-          <h2 className="text-lg font-semibold text-foreground">{scTexts.section_title}</h2>
-          <p className="text-sm text-muted-foreground">{scTexts.section_description}</p>
-        </div>
-        {canMutate ? (
-          <Button variant="primary" onClick={() => setCreateOpen(true)}>
-            {scTexts.create_cta}
-          </Button>
-        ) : null}
+    <div className="flex flex-col gap-4">
+      <header className="flex flex-col gap-1">
+        <h2 className="text-h2 font-bold text-foreground">{scTexts.section_title}</h2>
+        <p className="text-sm text-muted-foreground">{scTexts.section_description}</p>
       </header>
 
-      <div className="flex flex-wrap gap-2">
-        {STATUS_FILTERS.map((f) => (
-          <ChipButton
-            key={f.value}
-            active={statusFilter === f.value}
-            onClick={() => setStatusFilter(f.value)}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          {scTexts.subtitle_counts
+            .replace("{vigente}", String(vigenteCount))
+            .replace("{finalizado}", String(finalizadoCount))}
+        </p>
+        {canMutate ? (
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className={buttonClass({ variant: "primary", size: "sm" })}
           >
-            {f.label}
-          </ChipButton>
-        ))}
+            {scTexts.create_cta}
+          </button>
+        ) : null}
+      </div>
+
+      <div className="rounded-card border border-border bg-card px-4 py-3">
+        <input
+          type="search"
+          placeholder={scTexts.search_placeholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
+        />
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {STATUS_FILTERS.map((f) => {
+            const count =
+              f.value === "all"
+                ? contracts.length
+                : countsByStatus.get(f.value as StaffContractStatus) ?? 0;
+            return (
+              <ChipButton
+                key={f.value}
+                active={statusFilter === f.value}
+                onClick={() => setStatusFilter(f.value)}
+              >
+                {f.label} · {count}
+              </ChipButton>
+            );
+          })}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
-        contracts.length === 0 ? (
-          <EmptyState
-            variant="dashed"
-            title={scTexts.empty_title}
-            description={scTexts.empty_description}
-            action={
-              canMutate ? (
-                <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                  {scTexts.empty_cta}
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <EmptyState
-            variant="dashed"
-            title={scTexts.empty_filter_title}
-            description={scTexts.empty_filter_description}
-          />
-        )
+        <DataTableEmpty
+          title={contracts.length === 0 ? scTexts.empty_title : scTexts.empty_filter_title}
+          description={
+            contracts.length === 0 ? scTexts.empty_description : scTexts.empty_filter_description
+          }
+          action={
+            canMutate && contracts.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className={buttonClass({ variant: "primary", size: "sm" })}
+              >
+                {scTexts.create_full_cta}
+              </button>
+            ) : undefined
+          }
+        />
       ) : (
         <DataTable
           density="comfortable"
@@ -234,20 +276,14 @@ export function StaffContractsTab({
                 <DataTableCell align="right">
                   {canMutate && c.status === "vigente" ? (
                     <DataTableActions>
-                      <button
-                        type="button"
+                      <EditIconButton
+                        label={scTexts.action_edit}
                         onClick={() => setEditing(c)}
-                        className={buttonClass({ variant: "secondary", size: "sm" })}
-                      >
-                        {scTexts.action_edit}
-                      </button>
-                      <button
-                        type="button"
+                      />
+                      <FinalizeIconButton
+                        label={scTexts.action_finalize}
                         onClick={() => setFinalizing(c)}
-                        className={buttonClass({ variant: "destructive", size: "sm" })}
-                      >
-                        {scTexts.action_finalize}
-                      </button>
+                      />
                     </DataTableActions>
                   ) : null}
                 </DataTableCell>
@@ -344,7 +380,44 @@ export function StaffContractsTab({
           </form>
         ) : null}
       </Modal>
-    </section>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FinalizeIconButton — complemento destructivo de EditIconButton
+// ---------------------------------------------------------------------------
+
+type FinalizeIconButtonProps = Omit<
+  React.ComponentPropsWithoutRef<"button">,
+  "children"
+> & {
+  label: string;
+};
+
+function FinalizeIconButton({ label, className, ...props }: FinalizeIconButtonProps) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      className={[
+        "inline-flex size-8 items-center justify-center rounded-btn border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100",
+        className ?? "",
+      ].join(" ")}
+      {...props}
+    >
+      <svg
+        className="size-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="9" strokeWidth={2} />
+        <line x1="5" y1="5" x2="19" y2="19" strokeWidth={2} strokeLinecap="round" />
+      </svg>
+    </button>
   );
 }
 

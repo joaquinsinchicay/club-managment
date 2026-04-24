@@ -1648,8 +1648,11 @@
     },
     "staff_contracts": {
       "section_title": "Contratos",
-      "section_description": "Vinculos rentados activos y finalizados. Cada contrato une un colaborador con una Estructura Salarial.",
+      "section_description": "Vínculos rentados activos y finalizados. Cada contrato une un colaborador con una Estructura Salarial.",
+      "subtitle_counts": "{vigente} vigentes · {finalizado} finalizados",
+      "search_placeholder": "Buscar por colaborador o estructura",
       "create_cta": "Nuevo contrato",
+      "create_full_cta": "Crear contrato",
       "filter_all": "Todos",
       "filter_vigente": "Vigentes",
       "filter_finalizado": "Finalizados",
