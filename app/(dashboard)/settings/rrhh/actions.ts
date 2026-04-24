@@ -18,6 +18,11 @@ import {
   updateStaffContract,
   type StaffContractActionCode,
 } from "@/lib/services/staff-contract-service";
+import {
+  createBulkSalaryRevision,
+  createSalaryRevision,
+  type SalaryRevisionActionCode,
+} from "@/lib/services/salary-revision-service";
 
 export type RrhhActionResult = { ok: boolean; code: string };
 
@@ -281,8 +286,8 @@ function rawCreateContractFromFormData(formData: FormData) {
     salaryStructureId: read("salary_structure_id"),
     startDate: read("start_date"),
     endDate: read("end_date"),
-    usesStructureAmount: read("uses_structure_amount") ?? "true",
-    agreedAmount: read("agreed_amount"),
+    initialAmount: read("initial_amount"),
+    initialRevisionReason: read("initial_revision_reason"),
   };
 }
 
@@ -295,8 +300,6 @@ function rawUpdateContractFromFormData(formData: FormData) {
   }
   return {
     endDate: read("end_date"),
-    usesStructureAmount: read("uses_structure_amount"),
-    frozenAmount: read("frozen_amount"),
   };
 }
 
@@ -325,4 +328,89 @@ export async function finalizeStaffContractAction(formData: FormData): Promise<R
   });
   revalidatePath("/settings");
   return { ok: result.ok, code: staffContractFeedbackCode(result.code) };
+}
+
+// -------------------------------------------------------------------------
+// Salary Revisions (US-34 / US-35)
+// -------------------------------------------------------------------------
+
+function salaryRevisionFeedbackCode(code: SalaryRevisionActionCode): string {
+  switch (code) {
+    case "revision_created":
+      return "salary_revision_created";
+    case "bulk_created":
+      return "salary_revision_bulk_created";
+    case "contract_not_found":
+      return "staff_contract_not_found";
+    case "contract_not_active":
+      return "salary_revision_contract_not_active";
+    case "amount_required":
+      return "salary_revision_amount_required";
+    case "amount_must_be_positive":
+      return "salary_revision_amount_must_be_positive";
+    case "effective_date_required":
+      return "salary_revision_effective_date_required";
+    case "invalid_effective_date":
+      return "salary_revision_invalid_effective_date";
+    case "no_contracts_selected":
+      return "salary_revision_no_contracts_selected";
+    case "reason_required":
+      return "salary_revision_reason_required";
+    case "value_required":
+      return "salary_revision_value_required";
+    case "value_must_be_positive":
+      return "salary_revision_value_must_be_positive";
+    case "invalid_adjustment_type":
+      return "salary_revision_invalid_adjustment_type";
+    case "current_revision_not_found":
+      return "salary_revision_current_not_found";
+    case "forbidden":
+    case "no_active_club":
+    case "unauthenticated":
+      return "salary_revision_forbidden";
+    default:
+      return "salary_revision_unknown_error";
+  }
+}
+
+export async function createSalaryRevisionAction(
+  formData: FormData,
+): Promise<RrhhActionResult> {
+  const contractId = String(formData.get("staff_contract_id") ?? "");
+  if (!contractId) {
+    return { ok: false, code: salaryRevisionFeedbackCode("contract_not_found") };
+  }
+  const amount = formData.get("amount");
+  const effectiveDate = formData.get("effective_date");
+  const reason = formData.get("reason");
+
+  const result = await createSalaryRevision(contractId, {
+    amount: typeof amount === "string" ? amount : undefined,
+    effectiveDate: typeof effectiveDate === "string" ? effectiveDate : undefined,
+    reason: typeof reason === "string" ? reason : undefined,
+  });
+  revalidatePath("/rrhh/contracts");
+  return { ok: result.ok, code: salaryRevisionFeedbackCode(result.code) };
+}
+
+export async function createBulkSalaryRevisionAction(
+  formData: FormData,
+): Promise<RrhhActionResult> {
+  const contractIds = formData
+    .getAll("contract_ids")
+    .filter((v): v is string => typeof v === "string" && v.length > 0);
+  const adjustmentType = formData.get("adjustment_type");
+  const value = formData.get("value");
+  const effectiveDate = formData.get("effective_date");
+  const reason = formData.get("reason");
+
+  const result = await createBulkSalaryRevision({
+    contractIds,
+    adjustmentType: typeof adjustmentType === "string" ? adjustmentType : undefined,
+    value: typeof value === "string" ? value : undefined,
+    effectiveDate: typeof effectiveDate === "string" ? effectiveDate : undefined,
+    reason: typeof reason === "string" ? reason : undefined,
+  });
+  revalidatePath("/rrhh/contracts");
+  return { ok: result.ok, code: salaryRevisionFeedbackCode(result.code) };
 }

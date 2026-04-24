@@ -886,7 +886,25 @@
           "staff_contract_already_finalized": "El contrato ya fue finalizado.",
           "staff_contract_invalid_status": "El estado del contrato no permite esta operacion.",
           "staff_contract_forbidden": "No tienes permisos para administrar contratos.",
-          "staff_contract_unknown_error": "No pudimos completar la operacion sobre el contrato. Vuelve a intentarlo."
+          "staff_contract_unknown_error": "No pudimos completar la operacion sobre el contrato. Vuelve a intentarlo.",
+          "staff_contract_initial_amount_required": "Debes completar el monto inicial del contrato.",
+          "staff_contract_initial_amount_invalid": "El monto inicial debe ser mayor a cero.",
+          "staff_contract_invalid_start_date": "La fecha de inicio no es válida.",
+          "salary_revision_created": "La revisión salarial se creó correctamente.",
+          "salary_revision_bulk_created": "Revisiones salariales aplicadas correctamente.",
+          "salary_revision_contract_not_active": "Solo se pueden crear revisiones sobre contratos vigentes.",
+          "salary_revision_amount_required": "Debes completar el monto.",
+          "salary_revision_amount_must_be_positive": "El monto debe ser mayor a cero.",
+          "salary_revision_effective_date_required": "Debes completar la fecha de vigencia.",
+          "salary_revision_invalid_effective_date": "La fecha de vigencia debe ser posterior a la revisión anterior y estar dentro del contrato.",
+          "salary_revision_no_contracts_selected": "Debes seleccionar al menos un contrato.",
+          "salary_revision_reason_required": "Debes completar el motivo de la revisión masiva.",
+          "salary_revision_value_required": "Debes completar el valor del ajuste.",
+          "salary_revision_value_must_be_positive": "El valor debe ser mayor a cero.",
+          "salary_revision_invalid_adjustment_type": "El tipo de ajuste seleccionado no es válido.",
+          "salary_revision_current_not_found": "No encontramos la revisión salarial vigente.",
+          "salary_revision_forbidden": "No tienes permisos para gestionar revisiones salariales.",
+          "salary_revision_unknown_error": "No pudimos completar la operación sobre la revisión salarial. Volvé a intentarlo."
         }
       },
       "invitations": {

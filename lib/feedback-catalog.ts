@@ -54,6 +54,10 @@ const SUCCESS_CODES = new Set<string>([
   "staff_contract_updated",
   "staff_contract_finalized",
 
+  // RRHH · salary revisions (US-34 / US-35)
+  "salary_revision_created",
+  "salary_revision_bulk_created",
+
   // Dashboard · RRHH · payroll settlements (US-61 / US-62 / US-63 / US-66)
   "settlement_generated",
   "settlement_confirmed",
