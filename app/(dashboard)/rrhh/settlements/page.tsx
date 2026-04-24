@@ -11,6 +11,7 @@ import {
   payStaffSettlementsBatchAction,
   updateHoursOrNotesAction,
 } from "@/app/(dashboard)/rrhh/settlements/actions";
+import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
 import { SettlementsList } from "@/components/hr/settlements-list";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateHrSettlements } from "@/lib/domain/authorization";
@@ -44,6 +45,7 @@ export default async function RrhhSettlementsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
+      <RrhhModuleNav activeTab="settlements" />
       <SettlementsList
         settlements={settlements}
         adjustmentsBySettlementId={adjustmentsBySettlementId}

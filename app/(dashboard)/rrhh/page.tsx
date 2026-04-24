@@ -24,6 +24,16 @@ function formatPeriod(year: number, month: number): string {
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
 }
 
+const DATE_CHIP_WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+function formatDateChip(date: Date): string {
+  const dow = DATE_CHIP_WEEKDAYS[date.getDay()] ?? "";
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  return `${dow} · ${dd}/${mm}/${yyyy}`;
+}
+
 export default async function RrhhPage() {
   const context = await getAuthenticatedSessionContext();
 
@@ -52,19 +62,30 @@ export default async function RrhhPage() {
       };
 
   const periodLabel = formatPeriod(summary.periodYear, summary.periodMonth);
+  const dateChipLabel = formatDateChip(new Date());
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
-      <RrhhModuleNav activeTab="resumen" />
-      <header className="grid gap-1">
-        <span className="text-eyebrow uppercase text-muted-foreground">
-          {rrhhTexts.page_title}
+      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {home.eyebrow}
+          </span>
+          <h1 className="break-words text-h1 font-bold tracking-tight text-foreground">
+            {home.title}
+          </h1>
+          <p className="max-w-3xl text-sm text-muted-foreground">{home.description}</p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-chip border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground">
+          <span
+            aria-hidden="true"
+            className="inline-block size-1.5 rounded-full bg-ds-pink"
+          />
+          {dateChipLabel}
         </span>
-        <h1 className="text-h2 font-semibold tracking-tight text-foreground">
-          {home.title}
-        </h1>
-        <p className="text-sm text-muted-foreground">{home.description}</p>
       </header>
+
+      <RrhhModuleNav activeTab="resumen" />
 
       <section className="grid gap-3">
         <header className="flex items-end justify-between gap-3">

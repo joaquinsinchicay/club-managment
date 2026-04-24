@@ -1348,13 +1348,15 @@
     "module_nav": {
       "aria_label": "Navegacion del modulo RRHH",
       "resumen": "Resumen",
+      "settlements": "Liquidaciones",
       "contracts": "Contratos",
       "staff": "Colaboradores",
       "structures": "Estructuras"
     },
     "home": {
-      "title": "Modulo RRHH",
-      "description": "Dashboard operativo de la nomina del club activo.",
+      "title": "RRHH",
+      "eyebrow": "Personal · Contratos · Liquidaciones",
+      "description": "Estructuras, colaboradores y liquidaciones mensuales del club.",
       "settlements_eyebrow": "Operacion",
       "settlements_title": "Liquidaciones",
       "settlements_description": "Genera, ajusta, confirma, anula y paga las liquidaciones mensuales del club activo.",
