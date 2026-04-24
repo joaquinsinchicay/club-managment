@@ -66,6 +66,10 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatContractCode(id: string): string {
+  return `C-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+}
+
 function formatAmount(amount: number | null | undefined, currencyCode: string): string {
   if (amount === null || amount === undefined) return "—";
   try {
@@ -245,22 +249,21 @@ export function StaffContractsTab({
             {filtered.map((c) => (
               <DataTableRow key={c.id} density="comfortable" hoverReveal>
                 <DataTableCell>
-                  <Link
-                    href={`/rrhh/contracts/${c.id}`}
-                    className="font-medium text-foreground hover:underline"
-                  >
-                    {c.staffMemberName ?? scTexts.unknown_member}
-                  </Link>
+                  <span className="grid leading-tight">
+                    <Link
+                      href={`/rrhh/contracts/${c.id}`}
+                      className="font-medium text-foreground hover:underline"
+                    >
+                      {c.staffMemberName ?? scTexts.unknown_member}
+                    </Link>
+                    <span className="text-xs text-muted-foreground">
+                      {formatContractCode(c.id)}
+                    </span>
+                  </span>
                 </DataTableCell>
                 <DataTableCell>
-                  <span className="grid leading-tight">
-                    <span className="font-medium text-foreground">
-                      {c.salaryStructureName ?? scTexts.unknown_structure}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {c.salaryStructureRole ?? ""}
-                      {c.salaryStructureActivityName ? ` · ${c.salaryStructureActivityName}` : ""}
-                    </span>
+                  <span className="font-medium text-foreground">
+                    {c.salaryStructureName ?? scTexts.unknown_structure}
                   </span>
                 </DataTableCell>
                 <DataTableCell>{c.startDate}</DataTableCell>
