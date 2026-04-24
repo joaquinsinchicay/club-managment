@@ -687,7 +687,20 @@ parcial). Operaciones:
   transacción.
 - **Nueva revisión individual** (US-34): la RPC `hr_create_salary_revision`
   cierra la revisión vigente (end_date = fecha_vigencia - 1 día) y abre una
-  nueva.
+  nueva. El modal de la ficha (`ContractDetailView`) permite ingresar el
+  monto en **dos modos** (toggle):
+  - **% variación**: se ingresa el porcentaje y se calcula
+    `nuevoMonto = baseAmount * (1 + pct/100)` en cliente. Preview en vivo del
+    nuevo monto.
+  - **Monto nuevo**: ingreso directo del valor (formato es-AR).
+  El motivo se elige de un preset cerrado
+  (`texts.rrhh.contract_detail.revision_motivo_options` — paritaria,
+  trimestral, inflación, promoción, corrección) o se marca "Otro (detallar
+  en observaciones)". Las **observaciones** (textarea opcional) se
+  concatenan al motivo con `" · "` antes de persistir como `reason` en la
+  revisión. Si ninguno de los dos modos produce un monto > 0, el botón
+  "Crear revisión" queda deshabilitado. El envío siempre pasa el monto
+  final computado al RPC — no el porcentaje.
 - **Revisión masiva** (US-35): la RPC `hr_create_salary_revisions_bulk` aplica
   un ajuste (`percent` | `fixed` | `set`) sobre N contratos en una sola
   transacción; rollback total si cualquiera falla.
@@ -750,10 +763,12 @@ Cards implementadas:
 - **Información del contrato** — `dl` con número, tipo de pago,
   estructura, rol, división, actividad, tipo de remuneración, inicio,
   fin.
-- **Historial de revisiones** — timeline vertical. Para cada revisión:
-  rango de fechas, monto, % vs revisión anterior (calculado
-  client-side, edge case "Inicial" para la primera). La revisión
-  vigente va destacada.
+- **Historial de revisiones** — timeline vertical. Cada item muestra
+  rango `{MesCorto Año} → {MesCorto Año|Vigente}`, bullet indicator
+  (pink cuando vigente, slate cuando pasada), badge "Actual"
+  (`DataTableChip` info) o "Inicial" (neutral), % vs revisión
+  anterior (calculado client-side), motivo opcional y monto. La
+  revisión vigente va destacada con fondo `pink-050/50`.
 - **Documentos** — upload (PDF/Word/imágenes ≤ 10 MB), signed URL para
   descarga, delete.
 - **Monto vigente** — monto grande + eyebrow con tipo de pago +

@@ -8,11 +8,13 @@ import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
 import {
   formatLocalizedAmountInputOnBlur,
   formatLocalizedAmountInputOnFocus,
+  parseLocalizedAmount,
   sanitizeLocalizedAmountInput,
 } from "@/lib/amounts";
 import { buttonClass } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { ChipButton } from "@/components/ui/chip";
 import { DataTableChip } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkButton } from "@/components/ui/link-button";
@@ -25,6 +27,7 @@ import {
   FormHelpText,
   FormInput,
   FormReadonly,
+  FormSelect,
   FormTextarea,
 } from "@/components/ui/modal-form";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -82,6 +85,29 @@ const SPANISH_MONTHS = [
   "Noviembre",
   "Diciembre",
 ];
+
+const SPANISH_MONTHS_SHORT = [
+  "Ene",
+  "Feb",
+  "Mar",
+  "Abr",
+  "May",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dic",
+];
+
+function formatMonthYear(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const [y, m] = iso.slice(0, 10).split("-");
+  const monthIdx = Number(m) - 1;
+  if (!y || Number.isNaN(monthIdx) || monthIdx < 0 || monthIdx > 11) return iso;
+  return `${SPANISH_MONTHS_SHORT[monthIdx]} ${y}`;
+}
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -150,6 +176,10 @@ export function ContractDetailView({
   const [reviseOpen, setReviseOpen] = useState(false);
   const [revisePending, setRevisePending] = useState(false);
   const [amountInput, setAmountInput] = useState("");
+  const [percentInput, setPercentInput] = useState("");
+  const [calcMode, setCalcMode] = useState<"amount" | "percent">("amount");
+  const [motivoKey, setMotivoKey] = useState("");
+  const [observations, setObservations] = useState("");
   const [uploadPending, setUploadPending] = useState(false);
   const [finalizeOpen, setFinalizeOpen] = useState(false);
   const [finalizePending, setFinalizePending] = useState(false);
@@ -175,6 +205,14 @@ export function ContractDetailView({
     return ((currentRevision.amount - previous.amount) / previous.amount) * 100;
   })();
 
+  function resetReviseForm() {
+    setAmountInput("");
+    setPercentInput("");
+    setCalcMode("amount");
+    setMotivoKey("");
+    setObservations("");
+  }
+
   async function handleReviseSubmit(formData: FormData) {
     setRevisePending(true);
     try {
@@ -182,7 +220,7 @@ export function ContractDetailView({
       triggerClientFeedback("settings", result.code);
       if (result.ok) {
         setReviseOpen(false);
-        setAmountInput("");
+        resetReviseForm();
         startTransition(() => router.refresh());
       }
     } finally {
@@ -268,6 +306,42 @@ export function ContractDetailView({
     contract.salaryStructureDivisions.length > 0
       ? contract.salaryStructureDivisions.join(" · ")
       : cdTexts.info_value_fallback;
+
+  // -------------------------------------------------------------------------
+  // Revise modal — derived values
+  // -------------------------------------------------------------------------
+
+  const motivoOptions = cdTexts.revision_motivo_options as Record<string, string>;
+  const motivoOptionsList = Object.entries(motivoOptions);
+  const motivoLabel = motivoKey && motivoKey !== "other" ? motivoOptions[motivoKey] : null;
+
+  const parsedPercent = parseLocalizedAmount(percentInput.replace(",", "."));
+  const baseAmount = contract.currentAmount ?? 0;
+  const computedAmount = (() => {
+    if (calcMode === "amount") {
+      const parsed = parseLocalizedAmount(amountInput);
+      return parsed !== null && parsed > 0 ? parsed : null;
+    }
+    if (calcMode === "percent") {
+      if (parsedPercent === null || baseAmount <= 0) return null;
+      return baseAmount * (1 + parsedPercent / 100);
+    }
+    return null;
+  })();
+  const composedReason = (() => {
+    const parts: string[] = [];
+    if (motivoLabel) parts.push(motivoLabel);
+    if (observations.trim()) parts.push(observations.trim());
+    return parts.join(" · ");
+  })();
+  const reviseSubmitDisabled = computedAmount === null || computedAmount <= 0;
+
+  const activitySeparator = contract.salaryStructureActivityName ? " · " : "";
+  const revisionContext = cdTexts.revision_context_template
+    .replace("{staff}", contract.staffMemberName ?? scTexts.unknown_member)
+    .replace("{role}", contract.salaryStructureRole ?? "—")
+    .replace("{activitySeparator}", activitySeparator)
+    .replace("{activity}", contract.salaryStructureActivityName ?? "");
 
   return (
     <div className="flex flex-col gap-6">
@@ -446,48 +520,56 @@ export function ContractDetailView({
                     const rangeLabel = isCurrent
                       ? cdTexts.history_range_open_template.replace(
                           "{from}",
-                          formatIsoDate(revision.effectiveDate),
+                          formatMonthYear(revision.effectiveDate),
                         )
                       : cdTexts.history_range_template
-                          .replace("{from}", formatIsoDate(revision.effectiveDate))
-                          .replace("{to}", formatIsoDate(revision.endDate));
+                          .replace("{from}", formatMonthYear(revision.effectiveDate))
+                          .replace("{to}", formatMonthYear(revision.endDate));
                     return (
                       <li
                         key={revision.id}
                         className={`flex flex-wrap items-center justify-between gap-3 rounded-card border px-4 py-3 ${
                           isCurrent
-                            ? "border-success/30 bg-success/5"
+                            ? "border-ds-pink-050 bg-ds-pink-050/50"
                             : "border-border bg-card"
                         }`}
                       >
-                        <div className="flex min-w-0 flex-1 flex-col gap-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="break-words text-sm font-semibold text-foreground">
-                              {rangeLabel}
-                            </span>
-                            {isCurrent ? (
-                              <DataTableChip tone="income">
-                                {cdTexts.history_current_badge}
-                              </DataTableChip>
-                            ) : null}
-                            {!prior ? (
-                              <DataTableChip tone="neutral">
-                                {cdTexts.history_initial_tag}
-                              </DataTableChip>
-                            ) : null}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                            {delta !== null ? (
-                              <span>
-                                {cdTexts.history_percent_vs_previous_template.replace(
-                                  "{deltaPercent}",
-                                  formatPercent(delta),
-                                )}
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <span
+                            aria-hidden="true"
+                            className={`mt-1.5 size-2 shrink-0 rounded-full ${
+                              isCurrent ? "bg-ds-pink" : "bg-ds-slate-300"
+                            }`}
+                          />
+                          <div className="flex min-w-0 flex-1 flex-col gap-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="break-words text-sm font-semibold text-foreground">
+                                {rangeLabel}
                               </span>
-                            ) : null}
-                            {revision.reason ? (
-                              <span className="break-words">· {revision.reason}</span>
-                            ) : null}
+                              {isCurrent ? (
+                                <DataTableChip tone="info">
+                                  {cdTexts.history_current_badge}
+                                </DataTableChip>
+                              ) : null}
+                              {!prior ? (
+                                <DataTableChip tone="neutral">
+                                  {cdTexts.history_initial_tag}
+                                </DataTableChip>
+                              ) : null}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              {delta !== null ? (
+                                <span>
+                                  {cdTexts.history_percent_vs_previous_template.replace(
+                                    "{deltaPercent}",
+                                    formatPercent(delta),
+                                  )}
+                                </span>
+                              ) : null}
+                              {revision.reason ? (
+                                <span className="break-words">· {revision.reason}</span>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                         <span className="shrink-0 font-semibold tabular-nums text-foreground">
@@ -662,7 +744,7 @@ export function ContractDetailView({
         onClose={() => {
           if (revisePending) return;
           setReviseOpen(false);
-          setAmountInput("");
+          resetReviseForm();
         }}
         title={cdTexts.new_revision_modal_title}
         description={cdTexts.new_revision_modal_description}
@@ -671,28 +753,91 @@ export function ContractDetailView({
       >
         <form action={handleReviseSubmit} className="grid gap-4">
           <input type="hidden" name="staff_contract_id" value={contract.id} />
+          <input
+            type="hidden"
+            name="amount"
+            value={computedAmount !== null ? computedAmount.toFixed(2) : ""}
+          />
+          <input type="hidden" name="reason" value={composedReason} />
+
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ds-pink-700">
+            {revisionContext}
+          </p>
+
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-card border border-border bg-secondary/30 px-4 py-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {cdTexts.revision_preview_current_label}
+              </span>
+              <span className="break-words text-sm font-bold tabular-nums text-foreground">
+                {formatAmount(baseAmount || null, clubCurrencyCode)}
+              </span>
+            </div>
+            <span aria-hidden="true" className="text-muted-foreground">→</span>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-ds-pink-700">
+                {cdTexts.revision_preview_new_label}
+              </span>
+              <span className="break-words text-sm font-bold tabular-nums text-ds-pink-700">
+                {computedAmount !== null
+                  ? formatAmount(computedAmount, clubCurrencyCode)
+                  : cdTexts.revision_preview_new_placeholder}
+              </span>
+            </div>
+          </div>
 
           <FormField>
-            <FormFieldLabel required>{cdTexts.form_amount_label}</FormFieldLabel>
-            <FormInput
-              type="text"
-              name="amount"
-              inputMode="decimal"
-              required
-              value={amountInput}
-              onChange={(e) => setAmountInput(sanitizeLocalizedAmountInput(e.target.value))}
-              onBlur={(e) => setAmountInput(formatLocalizedAmountInputOnBlur(e.target.value))}
-              onFocus={(e) => setAmountInput(formatLocalizedAmountInputOnFocus(e.target.value))}
-              onKeyDown={(e) => {
-                if (e.key === "-") e.preventDefault();
-              }}
-              placeholder={cdTexts.form_amount_placeholder}
-              className="tabular-nums"
-            />
-            <FormHelpText>
-              {cdTexts.form_amount_helper.replace("{currency}", clubCurrencyCode)}
-            </FormHelpText>
+            <FormFieldLabel>{cdTexts.revision_calc_mode_label}</FormFieldLabel>
+            <div className="flex flex-wrap gap-1.5">
+              <ChipButton
+                active={calcMode === "percent"}
+                onClick={() => setCalcMode("percent")}
+              >
+                {cdTexts.revision_calc_mode_percent}
+              </ChipButton>
+              <ChipButton
+                active={calcMode === "amount"}
+                onClick={() => setCalcMode("amount")}
+              >
+                {cdTexts.revision_calc_mode_amount}
+              </ChipButton>
+            </div>
           </FormField>
+
+          {calcMode === "percent" ? (
+            <FormField>
+              <FormFieldLabel required>{cdTexts.revision_percent_label}</FormFieldLabel>
+              <FormInput
+                type="text"
+                inputMode="decimal"
+                value={percentInput}
+                onChange={(e) => setPercentInput(e.target.value.replace(/[^\d.,-]/g, ""))}
+                placeholder={cdTexts.revision_percent_placeholder}
+                className="tabular-nums"
+              />
+              <FormHelpText>{cdTexts.revision_percent_helper}</FormHelpText>
+            </FormField>
+          ) : (
+            <FormField>
+              <FormFieldLabel required>{cdTexts.form_amount_label}</FormFieldLabel>
+              <FormInput
+                type="text"
+                inputMode="decimal"
+                value={amountInput}
+                onChange={(e) => setAmountInput(sanitizeLocalizedAmountInput(e.target.value))}
+                onBlur={(e) => setAmountInput(formatLocalizedAmountInputOnBlur(e.target.value))}
+                onFocus={(e) => setAmountInput(formatLocalizedAmountInputOnFocus(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "-") e.preventDefault();
+                }}
+                placeholder={cdTexts.form_amount_placeholder}
+                className="tabular-nums"
+              />
+              <FormHelpText>
+                {cdTexts.form_amount_helper.replace("{currency}", clubCurrencyCode)}
+              </FormHelpText>
+            </FormField>
+          )}
 
           <FormField>
             <FormFieldLabel required>{cdTexts.form_effective_date_label}</FormFieldLabel>
@@ -706,24 +851,42 @@ export function ContractDetailView({
           </FormField>
 
           <FormField>
-            <FormFieldLabel>{cdTexts.form_reason_label}</FormFieldLabel>
-            <FormInput
-              type="text"
-              name="reason"
-              placeholder={cdTexts.form_reason_placeholder}
+            <FormFieldLabel>{cdTexts.revision_motivo_label}</FormFieldLabel>
+            <FormSelect
+              value={motivoKey}
+              onChange={(e) => setMotivoKey(e.target.value)}
+            >
+              <option value="">{cdTexts.revision_motivo_placeholder}</option>
+              {motivoOptionsList.map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+              <option value="other">{cdTexts.revision_motivo_other}</option>
+            </FormSelect>
+          </FormField>
+
+          <FormField>
+            <FormFieldLabel>{cdTexts.revision_observations_label}</FormFieldLabel>
+            <FormTextarea
+              value={observations}
+              onChange={(e) => setObservations(e.target.value)}
+              rows={3}
               maxLength={500}
+              placeholder={cdTexts.revision_observations_placeholder}
             />
+            <FormHelpText>{cdTexts.revision_observations_helper}</FormHelpText>
           </FormField>
 
           <ModalFooter
             onCancel={() => {
               setReviseOpen(false);
-              setAmountInput("");
+              resetReviseForm();
             }}
             cancelLabel={cdTexts.cancel_cta}
             submitLabel={cdTexts.new_revision_submit_cta}
             pendingLabel={cdTexts.submit_pending}
-            submitDisabled={amountInput.trim().length === 0}
+            submitDisabled={reviseSubmitDisabled}
           />
         </form>
       </Modal>
