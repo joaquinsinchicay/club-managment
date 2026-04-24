@@ -47,13 +47,19 @@ type StaffMembersTabProps = {
 };
 
 type VinculoFilter = "all" | StaffVinculoType;
-type AlertFilter = "all" | "alerts_only";
+type ContractFilter = "with_active" | "all" | "without_active";
 
 const smTexts = texts.rrhh.staff_members;
 
+const CONTRACT_FILTERS: { value: ContractFilter; label: string }[] = [
+  { value: "with_active", label: smTexts.filter_with_active },
+  { value: "all", label: smTexts.filter_all },
+  { value: "without_active", label: smTexts.filter_without_active },
+];
+
 /**
- * US-60 helper: un colaborador está "en alerta" cuando no tiene contratos
- * vigentes. Usado por el filtro de alertas y el banner de conteo.
+ * US-37 helper: un colaborador está "en alerta" cuando no tiene contratos
+ * vigentes. Usado por el banner de conteo.
  */
 function isMemberInAlert(m: StaffMember): boolean {
   return !m.hasActiveContract;
@@ -73,7 +79,7 @@ export function StaffMembersTab({
   const [, startTransition] = useTransition();
   const [search, setSearch] = useState("");
   const [vinculoFilter, setVinculoFilter] = useState<VinculoFilter>("all");
-  const [alertFilter, setAlertFilter] = useState<AlertFilter>("all");
+  const [contractFilter, setContractFilter] = useState<ContractFilter>("with_active");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
@@ -85,12 +91,14 @@ export function StaffMembersTab({
     () => members.filter(isMemberInAlert).length,
     [members],
   );
+  const withActiveCount = members.length - alertsCount;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return members.filter((m) => {
       if (vinculoFilter !== "all" && m.vinculoType !== vinculoFilter) return false;
-      if (alertFilter === "alerts_only" && !isMemberInAlert(m)) return false;
+      if (contractFilter === "with_active" && !m.hasActiveContract) return false;
+      if (contractFilter === "without_active" && m.hasActiveContract) return false;
       if (!q) return true;
       return (
         m.firstName.toLowerCase().includes(q) ||
@@ -99,7 +107,7 @@ export function StaffMembersTab({
         (m.cuitCuil?.includes(q) ?? false)
       );
     });
-  }, [members, search, vinculoFilter, alertFilter]);
+  }, [members, search, vinculoFilter, contractFilter]);
 
   async function runAction(
     action: (fd: FormData) => Promise<RrhhActionResult>,
@@ -147,12 +155,14 @@ export function StaffMembersTab({
           variant="warning"
           action={
             <ChipButton
-              active={alertFilter === "alerts_only"}
+              active={contractFilter === "without_active"}
               onClick={() =>
-                setAlertFilter((v) => (v === "alerts_only" ? "all" : "alerts_only"))
+                setContractFilter((v) =>
+                  v === "without_active" ? "with_active" : "without_active",
+                )
               }
             >
-              {alertFilter === "alerts_only"
+              {contractFilter === "without_active"
                 ? smTexts.alert_banner_cta_all
                 : smTexts.alert_banner_cta_only}
             </ChipButton>
@@ -172,6 +182,25 @@ export function StaffMembersTab({
           className="w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
         />
         <div className="mt-3 flex flex-wrap gap-1.5">
+          {CONTRACT_FILTERS.map((f) => {
+            const count =
+              f.value === "all"
+                ? members.length
+                : f.value === "with_active"
+                ? withActiveCount
+                : alertsCount;
+            return (
+              <ChipButton
+                key={f.value}
+                active={contractFilter === f.value}
+                onClick={() => setContractFilter(f.value)}
+              >
+                {f.label} · {count}
+              </ChipButton>
+            );
+          })}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. */}
           <select
             value={vinculoFilter}

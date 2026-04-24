@@ -169,13 +169,21 @@ export function StaffContractsTab({
             .replace("{finalizado}", String(finalizadoCount))}
         </p>
         {canMutate ? (
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className={buttonClass({ variant: "primary", size: "sm" })}
-          >
-            {scTexts.create_cta}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/rrhh/contracts/bulk-revision"
+              className={buttonClass({ variant: "secondary", size: "sm" })}
+            >
+              {scTexts.bulk_revision_cta}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className={buttonClass({ variant: "primary", size: "sm" })}
+            >
+              {scTexts.create_cta}
+            </button>
+          </div>
         ) : null}
       </div>
 

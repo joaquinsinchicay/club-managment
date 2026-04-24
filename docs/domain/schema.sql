@@ -492,23 +492,28 @@ create table salary_structures (
   updated_by_user_id uuid references users(id)
 );
 
--- Historial de monto por estructura (US-55). Unique parcial garantiza
--- una única versión vigente (end_date is null) por estructura.
-create table salary_structure_versions (
+-- Revisiones salariales por contrato (US-34/US-35). Unique parcial
+-- garantiza una única revisión vigente (end_date is null) por contrato.
+-- La estructura salarial ya no guarda monto — el monto vive siempre en
+-- staff_contract_revisions (inicial creada en alta de contrato,
+-- actualizaciones via RPC hr_create_salary_revision o bulk RPC).
+create table staff_contract_revisions (
   id uuid primary key default gen_random_uuid(),
-  salary_structure_id uuid not null references salary_structures(id) on delete cascade,
+  club_id uuid not null references clubs(id) on delete cascade,
+  contract_id uuid not null references staff_contracts(id) on delete cascade,
   amount numeric(18,2) not null check (amount > 0),
-  start_date date not null,
+  effective_date date not null,
   end_date date,
+  reason text,
   created_at timestamptz not null default now(),
-  created_by_user_id uuid references users(id)
+  created_by_user_id uuid references users(id),
+  constraint staff_contract_revisions_date_order check (
+    end_date is null or end_date >= effective_date
+  )
 );
 
--- Vista auxiliar del monto vigente (security invoker para respetar RLS).
-create view salary_structure_current_amount with (security_invoker = true) as
-select salary_structure_id, amount
-from salary_structure_versions
-where end_date is null;
+-- Enum de tipos de ajuste para la revisión masiva (US-35).
+create type salary_revision_adjustment_type as enum ('percent','fixed','set');
 
 -- Colaboradores del club (US-56). Unique en (club_id, dni) y unique parcial en
 -- (club_id, cuit_cuil) where cuit_cuil is not null.
@@ -534,8 +539,9 @@ create table staff_members (
 
 -- Contratos (US-57/58). Unique parcial (salary_structure_id) where
 -- status='vigente' garantiza una única ocupación activa por estructura.
--- Check staff_contracts_amount_coherent: si uses_structure_amount=false,
--- frozen_amount es obligatorio.
+-- El monto NO vive acá — se gestiona a nivel revisión (staff_contract_revisions).
+-- La RPC hr_create_contract_with_initial_revision inserta contrato +
+-- primera revisión en una sola transacción.
 create table staff_contracts (
   id uuid primary key default gen_random_uuid(),
   club_id uuid not null references clubs(id) on delete cascade,
@@ -543,8 +549,6 @@ create table staff_contracts (
   salary_structure_id uuid not null references salary_structures(id),
   start_date date not null,
   end_date date,
-  uses_structure_amount boolean not null default true,
-  frozen_amount numeric(18,2),
   status staff_contract_status not null default 'vigente',
   finalized_at timestamptz,
   finalized_reason text,

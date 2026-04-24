@@ -1693,9 +1693,11 @@ handler `POST /api/rrhh/reports/export`.
 | Ruta | Guard | Entidades renderizadas |
 |---|---|---|
 | `/rrhh` | `canAccessHrModule` (rrhh only) | Dashboard (6 cards operativas, US-68) |
-| `/rrhh/contracts` | `canAccessHrMasters` (rrhh only) | `staff_contracts` + forms alta/edición/finalización |
-| `/rrhh/staff` | `canAccessHrMasters` (rrhh only) | `staff_members` + forms + alerta US-60 |
-| `/rrhh/structures` | `canAccessHrMasters` (rrhh only) | `salary_structures` + versionado US-55. **Sin sueldo inicial**: la estructura se crea y el sueldo se define despues via "Actualizar monto" (primera version abierta por la RPC `hr_update_salary_structure_amount`). `functional_role` es un catalogo cerrado (ver `FUNCTIONAL_ROLES` en `lib/domain/salary-structure.ts`). |
+| `/rrhh/contracts` | `canAccessHrMasters` (rrhh only) | `staff_contracts` + forms alta (con `initial_amount`) / edición (solo `end_date`) / finalización. CTA a /bulk-revision. |
+| `/rrhh/contracts/[id]` | `canAccessHrMasters` (rrhh only) | Detalle del contrato con historial de revisiones (`staff_contract_revisions`) + modal "Nueva revisión" (US-34) via `createSalaryRevisionAction`. |
+| `/rrhh/contracts/bulk-revision` | `canMutateHrMasters` (rrhh only) | Revisión salarial masiva (US-35): filtros + selección + preview + ejecución via `createBulkSalaryRevisionAction`. Transaccional (rollback si alguno falla). |
+| `/rrhh/staff` | `canAccessHrMasters` (rrhh only) | `staff_members` + forms + alerta US-60. Default filter: "con contrato vigente". |
+| `/rrhh/structures` | `canAccessHrMasters` (rrhh only) | `salary_structures` como catálogo puro. **Sin monto**: el monto vive siempre en `staff_contract_revisions` por contrato. `functional_role` es un catálogo cerrado (ver `FUNCTIONAL_ROLES` en `lib/domain/salary-structure.ts`). |
 | `/rrhh/settlements` | `canOperateHrSettlements` (rrhh only) | `payroll_settlements` + adjustments + pagos |
 | `/rrhh/reports` | `canAccessHrModule` (rrhh only) | Reportes con export CSV |
 | `/rrhh/staff/[id]` | `canAccessHrModule` (rrhh only) | Ficha consolidada (US-67) |

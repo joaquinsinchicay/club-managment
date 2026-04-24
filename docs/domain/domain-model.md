@@ -661,18 +661,68 @@ invocar sus endpoints. Los guards están centralizados en
 
 | Ruta | Pestaña | Guard | Contenido |
 |---|---|---|---|
-| `/rrhh` | Resumen | `canAccessHrModule` (rrhh only) | Dashboard con 6 cards operativas (US-68) |
-| `/rrhh/contracts` | Contratos | `canAccessHrMasters` (rrhh only) | CRUD de contratos + finalizar (US-57/58) |
-| `/rrhh/staff` | Colaboradores | `canAccessHrMasters` (rrhh only) | CRUD de colaboradores + alerta sin contratos (US-56/60) |
-| `/rrhh/structures` | Estructuras | `canAccessHrMasters` (rrhh only) | CRUD de estructuras salariales + versionado (US-54/55) |
+| `/rrhh` | Resumen | `canAccessHrModule` (rrhh only) | Dashboard con 6 cards operativas (US-68 / US-45) |
+| `/rrhh/contracts` | Contratos | `canAccessHrMasters` (rrhh only) | CRUD de contratos + finalizar (US-57/58 / US-32/33) |
+| `/rrhh/contracts/[id]` | Detalle de contrato | `canAccessHrMasters` (rrhh only) | Historial de revisiones + acción "Nueva revisión" (US-34) |
+| `/rrhh/contracts/bulk-revision` | Revisión masiva | `canMutateHrMasters` (rrhh only) | Filtros + selección + preview + ejecución transaccional (US-35) |
+| `/rrhh/staff` | Colaboradores | `canAccessHrMasters` (rrhh only) | CRUD de colaboradores + alerta sin contratos (US-56/60 / US-31/37) |
+| `/rrhh/structures` | Estructuras | `canAccessHrMasters` (rrhh only) | Catálogo puro (sin monto). El monto vive en las revisiones. (US-54/55 reescrita → US-30) |
 
 Rutas operativas fuera de la sub-nav principal:
 
 | Ruta | Guard | Contenido |
 |---|---|---|
-| `/rrhh/settlements` | `canOperateHrSettlements` (rrhh only) | Listado de liquidaciones + pagos (US-61..66) |
-| `/rrhh/reports` | `canAccessHrModule` (rrhh only) | Reportes con export CSV (US-69) |
-| `/rrhh/staff/[id]` | `canAccessHrModule` (rrhh only) | Ficha consolidada del colaborador (US-67) |
+| `/rrhh/settlements` | `canOperateHrSettlements` (rrhh only) | Listado de liquidaciones + pagos (US-61..66 / US-38..43) |
+| `/rrhh/reports` | `canAccessHrModule` (rrhh only) | Reportes con export CSV (US-69 / US-46) |
+| `/rrhh/staff/[id]` | `canAccessHrModule` (rrhh only) | Ficha consolidada del colaborador (US-67 / US-44) |
+
+### Revisión Salarial (US-34 / US-35)
+
+El monto de un contrato vive en `staff_contract_revisions`. Cada contrato
+tiene 1..N revisiones; solo una por contrato con `end_date is null` (unique
+parcial). Operaciones:
+
+- **Alta de contrato** (US-32): la RPC `hr_create_contract_with_initial_revision`
+  inserta contrato + primera revisión (monto inicial + motivo) en una sola
+  transacción.
+- **Nueva revisión individual** (US-34): la RPC `hr_create_salary_revision`
+  cierra la revisión vigente (end_date = fecha_vigencia - 1 día) y abre una
+  nueva.
+- **Revisión masiva** (US-35): la RPC `hr_create_salary_revisions_bulk` aplica
+  un ajuste (`percent` | `fixed` | `set`) sobre N contratos en una sola
+  transacción; rollback total si cualquiera falla.
+- **Finalización de contrato**: al cerrar el contrato (manual o automática),
+  la revisión vigente se cierra con `end_date = contract.end_date`.
+- **Liquidaciones** (US-38): la RPC `hr_generate_monthly_settlements` lee el
+  monto base de la revisión vigente al primer día del período.
+
+### Mapping histórico de numeración de User Stories
+
+El código y los PDDs usan la numeración original US-54..US-69. La spec viva
+en Notion renumbera a US-30..US-46 y redefine algunas US (especialmente el
+movimiento del monto al contrato). Se conserva la numeración del código
+para trazabilidad del historial y se mapea aquí:
+
+| US (código) | US (Notion) | Alcance |
+|---|---|---|
+| US-54 | US-30 | Catálogo de Estructuras Salariales (sin monto en la spec nueva) |
+| US-55 | US-30 (absorbido) | Actualización de monto en la estructura → eliminado; reemplazado por revisiones |
+| US-56 | US-31 | CRUD de colaboradores (sin estado activo/inactivo en la spec nueva) |
+| US-57 | US-32 | Alta de contrato con monto inicial + motivo |
+| US-58 | US-33 | Edición (end_date + adjuntos) y finalización de contrato |
+| (nuevo) | US-34 | Revisión salarial individual por contrato |
+| (nuevo) | US-35 | Revisión salarial masiva |
+| US-59 | US-36 | Job diario de finalización automática |
+| US-60 | US-37 | Alerta colaborador sin contratos vigentes |
+| US-61 | US-38 | Generación masiva de liquidaciones |
+| US-62 | US-39 | Ajustes de liquidación |
+| US-63 | US-40 | Confirmación de liquidaciones |
+| US-64 | US-41 | Pago individual |
+| US-65 | US-42 | Pago en lote |
+| US-66 | US-43 | Anulación de liquidación |
+| US-67 | US-44 | Ficha consolidada del colaborador |
+| US-68 | US-45 | Dashboard RRHH |
+| US-69 | US-46 | Reportes |
 
 ### Reglas transversales adicionales
 
@@ -680,6 +730,9 @@ Rutas operativas fuera de la sub-nav principal:
     servicios con admin client (club scope validado server-side).
 11. Ningún cliente escribe o lee `hr_job_runs` directamente.
 12. El historial de auditoría (`hr_activity_log`) es append-only.
+13. El monto de un contrato SIEMPRE se lee de `staff_contract_revisions`
+    (revisión con `end_date is null`). La Estructura Salarial no tiene
+    monto; es solo catálogo.
 
 ```
 ```
