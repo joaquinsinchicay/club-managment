@@ -474,7 +474,7 @@ function CreateContractForm({
             </option>
             {structures.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name} · {s.functionalRole}
+                {s.name}
               </option>
             ))}
           </FormSelect>
@@ -495,27 +495,32 @@ function CreateContractForm({
         </FormField>
       </div>
 
-      <FormField>
-        <FormFieldLabel required>{scTexts.form_initial_amount_label}</FormFieldLabel>
-        <FormInput
-          type="text"
-          name="initial_amount"
-          inputMode="decimal"
-          required
-          value={initialAmount}
-          onChange={(e) => setInitialAmount(sanitizeLocalizedAmountInput(e.target.value))}
-          onBlur={(e) => setInitialAmount(formatLocalizedAmountInputOnBlur(e.target.value))}
-          onFocus={(e) => setInitialAmount(formatLocalizedAmountInputOnFocus(e.target.value))}
-          onKeyDown={(e) => {
-            if (e.key === "-") e.preventDefault();
-          }}
-          placeholder={scTexts.form_initial_amount_placeholder}
-          className="tabular-nums"
-        />
-        <FormHelpText>
-          {scTexts.form_initial_amount_helper.replace("{currency}", clubCurrencyCode)}
-        </FormHelpText>
-      </FormField>
+      <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+        <FormField>
+          <FormFieldLabel required>{scTexts.form_initial_amount_label}</FormFieldLabel>
+          <FormInput
+            type="text"
+            name="initial_amount"
+            inputMode="decimal"
+            required
+            value={initialAmount}
+            onChange={(e) => setInitialAmount(sanitizeLocalizedAmountInput(e.target.value))}
+            onBlur={(e) => setInitialAmount(formatLocalizedAmountInputOnBlur(e.target.value))}
+            onFocus={(e) => setInitialAmount(formatLocalizedAmountInputOnFocus(e.target.value))}
+            onKeyDown={(e) => {
+              if (e.key === "-") e.preventDefault();
+            }}
+            placeholder={scTexts.form_initial_amount_placeholder}
+            className="tabular-nums"
+          />
+          <FormHelpText>{scTexts.form_initial_amount_helper}</FormHelpText>
+        </FormField>
+        <FormField>
+          <FormFieldLabel>{scTexts.form_currency_label}</FormFieldLabel>
+          <FormReadonly>{clubCurrencyCode}</FormReadonly>
+          <FormHelpText>{scTexts.form_currency_helper}</FormHelpText>
+        </FormField>
+      </div>
 
       <FormField>
         <FormFieldLabel>{scTexts.form_initial_revision_reason_label}</FormFieldLabel>
