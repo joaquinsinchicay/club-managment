@@ -158,6 +158,8 @@ type EnrichedMaps = {
       activityId: string | null;
       activityName: string | null;
       remunerationType: string;
+      paymentType: string;
+      divisions: string[];
     }
   >;
   currentRevisionByContract: Map<
@@ -201,7 +203,7 @@ async function fetchEnrichedMaps(
     const { data, error } = await supabase
       .from("salary_structures")
       .select(
-        "id,name,functional_role,remuneration_type,activity_id,activity:club_activities(name)",
+        "id,name,functional_role,remuneration_type,payment_type,divisions,activity_id,activity:club_activities(name)",
       )
       .in("id", opts.structureIds)
       .eq("club_id", opts.clubId);
@@ -211,6 +213,8 @@ async function fetchEnrichedMaps(
       name: string;
       functional_role: string;
       remuneration_type: string;
+      payment_type: string;
+      divisions: string[] | null;
       activity_id: string | null;
       activity: { name: string } | { name: string }[] | null;
     }>;
@@ -224,6 +228,8 @@ async function fetchEnrichedMaps(
         activityId: row.activity_id,
         activityName: activityValue?.name ?? null,
         remunerationType: row.remuneration_type,
+        paymentType: row.payment_type,
+        divisions: Array.isArray(row.divisions) ? row.divisions : [],
       });
     }
   }
@@ -267,6 +273,8 @@ function mapContract(row: ContractRow, maps: EnrichedMaps): StaffContract {
     salaryStructureActivityId: structure?.activityId ?? null,
     salaryStructureActivityName: structure?.activityName ?? null,
     salaryStructureRemunerationType: structure?.remunerationType ?? null,
+    salaryStructurePaymentType: structure?.paymentType ?? null,
+    salaryStructureDivisions: structure?.divisions ?? [],
     startDate: row.start_date,
     endDate: row.end_date,
     currentAmount: revision?.amount ?? null,

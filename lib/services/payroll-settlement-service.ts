@@ -162,6 +162,27 @@ export async function listSettlementsForActiveClub(
   }
 }
 
+export async function listSettlementsForContract(
+  contractId: string,
+  limit?: number,
+): Promise<ListSettlementsResult> {
+  const g = await guard();
+  if (!g.ok) return { ok: false, code: g.code };
+  try {
+    const settlements = await payrollSettlementRepository.listForContract(
+      g.context.clubId,
+      contractId,
+      limit,
+    );
+    return { ok: true, settlements };
+  } catch (error) {
+    if (isPayrollSettlementRepositoryInfraError(error)) {
+      console.error("[payroll-settlement-service.listForContract]", error);
+    }
+    return { ok: false, code: "unknown_error" };
+  }
+}
+
 export type SettlementDetail = {
   settlement: PayrollSettlement;
   adjustments: PayrollSettlementAdjustment[];

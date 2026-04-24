@@ -381,6 +381,32 @@ export const payrollSettlementRepository = {
     return rows.map((r) => mapSettlement(r, maps));
   },
 
+  async listForContract(
+    clubId: string,
+    contractId: string,
+    limit?: number,
+  ): Promise<PayrollSettlement[]> {
+    const supabase = requireAdminClient("list_payroll_settlements_for_contract", {
+      clubId,
+      contractId,
+    });
+    let query = supabase
+      .from("payroll_settlements")
+      .select(SETTLEMENT_COLUMNS)
+      .eq("club_id", clubId)
+      .eq("contract_id", contractId)
+      .order("period_year", { ascending: false })
+      .order("period_month", { ascending: false });
+    if (limit && limit > 0) query = query.limit(limit);
+
+    const { data, error } = await query;
+    if (error) throwRead("list_payroll_settlements_for_contract", { clubId, contractId }, error);
+    const rows = (data ?? []) as SettlementRow[];
+    if (rows.length === 0) return [];
+    const maps = await fetchEnrichment(supabase, clubId, [contractId]);
+    return rows.map((r) => mapSettlement(r, maps));
+  },
+
   async getById(clubId: string, settlementId: string): Promise<PayrollSettlement | null> {
     const supabase = requireAdminClient("get_payroll_settlement", { clubId, settlementId });
     const { data, error } = await supabase

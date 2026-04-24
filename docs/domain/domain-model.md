@@ -734,5 +734,56 @@ para trazabilidad del historial y se mapea aquí:
     (revisión con `end_date is null`). La Estructura Salarial no tiene
     monto; es solo catálogo.
 
+### Ficha de contrato (`/rrhh/contracts/[id]`)
+
+Layout en dos columnas (mobile-first, stack en < lg). El código humano
+del contrato (`C-XXXXXXXX`) se deriva del UUID via
+`formatContractCode(id)` en `lib/domain/staff-contract.ts`.
+
+Cards implementadas:
+
+- **Header** — breadcrumb "Contratos · C-XXXX", Avatar + nombre del
+  colaborador (link a `/rrhh/staff/[id]`), chips de estado + tipo de
+  pago + tipo de remuneración, y CTAs: "Nueva revisión" (si vigente y
+  can mutate), "Ver ficha colaborador", "Finalizar contrato" (si
+  vigente).
+- **Información del contrato** — `dl` con número, tipo de pago,
+  estructura, rol, división, actividad, tipo de remuneración, inicio,
+  fin.
+- **Historial de revisiones** — timeline vertical. Para cada revisión:
+  rango de fechas, monto, % vs revisión anterior (calculado
+  client-side, edge case "Inicial" para la primera). La revisión
+  vigente va destacada.
+- **Documentos** — upload (PDF/Word/imágenes ≤ 10 MB), signed URL para
+  descarga, delete.
+- **Monto vigente** — monto grande + eyebrow con tipo de pago +
+  "Revisado el DD/MM · +X,X% vs anterior" calculado.
+- **Últimas liquidaciones** — hasta 5 filas via
+  `listSettlementsForContract(contractId, 5)` (nuevo método del
+  repositorio, filtra por `contract_id`). Status chip por estado
+  (`generada`/`confirmada`/`pagada`/`anulada`).
+
+#### TODO ficha de contrato (diferido a iteraciones posteriores)
+
+El mockup original incluye features que requieren esquema/lógica
+nueva y quedaron fuera del alcance del rediseño inicial. Se listan
+aquí para que no se pierdan:
+
+- **Frecuencia de revisión** (trimestral/semestral/anual) — campo
+  nuevo en `staff_contracts` + input en form de alta.
+- **Próxima revisión · fecha prevista · días restantes** — derivable
+  si existiera "frecuencia de revisión".
+- **Último IPC (INDEC)** — integración externa o columna manual.
+- **Notas del contrato** — columna nueva `staff_contracts.notes`.
+- **Modalidad de pago · Banco Nación** (detalle bancario) — campos
+  nuevos, probable sobre `staff_members`.
+- **Simular aumento** — UI + cálculo nuevos (podría reusar
+  `createBulkSalaryRevision` en modo dry-run).
+- **Resumen anual (Liquidado / A liquidar)** — agregación nueva sobre
+  `payroll_settlements`. Hoy la card "Últimas liquidaciones" cumple
+  el rol informativo mínimo.
+- **"Aprobó: {nombre}" por revisión** — requiere join a `profiles` /
+  `users` por `created_by_user_id`. Hoy guardamos sólo el id.
+
 ```
 ```

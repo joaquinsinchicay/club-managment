@@ -30,6 +30,8 @@ export type StaffContract = {
   salaryStructureActivityId: string | null;
   salaryStructureActivityName: string | null;
   salaryStructureRemunerationType: string | null;
+  salaryStructurePaymentType: string | null;
+  salaryStructureDivisions: string[];
   startDate: string;
   endDate: string | null;
   /**
@@ -73,4 +75,12 @@ export function isStartDateTooOld(
   const msPerDay = 24 * 60 * 60 * 1000;
   const diffDays = (now - start) / msPerDay;
   return diffDays > CONTRACT_MAX_BACKDATE_DAYS;
+}
+
+/**
+ * Human-readable short code derived from the contract UUID. Used as display
+ * identifier in UI (listings, detail header, breadcrumbs).
+ */
+export function formatContractCode(id: string): string {
+  return `C-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
 }

@@ -37,7 +37,11 @@ import {
 } from "@/components/ui/modal-form";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { SalaryStructure } from "@/lib/domain/salary-structure";
-import type { StaffContract, StaffContractStatus } from "@/lib/domain/staff-contract";
+import {
+  formatContractCode,
+  type StaffContract,
+  type StaffContractStatus,
+} from "@/lib/domain/staff-contract";
 import type { StaffMember } from "@/lib/domain/staff-member";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import { texts } from "@/lib/texts";
@@ -64,10 +68,6 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function formatContractCode(id: string): string {
-  return `C-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
 }
 
 function formatAmount(amount: number | null | undefined, currencyCode: string): string {
