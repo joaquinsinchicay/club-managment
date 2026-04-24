@@ -1529,6 +1529,8 @@
       "page_eyebrow": "RRHH",
       "page_title": "Liquidaciones",
       "page_description": "Genera, ajusta, confirma y anula las liquidaciones mensuales de los contratos vigentes.",
+      "subtitle_counts": "{generada} generadas · {confirmada} confirmadas · {pagada} pagadas · {anulada} anuladas",
+      "search_placeholder": "Buscar por colaborador, estructura o periodo",
       "generate_cta": "Generar liquidaciones del mes",
       "generate_modal_title": "Generar liquidaciones del mes",
       "generate_modal_description": "Crea una liquidacion por cada contrato vigente durante el periodo seleccionado. Ignora los contratos que ya tienen liquidacion no anulada.",

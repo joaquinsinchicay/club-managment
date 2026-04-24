@@ -19,7 +19,6 @@ import {
   DataTableHeader,
   DataTableRow,
 } from "@/components/ui/data-table";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
@@ -116,6 +115,7 @@ export function SettlementsList({
   const router = useRouter();
   const [, startTransition] = useTransition();
 
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [periodFilter, setPeriodFilter] = useState<string>("all"); // "YYYY-MM"
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -143,16 +143,33 @@ export function SettlementsList({
     return Array.from(set).sort().reverse();
   }, [settlements]);
 
+  const countsByStatus = useMemo(() => {
+    const map = new Map<PayrollSettlementStatus, number>();
+    for (const s of settlements) {
+      map.set(s.status, (map.get(s.status) ?? 0) + 1);
+    }
+    return map;
+  }, [settlements]);
+
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return settlements.filter((s) => {
       if (statusFilter !== "all" && s.status !== statusFilter) return false;
       if (periodFilter !== "all") {
         const label = formatPeriodLabel(s.periodYear, s.periodMonth);
         if (label !== periodFilter) return false;
       }
-      return true;
+      if (!q) return true;
+      const periodLabel = formatPeriodLabel(s.periodYear, s.periodMonth);
+      return (
+        (s.staffMemberName ?? "").toLowerCase().includes(q) ||
+        (s.salaryStructureName ?? "").toLowerCase().includes(q) ||
+        (s.salaryStructureRole ?? "").toLowerCase().includes(q) ||
+        (s.salaryStructureActivityName ?? "").toLowerCase().includes(q) ||
+        periodLabel.toLowerCase().includes(q)
+      );
     });
-  }, [settlements, statusFilter, periodFilter]);
+  }, [settlements, search, statusFilter, periodFilter]);
 
   const selectableIds = useMemo(
     () =>
@@ -209,50 +226,70 @@ export function SettlementsList({
 
   const { year: curYear, month: curMonth } = currentPeriodYearMonth();
 
+  const subtitleCounts = sTexts.subtitle_counts
+    .replace("{generada}", String(countsByStatus.get("generada") ?? 0))
+    .replace("{confirmada}", String(countsByStatus.get("confirmada") ?? 0))
+    .replace("{pagada}", String(countsByStatus.get("pagada") ?? 0))
+    .replace("{anulada}", String(countsByStatus.get("anulada") ?? 0));
+
   return (
-    <div className="grid gap-6">
-      {/* Header */}
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="grid gap-1">
-          <span className="text-eyebrow uppercase text-muted-foreground">
-            {sTexts.page_eyebrow}
-          </span>
-          <h1 className="text-h2 font-semibold tracking-tight text-foreground">
-            {sTexts.page_title}
-          </h1>
-          <p className="text-sm text-muted-foreground">{sTexts.page_description}</p>
-        </div>
+    <div className="flex flex-col gap-4">
+      {/* Section header — matches Contratos pattern */}
+      <header className="flex flex-col gap-1">
+        <h2 className="text-h2 font-bold text-foreground">{sTexts.page_title}</h2>
+        <p className="text-sm text-muted-foreground">{sTexts.page_description}</p>
+      </header>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">{subtitleCounts}</p>
         {canOperate ? (
-          <Button variant="primary" onClick={() => setGenerateOpen(true)}>
+          <Button variant="primary" size="sm" onClick={() => setGenerateOpen(true)}>
             {sTexts.generate_cta}
           </Button>
         ) : null}
-      </header>
+      </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        {STATUS_FILTERS.map((f) => (
-          <ChipButton
-            key={f.value}
-            active={statusFilter === f.value}
-            onClick={() => setStatusFilter(f.value)}
+      {/* Search card with chips + period select */}
+      <div className="rounded-card border border-border bg-card px-4 py-3">
+        <input
+          type="search"
+          placeholder={sTexts.search_placeholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
+        />
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {STATUS_FILTERS.map((f) => {
+              const count =
+                f.value === "all"
+                  ? settlements.length
+                  : countsByStatus.get(f.value as PayrollSettlementStatus) ?? 0;
+              return (
+                <ChipButton
+                  key={f.value}
+                  active={statusFilter === f.value}
+                  onClick={() => setStatusFilter(f.value)}
+                >
+                  {f.label} · {count}
+                </ChipButton>
+              );
+            })}
+          </div>
+          {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. Usa tokens canonicos rounded-chip + estilo inactive de ChipButton. */}
+          <select
+            value={periodFilter}
+            onChange={(e) => setPeriodFilter(e.target.value)}
+            className="inline-flex items-center rounded-chip border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
           >
-            {f.label}
-          </ChipButton>
-        ))}
-        {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. Usa tokens canonicos rounded-chip + estilo inactive de ChipButton. */}
-        <select
-          value={periodFilter}
-          onChange={(e) => setPeriodFilter(e.target.value)}
-          className="inline-flex items-center rounded-chip border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-        >
-          <option value="all">{sTexts.filter_period_all}</option>
-          {availablePeriods.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+            <option value="all">{sTexts.filter_period_all}</option>
+            {availablePeriods.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Bulk bar */}
@@ -290,26 +327,19 @@ export function SettlementsList({
 
       {/* Table */}
       {filtered.length === 0 ? (
-        settlements.length === 0 ? (
-          <EmptyState
-            variant="dashed"
-            title={sTexts.empty_title}
-            description={sTexts.empty_description}
-            action={
-              canOperate ? (
-                <Button variant="primary" onClick={() => setGenerateOpen(true)}>
-                  {sTexts.empty_cta}
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <EmptyState
-            variant="dashed"
-            title={sTexts.empty_filter_title}
-            description={sTexts.empty_filter_description}
-          />
-        )
+        <DataTableEmpty
+          title={settlements.length === 0 ? sTexts.empty_title : sTexts.empty_filter_title}
+          description={
+            settlements.length === 0 ? sTexts.empty_description : sTexts.empty_filter_description
+          }
+          action={
+            canOperate && settlements.length === 0 ? (
+              <Button variant="primary" size="sm" onClick={() => setGenerateOpen(true)}>
+                {sTexts.empty_cta}
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <DataTable
           density="compact"
