@@ -54,6 +54,19 @@ type ContractDetailViewProps = {
 
 const cdTexts = texts.rrhh.contract_detail;
 const scTexts = texts.rrhh.staff_contracts;
+const ssTexts = texts.rrhh.salary_structures;
+
+function resolvePaymentTypeLabel(raw: string | null): string | null {
+  if (!raw) return null;
+  const opts = ssTexts.payment_type_options as Record<string, string>;
+  return opts[raw] ?? raw;
+}
+
+function resolveRemunerationTypeLabel(raw: string | null): string | null {
+  if (!raw) return null;
+  const opts = ssTexts.remuneration_type_options as Record<string, string>;
+  return opts[raw] ?? raw;
+}
 
 const SPANISH_MONTHS = [
   "Enero",
@@ -145,6 +158,10 @@ export function ContractDetailView({
   const isVigente = contract.status === "vigente";
   const canNewRevision = canMutate && isVigente;
   const canFinalize = canMutate && isVigente;
+  const paymentTypeLabel = resolvePaymentTypeLabel(contract.salaryStructurePaymentType);
+  const remunerationTypeLabel = resolveRemunerationTypeLabel(
+    contract.salaryStructureRemunerationType,
+  );
 
   const sortedRevisions = [...revisions].sort((a, b) =>
     b.effectiveDate.localeCompare(a.effectiveDate),
@@ -233,9 +250,7 @@ export function ContractDetailView({
 
   const currentAmountEyebrow = cdTexts.current_amount_eyebrow_template.replace(
     "{paymentType}",
-    contract.salaryStructurePaymentType
-      ? contract.salaryStructurePaymentType.toUpperCase()
-      : "—",
+    paymentTypeLabel ? paymentTypeLabel.toUpperCase() : "—",
   );
 
   const currentAmountSubtitle = currentRevision
@@ -267,7 +282,7 @@ export function ContractDetailView({
 
       {/* Header card */}
       <Card padding="comfortable">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-5">
           <div className="flex items-start gap-4">
             <Avatar
               name={contract.staffMemberName ?? scTexts.unknown_member}
@@ -306,15 +321,11 @@ export function ContractDetailView({
                   tone={isVigente ? "success" : "neutral"}
                   label={scTexts.status_options[contract.status]}
                 />
-                {contract.salaryStructurePaymentType ? (
-                  <DataTableChip tone="neutral">
-                    {contract.salaryStructurePaymentType}
-                  </DataTableChip>
+                {paymentTypeLabel ? (
+                  <DataTableChip tone="neutral">{paymentTypeLabel}</DataTableChip>
                 ) : null}
-                {contract.salaryStructureRemunerationType ? (
-                  <DataTableChip tone="neutral">
-                    {contract.salaryStructureRemunerationType}
-                  </DataTableChip>
+                {remunerationTypeLabel ? (
+                  <DataTableChip tone="neutral">{remunerationTypeLabel}</DataTableChip>
                 ) : null}
               </div>
             </div>
@@ -326,7 +337,7 @@ export function ContractDetailView({
                 onClick={() => setReviseOpen(true)}
                 className={buttonClass({ variant: "primary", size: "md" })}
               >
-                {cdTexts.new_revision_cta}
+                {cdTexts.new_revision_cta_plus}
               </button>
             ) : null}
             <LinkButton
@@ -364,7 +375,7 @@ export function ContractDetailView({
                 <InfoItem label={cdTexts.info_number_label} value={contractCode} />
                 <InfoItem
                   label={cdTexts.info_payment_type_label}
-                  value={contract.salaryStructurePaymentType}
+                  value={paymentTypeLabel}
                 />
                 <InfoItem
                   label={cdTexts.info_structure_label}
@@ -388,7 +399,7 @@ export function ContractDetailView({
                 />
                 <InfoItem
                   label={cdTexts.info_remuneration_type_label}
-                  value={contract.salaryStructureRemunerationType}
+                  value={remunerationTypeLabel}
                 />
                 <InfoItem
                   label={cdTexts.info_start_label}

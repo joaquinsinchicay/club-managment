@@ -1834,6 +1834,7 @@
       "header_finalizado_since_template": "Contrato {code} · Finalizado el {date}",
       "view_staff_profile_cta": "Ver ficha colaborador",
       "finalize_contract_cta": "Finalizar contrato",
+      "new_revision_cta_plus": "+ Nueva revisión",
       "finalize_modal_title": "Finalizar contrato",
       "finalize_modal_description": "Al finalizar, el contrato pasa a estado Finalizado y se cierra la revisión salarial vigente.",
       "finalize_modal_submit_cta": "Finalizar",

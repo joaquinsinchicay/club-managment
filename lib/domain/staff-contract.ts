@@ -82,5 +82,5 @@ export function isStartDateTooOld(
  * identifier in UI (listings, detail header, breadcrumbs).
  */
 export function formatContractCode(id: string): string {
-  return `C-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+  return `C-${id.replace(/-/g, "").slice(0, 4).toUpperCase()}`;
 }
