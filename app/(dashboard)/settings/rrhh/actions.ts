@@ -9,6 +9,7 @@ import {
 } from "@/lib/services/salary-structure-service";
 import {
   createStaffMember,
+  deactivateStaffMember,
   updateStaffMember,
   type StaffMemberActionCode,
 } from "@/lib/services/staff-member-service";
@@ -154,6 +155,12 @@ function staffMemberFeedbackCode(code: StaffMemberActionCode): string {
       return "staff_member_created";
     case "updated":
       return "staff_member_updated";
+    case "deactivated":
+      return "staff_member_deactivated";
+    case "already_deactivated":
+      return "staff_member_already_deactivated";
+    case "has_active_contracts":
+      return "staff_member_has_active_contracts";
     case "member_not_found":
       return "staff_member_not_found";
     case "first_name_required":
@@ -223,6 +230,19 @@ export async function updateStaffMemberAction(formData: FormData): Promise<RrhhA
   if (!memberId) return { ok: false, code: staffMemberFeedbackCode("member_not_found") };
   const result = await updateStaffMember(memberId, rawStaffMemberFromFormData(formData));
   revalidatePath("/settings");
+  revalidatePath(`/rrhh/staff/${memberId}`);
+  return { ok: result.ok, code: staffMemberFeedbackCode(result.code) };
+}
+
+export async function deactivateStaffMemberAction(formData: FormData): Promise<RrhhActionResult> {
+  const memberId = String(formData.get("staff_member_id") ?? "");
+  if (!memberId) return { ok: false, code: staffMemberFeedbackCode("member_not_found") };
+  const reason = formData.get("reason");
+  const result = await deactivateStaffMember(memberId, {
+    reason: typeof reason === "string" ? reason : undefined,
+  });
+  revalidatePath(`/rrhh/staff/${memberId}`);
+  revalidatePath("/rrhh/staff");
   return { ok: result.ok, code: staffMemberFeedbackCode(result.code) };
 }
 

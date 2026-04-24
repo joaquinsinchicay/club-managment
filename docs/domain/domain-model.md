@@ -839,9 +839,19 @@ El mockup incluye features que requieren esquema nuevo sobre
   sub-tabla `staff_addresses`).
 - **Datos bancarios detallados** (banco, tipo de cuenta, CBU
   completo, alias separado) — hoy sólo `cbu_alias` consolidado.
-- **"Dar de baja..."** CTA — baja lógica del colaborador; hoy no
-  existe endpoint en `staff-member-service`. Se difiere hasta
-  definir políticas de retención de datos.
+- **"Dar de baja..."** — ✅ implementado. `staff_members` expone
+  `deactivated_at`, `deactivated_by_user_id`, `deactivation_reason`.
+  La baja pasa por la RPC SECURITY DEFINER
+  `hr_deactivate_staff_member(p_staff_member_id, p_reason)` que
+  rechaza con `has_active_contracts` si hay contratos vigentes y
+  con `already_deactivated` si ya está dado de baja. Servicio:
+  `deactivateStaffMember` con `canMutateHrMasters`. Action:
+  `deactivateStaffMemberAction`. UI: CTA `destructive-outline` en
+  el header del perfil + modal con motivo (textarea opcional que
+  se persiste). Cuando el colaborador está dado de baja, la ficha
+  muestra un banner warning con fecha y motivo y oculta los CTAs
+  mutadores (Nuevo contrato, Editar, Dar de baja). Reactivación
+  queda pendiente.
 - **Actividad reciente** (timeline de revisiones + liquidaciones +
   contratos) — requiere agregación + ordenamiento cronológico de
   múltiples fuentes; por ahora la info vive en cards separadas.

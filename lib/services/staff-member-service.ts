@@ -39,6 +39,9 @@ export type StaffMemberActionCode =
   | "forbidden"
   | "created"
   | "updated"
+  | "deactivated"
+  | "already_deactivated"
+  | "has_active_contracts"
   | "member_not_found"
   | "first_name_required"
   | "last_name_required"
@@ -382,6 +385,50 @@ export async function updateStaffMember(
   } catch (error) {
     if (isStaffMemberRepositoryInfraError(error)) {
       console.error("[staff-member-service.update]", error);
+    }
+    return err<{ member: StaffMember }>("unknown_error");
+  }
+}
+
+// -------------------------------------------------------------------------
+// Deactivate (soft-delete)
+// -------------------------------------------------------------------------
+
+export type DeactivateStaffMemberRawInput = { reason?: unknown };
+
+export async function deactivateStaffMember(
+  memberId: string,
+  raw: DeactivateStaffMemberRawInput,
+): Promise<StaffMemberActionResult<{ member: StaffMember }>> {
+  const guard = await guardMutate();
+  if (!guard.ok) return err<{ member: StaffMember }>(guard.code);
+  const ctx = guard.context;
+
+  const reason = normalizeOptionalText(raw.reason, 500);
+
+  try {
+    const rpc = await staffMemberRepository.deactivate({
+      clubId: ctx.clubId,
+      staffMemberId: memberId,
+      reason,
+    });
+    if (!rpc.ok) {
+      switch (rpc.code) {
+        case "member_not_found":
+        case "forbidden":
+        case "already_deactivated":
+        case "has_active_contracts":
+          return err<{ member: StaffMember }>(rpc.code);
+        default:
+          return err<{ member: StaffMember }>("unknown_error");
+      }
+    }
+    const refreshed = await staffMemberRepository.getById(ctx.clubId, memberId);
+    if (!refreshed) return err<{ member: StaffMember }>("member_not_found");
+    return ok<{ member: StaffMember }>("deactivated", { member: refreshed });
+  } catch (error) {
+    if (isStaffMemberRepositoryInfraError(error)) {
+      console.error("[staff-member-service.deactivate]", error);
     }
     return err<{ member: StaffMember }>("unknown_error");
   }

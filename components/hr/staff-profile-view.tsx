@@ -18,10 +18,16 @@ import {
   DataTableHeader,
   DataTableRow,
 } from "@/components/ui/data-table";
-import { LinkButton } from "@/components/ui/link-button";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
-import { FormBanner } from "@/components/ui/modal-form";
+import {
+  FormBanner,
+  FormField,
+  FormFieldLabel,
+  FormHelpText,
+  FormTextarea,
+} from "@/components/ui/modal-form";
+import { CreateContractForm } from "@/components/hr/create-contract-form";
 import { StaffMemberFormFields } from "@/components/hr/staff-member-form-fields";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { triggerClientFeedback } from "@/lib/client-feedback";
@@ -29,19 +35,34 @@ import {
   formatPeriodLabel,
   type PayrollSettlementStatus,
 } from "@/lib/domain/payroll-settlement";
+import type { SalaryStructure } from "@/lib/domain/salary-structure";
+import {
+  formatContractCode,
+  type StaffContract,
+} from "@/lib/domain/staff-contract";
 import type { StaffProfile } from "@/lib/services/hr-staff-profile-service";
 import { texts } from "@/lib/texts";
 
 const profileTexts = texts.rrhh.staff_profile;
 const smTexts = texts.rrhh.staff_members;
 const scTexts = texts.rrhh.staff_contracts;
+const ssTexts = texts.rrhh.salary_structures;
 const settlementTexts = texts.rrhh.settlements;
+
+function resolveRemunerationTypeLabel(raw: string | null): string | null {
+  if (!raw) return null;
+  const opts = ssTexts.remuneration_type_options as Record<string, string>;
+  return opts[raw] ?? raw;
+}
 
 type StaffProfileViewProps = {
   profile: StaffProfile;
+  structures: SalaryStructure[];
   clubCurrencyCode: string;
   canMutate: boolean;
   updateAction: (formData: FormData) => Promise<RrhhActionResult>;
+  createContractAction: (formData: FormData) => Promise<RrhhActionResult>;
+  deactivateAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 function formatAmount(amount: number | null | undefined, currencyCode: string): string {
@@ -98,20 +119,48 @@ function formatTenure(hireDateIso: string | null | undefined): string {
   return parts.join(" · ");
 }
 
+function contractAmountUnit(remunerationType: string | null): string | null {
+  if (!remunerationType) return null;
+  if (remunerationType === "mensual_fijo") return profileTexts.contracts_amount_unit_mensual_fijo;
+  if (remunerationType === "por_hora") return profileTexts.contracts_amount_unit_por_hora;
+  if (remunerationType === "por_clase") return profileTexts.contracts_amount_unit_por_clase;
+  return null;
+}
+
+function contractItemTitle(c: StaffContract): string {
+  return profileTexts.contracts_item_title_template
+    .replace("{code}", formatContractCode(c.id))
+    .replace("{role}", c.salaryStructureRole ?? profileTexts.contracts_item_role_fallback)
+    .replace("{structure}", c.salaryStructureName ?? profileTexts.contracts_item_structure_fallback);
+}
+
 export function StaffProfileView({
   profile,
+  structures,
   clubCurrencyCode,
   canMutate,
   updateAction,
+  createContractAction,
+  deactivateAction,
 }: StaffProfileViewProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [editOpen, setEditOpen] = useState(false);
   const [editPending, setEditPending] = useState(false);
+  const [newContractOpen, setNewContractOpen] = useState(false);
+  const [newContractPending, setNewContractPending] = useState(false);
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deactivatePending, setDeactivatePending] = useState(false);
 
   const member = profile.member;
   const fullName = `${member.firstName} ${member.lastName}`.trim();
-  const tenureLabel = formatTenure(member.hireDate);
+  const isDeactivated = member.deactivatedAt !== null;
+  const canShowMutationCTAs = canMutate && !isDeactivated;
+  const canDeactivate = canShowMutationCTAs && !profile.hasActiveContract;
+
+  const tenureLabel = isDeactivated
+    ? formatTenure(member.hireDate)
+    : formatTenure(member.hireDate);
   const hireLabel = profileTexts.tenure_since_template.replace(
     "{date}",
     formatIsoDate(member.hireDate),
@@ -119,6 +168,10 @@ export function StaffProfileView({
   const headerAltaLabel = profileTexts.header_alta_template.replace(
     "{date}",
     formatIsoDate(member.hireDate),
+  );
+
+  const availableStructures = structures.filter(
+    (s) => s.status === "activa" && !s.hasActiveContract,
   );
 
   async function handleEditSubmit(formData: FormData) {
@@ -135,6 +188,43 @@ export function StaffProfileView({
     }
   }
 
+  async function handleCreateContractSubmit(formData: FormData) {
+    setNewContractPending(true);
+    try {
+      const result = await createContractAction(formData);
+      triggerClientFeedback("settings", result.code);
+      if (result.ok) {
+        setNewContractOpen(false);
+        startTransition(() => router.refresh());
+      }
+    } finally {
+      setNewContractPending(false);
+    }
+  }
+
+  async function handleDeactivateSubmit(formData: FormData) {
+    setDeactivatePending(true);
+    try {
+      const result = await deactivateAction(formData);
+      triggerClientFeedback("settings", result.code);
+      if (result.ok) {
+        setDeactivateOpen(false);
+        startTransition(() => router.refresh());
+      }
+    } finally {
+      setDeactivatePending(false);
+    }
+  }
+
+  const deactivatedBannerText = isDeactivated
+    ? profileTexts.deactivated_banner_template
+        .replace("{date}", formatIsoDate(member.deactivatedAt))
+        .replace(
+          "{reason}",
+          member.deactivationReason?.trim() || profileTexts.deactivated_banner_no_reason,
+        )
+    : "";
+
   return (
     <div className="flex flex-col gap-6">
       {/* Breadcrumb */}
@@ -145,6 +235,12 @@ export function StaffProfileView({
         <span aria-hidden="true">·</span>
         <span className="break-words text-foreground">{fullName}</span>
       </nav>
+
+      {isDeactivated ? (
+        <FormBanner variant="warning">
+          <strong>{profileTexts.deactivated_banner_title}</strong> · {deactivatedBannerText}
+        </FormBanner>
+      ) : null}
 
       {/* Header card */}
       <Card padding="comfortable">
@@ -186,11 +282,15 @@ export function StaffProfileView({
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <LinkButton href="/rrhh/contracts" variant="accent-rrhh" size="md">
-              {profileTexts.new_contract_cta}
-            </LinkButton>
-            {canMutate ? (
+          {canShowMutationCTAs ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setNewContractOpen(true)}
+                className={buttonClass({ variant: "accent-rrhh", size: "md" })}
+              >
+                {profileTexts.new_contract_cta}
+              </button>
               <button
                 type="button"
                 onClick={() => setEditOpen(true)}
@@ -198,12 +298,23 @@ export function StaffProfileView({
               >
                 {profileTexts.edit_cta}
               </button>
-            ) : null}
-          </div>
+              <button
+                type="button"
+                onClick={() => setDeactivateOpen(true)}
+                disabled={!canDeactivate}
+                title={
+                  !canDeactivate ? profileTexts.deactivate_disabled_has_active_contracts : undefined
+                }
+                className={buttonClass({ variant: "destructive-outline", size: "md" })}
+              >
+                {profileTexts.deactivate_cta}
+              </button>
+            </div>
+          ) : null}
         </div>
       </Card>
 
-      {!profile.hasActiveContract ? (
+      {!profile.hasActiveContract && !isDeactivated ? (
         <FormBanner variant="warning">{profileTexts.alert_no_active_contracts}</FormBanner>
       ) : null}
 
@@ -263,9 +374,23 @@ export function StaffProfileView({
             </CardBody>
           </Card>
 
-          {/* Contratos */}
+          {/* Contratos — lista tipo card items */}
           <Card padding="comfortable">
-            <CardHeader title={profileTexts.contracts_title} divider />
+            <CardHeader
+              title={profileTexts.contracts_title}
+              action={
+                canShowMutationCTAs ? (
+                  <button
+                    type="button"
+                    onClick={() => setNewContractOpen(true)}
+                    className={buttonClass({ variant: "accent-rrhh", size: "sm" })}
+                  >
+                    {profileTexts.contracts_new_cta}
+                  </button>
+                ) : undefined
+              }
+              divider
+            />
             <CardBody>
               {profile.contracts.length === 0 ? (
                 <DataTableEmpty
@@ -273,47 +398,60 @@ export function StaffProfileView({
                   description={profileTexts.contracts_empty_description}
                 />
               ) : (
-                <DataTable
-                  density="compact"
-                  gridColumns="minmax(0,1.4fr) 110px 110px 130px 120px"
-                >
-                  <DataTableHeader>
-                    <DataTableHeadCell>{profileTexts.contracts_col_structure}</DataTableHeadCell>
-                    <DataTableHeadCell>{profileTexts.contracts_col_start}</DataTableHeadCell>
-                    <DataTableHeadCell>{profileTexts.contracts_col_end}</DataTableHeadCell>
-                    <DataTableHeadCell align="right">
-                      {profileTexts.contracts_col_amount}
-                    </DataTableHeadCell>
-                    <DataTableHeadCell>{profileTexts.contracts_col_status}</DataTableHeadCell>
-                  </DataTableHeader>
-                  <DataTableBody>
-                    {profile.contracts.map((c) => (
-                      <DataTableRow key={c.id} density="compact">
-                        <DataTableCell>
+                <ul className="grid gap-2">
+                  {profile.contracts.map((c) => {
+                    const rangeLabel = c.endDate
+                      ? profileTexts.contracts_item_range_template
+                          .replace("{from}", formatIsoDate(c.startDate))
+                          .replace("{to}", formatIsoDate(c.endDate))
+                      : profileTexts.contracts_item_since_template.replace(
+                          "{from}",
+                          formatIsoDate(c.startDate),
+                        );
+                    const unitLabel = contractAmountUnit(c.salaryStructureRemunerationType);
+                    return (
+                      <li
+                        key={c.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-card px-4 py-3"
+                      >
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <Link
                             href={`/rrhh/contracts/${c.id}`}
-                            className="break-words font-medium text-foreground hover:underline"
+                            className="break-words text-sm font-semibold text-foreground hover:underline"
                           >
-                            {c.salaryStructureName ?? "—"}
+                            {contractItemTitle(c)}
                           </Link>
-                        </DataTableCell>
-                        <DataTableCell>{formatIsoDate(c.startDate)}</DataTableCell>
-                        <DataTableCell>{formatIsoDate(c.endDate)}</DataTableCell>
-                        <DataTableCell align="right">
-                          <span className="shrink-0 font-semibold tabular-nums">
-                            {formatAmount(c.currentAmount, clubCurrencyCode)}
-                          </span>
-                        </DataTableCell>
-                        <DataTableCell>
-                          <StatusBadge
-                            tone={c.status === "vigente" ? "success" : "neutral"}
-                            label={scTexts.status_options[c.status]}
-                          />
-                        </DataTableCell>
-                      </DataTableRow>
-                    ))}
-                  </DataTableBody>
-                </DataTable>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <span>{rangeLabel}</span>
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <StatusBadge
+                              tone={c.status === "vigente" ? "success" : "neutral"}
+                              label={scTexts.status_options[c.status]}
+                            />
+                            {c.salaryStructureRemunerationType ? (
+                              <DataTableChip tone="neutral">
+                                {resolveRemunerationTypeLabel(
+                                  c.salaryStructureRemunerationType,
+                                )}
+                              </DataTableChip>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-semibold tabular-nums text-foreground">
+                              {formatAmount(c.currentAmount, clubCurrencyCode)}
+                            </span>
+                          </div>
+                          {unitLabel ? (
+                            <span className="text-xs text-muted-foreground">{unitLabel}</span>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </CardBody>
           </Card>
@@ -432,6 +570,62 @@ export function StaffProfileView({
             cancelLabel={profileTexts.edit_cancel_cta}
             submitLabel={profileTexts.edit_submit_cta}
             pendingLabel={profileTexts.edit_pending}
+          />
+        </form>
+      </Modal>
+
+      {/* New contract modal */}
+      <Modal
+        open={newContractOpen}
+        onClose={() => {
+          if (newContractPending) return;
+          setNewContractOpen(false);
+        }}
+        title={profileTexts.new_contract_modal_title}
+        description={profileTexts.new_contract_modal_description}
+        size="md"
+        closeDisabled={newContractPending}
+      >
+        <CreateContractForm
+          members={[member]}
+          structures={availableStructures}
+          clubCurrencyCode={clubCurrencyCode}
+          onCancel={() => setNewContractOpen(false)}
+          onSubmit={handleCreateContractSubmit}
+        />
+      </Modal>
+
+      {/* Deactivate modal */}
+      <Modal
+        open={deactivateOpen}
+        onClose={() => {
+          if (deactivatePending) return;
+          setDeactivateOpen(false);
+        }}
+        title={profileTexts.deactivate_modal_title}
+        description={profileTexts.deactivate_modal_description}
+        size="sm"
+        closeDisabled={deactivatePending}
+      >
+        <form action={handleDeactivateSubmit} className="grid gap-4">
+          <input type="hidden" name="staff_member_id" value={member.id} />
+          <FormBanner variant="destructive">{profileTexts.deactivate_warning}</FormBanner>
+          <FormField>
+            <FormFieldLabel>{profileTexts.deactivate_reason_label}</FormFieldLabel>
+            <FormTextarea
+              name="reason"
+              rows={3}
+              maxLength={500}
+              placeholder={profileTexts.deactivate_reason_placeholder}
+            />
+            <FormHelpText>{profileTexts.deactivate_reason_helper}</FormHelpText>
+          </FormField>
+          <ModalFooter
+            onCancel={() => setDeactivateOpen(false)}
+            cancelLabel={profileTexts.deactivate_cancel_cta}
+            submitLabel={profileTexts.deactivate_submit_cta}
+            pendingLabel={profileTexts.deactivate_pending}
+            submitVariant="destructive"
           />
         </form>
       </Modal>

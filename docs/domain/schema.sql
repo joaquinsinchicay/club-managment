@@ -531,6 +531,11 @@ create table staff_members (
   vinculo_type staff_vinculo_type not null,
   cbu_alias text,
   hire_date date not null default current_date,
+  -- Baja lógica (US-56). La RPC hr_deactivate_staff_member rechaza si
+  -- hay contratos vigentes. Reactivación queda pendiente.
+  deactivated_at timestamptz,
+  deactivated_by_user_id uuid references auth.users(id) on delete set null,
+  deactivation_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by_user_id uuid references users(id),
