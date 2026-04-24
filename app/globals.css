@@ -40,10 +40,13 @@
   --ink-muted: var(--slate-500);
   --cm-border: var(--slate-200);
 
-  /* Module accents */
+  /* Module accents — alineados con el Design System v1 (PDF). */
   --accent-dashboard:  var(--green);
   --accent-secretaria: var(--green);
   --accent-tesoreria:  var(--blue);
+  --accent-socios:     var(--amber);
+  --accent-rrhh:       var(--pink);
+  --accent-ticketing:  var(--teal);
   --accent-config:     var(--indigo);
   --accent-modulos:    var(--indigo);
 

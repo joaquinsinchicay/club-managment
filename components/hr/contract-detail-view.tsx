@@ -289,7 +289,7 @@ export function ContractDetailView({
               size="lg"
               tone="neutral"
             />
-            <div className="flex flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {headerTitle}
               </p>
@@ -371,7 +371,7 @@ export function ContractDetailView({
               divider
             />
             <CardBody>
-              <dl className="grid gap-4 px-5 py-4 text-sm sm:grid-cols-3">
+              <dl className="grid gap-x-6 gap-y-4 px-5 py-4 text-sm grid-cols-2 lg:grid-cols-3">
                 <InfoItem label={cdTexts.info_number_label} value={contractCode} />
                 <InfoItem
                   label={cdTexts.info_payment_type_label}
@@ -460,9 +460,9 @@ export function ContractDetailView({
                             : "border-border bg-card"
                         }`}
                       >
-                        <div className="flex flex-col gap-1">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-semibold text-foreground">
+                            <span className="break-words text-sm font-semibold text-foreground">
                               {rangeLabel}
                             </span>
                             {isCurrent ? (
@@ -486,10 +486,12 @@ export function ContractDetailView({
                                 )}
                               </span>
                             ) : null}
-                            {revision.reason ? <span>· {revision.reason}</span> : null}
+                            {revision.reason ? (
+                              <span className="break-words">· {revision.reason}</span>
+                            ) : null}
                           </div>
                         </div>
-                        <span className="font-semibold tabular-nums text-foreground">
+                        <span className="shrink-0 font-semibold tabular-nums text-foreground">
                           {formatAmount(revision.amount, clubCurrencyCode)}
                         </span>
                       </li>
@@ -541,15 +543,15 @@ export function ContractDetailView({
                       key={a.id}
                       className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-card px-4 py-3"
                     >
-                      <div className="grid leading-tight">
-                        <span className="text-sm font-medium text-foreground">
+                      <div className="grid min-w-0 flex-1 leading-tight">
+                        <span className="break-all text-sm font-medium text-foreground">
                           {a.fileName}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {formatBytes(a.sizeBytes)} · {formatIsoDate(a.uploadedAt.slice(0, 10))}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex shrink-0 items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleDownload(a.id)}
@@ -578,14 +580,16 @@ export function ContractDetailView({
         <aside className="flex flex-col gap-6">
           {/* Monto vigente */}
           <Card padding="comfortable" tone="muted">
-            <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="flex min-w-0 flex-col gap-3">
+              <p className="break-words text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {currentAmountEyebrow}
               </p>
-              <p className="text-h1 font-bold tabular-nums text-foreground">
+              <p className="break-words text-2xl font-bold tabular-nums text-foreground sm:text-h1">
                 {formatAmount(contract.currentAmount, clubCurrencyCode)}
               </p>
-              <p className="text-sm text-muted-foreground">{currentAmountSubtitle}</p>
+              <p className="break-words text-sm text-muted-foreground">
+                {currentAmountSubtitle}
+              </p>
               {canNewRevision ? (
                 <button
                   type="button"
@@ -632,15 +636,15 @@ export function ContractDetailView({
                         key={s.id}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-border bg-card px-4 py-3"
                       >
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-semibold text-foreground">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
+                          <span className="break-words text-sm font-semibold text-foreground">
                             {periodLabel}
                           </span>
                           <DataTableChip tone={statusInfo.tone}>
                             {cdTexts[statusInfo.labelKey] as string}
                           </DataTableChip>
                         </div>
-                        <span className="font-semibold tabular-nums text-foreground">
+                        <span className="shrink-0 font-semibold tabular-nums text-foreground">
                           {formatAmount(s.totalAmount, clubCurrencyCode)}
                         </span>
                       </li>
@@ -782,11 +786,11 @@ type InfoItemProps = {
 
 function InfoItem({ label, value }: InfoItemProps) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-1">
       <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </dt>
-      <dd className="text-sm text-foreground">
+      <dd className="break-words text-sm text-foreground">
         {value && value.length > 0 ? value : cdTexts.info_value_fallback}
       </dd>
     </div>

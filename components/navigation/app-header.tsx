@@ -29,7 +29,7 @@ const TAB_COLOR_CLASS: Record<TabKey, string> = {
   dashboard:  "text-ds-green-700",
   secretaria: "text-ds-green-700",
   tesoreria:  "text-ds-blue-700",
-  rrhh:       "text-ds-amber-700",
+  rrhh:       "text-ds-pink-700",
   settings:   "text-ds-indigo-700",
   modules:    "text-ds-indigo-700",
 };
@@ -38,7 +38,7 @@ const TAB_UNDERLINE_CLASS: Record<TabKey, string> = {
   dashboard:  "bg-ds-green",
   secretaria: "bg-ds-green",
   tesoreria:  "bg-ds-blue",
-  rrhh:       "bg-ds-amber",
+  rrhh:       "bg-ds-pink",
   settings:   "bg-ds-indigo",
   modules:    "bg-ds-indigo",
 };
