@@ -2,17 +2,16 @@
  * Domain entity and pure helpers for Staff Contracts (US-57 / US-58).
  *
  * A staff contract links a `staff_member` to a `salary_structure` with a
- * start date, optional end date, and a flag `uses_structure_amount` that
- * decides whether liquidaciones read the structure's current amount or the
- * frozen amount stored on the contract.
+ * start date, optional end date, y su monto viene de la revisión salarial
+ * vigente (tabla `staff_contract_revisions`, end_date is null).
  *
  * Business invariants enforced DB-side:
  *  - Partial unique index `(salary_structure_id) where status = 'vigente'`
  *    guarantees one active contract per structure.
- *  - Check `uses_structure_amount = true OR frozen_amount is not null`
- *    guarantees the amount source is always resolvable.
  *  - Check `end_date is null OR end_date >= start_date` guarantees a
  *    coherent date range.
+ *  - Cada contrato tiene siempre una revisión abierta (creada en alta vía
+ *    RPC `hr_create_contract_with_initial_revision`).
  *
  * Effect-free module.
  */
@@ -33,15 +32,13 @@ export type StaffContract = {
   salaryStructureRemunerationType: string | null;
   startDate: string;
   endDate: string | null;
-  usesStructureAmount: boolean;
-  frozenAmount: number | null;
   /**
-   * Convenience: the amount currently applied to this contract.
-   * - If `usesStructureAmount = true` → the structure's current version amount.
-   * - If `usesStructureAmount = false` → `frozenAmount`.
-   * Resolved by the repository join.
+   * Monto vigente del contrato. Lo resuelve el repositorio buscando la
+   * revisión con `end_date is null` en `staff_contract_revisions`.
    */
-  effectiveAmount: number | null;
+  currentAmount: number | null;
+  currentRevisionId: string | null;
+  currentRevisionEffectiveDate: string | null;
   status: StaffContractStatus;
   finalizedAt: string | null;
   finalizedReason: string | null;

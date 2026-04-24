@@ -36,7 +36,6 @@ import {
   type SalaryRemunerationType,
   type SalaryStructure,
   type SalaryStructureStatus,
-  type SalaryStructureVersion,
 } from "@/lib/domain/salary-structure";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import {
@@ -73,12 +72,6 @@ export type SalaryStructureActionCode =
   | "amount_must_be_positive"
   | "invalid_workload_hours"
   | "duplicate_role_activity"
-  // amount update
-  | "effective_date_required"
-  | "invalid_effective_date"
-  | "current_version_not_found"
-  | "same_day_update"
-  | "amount_updated"
   // infra
   | "unknown_error";
 
@@ -356,7 +349,6 @@ export type ListSalaryStructuresWithVersionsResult =
   | {
       ok: true;
       structures: SalaryStructure[];
-      versionsByStructureId: Record<string, SalaryStructureVersion[]>;
     }
   | { ok: false; code: SalaryStructureActionCode };
 
@@ -367,18 +359,8 @@ export async function listSalaryStructuresWithVersionsForActiveClub(
   if (!guard.ok) return { ok: false, code: guard.code };
   const ctx = guard.context;
   try {
-    const [structures, versions] = await Promise.all([
-      salaryStructureRepository.listForClub(ctx.clubId, filters),
-      salaryStructureRepository.listAllVersionsForClub(ctx.clubId),
-    ]);
-    const versionsByStructureId: Record<string, SalaryStructureVersion[]> = {};
-    for (const v of versions) {
-      if (!versionsByStructureId[v.salaryStructureId]) {
-        versionsByStructureId[v.salaryStructureId] = [];
-      }
-      versionsByStructureId[v.salaryStructureId].push(v);
-    }
-    return { ok: true, structures, versionsByStructureId };
+    const structures = await salaryStructureRepository.listForClub(ctx.clubId, filters);
+    return { ok: true, structures };
   } catch (error) {
     if (isSalaryStructureRepositoryInfraError(error)) {
       console.error("[salary-structure-service.list-with-versions]", error);
@@ -389,7 +371,6 @@ export async function listSalaryStructuresWithVersionsForActiveClub(
 
 export type SalaryStructureDetail = {
   structure: SalaryStructure;
-  versions: SalaryStructureVersion[];
 };
 
 export async function getSalaryStructureDetail(
@@ -402,8 +383,7 @@ export async function getSalaryStructureDetail(
   try {
     const structure = await salaryStructureRepository.getById(ctx.clubId, structureId);
     if (!structure) return err<SalaryStructureDetail>("structure_not_found");
-    const versions = await salaryStructureRepository.listVersions(ctx.clubId, structureId);
-    return ok<SalaryStructureDetail>("updated", { structure, versions });
+    return ok<SalaryStructureDetail>("updated", { structure });
   } catch (error) {
     if (isSalaryStructureRepositoryInfraError(error)) {
       console.error("[salary-structure-service.detail]", error);
@@ -551,71 +531,6 @@ export async function updateSalaryStructure(
       console.error("[salary-structure-service.update]", error);
     }
     return err<{ structure: SalaryStructure }>("unknown_error");
-  }
-}
-
-// -------------------------------------------------------------------------
-// Amount update (US-55)
-// -------------------------------------------------------------------------
-
-export type UpdateAmountRawInput = {
-  amount?: unknown;
-  effectiveDate?: unknown;
-};
-
-export async function updateSalaryStructureAmount(
-  structureId: string,
-  raw: UpdateAmountRawInput,
-): Promise<SalaryStructureActionResult<{ versionId: string | null }>> {
-  const guard = await guardMutate();
-  if (!guard.ok) return err<{ versionId: string | null }>(guard.code);
-  const ctx = guard.context;
-
-  const amount = normalizeAmount(raw.amount);
-  const effectiveDate = normalizeIsoDate(raw.effectiveDate);
-
-  if (amount === null) return err<{ versionId: string | null }>("amount_required");
-  if (amount <= 0) return err<{ versionId: string | null }>("amount_must_be_positive");
-  if (!effectiveDate) return err<{ versionId: string | null }>("effective_date_required");
-
-  try {
-    const existing = await salaryStructureRepository.getById(ctx.clubId, structureId);
-    if (!existing) return err<{ versionId: string | null }>("structure_not_found");
-
-    const result = await salaryStructureRepository.updateCurrentAmount({
-      clubId: ctx.clubId,
-      structureId,
-      newAmount: amount,
-      effectiveDate,
-      actorUserId: ctx.userId,
-    });
-
-    if (!result.ok) {
-      // Map RPC error codes to our domain codes.
-      switch (result.code) {
-        case "structure_not_found":
-          return err<{ versionId: string | null }>("structure_not_found");
-        case "forbidden":
-          return err<{ versionId: string | null }>("forbidden");
-        case "amount_must_be_positive":
-          return err<{ versionId: string | null }>("amount_must_be_positive");
-        case "effective_date_required":
-          return err<{ versionId: string | null }>("effective_date_required");
-        case "current_version_not_found":
-          return err<{ versionId: string | null }>("current_version_not_found");
-        case "invalid_effective_date":
-          return err<{ versionId: string | null }>("invalid_effective_date");
-        default:
-          return err<{ versionId: string | null }>("unknown_error");
-      }
-    }
-
-    return ok<{ versionId: string | null }>("amount_updated", { versionId: result.versionId ?? null });
-  } catch (error) {
-    if (isSalaryStructureRepositoryInfraError(error)) {
-      console.error("[salary-structure-service.update-amount]", error);
-    }
-    return err<{ versionId: string | null }>("unknown_error");
   }
 }
 

@@ -187,7 +187,7 @@ export default async function StaffProfilePage({
                   <DataTableCell>{c.startDate}</DataTableCell>
                   <DataTableCell>{c.endDate ?? "—"}</DataTableCell>
                   <DataTableCell align="right">
-                    {formatAmount(c.effectiveAmount, clubCurrencyCode)}
+                    {formatAmount(c.currentAmount, clubCurrencyCode)}
                   </DataTableCell>
                   <DataTableCell>
                     <StatusBadge

@@ -92,8 +92,6 @@ type ContractRow = {
   salary_structure_id: string;
   start_date: string;
   end_date: string | null;
-  uses_structure_amount: boolean;
-  frozen_amount: number | string | null;
   status: StaffContractStatus;
   finalized_at: string | null;
   finalized_reason: string | null;
@@ -105,7 +103,7 @@ type ContractRow = {
 };
 
 const CONTRACT_COLUMNS =
-  "id,club_id,staff_member_id,salary_structure_id,start_date,end_date,uses_structure_amount,frozen_amount,status,finalized_at,finalized_reason,finalized_by_user_id,created_at,updated_at,created_by_user_id,updated_by_user_id";
+  "id,club_id,staff_member_id,salary_structure_id,start_date,end_date,status,finalized_at,finalized_reason,finalized_by_user_id,created_at,updated_at,created_by_user_id,updated_by_user_id";
 
 // -------------------------------------------------------------------------
 // Input shapes
@@ -117,8 +115,8 @@ export type CreateStaffContractInput = {
   salaryStructureId: string;
   startDate: string;
   endDate: string | null;
-  usesStructureAmount: boolean;
-  agreedAmount: number | null;
+  initialAmount: number;
+  initialRevisionReason: string | null;
   createdByUserId: string;
 };
 
@@ -128,8 +126,6 @@ export type UpdateStaffContractInput = {
   updatedByUserId: string;
   patch: {
     endDate?: string | null;
-    usesStructureAmount?: boolean;
-    frozenAmount?: number | null;
   };
 };
 
@@ -164,17 +160,25 @@ type EnrichedMaps = {
       remunerationType: string;
     }
   >;
-  currentAmountByStructure: Map<string, number>;
+  currentRevisionByContract: Map<
+    string,
+    { id: string; amount: number; effectiveDate: string }
+  >;
 };
 
 async function fetchEnrichedMaps(
   supabase: ReturnType<typeof requireAdminClient>,
-  opts: { clubId: string; staffMemberIds: string[]; structureIds: string[] },
+  opts: {
+    clubId: string;
+    contractIds: string[];
+    staffMemberIds: string[];
+    structureIds: string[];
+  },
 ): Promise<EnrichedMaps> {
   const maps: EnrichedMaps = {
     staffNameById: new Map(),
     structureById: new Map(),
-    currentAmountByStructure: new Map(),
+    currentRevisionByContract: new Map(),
   };
 
   if (opts.staffMemberIds.length > 0) {
@@ -222,18 +226,26 @@ async function fetchEnrichedMaps(
         remunerationType: row.remuneration_type,
       });
     }
+  }
 
-    const { data: versionData, error: versionErr } = await supabase
-      .from("salary_structure_versions")
-      .select("salary_structure_id,amount")
-      .in("salary_structure_id", opts.structureIds)
+  if (opts.contractIds.length > 0) {
+    const { data: revisionData, error: revisionErr } = await supabase
+      .from("staff_contract_revisions")
+      .select("id,contract_id,amount,effective_date")
+      .in("contract_id", opts.contractIds)
       .is("end_date", null);
-    if (versionErr) throwRead("fetch_enriched.versions", opts, versionErr);
-    for (const v of (versionData ?? []) as Array<{
-      salary_structure_id: string;
+    if (revisionErr) throwRead("fetch_enriched.revisions", opts, revisionErr);
+    for (const v of (revisionData ?? []) as Array<{
+      id: string;
+      contract_id: string;
       amount: number | string;
+      effective_date: string;
     }>) {
-      maps.currentAmountByStructure.set(v.salary_structure_id, Number(v.amount));
+      maps.currentRevisionByContract.set(v.contract_id, {
+        id: v.id,
+        amount: Number(v.amount),
+        effectiveDate: v.effective_date,
+      });
     }
   }
 
@@ -242,10 +254,7 @@ async function fetchEnrichedMaps(
 
 function mapContract(row: ContractRow, maps: EnrichedMaps): StaffContract {
   const structure = maps.structureById.get(row.salary_structure_id);
-  const frozen = row.frozen_amount === null ? null : Number(row.frozen_amount);
-  const effectiveAmount = row.uses_structure_amount
-    ? maps.currentAmountByStructure.get(row.salary_structure_id) ?? null
-    : frozen;
+  const revision = maps.currentRevisionByContract.get(row.id);
 
   return {
     id: row.id,
@@ -260,9 +269,9 @@ function mapContract(row: ContractRow, maps: EnrichedMaps): StaffContract {
     salaryStructureRemunerationType: structure?.remunerationType ?? null,
     startDate: row.start_date,
     endDate: row.end_date,
-    usesStructureAmount: row.uses_structure_amount,
-    frozenAmount: frozen,
-    effectiveAmount,
+    currentAmount: revision?.amount ?? null,
+    currentRevisionId: revision?.id ?? null,
+    currentRevisionEffectiveDate: revision?.effectiveDate ?? null,
     status: row.status,
     finalizedAt: row.finalized_at,
     finalizedReason: row.finalized_reason,
@@ -302,8 +311,10 @@ export const staffContractRepository = {
 
     const staffIds = Array.from(new Set(rows.map((r) => r.staff_member_id)));
     const structureIds = Array.from(new Set(rows.map((r) => r.salary_structure_id)));
+    const contractIds = rows.map((r) => r.id);
     const maps = await fetchEnrichedMaps(supabase, {
       clubId,
+      contractIds,
       staffMemberIds: staffIds,
       structureIds,
     });
@@ -323,6 +334,7 @@ export const staffContractRepository = {
     const row = data as ContractRow;
     const maps = await fetchEnrichedMaps(supabase, {
       clubId,
+      contractIds: [row.id],
       staffMemberIds: [row.staff_member_id],
       structureIds: [row.salary_structure_id],
     });
@@ -347,37 +359,55 @@ export const staffContractRepository = {
     return (count ?? 0) > 0;
   },
 
-  async create(input: CreateStaffContractInput): Promise<StaffContract> {
+  async create(input: CreateStaffContractInput): Promise<{
+    ok: boolean;
+    code: string;
+    contract: StaffContract | null;
+  }> {
     const supabase = requireAdminClient("create_staff_contract", { clubId: input.clubId });
-    const frozenAmount =
-      input.usesStructureAmount === false ? input.agreedAmount ?? null : null;
 
-    const { data, error } = await supabase
-      .from("staff_contracts")
-      .insert({
-        club_id: input.clubId,
-        staff_member_id: input.staffMemberId,
-        salary_structure_id: input.salaryStructureId,
-        start_date: input.startDate,
-        end_date: input.endDate,
-        uses_structure_amount: input.usesStructureAmount,
-        frozen_amount: frozenAmount,
-        status: "vigente",
-        created_by_user_id: input.createdByUserId,
-        updated_by_user_id: input.createdByUserId,
-      })
-      .select(CONTRACT_COLUMNS)
-      .single();
-    if (error || !data) {
-      return throwWrite("create_staff_contract", { clubId: input.clubId }, error);
-    }
-    const row = data as ContractRow;
-    const maps = await fetchEnrichedMaps(supabase, {
-      clubId: input.clubId,
-      staffMemberIds: [row.staff_member_id],
-      structureIds: [row.salary_structure_id],
+    // Seed RLS variable antes de la RPC.
+    const { error: setErr } = await supabase.rpc("set_current_club", {
+      p_club_id: input.clubId,
     });
-    return mapContract(row, maps);
+    if (setErr && setErr.code !== "42883") {
+      console.warn("[staff-contract-repo] set_current_club failed", setErr);
+    }
+
+    const { data, error } = await supabase.rpc("hr_create_contract_with_initial_revision", {
+      p_staff_member_id: input.staffMemberId,
+      p_salary_structure_id: input.salaryStructureId,
+      p_start_date: input.startDate,
+      p_end_date: input.endDate,
+      p_initial_amount: input.initialAmount,
+      p_initial_revision_reason: input.initialRevisionReason,
+    });
+
+    if (error) {
+      console.error("[staff-contract-repo] create rpc error", error);
+      throw new StaffContractRepositoryInfraError(
+        "rpc_failed",
+        "hr_create_contract_with_initial_revision",
+        { cause: error },
+      );
+    }
+
+    const payload = (data ?? {}) as {
+      ok?: boolean;
+      code?: string;
+      contract_id?: string;
+      revision_id?: string;
+    };
+    if (!payload.ok || !payload.contract_id) {
+      return {
+        ok: false,
+        code: String(payload.code ?? "unknown_error"),
+        contract: null,
+      };
+    }
+
+    const contract = await this.getById(input.clubId, payload.contract_id);
+    return { ok: true, code: "created", contract };
   },
 
   async update(input: UpdateStaffContractInput): Promise<StaffContract | null> {
@@ -390,10 +420,6 @@ export const staffContractRepository = {
       updated_by_user_id: input.updatedByUserId,
     };
     if (input.patch.endDate !== undefined) patch.end_date = input.patch.endDate;
-    if (input.patch.usesStructureAmount !== undefined) {
-      patch.uses_structure_amount = input.patch.usesStructureAmount;
-    }
-    if (input.patch.frozenAmount !== undefined) patch.frozen_amount = input.patch.frozenAmount;
 
     const { error } = await supabase
       .from("staff_contracts")
@@ -438,37 +464,6 @@ export const staffContractRepository = {
       ok: Boolean(payload.ok),
       code: String(payload.code ?? "unknown_error"),
     };
-  },
-
-  /**
-   * Reads the current amount of the structure the contract is on. Used by
-   * the service layer when the flag `uses_structure_amount` transitions
-   * from `true` → `false` to freeze the current value.
-   */
-  async readStructureCurrentAmount(
-    clubId: string,
-    structureId: string,
-  ): Promise<number | null> {
-    const supabase = requireAdminClient("read_structure_current_amount", {
-      clubId,
-      structureId,
-    });
-    const { data: guard } = await supabase
-      .from("salary_structures")
-      .select("id")
-      .eq("id", structureId)
-      .eq("club_id", clubId)
-      .maybeSingle();
-    if (!guard) return null;
-
-    const { data, error } = await supabase
-      .from("salary_structure_versions")
-      .select("amount")
-      .eq("salary_structure_id", structureId)
-      .is("end_date", null)
-      .maybeSingle();
-    if (error) throwRead("read_structure_current_amount", { clubId, structureId }, error);
-    return data ? Number(data.amount) : null;
   },
 
   async recordActivity(input: RecordActivityInput): Promise<void> {

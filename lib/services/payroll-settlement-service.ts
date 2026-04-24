@@ -484,10 +484,7 @@ export async function updateHoursOrNotes(params: {
           ctx.clubId,
           settlementOrCode.contractId,
         );
-        const rate =
-          contract?.usesStructureAmount === false
-            ? contract.frozenAmount ?? 0
-            : contract?.effectiveAmount ?? 0;
+        const rate = contract?.currentAmount ?? 0;
         const multiplier =
           settlementOrCode.remunerationType === "por_hora" ? nextHours : nextClasses;
         patch.baseAmount = Number(multiplier) * Number(rate);

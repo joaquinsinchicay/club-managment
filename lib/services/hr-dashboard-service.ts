@@ -102,7 +102,7 @@ export async function getHrDashboardSummary(): Promise<HrDashboardResult> {
           : Number.POSITIVE_INFINITY;
         return start <= periodEnd.getTime() && end >= periodStart.getTime();
       })
-      .reduce((acc, c) => acc + (c.effectiveAmount ?? 0), 0);
+      .reduce((acc, c) => acc + (c.currentAmount ?? 0), 0);
 
     const vacantStructures = structures.filter(
       (s) => s.status === "activa" && !s.hasActiveContract,

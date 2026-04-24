@@ -129,7 +129,7 @@ function computeProjectedForMonth(
         : Number.POSITIVE_INFINITY;
       return start <= periodEnd && end >= periodStart;
     })
-    .reduce((acc, c) => acc + (c.effectiveAmount ?? 0), 0);
+    .reduce((acc, c) => acc + (c.currentAmount ?? 0), 0);
 }
 
 export async function getHrReport(

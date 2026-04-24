@@ -4,6 +4,11 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
+import {
+  formatLocalizedAmountInputOnBlur,
+  formatLocalizedAmountInputOnFocus,
+  sanitizeLocalizedAmountInput,
+} from "@/lib/amounts";
 import { buttonClass } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
 import {
@@ -22,7 +27,6 @@ import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FormBanner,
-  FormCheckboxCard,
   FormField,
   FormFieldLabel,
   FormHelpText,
@@ -222,14 +226,13 @@ export function StaffContractsTab({
       ) : (
         <DataTable
           density="comfortable"
-          gridColumns="minmax(0,1.2fr) minmax(0,1.2fr) 120px 120px 120px 130px 120px 160px"
+          gridColumns="minmax(0,1.3fr) minmax(0,1.3fr) 120px 120px 140px 110px 44px"
         >
           <DataTableHeader>
             <DataTableHeadCell>{scTexts.col_member}</DataTableHeadCell>
             <DataTableHeadCell>{scTexts.col_structure}</DataTableHeadCell>
             <DataTableHeadCell>{scTexts.col_start}</DataTableHeadCell>
             <DataTableHeadCell>{scTexts.col_end}</DataTableHeadCell>
-            <DataTableHeadCell>{scTexts.col_amount_mode}</DataTableHeadCell>
             <DataTableHeadCell align="right">{scTexts.col_amount}</DataTableHeadCell>
             <DataTableHeadCell>{scTexts.col_status}</DataTableHeadCell>
             <DataTableHeadCell />
@@ -255,16 +258,9 @@ export function StaffContractsTab({
                 </DataTableCell>
                 <DataTableCell>{c.startDate}</DataTableCell>
                 <DataTableCell>{c.endDate ?? "—"}</DataTableCell>
-                <DataTableCell>
-                  <DataTableChip tone={c.usesStructureAmount ? "neutral" : "warning"}>
-                    {c.usesStructureAmount
-                      ? scTexts.amount_mode_structure
-                      : scTexts.amount_mode_frozen}
-                  </DataTableChip>
-                </DataTableCell>
                 <DataTableCell align="right">
                   <span className="font-semibold text-foreground">
-                    {formatAmount(c.effectiveAmount, clubCurrencyCode)}
+                    {formatAmount(c.currentAmount, clubCurrencyCode)}
                   </span>
                 </DataTableCell>
                 <DataTableCell>
@@ -325,7 +321,6 @@ export function StaffContractsTab({
         {editing ? (
           <EditContractForm
             contract={editing}
-            clubCurrencyCode={clubCurrencyCode}
             onCancel={() => setEditing(null)}
             onSubmit={(fd) =>
               runAction(updateAction, fd, () => setEditing(null), setEditPending)
@@ -440,7 +435,7 @@ function CreateContractForm({
   onCancel,
   onSubmit,
 }: CreateContractFormProps) {
-  const [usesStructureAmount, setUsesStructureAmount] = useState(true);
+  const [initialAmount, setInitialAmount] = useState("");
 
   return (
     <form action={(fd) => onSubmit(fd)} className="grid gap-4">
@@ -489,39 +484,44 @@ function CreateContractForm({
       </div>
 
       <FormField>
-        <FormCheckboxCard
-          name="uses_structure_amount"
-          value="true"
-          checked={usesStructureAmount}
-          onChange={setUsesStructureAmount}
-          label={scTexts.form_uses_structure_amount_label}
-          description={scTexts.form_uses_structure_amount_description}
+        <FormFieldLabel required>{scTexts.form_initial_amount_label}</FormFieldLabel>
+        <FormInput
+          type="text"
+          name="initial_amount"
+          inputMode="decimal"
+          required
+          value={initialAmount}
+          onChange={(e) => setInitialAmount(sanitizeLocalizedAmountInput(e.target.value))}
+          onBlur={(e) => setInitialAmount(formatLocalizedAmountInputOnBlur(e.target.value))}
+          onFocus={(e) => setInitialAmount(formatLocalizedAmountInputOnFocus(e.target.value))}
+          onKeyDown={(e) => {
+            if (e.key === "-") e.preventDefault();
+          }}
+          placeholder={scTexts.form_initial_amount_placeholder}
+          className="tabular-nums"
         />
+        <FormHelpText>
+          {scTexts.form_initial_amount_helper.replace("{currency}", clubCurrencyCode)}
+        </FormHelpText>
       </FormField>
 
-      {!usesStructureAmount ? (
-        <FormField>
-          <FormFieldLabel required>{scTexts.form_agreed_amount_label}</FormFieldLabel>
-          <FormInput
-            type="number"
-            name="agreed_amount"
-            inputMode="decimal"
-            min="0.01"
-            step="0.01"
-            placeholder={scTexts.form_agreed_amount_placeholder}
-            required
-          />
-          <FormHelpText>
-            {scTexts.form_agreed_amount_helper.replace("{currency}", clubCurrencyCode)}
-          </FormHelpText>
-        </FormField>
-      ) : null}
+      <FormField>
+        <FormFieldLabel>{scTexts.form_initial_revision_reason_label}</FormFieldLabel>
+        <FormInput
+          type="text"
+          name="initial_revision_reason"
+          placeholder={scTexts.form_initial_revision_reason_placeholder}
+          maxLength={500}
+        />
+        <FormHelpText>{scTexts.form_initial_revision_reason_helper}</FormHelpText>
+      </FormField>
 
       <ModalFooter
         onCancel={onCancel}
         cancelLabel={scTexts.cancel_cta}
         submitLabel={scTexts.create_submit_cta}
         pendingLabel={scTexts.submit_pending}
+        submitDisabled={initialAmount.trim().length === 0}
       />
     </form>
   );
@@ -533,22 +533,15 @@ function CreateContractForm({
 
 type EditContractFormProps = {
   contract: StaffContract;
-  clubCurrencyCode: string;
   onCancel: () => void;
   onSubmit: (fd: FormData) => void;
 };
 
 function EditContractForm({
   contract,
-  clubCurrencyCode,
   onCancel,
   onSubmit,
 }: EditContractFormProps) {
-  const [usesStructureAmount, setUsesStructureAmount] = useState(contract.usesStructureAmount);
-  const [frozenAmount, setFrozenAmount] = useState(
-    contract.frozenAmount !== null ? contract.frozenAmount.toString() : "",
-  );
-
   return (
     <form action={(fd) => onSubmit(fd)} className="grid gap-4">
       <input type="hidden" name="staff_contract_id" value={contract.id} />
@@ -583,37 +576,6 @@ function EditContractForm({
           <FormHelpText>{scTexts.form_end_date_helper}</FormHelpText>
         </FormField>
       </div>
-
-      <FormField>
-        <FormCheckboxCard
-          name="uses_structure_amount"
-          value="true"
-          checked={usesStructureAmount}
-          onChange={setUsesStructureAmount}
-          label={scTexts.form_uses_structure_amount_label}
-          description={scTexts.form_uses_structure_amount_description}
-        />
-      </FormField>
-
-      {!usesStructureAmount ? (
-        <FormField>
-          <FormFieldLabel required>{scTexts.form_frozen_amount_label}</FormFieldLabel>
-          <FormInput
-            type="number"
-            name="frozen_amount"
-            inputMode="decimal"
-            min="0.01"
-            step="0.01"
-            value={frozenAmount}
-            onChange={(e) => setFrozenAmount(e.target.value)}
-            placeholder={scTexts.form_frozen_amount_placeholder}
-            required
-          />
-          <FormHelpText>
-            {scTexts.form_frozen_amount_helper.replace("{currency}", clubCurrencyCode)}
-          </FormHelpText>
-        </FormField>
-      ) : null}
 
       <ModalFooter
         onCancel={onCancel}

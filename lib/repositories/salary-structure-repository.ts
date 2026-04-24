@@ -2,7 +2,7 @@
  * Repository for Salary Structures (US-54 / US-55).
  *
  * Single module for DB access to `salary_structures`,
- * `salary_structure_versions` and the `hr_activity_log` entries scoped to
+ * the `hr_activity_log` entries scoped to
  * those entities. The service layer (`salary-structure-service`) guards
  * authorization and business rules.
  *
@@ -22,7 +22,6 @@ import {
   type SalaryRemunerationType,
   type SalaryStructure,
   type SalaryStructureStatus,
-  type SalaryStructureVersion,
 } from "@/lib/domain/salary-structure";
 
 // -------------------------------------------------------------------------
@@ -123,29 +122,14 @@ type StructureRow = {
   updated_by_user_id: string | null;
 };
 
-type VersionRow = {
-  id: string;
-  salary_structure_id: string;
-  amount: number | string;
-  start_date: string;
-  end_date: string | null;
-  created_at: string;
-  created_by_user_id: string | null;
-};
-
 type StructureWithExtras = StructureRow & {
   activity_name: string | null;
-  current_amount: number | string | null;
-  current_version_id: string | null;
   active_contract_id: string | null;
   active_contract_staff_name: string | null;
 };
 
 const STRUCTURE_COLUMNS =
   "id,club_id,name,functional_role,activity_id,divisions,payment_type,remuneration_type,workload_hours,status,created_at,updated_at,created_by_user_id,updated_by_user_id";
-
-const VERSION_COLUMNS =
-  "id,salary_structure_id,amount,start_date,end_date,created_at,created_by_user_id";
 
 function mapStructure(row: StructureWithExtras): SalaryStructure {
   const rawDivisions = Array.isArray(row.divisions) ? row.divisions : [];
@@ -162,8 +146,6 @@ function mapStructure(row: StructureWithExtras): SalaryStructure {
     remunerationType: row.remuneration_type,
     workloadHours: row.workload_hours === null ? null : Number(row.workload_hours),
     status: row.status,
-    currentAmount: row.current_amount === null ? null : Number(row.current_amount),
-    currentVersionId: row.current_version_id,
     hasActiveContract: Boolean(row.active_contract_id),
     activeContractId: row.active_contract_id,
     activeContractStaffName: row.active_contract_staff_name,
@@ -171,18 +153,6 @@ function mapStructure(row: StructureWithExtras): SalaryStructure {
     updatedAt: row.updated_at,
     createdByUserId: row.created_by_user_id,
     updatedByUserId: row.updated_by_user_id,
-  };
-}
-
-function mapVersion(row: VersionRow): SalaryStructureVersion {
-  return {
-    id: row.id,
-    salaryStructureId: row.salary_structure_id,
-    amount: Number(row.amount),
-    startDate: row.start_date,
-    endDate: row.end_date,
-    createdAt: row.created_at,
-    createdByUserId: row.created_by_user_id,
   };
 }
 
@@ -231,7 +201,7 @@ export type ExistsByRoleActivityInput = {
 
 export type RecordActivityInput = {
   clubId: string;
-  entityType: "salary_structure" | "salary_structure_version";
+  entityType: "salary_structure";
   entityId: string;
   action: string;
   actorUserId: string | null;
@@ -243,26 +213,10 @@ export type RecordActivityInput = {
 // Repository
 // -------------------------------------------------------------------------
 
-/**
- * SQL for the enriched list query: one row per structure with the current
- * version amount, the active contract (if any) and the activity name.
- * Kept as an inline select so repo queries read naturally without views.
- */
-const STRUCTURE_WITH_EXTRAS_SELECT = `
-  id,club_id,name,functional_role,activity_id,remuneration_type,workload_hours,status,created_at,updated_at,created_by_user_id,updated_by_user_id,
-  activity:club_activities(name),
-  current_version:salary_structure_versions!inner(id,amount,end_date),
-  active_contract:staff_contracts!left(id,staff_member:staff_members(first_name,last_name))
-`;
-
 async function fetchStructureWithExtras(
   supabase: ReturnType<typeof requireAdminClient>,
   params: { clubId: string; structureId?: string; filters?: ListSalaryStructuresFilters },
 ) {
-  // We can't leverage Supabase's nested ambient filters reliably for current
-  // version (end_date is null) and active contract (status = 'vigente') in a
-  // single select, so we fetch the base structure + activity, then zip with
-  // the other two in separate queries.
   let baseQuery = supabase
     .from("salary_structures")
     .select(`${STRUCTURE_COLUMNS},activity:club_activities(name)`)
@@ -299,25 +253,6 @@ async function fetchStructureWithExtras(
 
   const ids = baseRows.map((r) => r.id);
 
-  // Current versions: end_date is null.
-  const { data: versionData, error: versionErr } = await supabase
-    .from("salary_structure_versions")
-    .select("id,salary_structure_id,amount")
-    .in("salary_structure_id", ids)
-    .is("end_date", null);
-  if (versionErr) throwReadFailure("fetch_structures_current_version", params, versionErr);
-  const versionByStructure = new Map<string, { id: string; amount: number }>();
-  for (const row of (versionData ?? []) as Array<{
-    id: string;
-    salary_structure_id: string;
-    amount: number | string;
-  }>) {
-    versionByStructure.set(row.salary_structure_id, {
-      id: row.id,
-      amount: Number(row.amount),
-    });
-  }
-
   // Active contract per structure (one because of the partial unique index).
   const { data: contractData, error: contractErr } = await supabase
     .from("staff_contracts")
@@ -348,13 +283,10 @@ async function fetchStructureWithExtras(
   }
 
   return baseRows.map((row) => {
-    const version = versionByStructure.get(row.id);
     const contract = contractByStructure.get(row.id);
     const extras: StructureWithExtras = {
       ...row,
       activity_name: row.activity?.name ?? null,
-      current_amount: version?.amount ?? null,
-      current_version_id: version?.id ?? null,
       active_contract_id: contract?.id ?? null,
       active_contract_staff_name: contract?.staffName ?? null,
     };
@@ -446,11 +378,8 @@ export const salaryStructureRepository = {
 
     const structureRow = structureData as StructureRow;
 
-    // La estructura se crea sin versión de sueldo. El sueldo vigente se
-    // gestiona aparte via `updateCurrentAmount()` ("Actualizar monto"),
-    // que abre la primera version cuando el Coordinador lo define.
-
-    // Re-read enriched so we include current_amount and activity name.
+    // La Estructura es puro catálogo — el monto vive en las revisiones
+    // por contrato (`staff_contract_revisions`). No se crea versión aquí.
     const created = await this.getById(input.clubId, structureRow.id);
     if (!created) {
       return throwWriteFailure(
@@ -487,116 +416,6 @@ export const salaryStructureRepository = {
     }
 
     return this.getById(input.clubId, input.structureId);
-  },
-
-  async listAllVersionsForClub(clubId: string): Promise<SalaryStructureVersion[]> {
-    const supabase = requireAdminClient("list_all_versions_for_club", { clubId });
-
-    const { data: structures, error: structuresErr } = await supabase
-      .from("salary_structures")
-      .select("id")
-      .eq("club_id", clubId);
-
-    if (structuresErr) {
-      throwReadFailure("list_all_versions_for_club.structures", { clubId }, structuresErr);
-    }
-    const ids = (structures ?? []).map((s: { id: string }) => s.id);
-    if (ids.length === 0) return [];
-
-    const { data, error } = await supabase
-      .from("salary_structure_versions")
-      .select(VERSION_COLUMNS)
-      .in("salary_structure_id", ids)
-      .order("start_date", { ascending: false });
-
-    if (error) {
-      throwReadFailure("list_all_versions_for_club.versions", { clubId }, error);
-    }
-    return (data ?? []).map((row) => mapVersion(row as VersionRow));
-  },
-
-  async listVersions(
-    clubId: string,
-    structureId: string,
-  ): Promise<SalaryStructureVersion[]> {
-    const supabase = requireAdminClient("list_salary_structure_versions", {
-      clubId,
-      structureId,
-    });
-
-    // Ensure the structure belongs to the club before fetching versions.
-    const { data: structure, error: structureErr } = await supabase
-      .from("salary_structures")
-      .select("id")
-      .eq("id", structureId)
-      .eq("club_id", clubId)
-      .maybeSingle();
-
-    if (structureErr) {
-      throwReadFailure("list_salary_structure_versions.guard", { clubId, structureId }, structureErr);
-    }
-    if (!structure) return [];
-
-    const { data, error } = await supabase
-      .from("salary_structure_versions")
-      .select(VERSION_COLUMNS)
-      .eq("salary_structure_id", structureId)
-      .order("start_date", { ascending: false });
-
-    if (error) {
-      throwReadFailure("list_salary_structure_versions", { clubId, structureId }, error);
-    }
-    return (data ?? []).map((row) => mapVersion(row as VersionRow));
-  },
-
-  /**
-   * Delegates the amount-update transaction to the SECURITY DEFINER RPC
-   * `hr_update_salary_structure_amount` which closes the current version and
-   * opens a new one atomically.
-   */
-  async updateCurrentAmount(params: {
-    clubId: string;
-    structureId: string;
-    newAmount: number;
-    effectiveDate: string;
-    actorUserId: string;
-  }): Promise<{
-    ok: boolean;
-    code: string;
-    versionId?: string | null;
-  }> {
-    const supabase = requireAdminClient("rpc_update_salary_structure_amount", params);
-    // Seed the RLS variable before RPC so the server-side guards work.
-    const { error: setErr } = await supabase.rpc("set_current_club", {
-      p_club_id: params.clubId,
-    });
-    // `set_current_club` may not exist in every environment; swallow its
-    // "function not found" error and rely on the RPC itself to validate.
-    if (setErr && setErr.code !== "42883") {
-      console.warn("[salary-structure-repo] set_current_club failed", setErr);
-    }
-
-    const { data, error } = await supabase.rpc("hr_update_salary_structure_amount", {
-      p_structure_id: params.structureId,
-      p_new_amount: params.newAmount,
-      p_effective_date: params.effectiveDate,
-    });
-
-    if (error) {
-      console.error("[salary-structure-repo] rpc error", error);
-      throw new SalaryStructureRepositoryInfraError(
-        "rpc_failed",
-        "hr_update_salary_structure_amount",
-        { cause: error },
-      );
-    }
-
-    const payload = (data ?? {}) as { ok?: boolean; code?: string; version_id?: string | null };
-    return {
-      ok: Boolean(payload.ok),
-      code: String(payload.code ?? "unknown_error"),
-      versionId: payload.version_id ?? null,
-    };
   },
 
   async recordActivity(input: RecordActivityInput): Promise<void> {

@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import {
   createSalaryStructure,
   updateSalaryStructure,
-  updateSalaryStructureAmount,
   type SalaryStructureActionCode,
 } from "@/lib/services/salary-structure-service";
 import {
@@ -35,8 +34,6 @@ function toFeedbackCode(code: SalaryStructureActionCode): string {
       return "salary_structure_updated";
     case "status_changed":
       return "salary_structure_status_changed";
-    case "amount_updated":
-      return "salary_structure_amount_updated";
     case "structure_not_found":
       return "salary_structure_not_found";
     case "name_required":
@@ -67,14 +64,6 @@ function toFeedbackCode(code: SalaryStructureActionCode): string {
       return "salary_structure_invalid_workload_hours";
     case "duplicate_role_activity":
       return "salary_structure_duplicate_role_activity";
-    case "effective_date_required":
-      return "salary_structure_effective_date_required";
-    case "invalid_effective_date":
-      return "salary_structure_invalid_effective_date";
-    case "current_version_not_found":
-      return "salary_structure_current_version_not_found";
-    case "same_day_update":
-      return "salary_structure_same_day_update";
     case "forbidden":
       return "salary_structure_forbidden";
     case "no_active_club":
@@ -142,25 +131,6 @@ export async function updateSalaryStructureAction(
   }
 
   const result = await updateSalaryStructure(structureId, rawUpdateFromFormData(formData));
-  revalidatePath("/settings");
-  return { ok: result.ok, code: toFeedbackCode(result.code) };
-}
-
-export async function updateSalaryStructureAmountAction(
-  formData: FormData,
-): Promise<RrhhActionResult> {
-  const structureId = String(formData.get("salary_structure_id") ?? "");
-  if (!structureId) {
-    return { ok: false, code: toFeedbackCode("structure_not_found") };
-  }
-
-  const amount = formData.get("amount");
-  const effectiveDate = formData.get("effective_date");
-
-  const result = await updateSalaryStructureAmount(structureId, {
-    amount: typeof amount === "string" ? amount : undefined,
-    effectiveDate: typeof effectiveDate === "string" ? effectiveDate : undefined,
-  });
   revalidatePath("/settings");
   return { ok: result.ok, code: toFeedbackCode(result.code) };
 }
@@ -271,22 +241,16 @@ function staffContractFeedbackCode(code: StaffContractActionCode): string {
       return "staff_contract_end_date_before_start";
     case "start_date_too_old":
       return "staff_contract_start_date_too_old";
-    case "agreed_amount_required":
-      return "staff_contract_agreed_amount_required";
-    case "agreed_amount_must_be_positive":
-      return "staff_contract_agreed_amount_must_be_positive";
-    case "frozen_amount_required":
-      return "staff_contract_frozen_amount_required";
-    case "frozen_amount_must_be_positive":
-      return "staff_contract_frozen_amount_must_be_positive";
+    case "initial_amount_required":
+      return "staff_contract_initial_amount_required";
+    case "initial_amount_invalid":
+      return "staff_contract_initial_amount_invalid";
     case "structure_already_taken":
       return "staff_contract_structure_already_taken";
-    case "staff_member_not_active":
-      return "staff_contract_member_not_active";
     case "salary_structure_not_active":
       return "staff_contract_structure_not_active";
-    case "current_version_not_found":
-      return "staff_contract_current_version_not_found";
+    case "invalid_start_date":
+      return "staff_contract_invalid_start_date";
     case "invalid_end_date":
       return "staff_contract_invalid_end_date";
     case "end_date_too_far":

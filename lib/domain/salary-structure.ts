@@ -130,8 +130,6 @@ export type SalaryStructure = {
   remunerationType: SalaryRemunerationType;
   workloadHours: number | null;
   status: SalaryStructureStatus;
-  currentAmount: number | null;
-  currentVersionId: string | null;
   hasActiveContract: boolean;
   activeContractId: string | null;
   activeContractStaffName: string | null;
@@ -139,16 +137,6 @@ export type SalaryStructure = {
   updatedAt: string;
   createdByUserId: string | null;
   updatedByUserId: string | null;
-};
-
-export type SalaryStructureVersion = {
-  id: string;
-  salaryStructureId: string;
-  amount: number;
-  startDate: string;
-  endDate: string | null;
-  createdAt: string;
-  createdByUserId: string | null;
 };
 
 export function isSalaryRemunerationType(

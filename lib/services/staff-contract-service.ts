@@ -45,15 +45,12 @@ export type StaffContractActionCode =
   | "start_date_required"
   | "end_date_before_start"
   | "start_date_too_old"
-  | "agreed_amount_required"
-  | "agreed_amount_must_be_positive"
-  | "frozen_amount_required"
-  | "frozen_amount_must_be_positive"
+  | "initial_amount_required"
+  | "initial_amount_invalid"
   | "structure_already_taken"
-  | "staff_member_not_active"
   | "salary_structure_not_active"
-  | "current_version_not_found"
   | "invalid_end_date"
+  | "invalid_start_date"
   | "end_date_too_far"
   | "already_finalized"
   | "invalid_status"
@@ -183,8 +180,8 @@ export type CreateStaffContractRawInput = {
   salaryStructureId?: unknown;
   startDate?: unknown;
   endDate?: unknown;
-  usesStructureAmount?: unknown;
-  agreedAmount?: unknown;
+  initialAmount?: unknown;
+  initialRevisionReason?: unknown;
 };
 
 export async function createStaffContract(
@@ -201,8 +198,10 @@ export async function createStaffContract(
     raw.endDate === null || raw.endDate === undefined || raw.endDate === ""
       ? null
       : normalizeIsoDate(raw.endDate);
-  const usesStructureAmount = normalizeBool(raw.usesStructureAmount, true);
-  const agreedAmount = normalizeAmount(raw.agreedAmount);
+  const initialAmount = normalizeAmount(raw.initialAmount);
+  const initialReasonRaw =
+    typeof raw.initialRevisionReason === "string" ? raw.initialRevisionReason : null;
+  const initialRevisionReason = initialReasonRaw ? normalizeText(initialReasonRaw, 500) : null;
 
   if (!staffMemberId) return err<{ contract: StaffContract }>("staff_member_required");
   if (!salaryStructureId) return err<{ contract: StaffContract }>("structure_required");
@@ -214,57 +213,46 @@ export async function createStaffContract(
   if (isStartDateTooOld(startDate)) {
     return err<{ contract: StaffContract }>("start_date_too_old");
   }
-  if (usesStructureAmount === false) {
-    if (agreedAmount === null) return err<{ contract: StaffContract }>("agreed_amount_required");
-    if (agreedAmount <= 0) {
-      return err<{ contract: StaffContract }>("agreed_amount_must_be_positive");
-    }
-  }
+  if (initialAmount === null) return err<{ contract: StaffContract }>("initial_amount_required");
+  if (initialAmount <= 0) return err<{ contract: StaffContract }>("initial_amount_invalid");
 
   try {
-    const [member, structure, active] = await Promise.all([
-      staffMemberRepository.getById(ctx.clubId, staffMemberId),
-      salaryStructureRepository.getById(ctx.clubId, salaryStructureId),
-      staffContractRepository.hasActiveContractForStructure(ctx.clubId, salaryStructureId),
-    ]);
-
-    if (!member) return err<{ contract: StaffContract }>("staff_member_required");
-    if (!structure) return err<{ contract: StaffContract }>("structure_required");
-    if (structure.status !== "activa") {
-      return err<{ contract: StaffContract }>("salary_structure_not_active");
-    }
-    if (active) return err<{ contract: StaffContract }>("structure_already_taken");
-    if (usesStructureAmount && structure.currentAmount === null) {
-      return err<{ contract: StaffContract }>("current_version_not_found");
-    }
-
-    const created = await staffContractRepository.create({
+    const result = await staffContractRepository.create({
       clubId: ctx.clubId,
       staffMemberId,
       salaryStructureId,
       startDate,
       endDate,
-      usesStructureAmount,
-      agreedAmount: usesStructureAmount ? null : agreedAmount,
+      initialAmount,
+      initialRevisionReason,
       createdByUserId: ctx.userId,
     });
 
-    await staffContractRepository.recordActivity({
-      clubId: ctx.clubId,
-      entityId: created.id,
-      action: "CONTRACT_CREATED",
-      actorUserId: ctx.userId,
-      payloadAfter: {
-        staff_member_id: created.staffMemberId,
-        salary_structure_id: created.salaryStructureId,
-        start_date: created.startDate,
-        end_date: created.endDate,
-        uses_structure_amount: created.usesStructureAmount,
-        frozen_amount: created.frozenAmount,
-      },
-    });
+    if (!result.ok || !result.contract) {
+      // Map códigos de la RPC a los del service.
+      switch (result.code) {
+        case "staff_member_required":
+          return err<{ contract: StaffContract }>("staff_member_required");
+        case "structure_required":
+          return err<{ contract: StaffContract }>("structure_required");
+        case "salary_structure_not_active":
+          return err<{ contract: StaffContract }>("salary_structure_not_active");
+        case "structure_already_taken":
+          return err<{ contract: StaffContract }>("structure_already_taken");
+        case "invalid_start_date":
+          return err<{ contract: StaffContract }>("invalid_start_date");
+        case "invalid_end_date":
+          return err<{ contract: StaffContract }>("invalid_end_date");
+        case "initial_amount_invalid":
+          return err<{ contract: StaffContract }>("initial_amount_invalid");
+        case "forbidden":
+          return err<{ contract: StaffContract }>("forbidden");
+        default:
+          return err<{ contract: StaffContract }>("unknown_error");
+      }
+    }
 
-    return ok<{ contract: StaffContract }>("created", { contract: created });
+    return ok<{ contract: StaffContract }>("created", { contract: result.contract });
   } catch (error) {
     if (isStaffContractRepositoryInfraError(error)) {
       console.error("[staff-contract-service.create]", error);
@@ -279,8 +267,6 @@ export async function createStaffContract(
 
 export type UpdateStaffContractRawInput = {
   endDate?: unknown;
-  usesStructureAmount?: unknown;
-  frozenAmount?: unknown;
 };
 
 export async function updateStaffContract(
@@ -308,52 +294,12 @@ export async function updateStaffContract(
       return err<{ contract: StaffContract }>("end_date_before_start");
     }
 
-    const nextUsesStructureAmount = normalizeBool(
-      raw.usesStructureAmount,
-      existing.usesStructureAmount,
-    );
-    let nextFrozenAmount: number | null = existing.frozenAmount;
-
-    if (nextUsesStructureAmount && existing.usesStructureAmount === false) {
-      // Re-enable flag → clear frozen.
-      nextFrozenAmount = null;
-    } else if (!nextUsesStructureAmount && existing.usesStructureAmount === true) {
-      // Turn flag off → freeze with current structure amount unless the
-      // caller provided an explicit amount to freeze at.
-      const provided = normalizeAmount(raw.frozenAmount);
-      if (provided !== null) {
-        if (provided <= 0) return err<{ contract: StaffContract }>("frozen_amount_must_be_positive");
-        nextFrozenAmount = provided;
-      } else {
-        const current = await staffContractRepository.readStructureCurrentAmount(
-          ctx.clubId,
-          existing.salaryStructureId,
-        );
-        if (current === null || current <= 0) {
-          return err<{ contract: StaffContract }>("current_version_not_found");
-        }
-        nextFrozenAmount = current;
-      }
-    } else if (!nextUsesStructureAmount) {
-      // Flag stays off → allow editing the frozen amount if provided.
-      if (raw.frozenAmount !== undefined) {
-        const parsed = normalizeAmount(raw.frozenAmount);
-        if (parsed === null) return err<{ contract: StaffContract }>("frozen_amount_required");
-        if (parsed <= 0) {
-          return err<{ contract: StaffContract }>("frozen_amount_must_be_positive");
-        }
-        nextFrozenAmount = parsed;
-      }
-    }
-
     const updated = await staffContractRepository.update({
       contractId,
       clubId: ctx.clubId,
       updatedByUserId: ctx.userId,
       patch: {
         endDate: endDateRaw === undefined ? undefined : endDate,
-        usesStructureAmount: nextUsesStructureAmount,
-        frozenAmount: nextFrozenAmount,
       },
     });
     if (!updated) return err<{ contract: StaffContract }>("contract_not_found");
@@ -363,16 +309,8 @@ export async function updateStaffContract(
       entityId: updated.id,
       action: "CONTRACT_UPDATED",
       actorUserId: ctx.userId,
-      payloadBefore: {
-        end_date: existing.endDate,
-        uses_structure_amount: existing.usesStructureAmount,
-        frozen_amount: existing.frozenAmount,
-      },
-      payloadAfter: {
-        end_date: updated.endDate,
-        uses_structure_amount: updated.usesStructureAmount,
-        frozen_amount: updated.frozenAmount,
-      },
+      payloadBefore: { end_date: existing.endDate },
+      payloadAfter: { end_date: updated.endDate },
     });
 
     return ok<{ contract: StaffContract }>("updated", { contract: updated });
