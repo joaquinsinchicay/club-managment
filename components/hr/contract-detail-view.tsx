@@ -364,14 +364,14 @@ export function ContractDetailView({
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <section className="flex flex-col gap-6">
           {/* Información del contrato */}
-          <Card padding="none">
+          <Card padding="comfortable">
             <CardHeader
               title={cdTexts.info_title}
               description={cdTexts.info_description}
               divider
             />
             <CardBody>
-              <dl className="grid gap-x-6 gap-y-4 px-5 py-4 text-sm grid-cols-2 lg:grid-cols-3">
+              <dl className="grid gap-x-6 gap-y-4 text-sm grid-cols-2 lg:grid-cols-3">
                 <InfoItem label={cdTexts.info_number_label} value={contractCode} />
                 <InfoItem
                   label={cdTexts.info_payment_type_label}
@@ -410,7 +410,7 @@ export function ContractDetailView({
           </Card>
 
           {/* Historial de revisiones */}
-          <Card padding="none">
+          <Card padding="comfortable">
             <CardHeader
               title={cdTexts.history_title}
               description={historyLastChange}
@@ -435,7 +435,7 @@ export function ContractDetailView({
                   variant="dashed"
                 />
               ) : (
-                <ul className="grid gap-2 px-4 py-4">
+                <ul className="grid gap-2">
                   {sortedRevisions.map((revision, index) => {
                     const prior = sortedRevisions[index + 1];
                     const delta =
@@ -502,7 +502,7 @@ export function ContractDetailView({
           </Card>
 
           {/* Documentos */}
-          <Card padding="none">
+          <Card padding="comfortable">
             <CardHeader
               title={cdTexts.documents_title}
               description={cdTexts.documents_description}
@@ -510,7 +510,7 @@ export function ContractDetailView({
             />
             <CardBody>
               {canMutate ? (
-                <form action={handleUpload} className="mb-4 grid gap-2 px-4 pt-4 sm:grid-cols-[1fr_auto]">
+                <form action={handleUpload} className="grid gap-2 sm:grid-cols-[1fr_auto]">
                   <input type="hidden" name="staff_contract_id" value={contract.id} />
                   <input
                     type="file"
@@ -536,7 +536,7 @@ export function ContractDetailView({
                   variant="dashed"
                 />
               ) : (
-                <ul className="grid gap-2 px-4 pb-4">
+                <ul className="grid gap-2">
                   {attachments.map((a) => (
                     <li
                       key={a.id}
@@ -602,7 +602,7 @@ export function ContractDetailView({
           </Card>
 
           {/* Últimas liquidaciones */}
-          <Card padding="none">
+          <Card padding="comfortable">
             <CardHeader
               title={cdTexts.settlements_title}
               description={cdTexts.settlements_description}
@@ -624,7 +624,7 @@ export function ContractDetailView({
                   variant="dashed"
                 />
               ) : (
-                <ul className="grid gap-2 px-4 py-4">
+                <ul className="grid gap-2">
                   {settlements.map((s) => {
                     const statusInfo = SETTLEMENT_TONES[s.status];
                     const periodLabel = cdTexts.settlements_period_template
