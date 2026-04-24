@@ -807,32 +807,42 @@ export function ContractDetailView({
           {calcMode === "percent" ? (
             <FormField>
               <FormFieldLabel required>{cdTexts.revision_percent_label}</FormFieldLabel>
-              <FormInput
-                type="text"
-                inputMode="decimal"
-                value={percentInput}
-                onChange={(e) => setPercentInput(e.target.value.replace(/[^\d.,-]/g, ""))}
-                placeholder={cdTexts.revision_percent_placeholder}
-                className="tabular-nums"
-              />
+              <div className="flex gap-2">
+                <span className="inline-flex h-11 shrink-0 items-center rounded-card border border-border bg-secondary/40 px-4 text-sm font-semibold text-muted-foreground">
+                  %
+                </span>
+                <FormInput
+                  type="text"
+                  inputMode="decimal"
+                  value={percentInput}
+                  onChange={(e) => setPercentInput(e.target.value.replace(/[^\d.,-]/g, ""))}
+                  placeholder={cdTexts.revision_percent_placeholder}
+                  className="tabular-nums"
+                />
+              </div>
               <FormHelpText>{cdTexts.revision_percent_helper}</FormHelpText>
             </FormField>
           ) : (
             <FormField>
               <FormFieldLabel required>{cdTexts.form_amount_label}</FormFieldLabel>
-              <FormInput
-                type="text"
-                inputMode="decimal"
-                value={amountInput}
-                onChange={(e) => setAmountInput(sanitizeLocalizedAmountInput(e.target.value))}
-                onBlur={(e) => setAmountInput(formatLocalizedAmountInputOnBlur(e.target.value))}
-                onFocus={(e) => setAmountInput(formatLocalizedAmountInputOnFocus(e.target.value))}
-                onKeyDown={(e) => {
-                  if (e.key === "-") e.preventDefault();
-                }}
-                placeholder={cdTexts.form_amount_placeholder}
-                className="tabular-nums"
-              />
+              <div className="flex gap-2">
+                <span className="inline-flex h-11 shrink-0 items-center rounded-card border border-border bg-secondary/40 px-4 text-sm font-semibold text-muted-foreground">
+                  {clubCurrencyCode}
+                </span>
+                <FormInput
+                  type="text"
+                  inputMode="decimal"
+                  value={amountInput}
+                  onChange={(e) => setAmountInput(sanitizeLocalizedAmountInput(e.target.value))}
+                  onBlur={(e) => setAmountInput(formatLocalizedAmountInputOnBlur(e.target.value))}
+                  onFocus={(e) => setAmountInput(formatLocalizedAmountInputOnFocus(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (e.key === "-") e.preventDefault();
+                  }}
+                  placeholder={cdTexts.form_amount_placeholder}
+                  className="tabular-nums"
+                />
+              </div>
               <FormHelpText>
                 {cdTexts.form_amount_helper.replace("{currency}", clubCurrencyCode)}
               </FormHelpText>
