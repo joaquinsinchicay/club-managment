@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { PageContentHeader } from "@/components/ui/page-content-header";
 import {
   DataTable,
   DataTableBody,
@@ -100,20 +101,16 @@ export default async function RrhhReportsPage({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="grid gap-1">
-          <span className="text-eyebrow uppercase text-muted-foreground">
-            {reportTexts.page_eyebrow}
-          </span>
-          <h1 className="text-h2 font-semibold tracking-tight text-foreground">
-            {reportTexts.page_title}
-          </h1>
-          <p className="text-sm text-muted-foreground">{reportTexts.page_description}</p>
-        </div>
-        <LinkButton href="/rrhh" variant="secondary" size="sm">
-          {reportTexts.back_cta}
-        </LinkButton>
-      </header>
+      <PageContentHeader
+        eyebrow={reportTexts.page_eyebrow}
+        title={reportTexts.page_title}
+        description={reportTexts.page_description}
+        actions={
+          <LinkButton href="/rrhh" variant="secondary" size="sm">
+            {reportTexts.back_cta}
+          </LinkButton>
+        }
+      />
 
       <form method="get" className="grid gap-3">
         <Card padding="comfortable">

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
+import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canAccessHrModule, canOperateHrSettlements } from "@/lib/domain/authorization";
 import { getHrDashboardSummary } from "@/lib/services/hr-dashboard-service";
@@ -66,24 +67,17 @@ export default async function RrhhPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            {home.eyebrow}
-          </span>
-          <h1 className="break-words text-h1 font-bold tracking-tight text-foreground">
-            {home.title}
-          </h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">{home.description}</p>
-        </div>
-        <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-chip border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground">
-          <span
-            aria-hidden="true"
-            className="inline-block size-1.5 rounded-full bg-ds-pink"
-          />
-          {dateChipLabel}
-        </span>
-      </header>
+      <PageContentHeader
+        eyebrow={home.eyebrow}
+        title={home.title}
+        description={home.description}
+        actions={
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-small font-semibold text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-ds-pink" aria-hidden="true" />
+            {dateChipLabel}
+          </div>
+        }
+      />
 
       <RrhhModuleNav activeTab="resumen" />
 
