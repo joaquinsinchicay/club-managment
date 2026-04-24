@@ -171,6 +171,27 @@ export async function listStaffContractsForActiveClub(
   }
 }
 
+export type GetStaffContractResult =
+  | { ok: true; contract: StaffContract }
+  | { ok: false; code: StaffContractActionCode };
+
+export async function getStaffContractById(
+  contractId: string,
+): Promise<GetStaffContractResult> {
+  const guard = await guardRead();
+  if (!guard.ok) return { ok: false, code: guard.code };
+  try {
+    const contract = await staffContractRepository.getById(guard.context.clubId, contractId);
+    if (!contract) return { ok: false, code: "contract_not_found" };
+    return { ok: true, contract };
+  } catch (error) {
+    if (isStaffContractRepositoryInfraError(error)) {
+      console.error("[staff-contract-service.get]", error);
+    }
+    return { ok: false, code: "unknown_error" };
+  }
+}
+
 // -------------------------------------------------------------------------
 // Create (US-57)
 // -------------------------------------------------------------------------

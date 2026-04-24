@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
@@ -241,9 +242,12 @@ export function StaffContractsTab({
             {filtered.map((c) => (
               <DataTableRow key={c.id} density="comfortable" hoverReveal>
                 <DataTableCell>
-                  <span className="font-medium text-foreground">
+                  <Link
+                    href={`/rrhh/contracts/${c.id}`}
+                    className="font-medium text-foreground hover:underline"
+                  >
                     {c.staffMemberName ?? scTexts.unknown_member}
-                  </span>
+                  </Link>
                 </DataTableCell>
                 <DataTableCell>
                   <span className="grid leading-tight">
