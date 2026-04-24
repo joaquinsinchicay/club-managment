@@ -34,18 +34,29 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import type { StaffContract } from "@/lib/domain/staff-contract";
 import type { StaffContractRevision } from "@/lib/domain/staff-contract-revision";
+import type { StaffContractAttachment } from "@/lib/services/staff-contract-attachment-service";
 import { texts } from "@/lib/texts";
 
 type ContractDetailViewProps = {
   contract: StaffContract;
   revisions: StaffContractRevision[];
+  attachments: StaffContractAttachment[];
   clubCurrencyCode: string;
   canMutate: boolean;
   createRevisionAction: (formData: FormData) => Promise<RrhhActionResult>;
+  uploadAttachmentAction: (formData: FormData) => Promise<RrhhActionResult>;
+  deleteAttachmentAction: (formData: FormData) => Promise<RrhhActionResult>;
+  signAttachmentUrl: (attachmentId: string) => Promise<string | null>;
 };
 
 const cdTexts = texts.rrhh.contract_detail;
 const scTexts = texts.rrhh.staff_contracts;
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function formatAmount(amount: number | null | undefined, currencyCode: string): string {
   if (amount === null || amount === undefined) return "—";
@@ -67,15 +78,20 @@ function todayIso(): string {
 export function ContractDetailView({
   contract,
   revisions,
+  attachments,
   clubCurrencyCode,
   canMutate,
   createRevisionAction,
+  uploadAttachmentAction,
+  deleteAttachmentAction,
+  signAttachmentUrl,
 }: ContractDetailViewProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [reviseOpen, setReviseOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [amountInput, setAmountInput] = useState("");
+  const [uploadPending, setUploadPending] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setPending(true);
@@ -90,6 +106,33 @@ export function ContractDetailView({
     } finally {
       setPending(false);
     }
+  }
+
+  async function handleUpload(formData: FormData) {
+    setUploadPending(true);
+    try {
+      const result = await uploadAttachmentAction(formData);
+      triggerClientFeedback("settings", result.code);
+      if (result.ok) {
+        startTransition(() => router.refresh());
+      }
+    } finally {
+      setUploadPending(false);
+    }
+  }
+
+  async function handleDelete(attachmentId: string) {
+    const formData = new FormData();
+    formData.set("attachment_id", attachmentId);
+    formData.set("staff_contract_id", contract.id);
+    const result = await deleteAttachmentAction(formData);
+    triggerClientFeedback("settings", result.code);
+    if (result.ok) startTransition(() => router.refresh());
+  }
+
+  async function handleDownload(attachmentId: string) {
+    const url = await signAttachmentUrl(attachmentId);
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -203,6 +246,77 @@ export function ContractDetailView({
                 ))}
               </DataTableBody>
             </DataTable>
+          )}
+        </CardBody>
+      </Card>
+
+      <Card padding="none">
+        <CardHeader
+          eyebrow={cdTexts.attachments_eyebrow}
+          title={cdTexts.attachments_title}
+          description={cdTexts.attachments_description}
+          divider
+        />
+        <CardBody>
+          {canMutate ? (
+            <form action={handleUpload} className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+              <input type="hidden" name="staff_contract_id" value={contract.id} />
+              <input
+                type="file"
+                name="file"
+                required
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.heic"
+                className="min-h-11 w-full rounded-btn border border-border bg-background px-3 py-2 text-sm file:mr-3 file:rounded-btn file:border file:border-border file:bg-secondary file:px-3 file:py-1 file:text-xs file:font-semibold file:text-foreground"
+              />
+              <button
+                type="submit"
+                disabled={uploadPending}
+                className={buttonClass({ variant: "primary", size: "md" })}
+              >
+                {uploadPending ? cdTexts.upload_pending : cdTexts.upload_cta}
+              </button>
+            </form>
+          ) : null}
+
+          {attachments.length === 0 ? (
+            <DataTableEmpty
+              title={cdTexts.attachments_empty_title}
+              description={cdTexts.attachments_empty_description}
+            />
+          ) : (
+            <ul className="grid gap-2">
+              {attachments.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-card px-4 py-3"
+                >
+                  <div className="grid leading-tight">
+                    <span className="text-sm font-medium text-foreground">{a.fileName}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatBytes(a.sizeBytes)} · {a.uploadedAt.slice(0, 10)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(a.id)}
+                      className={buttonClass({ variant: "secondary", size: "sm" })}
+                    >
+                      {cdTexts.download_cta}
+                    </button>
+                    {canMutate ? (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(a.id)}
+                        className={buttonClass({ variant: "destructive", size: "sm" })}
+                      >
+                        {cdTexts.delete_cta}
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </CardBody>
       </Card>

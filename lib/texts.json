@@ -904,7 +904,15 @@
           "salary_revision_invalid_adjustment_type": "El tipo de ajuste seleccionado no es válido.",
           "salary_revision_current_not_found": "No encontramos la revisión salarial vigente.",
           "salary_revision_forbidden": "No tienes permisos para gestionar revisiones salariales.",
-          "salary_revision_unknown_error": "No pudimos completar la operación sobre la revisión salarial. Volvé a intentarlo."
+          "salary_revision_unknown_error": "No pudimos completar la operación sobre la revisión salarial. Volvé a intentarlo.",
+          "contract_attachment_uploaded": "Adjunto subido correctamente.",
+          "contract_attachment_deleted": "Adjunto eliminado correctamente.",
+          "contract_attachment_not_found": "No encontramos el adjunto seleccionado.",
+          "contract_attachment_file_missing": "Seleccioná un archivo para subir.",
+          "contract_attachment_file_too_large": "El archivo supera el límite de 10 MB.",
+          "contract_attachment_file_type_not_allowed": "Tipo de archivo no permitido. Usá PDF, DOC/DOCX o imágenes.",
+          "contract_attachment_forbidden": "No tenés permisos para gestionar adjuntos de contratos.",
+          "contract_attachment_unknown_error": "No pudimos completar la operación sobre el adjunto. Volvé a intentarlo."
         }
       },
       "invitations": {
@@ -1810,7 +1818,16 @@
       "form_reason_label": "Motivo (opcional)",
       "form_reason_placeholder": "Ej. aumento paritario semestral",
       "cancel_cta": "Cancelar",
-      "submit_pending": "Guardando..."
+      "submit_pending": "Guardando...",
+      "attachments_eyebrow": "ADJUNTOS",
+      "attachments_title": "Documentos del contrato",
+      "attachments_description": "PDF, Word o imágenes (máx. 10 MB).",
+      "attachments_empty_title": "Sin adjuntos",
+      "attachments_empty_description": "Este contrato no tiene documentos cargados todavía.",
+      "upload_cta": "Subir",
+      "upload_pending": "Subiendo...",
+      "download_cta": "Descargar",
+      "delete_cta": "Eliminar"
     }
   }
 }

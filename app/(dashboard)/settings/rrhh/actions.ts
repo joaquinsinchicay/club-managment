@@ -23,6 +23,11 @@ import {
   createSalaryRevision,
   type SalaryRevisionActionCode,
 } from "@/lib/services/salary-revision-service";
+import {
+  deleteContractAttachment,
+  uploadContractAttachment,
+  type ContractAttachmentCode,
+} from "@/lib/services/staff-contract-attachment-service";
 
 export type RrhhActionResult = { ok: boolean; code: string };
 
@@ -413,4 +418,62 @@ export async function createBulkSalaryRevisionAction(
   });
   revalidatePath("/rrhh/contracts");
   return { ok: result.ok, code: salaryRevisionFeedbackCode(result.code) };
+}
+
+// -------------------------------------------------------------------------
+// Contract attachments (US-32)
+// -------------------------------------------------------------------------
+
+function contractAttachmentFeedbackCode(code: ContractAttachmentCode): string {
+  switch (code) {
+    case "uploaded":
+      return "contract_attachment_uploaded";
+    case "deleted":
+      return "contract_attachment_deleted";
+    case "contract_not_found":
+      return "staff_contract_not_found";
+    case "attachment_not_found":
+      return "contract_attachment_not_found";
+    case "file_missing":
+      return "contract_attachment_file_missing";
+    case "file_too_large":
+      return "contract_attachment_file_too_large";
+    case "file_type_not_allowed":
+      return "contract_attachment_file_type_not_allowed";
+    case "forbidden":
+    case "no_active_club":
+    case "unauthenticated":
+      return "contract_attachment_forbidden";
+    default:
+      return "contract_attachment_unknown_error";
+  }
+}
+
+export async function uploadContractAttachmentAction(
+  formData: FormData,
+): Promise<RrhhActionResult> {
+  const contractId = String(formData.get("staff_contract_id") ?? "");
+  if (!contractId) {
+    return { ok: false, code: contractAttachmentFeedbackCode("contract_not_found") };
+  }
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
+    return { ok: false, code: contractAttachmentFeedbackCode("file_missing") };
+  }
+  const result = await uploadContractAttachment({ contractId, file });
+  revalidatePath(`/rrhh/contracts/${contractId}`);
+  return { ok: result.ok, code: contractAttachmentFeedbackCode(result.code) };
+}
+
+export async function deleteContractAttachmentAction(
+  formData: FormData,
+): Promise<RrhhActionResult> {
+  const attachmentId = String(formData.get("attachment_id") ?? "");
+  const contractId = String(formData.get("staff_contract_id") ?? "");
+  if (!attachmentId) {
+    return { ok: false, code: contractAttachmentFeedbackCode("attachment_not_found") };
+  }
+  const result = await deleteContractAttachment(attachmentId);
+  if (contractId) revalidatePath(`/rrhh/contracts/${contractId}`);
+  return { ok: result.ok, code: contractAttachmentFeedbackCode(result.code) };
 }
