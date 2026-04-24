@@ -176,24 +176,24 @@ export function SalaryStructuresTab({
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
         />
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {STATUS_FILTERS.map((f) => {
-            const count =
-              f.value === "all"
-                ? structures.length
-                : countsByStatus.get(f.value as SalaryStructureStatus) ?? 0;
-            return (
-              <ChipButton
-                key={f.value}
-                active={statusFilter === f.value}
-                onClick={() => setStatusFilter(f.value)}
-              >
-                {f.label} · {count}
-              </ChipButton>
-            );
-          })}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {STATUS_FILTERS.map((f) => {
+              const count =
+                f.value === "all"
+                  ? structures.length
+                  : countsByStatus.get(f.value as SalaryStructureStatus) ?? 0;
+              return (
+                <ChipButton
+                  key={f.value}
+                  active={statusFilter === f.value}
+                  onClick={() => setStatusFilter(f.value)}
+                >
+                  {f.label} · {count}
+                </ChipButton>
+              );
+            })}
+          </div>
           {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. Usa tokens canonicos rounded-chip + estilo inactive de ChipButton. */}
           <select
             value={activityFilter}

@@ -1702,6 +1702,7 @@
       "unknown_member": "Colaborador",
       "unknown_structure": "Estructura",
       "action_edit": "Editar",
+      "action_view_detail": "Ver ficha",
       "action_finalize": "Finalizar",
       "empty_title": "Sin contratos",
       "empty_description": "Crea el primer contrato asociando un colaborador con una Estructura Salarial.",

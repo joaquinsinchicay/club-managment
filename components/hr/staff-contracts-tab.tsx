@@ -230,7 +230,7 @@ export function StaffContractsTab({
       ) : (
         <DataTable
           density="comfortable"
-          gridColumns="minmax(0,1.3fr) minmax(0,1.3fr) 120px 120px 140px 110px 44px"
+          gridColumns="minmax(0,1.3fr) minmax(0,1.3fr) 120px 120px 140px 110px 92px"
         >
           <DataTableHeader>
             <DataTableHeadCell>{scTexts.col_member}</DataTableHeadCell>
@@ -277,14 +277,18 @@ export function StaffContractsTab({
                   />
                 </DataTableCell>
                 <DataTableCell align="right">
-                  {canMutate && c.status === "vigente" ? (
-                    <DataTableActions>
+                  <DataTableActions>
+                    <ViewIconLink
+                      href={`/rrhh/contracts/${c.id}`}
+                      label={scTexts.action_view_detail}
+                    />
+                    {canMutate && c.status === "vigente" ? (
                       <FinalizeIconButton
                         label={scTexts.action_finalize}
                         onClick={() => setFinalizing(c)}
                       />
-                    </DataTableActions>
-                  ) : null}
+                    ) : null}
+                  </DataTableActions>
                 </DataTableCell>
               </DataTableRow>
             ))}
@@ -359,6 +363,42 @@ export function StaffContractsTab({
         ) : null}
       </Modal>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ViewIconLink — link a la ficha del contrato
+// ---------------------------------------------------------------------------
+
+type ViewIconLinkProps = {
+  href: string;
+  label: string;
+};
+
+function ViewIconLink({ href, label }: ViewIconLinkProps) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      title={label}
+      className="inline-flex size-8 items-center justify-center rounded-btn border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+    >
+      <svg
+        className="size-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z"
+        />
+        <circle cx="12" cy="12" r="3" strokeWidth={2} />
+      </svg>
+    </Link>
   );
 }
 
@@ -448,7 +488,6 @@ function CreateContractForm({
               </option>
             ))}
           </FormSelect>
-          <FormHelpText>{scTexts.form_structure_helper}</FormHelpText>
         </FormField>
       </div>
 

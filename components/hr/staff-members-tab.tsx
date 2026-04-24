@@ -181,26 +181,26 @@ export function StaffMembersTab({
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-btn border border-border bg-background px-3 py-2 text-sm"
         />
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {CONTRACT_FILTERS.map((f) => {
-            const count =
-              f.value === "all"
-                ? members.length
-                : f.value === "with_active"
-                ? withActiveCount
-                : alertsCount;
-            return (
-              <ChipButton
-                key={f.value}
-                active={contractFilter === f.value}
-                onClick={() => setContractFilter(f.value)}
-              >
-                {f.label} · {count}
-              </ChipButton>
-            );
-          })}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {CONTRACT_FILTERS.map((f) => {
+              const count =
+                f.value === "all"
+                  ? members.length
+                  : f.value === "with_active"
+                  ? withActiveCount
+                  : alertsCount;
+              return (
+                <ChipButton
+                  key={f.value}
+                  active={contractFilter === f.value}
+                  onClick={() => setContractFilter(f.value)}
+                >
+                  {f.label} · {count}
+                </ChipButton>
+              );
+            })}
+          </div>
           {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. */}
           <select
             value={vinculoFilter}
