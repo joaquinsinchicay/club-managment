@@ -15,7 +15,6 @@ import {
 import {
   createStaffContract,
   finalizeStaffContract,
-  updateStaffContract,
   type StaffContractActionCode,
 } from "@/lib/services/staff-contract-service";
 import {
@@ -296,28 +295,8 @@ function rawCreateContractFromFormData(formData: FormData) {
   };
 }
 
-function rawUpdateContractFromFormData(formData: FormData) {
-  function read(key: string): string | undefined {
-    const raw = formData.get(key);
-    if (typeof raw !== "string") return undefined;
-    const trimmed = raw.trim();
-    return trimmed === "" ? undefined : trimmed;
-  }
-  return {
-    endDate: read("end_date"),
-  };
-}
-
 export async function createStaffContractAction(formData: FormData): Promise<RrhhActionResult> {
   const result = await createStaffContract(rawCreateContractFromFormData(formData));
-  revalidatePath("/settings");
-  return { ok: result.ok, code: staffContractFeedbackCode(result.code) };
-}
-
-export async function updateStaffContractAction(formData: FormData): Promise<RrhhActionResult> {
-  const contractId = String(formData.get("staff_contract_id") ?? "");
-  if (!contractId) return { ok: false, code: staffContractFeedbackCode("contract_not_found") };
-  const result = await updateStaffContract(contractId, rawUpdateContractFromFormData(formData));
   revalidatePath("/settings");
   return { ok: result.ok, code: staffContractFeedbackCode(result.code) };
 }

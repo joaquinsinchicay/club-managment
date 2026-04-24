@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import {
   createStaffContractAction,
   finalizeStaffContractAction,
-  updateStaffContractAction,
 } from "@/app/(dashboard)/settings/rrhh/actions";
 import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
 import { StaffContractsTab } from "@/components/hr/staff-contracts-tab";
@@ -42,7 +41,6 @@ export default async function RrhhContractsPage() {
         clubCurrencyCode={clubCurrencyCode}
         canMutate={canMutate}
         createAction={createStaffContractAction}
-        updateAction={updateStaffContractAction}
         finalizeAction={finalizeStaffContractAction}
       />
     </main>

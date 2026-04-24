@@ -23,7 +23,6 @@ import {
   DataTableHeader,
   DataTableRow,
 } from "@/components/ui/data-table";
-import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
@@ -50,7 +49,6 @@ type StaffContractsTabProps = {
   clubCurrencyCode: string;
   canMutate: boolean;
   createAction: (formData: FormData) => Promise<RrhhActionResult>;
-  updateAction: (formData: FormData) => Promise<RrhhActionResult>;
   finalizeAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
@@ -88,7 +86,6 @@ export function StaffContractsTab({
   clubCurrencyCode,
   canMutate,
   createAction,
-  updateAction,
   finalizeAction,
 }: StaffContractsTabProps) {
   const router = useRouter();
@@ -97,11 +94,9 @@ export function StaffContractsTab({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("vigente");
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [editing, setEditing] = useState<StaffContract | null>(null);
   const [finalizing, setFinalizing] = useState<StaffContract | null>(null);
 
   const [createPending, setCreatePending] = useState(false);
-  const [editPending, setEditPending] = useState(false);
   const [finalizePending, setFinalizePending] = useState(false);
 
   // Para el create flow: todos los colaboradores (no hay concepto de
@@ -284,10 +279,6 @@ export function StaffContractsTab({
                 <DataTableCell align="right">
                   {canMutate && c.status === "vigente" ? (
                     <DataTableActions>
-                      <EditIconButton
-                        label={scTexts.action_edit}
-                        onClick={() => setEditing(c)}
-                      />
                       <FinalizeIconButton
                         label={scTexts.action_finalize}
                         onClick={() => setFinalizing(c)}
@@ -319,26 +310,6 @@ export function StaffContractsTab({
             runAction(createAction, fd, () => setCreateOpen(false), setCreatePending)
           }
         />
-      </Modal>
-
-      {/* Edit */}
-      <Modal
-        open={editing !== null}
-        onClose={() => !editPending && setEditing(null)}
-        title={scTexts.edit_modal_title}
-        description={scTexts.edit_modal_description}
-        size="md"
-        closeDisabled={editPending}
-      >
-        {editing ? (
-          <EditContractForm
-            contract={editing}
-            onCancel={() => setEditing(null)}
-            onSubmit={(fd) =>
-              runAction(updateAction, fd, () => setEditing(null), setEditPending)
-            }
-          />
-        ) : null}
       </Modal>
 
       {/* Finalize */}
@@ -464,7 +435,6 @@ function CreateContractForm({
               </option>
             ))}
           </FormSelect>
-          <FormHelpText>{scTexts.form_member_helper}</FormHelpText>
         </FormField>
         <FormField>
           <FormFieldLabel required>{scTexts.form_structure_label}</FormFieldLabel>
@@ -495,9 +465,12 @@ function CreateContractForm({
         </FormField>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-        <FormField>
-          <FormFieldLabel required>{scTexts.form_initial_amount_label}</FormFieldLabel>
+      <FormField>
+        <FormFieldLabel required>{scTexts.form_initial_amount_label}</FormFieldLabel>
+        <div className="flex gap-2">
+          <span className="inline-flex h-11 shrink-0 items-center rounded-card border border-border bg-secondary/40 px-4 text-sm font-semibold text-muted-foreground">
+            {clubCurrencyCode}
+          </span>
           <FormInput
             type="text"
             name="initial_amount"
@@ -513,14 +486,9 @@ function CreateContractForm({
             placeholder={scTexts.form_initial_amount_placeholder}
             className="tabular-nums"
           />
-          <FormHelpText>{scTexts.form_initial_amount_helper}</FormHelpText>
-        </FormField>
-        <FormField>
-          <FormFieldLabel>{scTexts.form_currency_label}</FormFieldLabel>
-          <FormReadonly>{clubCurrencyCode}</FormReadonly>
-          <FormHelpText>{scTexts.form_currency_helper}</FormHelpText>
-        </FormField>
-      </div>
+        </div>
+        <FormHelpText>{scTexts.form_initial_amount_helper}</FormHelpText>
+      </FormField>
 
       <FormField>
         <FormFieldLabel>{scTexts.form_initial_revision_reason_label}</FormFieldLabel>
@@ -544,62 +512,3 @@ function CreateContractForm({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Edit form
-// ---------------------------------------------------------------------------
-
-type EditContractFormProps = {
-  contract: StaffContract;
-  onCancel: () => void;
-  onSubmit: (fd: FormData) => void;
-};
-
-function EditContractForm({
-  contract,
-  onCancel,
-  onSubmit,
-}: EditContractFormProps) {
-  return (
-    <form action={(fd) => onSubmit(fd)} className="grid gap-4">
-      <input type="hidden" name="staff_contract_id" value={contract.id} />
-
-      <FormField>
-        <FormFieldLabel>{scTexts.form_member_label}</FormFieldLabel>
-        <FormReadonly>{contract.staffMemberName ?? "—"}</FormReadonly>
-        <FormHelpText>{scTexts.form_locked_field_hint}</FormHelpText>
-      </FormField>
-
-      <FormField>
-        <FormFieldLabel>{scTexts.form_structure_label}</FormFieldLabel>
-        <FormReadonly>
-          {contract.salaryStructureName ?? "—"}
-          {contract.salaryStructureRole ? ` · ${contract.salaryStructureRole}` : ""}
-        </FormReadonly>
-        <FormHelpText>{scTexts.form_locked_field_hint}</FormHelpText>
-      </FormField>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField>
-          <FormFieldLabel>{scTexts.form_start_date_label}</FormFieldLabel>
-          <FormReadonly>{contract.startDate}</FormReadonly>
-        </FormField>
-        <FormField>
-          <FormFieldLabel>{scTexts.form_end_date_label}</FormFieldLabel>
-          <FormInput
-            type="date"
-            name="end_date"
-            defaultValue={contract.endDate ?? ""}
-          />
-          <FormHelpText>{scTexts.form_end_date_helper}</FormHelpText>
-        </FormField>
-      </div>
-
-      <ModalFooter
-        onCancel={onCancel}
-        cancelLabel={scTexts.cancel_cta}
-        submitLabel={scTexts.edit_submit_cta}
-        pendingLabel={scTexts.submit_pending}
-      />
-    </form>
-  );
-}

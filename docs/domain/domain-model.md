@@ -709,7 +709,7 @@ para trazabilidad del historial y se mapea aquí:
 | US-55 | US-30 (absorbido) | Actualización de monto en la estructura → eliminado; reemplazado por revisiones |
 | US-56 | US-31 | CRUD de colaboradores (sin estado activo/inactivo en la spec nueva) |
 | US-57 | US-32 | Alta de contrato con monto inicial + motivo |
-| US-58 | US-33 | Edición (end_date + adjuntos) y finalización de contrato |
+| US-58 | US-33 | Adjuntos y finalización de contrato. La edición del listado se retiró: post-creación los únicos cambios sobre un contrato son finalización (desde el listado o la ficha) y revisión salarial (desde la ficha). |
 | (nuevo) | US-34 | Revisión salarial individual por contrato |
 | (nuevo) | US-35 | Revisión salarial masiva |
 | US-59 | US-36 | Job diario de finalización automática |

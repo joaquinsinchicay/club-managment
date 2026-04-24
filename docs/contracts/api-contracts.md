@@ -1693,7 +1693,7 @@ handler `POST /api/rrhh/reports/export`.
 | Ruta | Guard | Entidades renderizadas |
 |---|---|---|
 | `/rrhh` | `canAccessHrModule` (rrhh only) | Dashboard (6 cards operativas, US-68) |
-| `/rrhh/contracts` | `canAccessHrMasters` (rrhh only) | `staff_contracts` + forms alta (con `initial_amount`) / edición (solo `end_date`) / finalización. CTA a /bulk-revision. |
+| `/rrhh/contracts` | `canAccessHrMasters` (rrhh only) | `staff_contracts` + forms alta (con `initial_amount` precedido por pill readonly de moneda) / finalización. Sin edición directa desde el listado — cambios de monto via Nueva revisión en la ficha. CTA a /bulk-revision. |
 | `/rrhh/contracts/[id]` | `canAccessHrMasters` (rrhh only) | Detalle del contrato con historial de revisiones (`staff_contract_revisions`) + modal "Nueva revisión" (US-34) via `createSalaryRevisionAction`. |
 | `/rrhh/contracts/bulk-revision` | `canMutateHrMasters` (rrhh only) | Revisión salarial masiva (US-35): filtros + selección + preview + ejecución via `createBulkSalaryRevisionAction`. Transaccional (rollback si alguno falla). |
 | `/rrhh/staff` | `canAccessHrMasters` (rrhh only) | `staff_members` + forms + alerta US-60. Default filter: "con contrato vigente". |

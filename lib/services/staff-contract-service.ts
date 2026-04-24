@@ -283,67 +283,6 @@ export async function createStaffContract(
 }
 
 // -------------------------------------------------------------------------
-// Update (US-58)
-// -------------------------------------------------------------------------
-
-export type UpdateStaffContractRawInput = {
-  endDate?: unknown;
-};
-
-export async function updateStaffContract(
-  contractId: string,
-  raw: UpdateStaffContractRawInput,
-): Promise<StaffContractActionResult<{ contract: StaffContract }>> {
-  const guard = await guardMutate();
-  if (!guard.ok) return err<{ contract: StaffContract }>(guard.code);
-  const ctx = guard.context;
-
-  try {
-    const existing = await staffContractRepository.getById(ctx.clubId, contractId);
-    if (!existing) return err<{ contract: StaffContract }>("contract_not_found");
-    if (existing.status !== "vigente") {
-      return err<{ contract: StaffContract }>("already_finalized");
-    }
-
-    const endDateRaw = raw.endDate;
-    const endDate =
-      endDateRaw === null || endDateRaw === undefined || endDateRaw === ""
-        ? null
-        : normalizeIsoDate(endDateRaw);
-    if (endDateRaw && !endDate) return err<{ contract: StaffContract }>("invalid_end_date");
-    if (endDate && endDate < existing.startDate) {
-      return err<{ contract: StaffContract }>("end_date_before_start");
-    }
-
-    const updated = await staffContractRepository.update({
-      contractId,
-      clubId: ctx.clubId,
-      updatedByUserId: ctx.userId,
-      patch: {
-        endDate: endDateRaw === undefined ? undefined : endDate,
-      },
-    });
-    if (!updated) return err<{ contract: StaffContract }>("contract_not_found");
-
-    await staffContractRepository.recordActivity({
-      clubId: ctx.clubId,
-      entityId: updated.id,
-      action: "CONTRACT_UPDATED",
-      actorUserId: ctx.userId,
-      payloadBefore: { end_date: existing.endDate },
-      payloadAfter: { end_date: updated.endDate },
-    });
-
-    return ok<{ contract: StaffContract }>("updated", { contract: updated });
-  } catch (error) {
-    if (isStaffContractRepositoryInfraError(error)) {
-      console.error("[staff-contract-service.update]", error);
-    }
-    return err<{ contract: StaffContract }>("unknown_error");
-  }
-}
-
-// -------------------------------------------------------------------------
 // Finalize (US-58)
 // -------------------------------------------------------------------------
 
