@@ -382,10 +382,6 @@ export function ContractDetailView({
                   value={contract.salaryStructureName}
                 />
                 <InfoItem
-                  label={cdTexts.info_role_label}
-                  value={contract.salaryStructureRole}
-                />
-                <InfoItem
                   label={cdTexts.info_division_label}
                   value={
                     contract.salaryStructureDivisions.length > 0
@@ -394,12 +390,8 @@ export function ContractDetailView({
                   }
                 />
                 <InfoItem
-                  label={cdTexts.info_activity_label}
-                  value={contract.salaryStructureActivityName}
-                />
-                <InfoItem
-                  label={cdTexts.info_remuneration_type_label}
-                  value={remunerationTypeLabel}
+                  label={cdTexts.info_role_label}
+                  value={contract.salaryStructureRole}
                 />
                 <InfoItem
                   label={cdTexts.info_start_label}
