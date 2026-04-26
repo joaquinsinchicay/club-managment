@@ -32,14 +32,21 @@ import {
 } from "@/lib/domain/staff-member";
 import { texts } from "@/lib/texts";
 
+type ContractFilter = "with_active" | "all" | "without_active";
+
 type StaffMembersTabProps = {
   members: StaffMember[];
   canMutate: boolean;
   createAction: (formData: FormData) => Promise<RrhhActionResult>;
+  /**
+   * US-37 Scenario 4 — permite que la card "Alertas" del dashboard
+   * (link `/rrhh/staff?contract=without_active`) abra el listado ya
+   * filtrado a colaboradores sin contratos vigentes. Default: "with_active".
+   */
+  initialContractFilter?: ContractFilter;
 };
 
 type VinculoFilter = "all" | StaffVinculoType;
-type ContractFilter = "with_active" | "all" | "without_active";
 
 const smTexts = texts.rrhh.staff_members;
 
@@ -61,12 +68,13 @@ export function StaffMembersTab({
   members,
   canMutate,
   createAction,
+  initialContractFilter = "with_active",
 }: StaffMembersTabProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [search, setSearch] = useState("");
   const [vinculoFilter, setVinculoFilter] = useState<VinculoFilter>("all");
-  const [contractFilter, setContractFilter] = useState<ContractFilter>("with_active");
+  const [contractFilter, setContractFilter] = useState<ContractFilter>(initialContractFilter);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createPending, setCreatePending] = useState(false);

@@ -228,7 +228,11 @@ export default async function RrhhPage() {
                   {summary.alertsCount}
                 </span>
                 {summary.alertsCount > 0 ? (
-                  <LinkButton href="/rrhh/staff" variant="secondary" size="sm">
+                  <LinkButton
+                    href="/rrhh/staff?contract=without_active"
+                    variant="secondary"
+                    size="sm"
+                  >
                     {dashboard.card_alerts_cta}
                   </LinkButton>
                 ) : (
