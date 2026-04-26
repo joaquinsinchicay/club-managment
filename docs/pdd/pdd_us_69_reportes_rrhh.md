@@ -1,6 +1,6 @@
 # PDD — US-69 · Reportes de gasto en personal
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-45`. En el repo: **US-69**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-48`. En el repo: **US-69**. (Pre-refactor 2026-04-27 el alias era `US-45`.)
 
 ---
 
@@ -204,5 +204,34 @@ Archivo con solo el header, permitido.
 
 ## 15. Dependencias
 
-- **domain entities:** `payroll_settlements`, `staff_contracts`, `staff_members`, `salary_structures`, `activities`, `salary_structure_versions`.
+- **domain entities:** `payroll_settlements`, `staff_contracts`, `staff_members`, `salary_structures`, `activities`, `staff_contract_revisions`.
 - **otras US:** US-61 (origen de datos), US-64/65 (pagos).
+
+---
+
+## 16. Mirror para rol Tesorería en `/treasury/reports/payroll` (refactor 2026-04-27)
+
+> **Notion alias**: US-48 (corresponde a esta US-69 en numeración repo).
+
+E04 RRHH (Notion) pidió que rol Tesorería pueda **leer** los reportes de
+gasto en personal desde su propio módulo, sin abrir `/rrhh` (que sigue
+exclusivo de rol RRHH según [CLAUDE.md](../../CLAUDE.md)).
+
+### Implementación
+
+- **Ruta nueva**: `app/(dashboard)/treasury/reports/payroll/page.tsx` — server component, redirige a `/treasury` si no es Tesorería. Mirror 1:1 de `/rrhh/reports/page.tsx` con dos diferencias:
+  - Guard de página: `canAccessTreasuryPayrollReports` (rol `tesoreria`).
+  - Back-link y reset action apuntan a `/treasury` y `/treasury/reports/payroll` (en lugar de `/rrhh`).
+- **Authorization** (`lib/domain/authorization.ts`):
+  - `canAccessTreasuryPayrollReports(membership)` — guard de página.
+  - `canViewHrReports(membership)` — guard del service, rol `rrhh` o `tesoreria` (permisivo). El `getHrReport` se cambió a este guard para soportar ambas rutas.
+- **Endpoint export**: `POST /api/rrhh/reports/export` no requiere cambios — usa `getHrReport` que ya admite ambos roles. Tesorería puede exportar CSV desde la mirror.
+- **Decisión documentada**: optamos por **duplicar la página** (~280 LOC) en lugar de extraer un componente compartido. La página estaba estable, refactorizar con todos los demás cambios en flight era riesgoso. Si en el futuro hay cambios frecuentes en reportes, refactorizar a `<HrReportsView>` componente compartido.
+
+### Acceso esperado por rol
+
+| Rol activo | `/rrhh/reports` | `/treasury/reports/payroll` |
+|---|---|---|
+| RRHH puro | ✅ | ❌ redirige a `/treasury` |
+| Tesorería puro | ❌ redirige a `/dashboard` | ✅ read-only, exporta CSV |
+| Ambos | ✅ | ✅ |

@@ -4751,4 +4751,132 @@ Feature: US-69 — Reportes de gasto en personal
 
 ---
 
+### E04 👥 RRHH / US-70 — Devolver liquidación aprobada al estado generada
+
+> **Notion alias**: US-41 · Agregada en el refactor E04 de 2026-04-27.
+
+> *Como usuario con rol RRHH o rol Tesorería, quiero devolver una liquidación aprobada al estado "generada" con un motivo, para corregir errores detectados después de la aprobación sin tener que anularla.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-70 — Devolver liquidación aprobada al estado generada
+
+  Scenario 01: Acceso con rol RRHH o Tesorería
+    Given tengo rol RRHH o Tesorería activo en el club
+    And existe una liquidación en estado "aprobada_rrhh"
+    Then veo la acción "Devolver a generada" sobre esa fila
+
+  Scenario 02: Acceso denegado sin rol apropiado
+    Given no tengo rol RRHH ni Tesorería
+    Then no veo la acción "Devolver a generada"
+
+  Scenario 03: Confirmación con motivo obligatorio
+    Given selecciono "Devolver a generada"
+    When intento confirmar sin escribir un motivo
+    Then el sistema bloquea la acción con código reason_required
+
+  Scenario 04: Ejecución exitosa
+    Given completo el motivo y confirmo
+    Then la liquidación pasa a "generada", el monto vuelve a editable
+    And la liquidación deja de aparecer en la bandeja de Tesorería
+
+  Scenario 05: Indicador visual "Devuelta por [rol]"
+    Given la liquidación fue devuelta
+    Then el listado muestra debajo del status badge "Devuelta por RRHH" o "Devuelta por Tesoreria"
+
+  Scenario 06: Motivo visible en el detalle
+    Given la liquidación fue devuelta
+    Then el detalle muestra el motivo registrado
+
+  Scenario 07: Solo se devuelven liquidaciones aprobadas
+    Given una liquidación está en estado "generada", "pagada" o "anulada"
+    When intento devolverla
+    Then el sistema bloquea con código invalid_status
+
+  Scenario 08: Re-aprobación posterior
+    Given la liquidación devuelta fue corregida
+    When se aprueba nuevamente
+    Then vuelve a la bandeja de Tesorería
+    And el historial conserva ambos eventos (devolución y nueva aprobación)
+
+  Scenario 09: Registro de auditoría
+    Given se devolvió una liquidación
+    Then hr_activity_log registra usuario, fecha, motivo y rol con la action SETTLEMENT_RETURNED_TO_GENERATED
+
+  Scenario 10: Consistencia por club activo
+    Given se devuelve una liquidación
+    Then la operación solo aplica si el club activo coincide con el de la liquidación
+```
+
+---
+
+### E04 👥 RRHH / US-71 — Bandeja Tesorería de pagos pendientes
+
+> **Notion alias**: US-45 · Agregada en el refactor E04 de 2026-04-27.
+
+> *Como usuario con rol Tesorería, quiero ver una bandeja dedicada con las liquidaciones aprobadas por RRHH pendientes de pago, para focalizar mi flujo de ejecución de pagos sin mezclarlo con la gestión de RRHH.*
+
+**Acceptance Criteria — Gherkin**
+
+```gherkin
+Feature: US-71 — Bandeja Tesorería de pagos pendientes
+
+  Scenario 01: Acceso con rol Tesorería
+    Given tengo rol Tesorería activo en el club
+    When entro a /treasury/payroll
+    Then veo la bandeja con las liquidaciones en estado "aprobada_rrhh"
+
+  Scenario 02: Acceso denegado sin rol Tesorería
+    Given no tengo rol Tesorería
+    When intento abrir /treasury/payroll
+    Then redirige a /treasury (o /dashboard si tampoco tengo rol Tesorería)
+
+  Scenario 03: Card destacada en dashboard /treasury
+    Given hay al menos una liquidación pendiente de pago
+    When abro /treasury
+    Then veo la card "Pagos de nómina pendientes" con cantidad y monto total
+    And tengo acceso directo a la bandeja con el botón "Abrir bandeja"
+
+  Scenario 04: Visualización del listado
+    Given estoy en la bandeja
+    Then veo colaborador, contrato (Estructura), período, monto final, fecha de aprobación
+
+  Scenario 05: Filtros disponibles
+    Given estoy en la bandeja
+    Then puedo buscar por colaborador, estructura o período y filtrar por período disponible
+
+  Scenario 06: Acciones por fila
+    Given estoy en la bandeja
+    Then veo las acciones Pagar (US-64) y Devolver a RRHH (US-70)
+
+  Scenario 07: Selección múltiple para pago en lote
+    Given selecciono N liquidaciones
+    Then veo una barra "Seleccionadas: N · Total $X" con el botón "Pagar seleccionadas" (US-65)
+
+  Scenario 08: Estado vacío
+    Given no hay liquidaciones aprobadas pendientes
+    When abro la bandeja
+    Then veo un mensaje informativo de estado vacío
+
+  Scenario 09: Liquidaciones devueltas desaparecen automáticamente
+    Given devuelvo una liquidación a "generada"
+    Then la fila desaparece de la bandeja en el siguiente refresh
+
+  Scenario 10: Acceso rápido a la ficha del colaborador
+    Given estoy en la bandeja
+    When click en el nombre del colaborador
+    Then voy a /treasury/staff/[id] (mirror read-only de la ficha, US-67)
+
+  Scenario 11: Acceso a reportes desde la card del dashboard
+    Given veo la card "Pagos pendientes" en /treasury
+    Then también tengo el link "Ver reportes" hacia /treasury/reports/payroll (mirror de US-69)
+
+  Scenario 12: Consistencia por club activo
+    Given abro la bandeja
+    Then solo veo liquidaciones del club activo
+```
+
+---
+
 *Joaquin Fernandez Sinchi — Product Manager · A-CSPO | Buenos Aires, Argentina | Marzo 2026*

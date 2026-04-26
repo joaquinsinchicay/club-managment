@@ -1,6 +1,6 @@
 # PDD — US-56 · CRUD de Colaboradores
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-32`. En el repo: **US-56**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-31`. En el repo: **US-56**. (Pre-refactor 2026-04-27 el alias era `US-32`.)
 
 ---
 

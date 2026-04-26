@@ -704,7 +704,7 @@ export function SettlementsList({
         </form>
       </Modal>
 
-      {/* Return to "generada" (US-41) */}
+      {/* Return to "generada" (US-70) */}
       <Modal
         open={returning !== null}
         onClose={() => !returnPending && setReturning(null)}

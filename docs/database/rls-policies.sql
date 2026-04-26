@@ -1469,8 +1469,8 @@ $$;
 --   - `staff_members`: drop columnas deactivated_* en migración
 --     20260427030000 (US-31). El colaborador no tiene estado.
 --   - `payroll_settlements`: enum status renombrado en migración
---     20260427040000 (US-40, confirmada→aprobada_rrhh) + 4 columnas
---     returned_* en 20260427050000 (US-41).
+--     20260427040000 (US-63 repo / US-40 Notion, confirmada→aprobada_rrhh)
+--     + 4 columnas returned_* en 20260427050000 (US-70 repo / US-41 Notion).
 --   - `salary_structure_versions`: tabla dropeada en migración
 --     20260424000000 (refactor monto-al-contrato). Reemplazada por
 --     staff_contract_revisions.

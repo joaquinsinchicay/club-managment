@@ -1,6 +1,6 @@
 # PDD — US-62 · Ajustes sobre liquidación generada
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-38`. En el repo: **US-62**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-39`. En el repo: **US-62**. (Pre-refactor 2026-04-27 el alias era `US-38`.)
 
 ---
 

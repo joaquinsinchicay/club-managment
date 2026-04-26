@@ -126,10 +126,10 @@ export function canOperateHrPayments(membership: MembershipLike) {
 }
 
 /**
- * US-41 · Devolver una liquidación aprobada al estado "generada".
- * Disponible tanto para rol RRHH como para rol Tesorería (US-41 Scenario 01-02),
- * para que cualquiera de los dos pueda corregir errores detectados después
- * de la aprobación sin tener que anular la liquidación.
+ * US-70 (Notion alias US-41) · Devolver una liquidación aprobada al estado
+ * "generada". Disponible tanto para rol RRHH como para rol Tesorería
+ * (Scenario 01-02), para que cualquiera de los dos pueda corregir errores
+ * detectados después de la aprobación sin tener que anular la liquidación.
  */
 export function canReturnPayrollSettlement(membership: MembershipLike) {
   const active = getActiveMembership(membership);
@@ -138,7 +138,7 @@ export function canReturnPayrollSettlement(membership: MembershipLike) {
 }
 
 /**
- * US-45 · Bandeja Tesorería de pagos pendientes.
+ * US-71 (Notion alias US-45) · Bandeja Tesorería de pagos pendientes.
  *
  * Solo rol Tesorería accede. Es un mirror específico para el flujo de pago,
  * sin abrir el módulo /rrhh (que sigue siendo exclusivo de rol "rrhh").
@@ -150,7 +150,7 @@ export function canAccessTreasuryPayrollTray(membership: MembershipLike) {
 }
 
 /**
- * US-46 · Ficha de colaborador.
+ * US-67 (Notion alias US-46) · Ficha de colaborador.
  *
  * Lectura de la ficha disponible para rol RRHH (en /rrhh/staff/[id]) y
  * rol Tesorería (en /treasury/staff/[id], mirror read-only). El service
@@ -164,8 +164,9 @@ export function canViewStaffProfile(membership: MembershipLike) {
 }
 
 /**
- * US-46 · Acceso al mirror de la ficha en /treasury/staff/[id]. Solo rol
- * Tesorería: la ficha en /rrhh sigue gateada por canAccessHrModule.
+ * US-67 (Notion alias US-46) · Acceso al mirror de la ficha en
+ * /treasury/staff/[id]. Solo rol Tesorería: la ficha en /rrhh sigue gateada
+ * por canAccessHrModule.
  */
 export function canAccessTreasuryStaffProfile(membership: MembershipLike) {
   const active = getActiveMembership(membership);
@@ -174,7 +175,7 @@ export function canAccessTreasuryStaffProfile(membership: MembershipLike) {
 }
 
 /**
- * US-48 · Reportes RRHH desde Tesorería.
+ * US-69 (Notion alias US-48) · Reportes RRHH desde Tesorería.
  *
  * Mirror read-only de /rrhh/reports en /treasury/reports/payroll. Solo
  * rol Tesorería: los reportes en /rrhh siguen gateados por canAccessHrModule.
@@ -186,8 +187,8 @@ export function canAccessTreasuryPayrollReports(membership: MembershipLike) {
 }
 
 /**
- * US-48 · Lectura de reportes RRHH (servicio común para /rrhh/reports y
- * /treasury/reports/payroll). Permite RRHH o Tesorería.
+ * US-69 (Notion alias US-48) · Lectura de reportes RRHH (servicio común
+ * para /rrhh/reports y /treasury/reports/payroll). Permite RRHH o Tesorería.
  */
 export function canViewHrReports(membership: MembershipLike) {
   const active = getActiveMembership(membership);

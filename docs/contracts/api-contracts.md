@@ -1629,7 +1629,7 @@ mutadores registran eventos en `hr_activity_log`.
 - Códigos: `generated`, `partial`, `no_active_contracts`, `forbidden`,
   `invalid_period`.
 
-#### `hr_approve_settlement(p_settlement_id, p_approve_zero)` · US-40 (ex US-63, rename 2026-04-27)
+#### `hr_approve_settlement(p_settlement_id, p_approve_zero)` · US-63 (Notion alias US-40, rename 2026-04-27)
 - Valida horas para contratos variables, bloqueo por total<0, requiere
   confirmación explícita para total=0. Cambia a `aprobada_rrhh`.
   Setea `approved_at = now()`, `approved_by_user_id`. Audit log:
@@ -1638,12 +1638,12 @@ mutadores registran eventos en `hr_activity_log`.
   `invalid_status`, `already_approved`, `hours_required`,
   `total_negative`, `zero_amount_requires_approval`.
 
-#### `hr_approve_settlements_bulk(p_ids, p_approve_zero)` · US-40 (ex US-63)
+#### `hr_approve_settlements_bulk(p_ids, p_approve_zero)` · US-63 (Notion alias US-40)
 - Itera cada id delegando al RPC individual. Retorna
   `{approved_count, skipped_count, errors: [{id, code}]}` con fallos
   por item sin abortar el batch.
 
-#### `hr_return_settlement_to_generated(p_settlement_id, p_reason)` · US-41 (NUEVA, 2026-04-27)
+#### `hr_return_settlement_to_generated(p_settlement_id, p_reason)` · US-70 (Notion alias US-41, NUEVA 2026-04-27)
 - Disponible para rol `rrhh` o `tesoreria` activo en el club. Devuelve
   una liquidación `aprobada_rrhh` al estado `generada`. Motivo
   obligatorio. Resetea `approved_at` / `approved_by_user_id` y setea

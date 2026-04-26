@@ -1,6 +1,7 @@
 /**
- * Domain entity and pure helpers for Payroll Settlements (US-38 / US-39 /
- * US-40 / US-41 / US-44, ex US-61 / US-62 / US-63 / US-66).
+ * Domain entity and pure helpers for Payroll Settlements (US-61 / US-62 /
+ * US-63 / US-66 + US-70 nueva en refactor 2026-04-27. Notion alias:
+ * US-38 / US-39 / US-40 / US-44 / US-41 respectivamente).
  *
  * A settlement represents the payable amount of a single contract for a
  * single month. It has a lifecycle:

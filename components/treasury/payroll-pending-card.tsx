@@ -23,7 +23,7 @@ type Props = {
 };
 
 /**
- * US-45 · Card destacada en el dashboard de Tesorería con la cantidad
+ * US-71 · Card destacada en el dashboard de Tesorería con la cantidad
  * y monto total de liquidaciones aprobadas pendientes de pago.
  * Solo se renderiza si hay al menos una pendiente.
  */

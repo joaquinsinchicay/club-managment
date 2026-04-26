@@ -1,6 +1,6 @@
 # PDD — US-67 · Ficha consolidada del colaborador
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-43`. En el repo: **US-67**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-46`. En el repo: **US-67**. (Pre-refactor 2026-04-27 el alias era `US-43`.)
 
 ---
 
@@ -202,3 +202,30 @@ where sc.staff_member_id = $id and ps.status = 'pagada';
 
 - **domain entities:** `staff_members`, `staff_contracts`, `payroll_settlements`, `treasury_movements`, `salary_structures`, `activities`, `treasury_accounts`.
 - **otras US:** US-56, US-57, US-58, US-60, US-61, US-62, US-63, US-64, US-65, US-66.
+
+---
+
+## 16. Mirror para rol Tesorería en `/treasury/staff/[id]` (refactor 2026-04-27)
+
+> **Notion alias**: US-46 (corresponde a esta US-67 en numeración repo).
+
+E04 RRHH (Notion) pidió que rol Tesorería pueda **leer** la ficha del
+colaborador desde su propio módulo, sin abrir `/rrhh` (que sigue
+exclusivo de rol RRHH según [CLAUDE.md](../../CLAUDE.md)).
+
+### Implementación
+
+- **Ruta nueva**: `app/(dashboard)/treasury/staff/[id]/page.tsx` — server component, redirige a `/treasury` si no es Tesorería.
+- **Authorization** (`lib/domain/authorization.ts`):
+  - `canAccessTreasuryStaffProfile(membership)` — guard de página, rol `tesoreria`.
+  - `canViewStaffProfile(membership)` — guard del service, rol `rrhh` o `tesoreria` (permisivo). El `getStaffProfile` se cambió a este guard para soportar ambas rutas con un único service.
+- **Componente**: `components/hr/staff-profile-view.tsx` — props `updateAction` y `createContractAction` ahora opcionales + handlers defensivos. En modo Tesorería se invoca con `canMutate={false}` y sin pasar las actions, lo que oculta los CTAs de "Editar" y "Nuevo contrato".
+- **Bandeja**: el nombre del colaborador en filas de `components/treasury/payroll-tray.tsx` es un `<Link>` a `/treasury/staff/${staffMemberId}`.
+
+### Acceso esperado por rol
+
+| Rol activo | `/rrhh/staff/[id]` | `/treasury/staff/[id]` |
+|---|---|---|
+| RRHH puro | ✅ con CTAs Editar / Nuevo contrato | ❌ redirige a `/treasury` |
+| Tesorería puro | ❌ redirige a `/dashboard` | ✅ read-only |
+| Ambos | ✅ con CTAs | ✅ read-only |

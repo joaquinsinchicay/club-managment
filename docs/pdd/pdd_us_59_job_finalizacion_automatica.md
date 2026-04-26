@@ -1,6 +1,6 @@
 # PDD — US-59 · Job diario de finalización automática de contratos
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-35`. En el repo: **US-59**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-36`. En el repo: **US-59**. (Pre-refactor 2026-04-27 el alias era `US-35`.)
 
 ---
 

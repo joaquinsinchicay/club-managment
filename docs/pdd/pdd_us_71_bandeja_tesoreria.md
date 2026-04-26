@@ -1,8 +1,10 @@
-# PDD · US-45 · Bandeja Tesorería de pagos pendientes
+# PDD · US-71 · Bandeja Tesorería de pagos pendientes
 
 > **Epic**: E04 · 👥 RRHH
-> **Notion ID**: US-45 (sin equivalente en numeración legacy del repo)
-> **Estado**: implementado en Fase 3 del refactor E04 (2026-04-27)
+> **Notion alias**: US-45 (numeración local al epic en Notion)
+> **Estado**: implementado en Fase 3 del refactor E04 (2026-04-27). Feature
+> nueva del refactor — numerada US-71 siguiendo la secuencia global del
+> backlog del repo.
 
 ---
 
@@ -16,8 +18,8 @@
 
 Bandeja específica del módulo Tesorería que lista las liquidaciones en
 estado `aprobada_rrhh` del club activo. Tesorería ejecuta desde acá los
-pagos individuales o en lote (US-42 / US-43) y, si detecta un error,
-puede devolver la liquidación a "generada" (US-41) sin tener que abrir
+pagos individuales o en lote (US-64 / US-65) y, si detecta un error,
+puede devolver la liquidación a "generada" (US-70) sin tener que abrir
 el módulo `/rrhh` (que sigue siendo exclusivo de rol RRHH — ver
 [CLAUDE.md](CLAUDE.md)).
 
@@ -32,12 +34,12 @@ solo se renderiza cuando hay al menos una liquidación pendiente.
 | 03 | Contador en navegación | ⚠️ **Parcial**. Decisión: mostramos contador en la **card del dashboard `/treasury`** (más visible, ya destacada) en lugar de modificar el header global. Modificar `app-header.tsx` requeriría fetch global por navegación con blast radius alto. **TODO documentado**: si el negocio lo pide, sumar badge al tab "Tesorería" del header con server-side fetch ligero. |
 | 04 | Listado con colaborador, contrato, período, monto, fecha aprobación, usuario aprobador, notas | ✅ Tabla con `col_period`, `col_member`, `col_structure`, `col_total`, `col_approved_at`. Usuario aprobador y notas ya están en el modelo (`approvedByUserId`, `notes`) — quedan visibles en el detalle / podrían exponerse como columna extra si se pide. |
 | 05 | Filtros: período, colaborador, estructura | ✅ Búsqueda libre (cubre colaborador, estructura, rol, actividad, período label) + chips por período disponible. |
-| 06 | Acciones por fila: Pagar (US-42), Devolver a RRHH (US-41), Ver detalle | ✅ Pagar y Devolver implementados. **Ver detalle**: por simplicidad reusa el modal de pago como vista (datos no editables). Si se pide vista detallada con ajustes, conectar `adjustmentsBySettlementId` (ya pre-cargado por el service). |
-| 07 | Selección múltiple para pago en lote (US-43) | ✅ Multi-select con barra "Seleccionadas: N · Total $X" y CTA "Pagar seleccionadas". Reusa `payStaffSettlementsBatchAction`. |
+| 06 | Acciones por fila: Pagar (US-64), Devolver a RRHH (US-70), Ver detalle | ✅ Pagar y Devolver implementados. **Ver detalle**: por simplicidad reusa el modal de pago como vista (datos no editables). Si se pide vista detallada con ajustes, conectar `adjustmentsBySettlementId` (ya pre-cargado por el service). |
+| 07 | Selección múltiple para pago en lote (US-65) | ✅ Multi-select con barra "Seleccionadas: N · Total $X" y CTA "Pagar seleccionadas". Reusa `payStaffSettlementsBatchAction`. |
 | 08 | Card destacada en dashboard `/treasury` | ✅ `TreasuryPayrollPendingCard` con count + monto total + CTA "Abrir bandeja". Se renderiza solo si hay pendientes. |
 | 09 | Estado vacío | ✅ `<DataTableEmpty>` con dos variantes (`empty_*` cuando no hay nada / `empty_filter_*` cuando no hay match). |
 | 10 | Liquidaciones devueltas desaparecen automáticamente | ✅ La query del service filtra por `status === 'aprobada_rrhh'`. La devolución cambia el status a `generada`, por lo que la fila ya no aparece en el siguiente fetch (`router.refresh()` se dispara desde el handler de devolución). |
-| 11 | Consistencia por club activo | ✅ Service usa `session.activeClub.id`; las RPCs subyacentes (US-42 / US-43 / US-41) verifican `app.current_club_id`. |
+| 11 | Consistencia por club activo | ✅ Service usa `session.activeClub.id`; las RPCs subyacentes (US-64 / US-65 / US-70) verifican `app.current_club_id`. |
 
 ## 4. Backend
 
@@ -63,8 +65,8 @@ guard es específico del flujo de pago de nómina.
 
 Ambos usan el guard `canAccessTreasuryPayrollTray`. **No** crean nuevas
 RPCs: las mutaciones reusan `payStaffSettlement`,
-`payStaffSettlementsBatch` (US-42 / US-43) y `returnSettlementToGenerated`
-(US-41) ya implementados.
+`payStaffSettlementsBatch` (US-64 / US-65) y `returnSettlementToGenerated`
+(US-70) ya implementados.
 
 ### Server actions
 

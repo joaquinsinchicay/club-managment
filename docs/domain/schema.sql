@@ -582,10 +582,10 @@ create table payroll_settlements (
   requires_hours_input boolean not null default false,
   notes text,
   status payroll_settlement_status not null default 'generada',
-  -- US-40 (ex US-63): rename 2026-04-27 confirmed_* → approved_*
+  -- US-63 (Notion alias US-40): rename 2026-04-27 confirmed_* → approved_*
   approved_at timestamptz,
   approved_by_user_id uuid references users(id),
-  -- US-41 (NUEVA 2026-04-27): devolución a "generada" con motivo.
+  -- US-70 (Notion alias US-41, NUEVA 2026-04-27): devolución a "generada" con motivo.
   -- Cuando se devuelve, status vuelve a 'generada', approved_* se
   -- resetea a null y se setean returned_*. Indicador visual en UI:
   -- "Devuelta por [rol]" en filas con status='generada' + returned_by_role≠null.

@@ -1,6 +1,6 @@
 # PDD — US-65 · Pago en lote de múltiples liquidaciones
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-41`. En el repo: **US-65**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-43`. En el repo: **US-65**. (Pre-refactor 2026-04-27 el alias Notion era `US-41`; ver [`docs/pdd/README.md`](README.md) para la tabla canónica.)
 
 ---
 

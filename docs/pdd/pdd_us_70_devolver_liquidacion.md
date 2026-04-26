@@ -1,8 +1,10 @@
-# PDD · US-41 · Devolver liquidación a "generada"
+# PDD · US-70 · Devolver liquidación a "generada"
 
 > **Epic**: E04 · 👥 RRHH
-> **Notion ID**: US-41 (sin equivalente en numeración legacy del repo)
-> **Estado**: implementado en Fase 2.2 del refactor E04 (2026-04-27)
+> **Notion alias**: US-41 (numeración local al epic en Notion)
+> **Estado**: implementado en Fase 2.2 del refactor E04 (2026-04-27). Feature
+> nueva del refactor — numerada US-70 siguiendo la secuencia global del
+> backlog del repo (la última US existente era US-69).
 
 ---
 
@@ -82,7 +84,7 @@ canReturnPayrollSettlement(membership) → activo && (hasRole 'rrhh' || hasRole 
 ### Server action
 
 [app/(dashboard)/rrhh/settlements/actions.ts](app/(dashboard)/rrhh/settlements/actions.ts):
-- `returnSettlementToGeneratedAction(formData)` revalida `/rrhh/settlements` y `/treasury/payroll` (esta última será la bandeja Tesorería de US-45 / Fase 3).
+- `returnSettlementToGeneratedAction(formData)` revalida `/rrhh/settlements` y `/treasury/payroll` (esta última es la bandeja Tesorería de US-71 / Notion alias US-45).
 - Mapea codes a feedback: `settlement_returned_to_generated`, `settlement_reason_required`.
 
 ## 6. UI

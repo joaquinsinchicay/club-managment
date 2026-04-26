@@ -1,6 +1,6 @@
 # PDD — US-63 · Confirmación individual y masiva de liquidaciones
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-39`. En el repo: **US-63**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-40`. En el repo: **US-63**. Estado renombrado en refactor 2026-04-27: `confirmada` → `aprobada_rrhh`. (Pre-refactor el alias Notion era `US-39`.)
 
 ---
 

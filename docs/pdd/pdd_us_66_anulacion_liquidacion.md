@@ -1,6 +1,6 @@
 # PDD — US-66 · Anulación de liquidación
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-42`. En el repo: **US-66**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-44`. En el repo: **US-66**. (Pre-refactor 2026-04-27 el alias era `US-42`.)
 
 ---
 

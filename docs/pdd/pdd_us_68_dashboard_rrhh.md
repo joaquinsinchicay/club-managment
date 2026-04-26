@@ -1,6 +1,6 @@
 # PDD — US-68 · Dashboard del módulo RRHH
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-44`. En el repo: **US-68**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-47`. En el repo: **US-68**. (Pre-refactor 2026-04-27 el alias era `US-44`.)
 
 ---
 
@@ -165,5 +165,33 @@ Cada card linkea al listado filtrado correspondiente.
 
 ## 15. Dependencias
 
-- **domain entities:** `payroll_settlements`, `staff_contracts`, `salary_structure_versions`, `staff_members`, `salary_structures`.
+- **domain entities:** `payroll_settlements`, `staff_contracts`, `staff_contract_revisions`, `staff_members`, `salary_structures`.
 - **otras US:** US-60 (alertas), US-61 (settlements), US-63, US-64, US-65, US-69 (reportes desde link).
+
+---
+
+## 16. Cards diferenciadas por rol (refactor 2026-04-27)
+
+> **Notion alias**: US-47 (corresponde a esta US-68 en numeración repo).
+
+E04 RRHH (Notion) pidió diferenciar visibilidad de cards según el rol del usuario.
+
+### Reglas de visibilidad
+
+| Card | Visible para |
+|---|---|
+| Pendientes de aprobar | Rol RRHH (siempre — la página entera ya está gateada por `canAccessHrModule`) |
+| Pendientes de pago | Solo si el usuario también tiene rol `tesoreria` activo en el club |
+| Costo proyectado del mes | Rol RRHH |
+| Ejecutado del mes | Rol RRHH |
+| Estructuras vacantes | Rol RRHH |
+| Alertas (colaboradores sin contrato) | Rol RRHH — link a `/rrhh/staff?contract=without_active` |
+
+Usuario con ambos roles (RRHH + Tesorería) → ve **todas** las cards en `/rrhh`.
+Rol Tesorería puro → no entra a `/rrhh`; ve la card "Pagos pendientes nómina"
+en su propio dashboard `/treasury` (mirror, ver US-71).
+
+### Implementación
+
+- `app/(dashboard)/rrhh/page.tsx` — `hasMembershipRole(membership, "tesoreria")` decide la visibilidad de la card "pending_pay". El CTA de esa card linkea a `/treasury/payroll` (la bandeja de Tesorería de US-71), no al listado `/rrhh/settlements?status=aprobada_rrhh`, porque el ownership real del flujo de pago está en Tesorería.
+- Service `hr-dashboard-service` mantiene un único summary `pendingApprove` + `pendingPay`; las decisiones de render viven en la página.

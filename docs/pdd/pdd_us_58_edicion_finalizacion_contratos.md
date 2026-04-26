@@ -1,6 +1,6 @@
 # PDD — US-58 · Edición y finalización de contratos
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-34`. En el repo: **US-58**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-33`. En el repo: **US-58**. (Pre-refactor 2026-04-27 el alias era `US-34`.)
 
 ---
 

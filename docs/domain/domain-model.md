@@ -591,9 +591,9 @@ activo y se integran con Tesorería a través de `treasury_movements`.
 - **PayrollSettlement** — liquidación mensual por contrato. Lifecycle:
   `generada → aprobada_rrhh → pagada` con transición lateral a `anulada`
   desde cualquier estado vigente y posibilidad de retroceder de
-  `aprobada_rrhh → generada` con motivo (US-41). Almacena monto base
+  `aprobada_rrhh → generada` con motivo (US-70). Almacena monto base
   + ajustes + total. Estado renombrado de `confirmada` → `aprobada_rrhh`
-  el 2026-04-27 (E04 refactor Notion US-40).
+  el 2026-04-27 (US-63, Notion alias US-40).
 - **PayrollSettlementAdjustment** — ajuste sobre una liquidación:
   adicional, descuento o reintegro. Un trigger recalcula
   `adjustments_total` y `total_amount` en el padre.
@@ -625,10 +625,10 @@ generada  -- hr_approve_settlement -->  aprobada_rrhh  -- hr_pay_settlement --> 
    +--- hr_annul_settlement ---------------+--------------------------------> anulada
 ```
 
-- US-40 (rename 2026-04-27): `confirmada` → `aprobada_rrhh`. RPCs
+- US-63 (Notion alias US-40, rename 2026-04-27): `confirmada` → `aprobada_rrhh`. RPCs
   `hr_confirm_*` renombradas a `hr_approve_*`. Columnas
   `confirmed_at`/`confirmed_by_user_id` → `approved_at`/`approved_by_user_id`.
-- US-41 (NUEVA 2026-04-27): `aprobada_rrhh → generada` con motivo
+- US-70 (Notion alias US-41, NUEVA 2026-04-27): `aprobada_rrhh → generada` con motivo
   obligatorio, disponible para rol `rrhh` o `tesoreria`. Resetea
   `approved_*` a null y graba `returned_*`. Indicador "Devuelta por [rol]"
   visible mientras la liquidación esté en `generada` con `returned_by_role≠null`.
@@ -719,33 +719,33 @@ parcial). Operaciones:
 - **Liquidaciones** (US-38): la RPC `hr_generate_monthly_settlements` lee el
   monto base de la revisión vigente al primer día del período.
 
-### Mapping histórico de numeración de User Stories
+### Mapping de numeración Notion ↔ Repo (E04 RRHH)
 
-El código y los PDDs usan la numeración original US-54..US-69. La spec viva
-en Notion renumbera a US-30..US-46 y redefine algunas US (especialmente el
-movimiento del monto al contrato). Se conserva la numeración del código
-para trazabilidad del historial y se mapea aquí:
+La numeración del repo (US-XX) es la **fuente de verdad** del backlog. La
+spec en Notion del Epic E04 RRHH usa numeración local al epic (US-30..US-48)
+que es **alias** del ID repo. Tabla canónica de equivalencias también en
+[`docs/pdd/README.md`](../pdd/README.md).
 
-| US (código) | US (Notion) | Alcance |
+| Repo | Notion alias | Tema |
 |---|---|---|
 | US-54 | US-30 | Catálogo de Estructuras Salariales (sin monto en la spec nueva) |
-| US-55 | US-30 (absorbido) | Actualización de monto en la estructura → eliminado; reemplazado por revisiones |
-| US-56 | US-31 | CRUD de colaboradores (sin estado activo/inactivo en la spec nueva) |
-| US-57 | US-32 | Alta de contrato con monto inicial + motivo |
-| US-58 | US-33 | Adjuntos y finalización de contrato. La edición del listado se retiró: post-creación los únicos cambios sobre un contrato son finalización (desde el listado o la ficha) y revisión salarial (desde la ficha). |
-| (nuevo) | US-34 | Revisión salarial individual por contrato |
-| (nuevo) | US-35 | Revisión salarial masiva |
+| US-55 | US-34 + US-35 | Revisión salarial individual + masiva (mismo PDD) |
+| US-56 | US-31 | CRUD de colaboradores (sin estado activo/inactivo) |
+| US-57 | US-32 | Alta de contrato con monto inicial + motivo (retroactividad 30 días) |
+| US-58 | US-33 | Detalle, edición y finalización de contratos |
 | US-59 | US-36 | Job diario de finalización automática |
 | US-60 | US-37 | Alerta colaborador sin contratos vigentes |
-| US-61 | US-38 | Generación masiva de liquidaciones |
+| US-61 | US-38 | Generación masiva de liquidaciones del mes |
 | US-62 | US-39 | Ajustes de liquidación |
-| US-63 | US-40 | Confirmación de liquidaciones |
-| US-64 | US-41 | Pago individual |
-| US-65 | US-42 | Pago en lote |
-| US-66 | US-43 | Anulación de liquidación |
-| US-67 | US-44 | Ficha consolidada del colaborador |
-| US-68 | US-45 | Dashboard RRHH |
-| US-69 | US-46 | Reportes |
+| US-63 | US-40 | Aprobar liquidación (estado `aprobada_rrhh`, ex `confirmada`) |
+| US-64 | US-42 | Pago individual de liquidación aprobada |
+| US-65 | US-43 | Pago en lote de múltiples liquidaciones |
+| US-66 | US-44 | Anulación de liquidación |
+| US-67 | US-46 | Ficha consolidada del colaborador (+ mirror Tesorería) |
+| US-68 | US-47 | Dashboard RRHH (cards diferenciadas por rol) |
+| US-69 | US-48 | Reportes de gasto en personal (+ mirror Tesorería) |
+| **US-70** | **US-41** | **Devolver liquidación a "generada" (NUEVA refactor 2026-04-27)** |
+| **US-71** | **US-45** | **Bandeja Tesorería de pagos pendientes (NUEVA refactor 2026-04-27)** |
 
 ### Reglas transversales adicionales
 

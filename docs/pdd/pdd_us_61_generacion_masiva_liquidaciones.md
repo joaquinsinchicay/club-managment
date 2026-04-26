@@ -1,6 +1,6 @@
 # PDD — US-61 · Generación masiva de liquidaciones del mes
 
-> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · `US-37`. En el repo: **US-61**.
+> PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-38`. En el repo: **US-61**. (Pre-refactor 2026-04-27 el alias era `US-37`.)
 
 ---
 

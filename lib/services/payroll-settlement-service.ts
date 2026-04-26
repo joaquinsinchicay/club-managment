@@ -658,7 +658,7 @@ export async function approveSettlementsBulk(params: {
 }
 
 // -------------------------------------------------------------------------
-// Return to "generada" (US-41) — RRHH o Tesoreria
+// Return to "generada" (US-70, Notion alias US-41) — RRHH o Tesoreria
 // -------------------------------------------------------------------------
 
 export type ReturnToGeneratedRawInput = { settlementId?: unknown; reason?: unknown };
