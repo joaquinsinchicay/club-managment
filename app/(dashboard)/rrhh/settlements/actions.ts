@@ -9,6 +9,7 @@ import {
   approveSettlementsBulk,
   deleteAdjustment,
   generateMonthlySettlements,
+  returnSettlementToGenerated,
   updateHoursOrNotes,
   type PayrollSettlementActionCode,
 } from "@/lib/services/payroll-settlement-service";
@@ -28,6 +29,8 @@ function toFeedbackCode(code: PayrollSettlementActionCode): string {
       return "settlement_approved";
     case "approved_bulk":
       return "settlement_approved_bulk";
+    case "returned_to_generated":
+      return "settlement_returned_to_generated";
     case "annulled":
       return "settlement_annulled";
     case "adjustment_added":
@@ -78,6 +81,8 @@ function toFeedbackCode(code: PayrollSettlementActionCode): string {
       return "settlement_invalid_status";
     case "already_approved":
       return "settlement_already_approved";
+    case "reason_required":
+      return "settlement_reason_required";
     case "already_annulled":
       return "settlement_already_annulled";
     case "movement_still_active":
@@ -182,6 +187,18 @@ export async function annulSettlementAction(
     reason: formData.get("reason"),
   });
   revalidatePath("/rrhh/settlements");
+  return { ok: result.ok, code: toFeedbackCode(result.code) };
+}
+
+export async function returnSettlementToGeneratedAction(
+  formData: FormData,
+): Promise<SettlementActionResult> {
+  const result = await returnSettlementToGenerated({
+    settlementId: formData.get("settlement_id"),
+    reason: formData.get("reason"),
+  });
+  revalidatePath("/rrhh/settlements");
+  revalidatePath("/treasury/payroll");
   return { ok: result.ok, code: toFeedbackCode(result.code) };
 }
 

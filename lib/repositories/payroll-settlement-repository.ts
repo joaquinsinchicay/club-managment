@@ -101,6 +101,10 @@ type SettlementRow = {
   status: PayrollSettlementStatus;
   approved_at: string | null;
   approved_by_user_id: string | null;
+  returned_at: string | null;
+  returned_by_user_id: string | null;
+  returned_by_role: "rrhh" | "tesoreria" | null;
+  returned_reason: string | null;
   paid_at: string | null;
   paid_movement_id: string | null;
   annulled_at: string | null;
@@ -123,7 +127,7 @@ type AdjustmentRow = {
 };
 
 const SETTLEMENT_COLUMNS =
-  "id,club_id,contract_id,period_year,period_month,base_amount,adjustments_total,total_amount,hours_worked,classes_worked,requires_hours_input,notes,status,approved_at,approved_by_user_id,paid_at,paid_movement_id,annulled_at,annulled_reason,annulled_by_user_id,created_at,updated_at,created_by_user_id,updated_by_user_id";
+  "id,club_id,contract_id,period_year,period_month,base_amount,adjustments_total,total_amount,hours_worked,classes_worked,requires_hours_input,notes,status,approved_at,approved_by_user_id,returned_at,returned_by_user_id,returned_by_role,returned_reason,paid_at,paid_movement_id,annulled_at,annulled_reason,annulled_by_user_id,created_at,updated_at,created_by_user_id,updated_by_user_id";
 
 const ADJUSTMENT_COLUMNS =
   "id,settlement_id,type,concept,amount,created_at,created_by_user_id";
@@ -247,6 +251,10 @@ function mapSettlement(row: SettlementRow, maps: EnrichmentMaps): PayrollSettlem
     status: row.status,
     approvedAt: row.approved_at,
     approvedByUserId: row.approved_by_user_id,
+    returnedAt: row.returned_at,
+    returnedByUserId: row.returned_by_user_id,
+    returnedByRole: row.returned_by_role,
+    returnedReason: row.returned_reason,
     paidAt: row.paid_at,
     paidMovementId: row.paid_movement_id,
     annulledAt: row.annulled_at,
@@ -652,6 +660,41 @@ export const payrollSettlementRepository = {
       approvedCount: Number(payload.approved_count ?? 0),
       skippedCount: Number(payload.skipped_count ?? 0),
       errors: Array.isArray(payload.errors) ? payload.errors : [],
+    };
+  },
+
+  async callReturnToGenerated(params: {
+    clubId: string;
+    settlementId: string;
+    reason: string;
+  }): Promise<{ ok: boolean; code: string; returnedByRole: "rrhh" | "tesoreria" | null }> {
+    const supabase = requireAdminClient("rpc_hr_return_settlement_to_generated", params);
+    const { error: setErr } = await supabase.rpc("set_current_club", {
+      p_club_id: params.clubId,
+    });
+    if (setErr && setErr.code !== "42883") {
+      console.warn("[payroll-settlement-repo] set_current_club failed", setErr);
+    }
+    const { data, error } = await supabase.rpc("hr_return_settlement_to_generated", {
+      p_settlement_id: params.settlementId,
+      p_reason: params.reason,
+    });
+    if (error) {
+      throw new PayrollSettlementRepositoryInfraError(
+        "rpc_failed",
+        "hr_return_settlement_to_generated",
+        { cause: error },
+      );
+    }
+    const payload = (data ?? {}) as {
+      ok?: boolean;
+      code?: string;
+      returned_by_role?: "rrhh" | "tesoreria";
+    };
+    return {
+      ok: Boolean(payload.ok),
+      code: String(payload.code ?? "unknown_error"),
+      returnedByRole: payload.returned_by_role ?? null,
     };
   },
 

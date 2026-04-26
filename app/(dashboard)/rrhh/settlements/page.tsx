@@ -9,6 +9,7 @@ import {
   generateMonthlySettlementsAction,
   payStaffSettlementAction,
   payStaffSettlementsBatchAction,
+  returnSettlementToGeneratedAction,
   updateHoursOrNotesAction,
 } from "@/app/(dashboard)/rrhh/settlements/actions";
 import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
@@ -58,6 +59,7 @@ export default async function RrhhSettlementsPage() {
         updateHoursOrNotesAction={updateHoursOrNotesAction}
         approveAction={approveSettlementAction}
         approveBulkAction={approveSettlementsBulkAction}
+        returnAction={returnSettlementToGeneratedAction}
         annulAction={annulSettlementAction}
         payAction={payStaffSettlementAction}
         payBatchAction={payStaffSettlementsBatchAction}

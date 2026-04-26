@@ -61,6 +61,10 @@ export type PayrollSettlement = {
   status: PayrollSettlementStatus;
   approvedAt: string | null;
   approvedByUserId: string | null;
+  returnedAt: string | null;
+  returnedByUserId: string | null;
+  returnedByRole: "rrhh" | "tesoreria" | null;
+  returnedReason: string | null;
   paidAt: string | null;
   paidMovementId: string | null;
   annulledAt: string | null;

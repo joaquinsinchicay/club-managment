@@ -124,3 +124,15 @@ export function canOperateHrSettlements(membership: MembershipLike) {
 export function canOperateHrPayments(membership: MembershipLike) {
   return canOperateHrSettlements(membership);
 }
+
+/**
+ * US-41 · Devolver una liquidación aprobada al estado "generada".
+ * Disponible tanto para rol RRHH como para rol Tesorería (US-41 Scenario 01-02),
+ * para que cualquiera de los dos pueda corregir errores detectados después
+ * de la aprobación sin tener que anular la liquidación.
+ */
+export function canReturnPayrollSettlement(membership: MembershipLike) {
+  const active = getActiveMembership(membership);
+  if (!active) return false;
+  return hasMembershipRole(active, "rrhh") || hasMembershipRole(active, "tesoreria");
+}

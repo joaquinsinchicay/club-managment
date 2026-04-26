@@ -59,6 +59,7 @@ type SettlementsListProps = {
   updateHoursOrNotesAction: (formData: FormData) => Promise<SettlementActionResult>;
   approveAction: (formData: FormData) => Promise<SettlementActionResult>;
   approveBulkAction: (formData: FormData) => Promise<SettlementActionResult>;
+  returnAction: (formData: FormData) => Promise<SettlementActionResult>;
   annulAction: (formData: FormData) => Promise<SettlementActionResult>;
   payAction: (formData: FormData) => Promise<SettlementActionResult>;
   payBatchAction: (formData: FormData) => Promise<SettlementActionResult>;
@@ -108,6 +109,7 @@ export function SettlementsList({
   updateHoursOrNotesAction,
   approveAction,
   approveBulkAction,
+  returnAction,
   annulAction,
   payAction,
   payBatchAction,
@@ -124,6 +126,7 @@ export function SettlementsList({
   const [editingDetail, setEditingDetail] = useState<PayrollSettlement | null>(null);
   const [approvingOne, setApprovingOne] = useState<PayrollSettlement | null>(null);
   const [approvingBulk, setApprovingBulk] = useState(false);
+  const [returning, setReturning] = useState<PayrollSettlement | null>(null);
   const [annulling, setAnnulling] = useState<PayrollSettlement | null>(null);
   const [paying, setPaying] = useState<PayrollSettlement | null>(null);
   const [payingBulk, setPayingBulk] = useState(false);
@@ -131,6 +134,7 @@ export function SettlementsList({
   const [genPending, setGenPending] = useState(false);
   const [approvePending, setApprovePending] = useState(false);
   const [bulkPending, setBulkPending] = useState(false);
+  const [returnPending, setReturnPending] = useState(false);
   const [annulPending, setAnnulPending] = useState(false);
   const [payPending, setPayPending] = useState(false);
   const [payBulkPending, setPayBulkPending] = useState(false);
@@ -415,10 +419,20 @@ export function SettlementsList({
                     </span>
                   </DataTableCell>
                   <DataTableCell>
-                    <StatusBadge
-                      tone={settlementStatusTone(s.status)}
-                      label={sTexts.status_options[s.status]}
-                    />
+                    <div className="flex flex-col items-start gap-0.5">
+                      <StatusBadge
+                        tone={settlementStatusTone(s.status)}
+                        label={sTexts.status_options[s.status]}
+                      />
+                      {s.status === "generada" && s.returnedByRole ? (
+                        <span className="text-[10px] font-medium text-ds-amber-700">
+                          {sTexts.returned_by_template.replace(
+                            "{role}",
+                            sTexts.returned_role_options[s.returnedByRole],
+                          )}
+                        </span>
+                      ) : null}
+                    </div>
                   </DataTableCell>
                   <DataTableCell align="right">
                     {canOperate ? (
@@ -442,13 +456,22 @@ export function SettlementsList({
                           </>
                         ) : null}
                         {s.status === "aprobada_rrhh" ? (
-                          <button
-                            type="button"
-                            onClick={() => setPaying(s)}
-                            className={buttonClass({ variant: "primary", size: "sm" })}
-                          >
-                            {sTexts.action_pay}
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setPaying(s)}
+                              className={buttonClass({ variant: "primary", size: "sm" })}
+                            >
+                              {sTexts.action_pay}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setReturning(s)}
+                              className={buttonClass({ variant: "secondary", size: "sm" })}
+                            >
+                              {sTexts.action_return}
+                            </button>
+                          </>
                         ) : null}
                         {(s.status === "generada" || s.status === "aprobada_rrhh") ? (
                           <button
@@ -679,6 +702,55 @@ export function SettlementsList({
             pendingLabel={sTexts.submit_pending}
           />
         </form>
+      </Modal>
+
+      {/* Return to "generada" (US-41) */}
+      <Modal
+        open={returning !== null}
+        onClose={() => !returnPending && setReturning(null)}
+        title={sTexts.return_modal_title}
+        description={sTexts.return_modal_description}
+        size="sm"
+        closeDisabled={returnPending}
+      >
+        {returning ? (
+          <form
+            action={(fd) =>
+              runAction(
+                returnAction,
+                fd,
+                () => setReturning(null),
+                setReturnPending,
+              )
+            }
+            className="grid gap-4"
+          >
+            <input type="hidden" name="settlement_id" value={returning.id} />
+            <FormField>
+              <FormFieldLabel>{sTexts.col_member}</FormFieldLabel>
+              <FormReadonly>
+                {returning.staffMemberName ?? "—"} ·{" "}
+                {formatPeriodLabel(returning.periodYear, returning.periodMonth)}
+              </FormReadonly>
+            </FormField>
+            <FormField>
+              <FormFieldLabel required>{sTexts.return_reason_label}</FormFieldLabel>
+              <FormTextarea
+                name="reason"
+                rows={3}
+                required
+                maxLength={500}
+                placeholder={sTexts.return_reason_placeholder}
+              />
+            </FormField>
+            <ModalFooter
+              onCancel={() => setReturning(null)}
+              cancelLabel={sTexts.cancel_cta}
+              submitLabel={sTexts.return_submit_cta}
+              pendingLabel={sTexts.submit_pending}
+            />
+          </form>
+        ) : null}
       </Modal>
 
       {/* Pay (single) */}

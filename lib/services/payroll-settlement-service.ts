@@ -10,7 +10,7 @@
 import { parseLocalizedAmount } from "@/lib/amounts";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import type { Membership } from "@/lib/domain/access";
-import { canOperateHrSettlements } from "@/lib/domain/authorization";
+import { canOperateHrSettlements, canReturnPayrollSettlement } from "@/lib/domain/authorization";
 import {
   isPayrollAdjustmentType,
   type PayrollAdjustmentType,
@@ -35,6 +35,7 @@ export type PayrollSettlementActionCode =
   | "generated"
   | "approved"
   | "approved_bulk"
+  | "returned_to_generated"
   | "annulled"
   | "adjustment_added"
   | "adjustment_updated"
@@ -59,6 +60,7 @@ export type PayrollSettlementActionCode =
   | "zero_amount_requires_approval"
   | "invalid_status"
   | "already_approved"
+  | "reason_required"
   | "already_annulled"
   | "movement_still_active"
   | "partial"
@@ -650,6 +652,55 @@ export async function approveSettlementsBulk(params: {
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
       console.error("[payroll-settlement-service.approve-bulk]", error);
+    }
+    return err("unknown_error");
+  }
+}
+
+// -------------------------------------------------------------------------
+// Return to "generada" (US-41) — RRHH o Tesoreria
+// -------------------------------------------------------------------------
+
+export type ReturnToGeneratedRawInput = { settlementId?: unknown; reason?: unknown };
+
+export async function returnSettlementToGenerated(
+  raw: ReturnToGeneratedRawInput,
+): Promise<PayrollSettlementActionResult> {
+  const session = await getAuthenticatedSessionContext();
+  if (!session) return err("unauthenticated");
+  if (!session.activeClub || !session.activeMembership) return err("no_active_club");
+  if (!canReturnPayrollSettlement(session.activeMembership)) return err("forbidden");
+  const clubId = session.activeClub.id;
+
+  const settlementId = typeof raw.settlementId === "string" ? raw.settlementId.trim() : "";
+  if (!settlementId) return err("settlement_not_found");
+  const reason = typeof raw.reason === "string" ? raw.reason.trim() : "";
+  if (!reason) return err("reason_required");
+
+  try {
+    const res = await payrollSettlementRepository.callReturnToGenerated({
+      clubId,
+      settlementId,
+      reason,
+    });
+    if (!res.ok) {
+      switch (res.code) {
+        case "settlement_not_found":
+          return err("settlement_not_found");
+        case "invalid_status":
+          return err("invalid_status");
+        case "reason_required":
+          return err("reason_required");
+        case "forbidden":
+          return err("forbidden");
+        default:
+          return err("unknown_error");
+      }
+    }
+    return ok("returned_to_generated");
+  } catch (error) {
+    if (isPayrollSettlementRepositoryInfraError(error)) {
+      console.error("[payroll-settlement-service.return-to-generated]", error);
     }
     return err("unknown_error");
   }
