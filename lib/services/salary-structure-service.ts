@@ -1,14 +1,13 @@
 /**
- * Service layer for Salary Structures (US-54 / US-55).
+ * Service layer for Salary Structures (US-30 · ex US-54).
+ *
+ * El maestro de Estructuras es puro catálogo: sin monto, sin historial.
+ * El monto vive en el contrato vía `staff_contract_revisions`.
  *
  * Orchestrates:
- *  - Authorization (`admin` o `rrhh` en el club activo).
+ *  - Authorization (`rrhh` en el club activo).
  *  - Business-rule validation (campos obligatorios, duplicados por
- *    rol+actividad, inmutabilidad de rol/actividad/monto en edición,
- *    estado default).
- *  - Creación de la primera versión de monto al alta.
- *  - Delegación de la actualización de monto al RPC transaccional
- *    `hr_update_salary_structure_amount` (US-55).
+ *    rol + actividad + divisiones, estado default).
  *  - Audit log append-only via repository.recordActivity.
  *
  * Devuelve resultados discriminados `{ ok, code }` para que las server
@@ -68,8 +67,6 @@ export type SalaryStructureActionCode =
   | "remuneration_type_required"
   | "invalid_remuneration_type"
   | "invalid_status"
-  | "amount_required"
-  | "amount_must_be_positive"
   | "invalid_workload_hours"
   | "duplicate_role_activity"
   // infra

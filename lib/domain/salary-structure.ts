@@ -1,12 +1,9 @@
 /**
- * Domain entity and pure helpers for Salary Structures (US-54 / US-55).
+ * Domain entity and pure helpers for Salary Structures (US-30, ex US-54).
  *
- * A salary structure represents a paid position in the club defined by
- * `functional_role × activity × remuneration_type`. Each structure has a
- * versioned amount history (`salary_structure_versions`): only one version
- * can be current at any time (enforced by a partial unique index on
- * `end_date is null`). Updates to the amount close the current version and
- * open a new one with the new amount and effective date.
+ * A salary structure is a pure catalog entry: paid position in the club
+ * defined by `functional_role × divisions × activity × remuneration_type`.
+ * No amount, no history — el monto vive en `staff_contract_revisions`.
  *
  * This module is intentionally effect-free: it exposes enums, types and
  * pure helpers used by the UI, the service layer and the repository.

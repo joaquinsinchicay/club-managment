@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 
 import {
   createStaffContractAction,
-  deactivateStaffMemberAction,
   updateStaffMemberAction,
 } from "@/app/(dashboard)/settings/rrhh/actions";
 import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
@@ -50,7 +49,6 @@ export default async function StaffProfilePage({
         canMutate={canMutate}
         updateAction={updateStaffMemberAction}
         createContractAction={createStaffContractAction}
-        deactivateAction={deactivateStaffMemberAction}
       />
     </main>
   );

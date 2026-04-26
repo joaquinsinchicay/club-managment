@@ -39,16 +39,14 @@ const SUCCESS_CODES = new Set<string>([
   "cost_center_movement_links_synced",
   "cost_center_movement_unlinked",
 
-  // Settings · RRHH · salary structures (US-54 / US-55)
+  // RRHH · salary structures (US-30, ex US-54)
   "salary_structure_created",
   "salary_structure_updated",
   "salary_structure_status_changed",
-  "salary_structure_amount_updated",
 
-  // Settings · RRHH · staff members (US-56)
+  // RRHH · staff members (US-31, ex US-56)
   "staff_member_created",
   "staff_member_updated",
-  "staff_member_deactivated",
 
   // Settings · RRHH · staff contracts (US-57 / US-58)
   "staff_contract_created",

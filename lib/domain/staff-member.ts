@@ -29,9 +29,6 @@ export type StaffMember = {
   hireDate: string;
   activeContractCount: number;
   hasActiveContract: boolean;
-  deactivatedAt: string | null;
-  deactivatedByUserId: string | null;
-  deactivationReason: string | null;
   createdAt: string;
   updatedAt: string;
   createdByUserId: string | null;

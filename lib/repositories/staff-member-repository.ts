@@ -99,9 +99,6 @@ type MemberRow = {
   vinculo_type: StaffVinculoType;
   cbu_alias: string | null;
   hire_date: string;
-  deactivated_at: string | null;
-  deactivated_by_user_id: string | null;
-  deactivation_reason: string | null;
   created_at: string;
   updated_at: string;
   created_by_user_id: string | null;
@@ -109,7 +106,7 @@ type MemberRow = {
 };
 
 const MEMBER_COLUMNS =
-  "id,club_id,first_name,last_name,dni,cuit_cuil,email,phone,vinculo_type,cbu_alias,hire_date,deactivated_at,deactivated_by_user_id,deactivation_reason,created_at,updated_at,created_by_user_id,updated_by_user_id";
+  "id,club_id,first_name,last_name,dni,cuit_cuil,email,phone,vinculo_type,cbu_alias,hire_date,created_at,updated_at,created_by_user_id,updated_by_user_id";
 
 function mapMember(row: MemberRow, activeContractCount: number): StaffMember {
   return {
@@ -126,9 +123,6 @@ function mapMember(row: MemberRow, activeContractCount: number): StaffMember {
     hireDate: row.hire_date,
     activeContractCount,
     hasActiveContract: activeContractCount > 0,
-    deactivatedAt: row.deactivated_at,
-    deactivatedByUserId: row.deactivated_by_user_id,
-    deactivationReason: row.deactivation_reason,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdByUserId: row.created_by_user_id,
@@ -355,34 +349,6 @@ export const staffMemberRepository = {
     if (error) return throwWriteFailure("update_staff_member", input, error);
 
     return this.getById(input.clubId, input.memberId);
-  },
-
-  async deactivate(input: {
-    clubId: string;
-    staffMemberId: string;
-    reason: string | null;
-  }): Promise<{ ok: boolean; code: string }> {
-    const supabase = requireAdminClient("rpc_hr_deactivate_staff_member", {
-      clubId: input.clubId,
-      staffMemberId: input.staffMemberId,
-    });
-    const { data, error } = await supabase.rpc("hr_deactivate_staff_member", {
-      p_staff_member_id: input.staffMemberId,
-      p_reason: input.reason,
-    });
-    if (error) {
-      console.error("[staff-member-repo] rpc hr_deactivate_staff_member failed", error);
-      throw new StaffMemberRepositoryInfraError(
-        "rpc_failed",
-        "hr_deactivate_staff_member",
-        { cause: error },
-      );
-    }
-    const payload = (data ?? {}) as { ok?: boolean; code?: string };
-    return {
-      ok: Boolean(payload.ok),
-      code: String(payload.code ?? "unknown_error"),
-    };
   },
 
   async recordActivity(input: RecordActivityInput): Promise<void> {

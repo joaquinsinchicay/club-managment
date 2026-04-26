@@ -1,12 +1,13 @@
 /**
- * Service layer for Staff Contracts (US-57 / US-58).
+ * Service layer for Staff Contracts (US-32 / US-33, ex US-57 / US-58).
  *
  * Orchestrates:
- *  - Authorization (`admin` or `rrhh`).
+ *  - Authorization (`rrhh`).
  *  - Business-rule validation: campos obligatorios, backdate max 30 días,
- *    coherencia end_date >= start_date, amount > 0 si flag off, unicidad
- *    de estructura vigente, colaborador/estructura activos.
- *  - Freeze/unfreeze del monto al alternar `uses_structure_amount`.
+ *    coherencia end_date >= start_date, monto inicial > 0, unicidad de
+ *    estructura vigente, colaborador/estructura activos.
+ *  - Alta atómica vía RPC `hr_create_contract_with_initial_revision`
+ *    (crea contrato + primera revisión salarial).
  *  - Delegación de `finalize` al RPC `hr_finalize_contract` SECURITY DEFINER.
  *  - Audit log append-only.
  */

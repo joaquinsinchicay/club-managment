@@ -20,13 +20,7 @@ import {
 } from "@/components/ui/data-table";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
-import {
-  FormBanner,
-  FormField,
-  FormFieldLabel,
-  FormHelpText,
-  FormTextarea,
-} from "@/components/ui/modal-form";
+import { FormBanner } from "@/components/ui/modal-form";
 import { CreateContractForm } from "@/components/hr/create-contract-form";
 import { StaffMemberFormFields } from "@/components/hr/staff-member-form-fields";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -62,7 +56,6 @@ type StaffProfileViewProps = {
   canMutate: boolean;
   updateAction: (formData: FormData) => Promise<RrhhActionResult>;
   createContractAction: (formData: FormData) => Promise<RrhhActionResult>;
-  deactivateAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 function formatAmount(amount: number | null | undefined, currencyCode: string): string {
@@ -141,7 +134,6 @@ export function StaffProfileView({
   canMutate,
   updateAction,
   createContractAction,
-  deactivateAction,
 }: StaffProfileViewProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -149,18 +141,12 @@ export function StaffProfileView({
   const [editPending, setEditPending] = useState(false);
   const [newContractOpen, setNewContractOpen] = useState(false);
   const [newContractPending, setNewContractPending] = useState(false);
-  const [deactivateOpen, setDeactivateOpen] = useState(false);
-  const [deactivatePending, setDeactivatePending] = useState(false);
 
   const member = profile.member;
   const fullName = `${member.firstName} ${member.lastName}`.trim();
-  const isDeactivated = member.deactivatedAt !== null;
-  const canShowMutationCTAs = canMutate && !isDeactivated;
-  const canDeactivate = canShowMutationCTAs && !profile.hasActiveContract;
+  const canShowMutationCTAs = canMutate;
 
-  const tenureLabel = isDeactivated
-    ? formatTenure(member.hireDate)
-    : formatTenure(member.hireDate);
+  const tenureLabel = formatTenure(member.hireDate);
   const hireLabel = profileTexts.tenure_since_template.replace(
     "{date}",
     formatIsoDate(member.hireDate),
@@ -202,29 +188,6 @@ export function StaffProfileView({
     }
   }
 
-  async function handleDeactivateSubmit(formData: FormData) {
-    setDeactivatePending(true);
-    try {
-      const result = await deactivateAction(formData);
-      triggerClientFeedback("settings", result.code);
-      if (result.ok) {
-        setDeactivateOpen(false);
-        startTransition(() => router.refresh());
-      }
-    } finally {
-      setDeactivatePending(false);
-    }
-  }
-
-  const deactivatedBannerText = isDeactivated
-    ? profileTexts.deactivated_banner_template
-        .replace("{date}", formatIsoDate(member.deactivatedAt))
-        .replace(
-          "{reason}",
-          member.deactivationReason?.trim() || profileTexts.deactivated_banner_no_reason,
-        )
-    : "";
-
   return (
     <div className="flex flex-col gap-6">
       {/* Breadcrumb */}
@@ -235,12 +198,6 @@ export function StaffProfileView({
         <span aria-hidden="true">·</span>
         <span className="break-words text-foreground">{fullName}</span>
       </nav>
-
-      {isDeactivated ? (
-        <FormBanner variant="warning">
-          <strong>{profileTexts.deactivated_banner_title}</strong> · {deactivatedBannerText}
-        </FormBanner>
-      ) : null}
 
       {/* Header card */}
       <Card padding="comfortable">
@@ -298,23 +255,12 @@ export function StaffProfileView({
               >
                 {profileTexts.edit_cta}
               </button>
-              <button
-                type="button"
-                onClick={() => setDeactivateOpen(true)}
-                disabled={!canDeactivate}
-                title={
-                  !canDeactivate ? profileTexts.deactivate_disabled_has_active_contracts : undefined
-                }
-                className={buttonClass({ variant: "destructive-outline", size: "md" })}
-              >
-                {profileTexts.deactivate_cta}
-              </button>
             </div>
           ) : null}
         </div>
       </Card>
 
-      {!profile.hasActiveContract && !isDeactivated ? (
+      {!profile.hasActiveContract ? (
         <FormBanner variant="warning">{profileTexts.alert_no_active_contracts}</FormBanner>
       ) : null}
 
@@ -595,40 +541,6 @@ export function StaffProfileView({
         />
       </Modal>
 
-      {/* Deactivate modal */}
-      <Modal
-        open={deactivateOpen}
-        onClose={() => {
-          if (deactivatePending) return;
-          setDeactivateOpen(false);
-        }}
-        title={profileTexts.deactivate_modal_title}
-        description={profileTexts.deactivate_modal_description}
-        size="sm"
-        closeDisabled={deactivatePending}
-      >
-        <form action={handleDeactivateSubmit} className="grid gap-4">
-          <input type="hidden" name="staff_member_id" value={member.id} />
-          <FormBanner variant="destructive">{profileTexts.deactivate_warning}</FormBanner>
-          <FormField>
-            <FormFieldLabel>{profileTexts.deactivate_reason_label}</FormFieldLabel>
-            <FormTextarea
-              name="reason"
-              rows={3}
-              maxLength={500}
-              placeholder={profileTexts.deactivate_reason_placeholder}
-            />
-            <FormHelpText>{profileTexts.deactivate_reason_helper}</FormHelpText>
-          </FormField>
-          <ModalFooter
-            onCancel={() => setDeactivateOpen(false)}
-            cancelLabel={profileTexts.deactivate_cancel_cta}
-            submitLabel={profileTexts.deactivate_submit_cta}
-            pendingLabel={profileTexts.deactivate_pending}
-            submitVariant="destructive"
-          />
-        </form>
-      </Modal>
     </div>
   );
 }
