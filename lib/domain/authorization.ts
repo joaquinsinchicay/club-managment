@@ -136,3 +136,15 @@ export function canReturnPayrollSettlement(membership: MembershipLike) {
   if (!active) return false;
   return hasMembershipRole(active, "rrhh") || hasMembershipRole(active, "tesoreria");
 }
+
+/**
+ * US-45 · Bandeja Tesorería de pagos pendientes.
+ *
+ * Solo rol Tesorería accede. Es un mirror específico para el flujo de pago,
+ * sin abrir el módulo /rrhh (que sigue siendo exclusivo de rol "rrhh").
+ */
+export function canAccessTreasuryPayrollTray(membership: MembershipLike) {
+  const active = getActiveMembership(membership);
+  if (!active) return false;
+  return hasMembershipRole(active, "tesoreria");
+}

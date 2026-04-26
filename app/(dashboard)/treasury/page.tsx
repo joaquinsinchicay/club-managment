@@ -18,16 +18,19 @@ import {
   updateCostCenterAction
 } from "@/app/(dashboard)/treasury/cost-centers/actions";
 import { CostCentersTab } from "@/components/treasury/cost-centers-tab";
+import { TreasuryPayrollPendingCard } from "@/components/treasury/payroll-pending-card";
 import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import {
   canAccessCostCenters,
+  canAccessTreasuryPayrollTray,
   canMutateTreasurySettings,
   canOperateTesoreria
 } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import { listCostCentersForActiveClub } from "@/lib/services/cost-center-service";
+import { getTreasuryPayrollSummary } from "@/lib/services/treasury-payroll-service";
 import {
   getActiveActivitiesForTesoreria,
   getEnabledCalendarEventsForTesoreria,
@@ -101,6 +104,12 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
     (account) => !account.visibleForSecretaria && account.visibleForTesoreria
   );
 
+  // US-45: Card "Pagos de nómina pendientes" — solo rol tesoreria.
+  const canSeePayroll = canAccessTreasuryPayrollTray(context.activeMembership);
+  const payrollSummary = canSeePayroll ? await getTreasuryPayrollSummary() : null;
+  const payrollPending =
+    payrollSummary && payrollSummary.ok ? payrollSummary.summary : null;
+
   // US-52: Centros de Costo — solo rol tesoreria. Se prefetch en server para
   // pasar por prop al slot de la sub-tab. Si el rol no aplica, costCentersTab
   // queda undefined y la pestaña no renderiza nada.
@@ -161,6 +170,14 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
           </div>
         }
       />
+
+      {payrollPending && payrollPending.count > 0 ? (
+        <TreasuryPayrollPendingCard
+          count={payrollPending.count}
+          totalAmount={payrollPending.totalAmount}
+          clubCurrencyCode={context.activeClub.currencyCode}
+        />
+      ) : null}
 
       <TreasuryRoleCard
         dashboard={dashboard}
