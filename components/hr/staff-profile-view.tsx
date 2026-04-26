@@ -80,7 +80,7 @@ function formatIsoDate(iso: string | null | undefined): string {
 
 function settlementStatusTone(status: PayrollSettlementStatus) {
   if (status === "generada") return "warning" as const;
-  if (status === "confirmada") return "accent" as const;
+  if (status === "aprobada_rrhh") return "accent" as const;
   if (status === "pagada") return "success" as const;
   return "neutral" as const;
 }

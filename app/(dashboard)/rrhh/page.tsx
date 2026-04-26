@@ -52,7 +52,7 @@ export default async function RrhhPage() {
   const summary = summaryResult.ok
     ? summaryResult.summary
     : {
-        pendingConfirm: { count: 0, totalAmount: 0 },
+        pendingApprove: { count: 0, totalAmount: 0 },
         pendingPay: { count: 0, totalAmount: 0 },
         projectedMonth: 0,
         executedMonth: 0,
@@ -102,25 +102,25 @@ export default async function RrhhPage() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Card padding="comfortable">
             <CardHeader
-              eyebrow={dashboard.card_pending_confirm_eyebrow}
-              title={dashboard.card_pending_confirm_title}
-              description={dashboard.card_pending_confirm_description}
+              eyebrow={dashboard.card_pending_approve_eyebrow}
+              title={dashboard.card_pending_approve_title}
+              description={dashboard.card_pending_approve_description}
             />
             <CardBody>
               <div className="flex flex-col gap-1">
                 <span className="text-h2 font-semibold text-foreground">
-                  {summary.pendingConfirm.count}
+                  {summary.pendingApprove.count}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {formatAmount(summary.pendingConfirm.totalAmount, clubCurrencyCode)}
+                  {formatAmount(summary.pendingApprove.totalAmount, clubCurrencyCode)}
                 </span>
-                {canSettlements && summary.pendingConfirm.count > 0 ? (
+                {canSettlements && summary.pendingApprove.count > 0 ? (
                   <LinkButton
                     href="/rrhh/settlements?status=generada"
                     variant="secondary"
                     size="sm"
                   >
-                    {dashboard.card_pending_confirm_cta}
+                    {dashboard.card_pending_approve_cta}
                   </LinkButton>
                 ) : null}
               </div>
@@ -143,7 +143,7 @@ export default async function RrhhPage() {
                 </span>
                 {canSettlements && summary.pendingPay.count > 0 ? (
                   <LinkButton
-                    href="/rrhh/settlements?status=confirmada"
+                    href="/rrhh/settlements?status=aprobada_rrhh"
                     variant="secondary"
                     size="sm"
                   >

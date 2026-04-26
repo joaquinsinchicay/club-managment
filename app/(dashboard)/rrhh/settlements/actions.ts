@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import {
   addAdjustment,
   annulSettlement,
-  confirmSettlement,
-  confirmSettlementsBulk,
+  approveSettlement,
+  approveSettlementsBulk,
   deleteAdjustment,
   generateMonthlySettlements,
   updateHoursOrNotes,
@@ -24,10 +24,10 @@ function toFeedbackCode(code: PayrollSettlementActionCode): string {
   switch (code) {
     case "generated":
       return "settlement_generated";
-    case "confirmed":
-      return "settlement_confirmed";
-    case "confirmed_bulk":
-      return "settlement_confirmed_bulk";
+    case "approved":
+      return "settlement_approved";
+    case "approved_bulk":
+      return "settlement_approved_bulk";
     case "annulled":
       return "settlement_annulled";
     case "adjustment_added":
@@ -64,20 +64,20 @@ function toFeedbackCode(code: PayrollSettlementActionCode): string {
       return "settlement_hours_required";
     case "classes_required":
       return "settlement_classes_required";
-    case "edit_blocked_confirmed":
-      return "settlement_edit_blocked_confirmed";
+    case "edit_blocked_approved":
+      return "settlement_edit_blocked_approved";
     case "edit_blocked_paid":
       return "settlement_edit_blocked_paid";
     case "edit_blocked_annulled":
       return "settlement_edit_blocked_annulled";
     case "total_negative":
       return "settlement_total_negative";
-    case "zero_amount_requires_confirm":
-      return "settlement_zero_amount_requires_confirm";
+    case "zero_amount_requires_approval":
+      return "settlement_zero_amount_requires_approval";
     case "invalid_status":
       return "settlement_invalid_status";
-    case "already_confirmed":
-      return "settlement_already_confirmed";
+    case "already_approved":
+      return "settlement_already_approved";
     case "already_annulled":
       return "settlement_already_annulled";
     case "movement_still_active":
@@ -149,23 +149,23 @@ export async function updateHoursOrNotesAction(
   return { ok: result.ok, code: toFeedbackCode(result.code) };
 }
 
-export async function confirmSettlementAction(
+export async function approveSettlementAction(
   formData: FormData,
 ): Promise<SettlementActionResult> {
-  const result = await confirmSettlement({
+  const result = await approveSettlement({
     settlementId: formData.get("settlement_id"),
-    confirmZero: formData.get("confirm_zero"),
+    approveZero: formData.get("approve_zero"),
   });
   revalidatePath("/rrhh/settlements");
   return { ok: result.ok, code: toFeedbackCode(result.code) };
 }
 
-export async function confirmSettlementsBulkAction(
+export async function approveSettlementsBulkAction(
   formData: FormData,
 ): Promise<SettlementActionResult> {
   const ids = formData.getAll("settlement_ids").map(String).filter(Boolean);
-  const confirmZero = formData.get("confirm_zero") === "on";
-  const result = await confirmSettlementsBulk({ ids, confirmZero });
+  const approveZero = formData.get("approve_zero") === "on";
+  const result = await approveSettlementsBulk({ ids, approveZero });
   revalidatePath("/rrhh/settlements");
   return {
     ok: result.ok,

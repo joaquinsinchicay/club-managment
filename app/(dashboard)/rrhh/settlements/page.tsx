@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import {
   addAdjustmentAction,
   annulSettlementAction,
-  confirmSettlementAction,
-  confirmSettlementsBulkAction,
+  approveSettlementAction,
+  approveSettlementsBulkAction,
   deleteAdjustmentAction,
   generateMonthlySettlementsAction,
   payStaffSettlementAction,
@@ -56,8 +56,8 @@ export default async function RrhhSettlementsPage() {
         addAdjustmentAction={addAdjustmentAction}
         deleteAdjustmentAction={deleteAdjustmentAction}
         updateHoursOrNotesAction={updateHoursOrNotesAction}
-        confirmAction={confirmSettlementAction}
-        confirmBulkAction={confirmSettlementsBulkAction}
+        approveAction={approveSettlementAction}
+        approveBulkAction={approveSettlementsBulkAction}
         annulAction={annulSettlementAction}
         payAction={payStaffSettlementAction}
         payBatchAction={payStaffSettlementsBatchAction}

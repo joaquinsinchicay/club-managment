@@ -3,7 +3,7 @@
  *
  * Computes the 6 operational cards rendered in `/rrhh`:
  *   1. Liquidaciones pendientes de confirmar (count + sum of total_amount).
- *   2. Liquidaciones confirmadas pendientes de pago.
+ *   2. Liquidaciones aprobadas por RRHH pendientes de pago.
  *   3. Costo proyectado del mes (sum of current/frozen amounts for
  *      contracts vigentes during the current month).
  *   4. Ejecutado del mes (sum of total_amount of settlements `pagada`
@@ -25,7 +25,7 @@ import { staffContractRepository } from "@/lib/repositories/staff-contract-repos
 import { staffMemberRepository } from "@/lib/repositories/staff-member-repository";
 
 export type HrDashboardSummary = {
-  pendingConfirm: { count: number; totalAmount: number };
+  pendingApprove: { count: number; totalAmount: number };
   pendingPay: { count: number; totalAmount: number };
   projectedMonth: number;
   executedMonth: number;
@@ -62,17 +62,17 @@ export async function getHrDashboardSummary(): Promise<HrDashboardResult> {
       staffMemberRepository.listForClub(clubId),
     ]);
 
-    let pendingConfirmCount = 0;
-    let pendingConfirmAmount = 0;
+    let pendingApproveCount = 0;
+    let pendingApproveAmount = 0;
     let pendingPayCount = 0;
     let pendingPayAmount = 0;
     let executedMonth = 0;
 
     for (const s of settlements) {
       if (s.status === "generada") {
-        pendingConfirmCount += 1;
-        pendingConfirmAmount += s.totalAmount;
-      } else if (s.status === "confirmada") {
+        pendingApproveCount += 1;
+        pendingApproveAmount += s.totalAmount;
+      } else if (s.status === "aprobada_rrhh") {
         pendingPayCount += 1;
         pendingPayAmount += s.totalAmount;
       } else if (s.status === "pagada" && s.paidAt) {
@@ -113,7 +113,7 @@ export async function getHrDashboardSummary(): Promise<HrDashboardResult> {
     return {
       ok: true,
       summary: {
-        pendingConfirm: { count: pendingConfirmCount, totalAmount: pendingConfirmAmount },
+        pendingApprove: { count: pendingApproveCount, totalAmount: pendingApproveAmount },
         pendingPay: { count: pendingPayCount, totalAmount: pendingPayAmount },
         projectedMonth,
         executedMonth,

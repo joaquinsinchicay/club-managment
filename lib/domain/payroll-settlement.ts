@@ -1,13 +1,13 @@
 /**
- * Domain entity and pure helpers for Payroll Settlements (US-61 / US-62 /
- * US-63 / US-66).
+ * Domain entity and pure helpers for Payroll Settlements (US-38 / US-39 /
+ * US-40 / US-41 / US-44, ex US-61 / US-62 / US-63 / US-66).
  *
  * A settlement represents the payable amount of a single contract for a
  * single month. It has a lifecycle:
  *
- *    generada → confirmada → pagada
- *       ↘        ↘           ↘
- *        ────── anulada ──────
+ *    generada → aprobada_rrhh → pagada
+ *       ↘        ↘                ↘
+ *        ────── anulada ──────────
  *
  * Ajustes (adicionales, descuentos, reintegros) se aplican sobre una
  * liquidación `generada` y recalculan `adjustments_total` + `total_amount`
@@ -18,7 +18,7 @@
 
 export const PAYROLL_SETTLEMENT_STATUSES = [
   "generada",
-  "confirmada",
+  "aprobada_rrhh",
   "pagada",
   "anulada",
 ] as const;
@@ -59,8 +59,8 @@ export type PayrollSettlement = {
   requiresHoursInput: boolean;
   notes: string | null;
   status: PayrollSettlementStatus;
-  confirmedAt: string | null;
-  confirmedByUserId: string | null;
+  approvedAt: string | null;
+  approvedByUserId: string | null;
   paidAt: string | null;
   paidMovementId: string | null;
   annulledAt: string | null;

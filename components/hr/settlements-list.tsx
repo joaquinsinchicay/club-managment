@@ -57,8 +57,8 @@ type SettlementsListProps = {
   addAdjustmentAction: (formData: FormData) => Promise<SettlementActionResult>;
   deleteAdjustmentAction: (formData: FormData) => Promise<SettlementActionResult>;
   updateHoursOrNotesAction: (formData: FormData) => Promise<SettlementActionResult>;
-  confirmAction: (formData: FormData) => Promise<SettlementActionResult>;
-  confirmBulkAction: (formData: FormData) => Promise<SettlementActionResult>;
+  approveAction: (formData: FormData) => Promise<SettlementActionResult>;
+  approveBulkAction: (formData: FormData) => Promise<SettlementActionResult>;
   annulAction: (formData: FormData) => Promise<SettlementActionResult>;
   payAction: (formData: FormData) => Promise<SettlementActionResult>;
   payBatchAction: (formData: FormData) => Promise<SettlementActionResult>;
@@ -71,7 +71,7 @@ const sTexts = texts.rrhh.settlements;
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: sTexts.filter_all },
   { value: "generada", label: sTexts.filter_generada },
-  { value: "confirmada", label: sTexts.filter_confirmada },
+  { value: "aprobada_rrhh", label: sTexts.filter_aprobada_rrhh },
   { value: "pagada", label: sTexts.filter_pagada },
   { value: "anulada", label: sTexts.filter_anulada },
 ];
@@ -91,7 +91,7 @@ function formatAmount(amount: number | null | undefined, currencyCode: string): 
 
 function settlementStatusTone(status: PayrollSettlementStatus) {
   if (status === "generada") return "warning" as const;
-  if (status === "confirmada") return "accent" as const;
+  if (status === "aprobada_rrhh") return "accent" as const;
   if (status === "pagada") return "success" as const;
   return "neutral" as const;
 }
@@ -106,8 +106,8 @@ export function SettlementsList({
   addAdjustmentAction,
   deleteAdjustmentAction,
   updateHoursOrNotesAction,
-  confirmAction,
-  confirmBulkAction,
+  approveAction,
+  approveBulkAction,
   annulAction,
   payAction,
   payBatchAction,
@@ -122,14 +122,14 @@ export function SettlementsList({
 
   const [generateOpen, setGenerateOpen] = useState(false);
   const [editingDetail, setEditingDetail] = useState<PayrollSettlement | null>(null);
-  const [confirmingOne, setConfirmingOne] = useState<PayrollSettlement | null>(null);
-  const [confirmingBulk, setConfirmingBulk] = useState(false);
+  const [approvingOne, setApprovingOne] = useState<PayrollSettlement | null>(null);
+  const [approvingBulk, setApprovingBulk] = useState(false);
   const [annulling, setAnnulling] = useState<PayrollSettlement | null>(null);
   const [paying, setPaying] = useState<PayrollSettlement | null>(null);
   const [payingBulk, setPayingBulk] = useState(false);
 
   const [genPending, setGenPending] = useState(false);
-  const [confirmPending, setConfirmPending] = useState(false);
+  const [approvePending, setApprovePending] = useState(false);
   const [bulkPending, setBulkPending] = useState(false);
   const [annulPending, setAnnulPending] = useState(false);
   const [payPending, setPayPending] = useState(false);
@@ -174,7 +174,7 @@ export function SettlementsList({
   const selectableIds = useMemo(
     () =>
       filtered
-        .filter((s) => s.status === "generada" || s.status === "confirmada")
+        .filter((s) => s.status === "generada" || s.status === "aprobada_rrhh")
         .map((s) => s.id),
     [filtered],
   );
@@ -187,12 +187,12 @@ export function SettlementsList({
   );
   const selectedHasZero = selectedSettlements.some((s) => s.totalAmount === 0);
   const selectedTotal = selectedSettlements.reduce((acc, s) => acc + s.totalAmount, 0);
-  const selectionMode: "none" | "confirm" | "pay" | "mixed" = (() => {
+  const selectionMode: "none" | "approve" | "pay" | "mixed" = (() => {
     if (selectedSettlements.length === 0) return "none";
     const allGenerada = selectedSettlements.every((s) => s.status === "generada");
-    const allConfirmada = selectedSettlements.every((s) => s.status === "confirmada");
-    if (allGenerada) return "confirm";
-    if (allConfirmada) return "pay";
+    const allAprobadaRrhh = selectedSettlements.every((s) => s.status === "aprobada_rrhh");
+    if (allGenerada) return "approve";
+    if (allAprobadaRrhh) return "pay";
     return "mixed";
   })();
 
@@ -228,7 +228,7 @@ export function SettlementsList({
 
   const subtitleCounts = sTexts.subtitle_counts
     .replace("{generada}", String(countsByStatus.get("generada") ?? 0))
-    .replace("{confirmada}", String(countsByStatus.get("confirmada") ?? 0))
+    .replace("{aprobada_rrhh}", String(countsByStatus.get("aprobada_rrhh") ?? 0))
     .replace("{pagada}", String(countsByStatus.get("pagada") ?? 0))
     .replace("{anulada}", String(countsByStatus.get("anulada") ?? 0));
 
@@ -311,9 +311,9 @@ export function SettlementsList({
             <Button variant="secondary" size="sm" onClick={() => setSelectedIds([])}>
               {sTexts.bulk_clear_cta}
             </Button>
-            {selectionMode === "confirm" ? (
-              <Button variant="primary" size="sm" onClick={() => setConfirmingBulk(true)}>
-                {sTexts.bulk_confirm_cta}
+            {selectionMode === "approve" ? (
+              <Button variant="primary" size="sm" onClick={() => setApprovingBulk(true)}>
+                {sTexts.bulk_approve_cta}
               </Button>
             ) : null}
             {selectionMode === "pay" ? (
@@ -366,7 +366,7 @@ export function SettlementsList({
           </DataTableHeader>
           <DataTableBody>
             {filtered.map((s) => {
-              const selectable = s.status === "generada" || s.status === "confirmada";
+              const selectable = s.status === "generada" || s.status === "aprobada_rrhh";
               return (
                 <DataTableRow key={s.id} density="compact" hoverReveal>
                   <DataTableCell>
@@ -434,14 +434,14 @@ export function SettlementsList({
                             </button>
                             <button
                               type="button"
-                              onClick={() => setConfirmingOne(s)}
+                              onClick={() => setApprovingOne(s)}
                               className={buttonClass({ variant: "primary", size: "sm" })}
                             >
-                              {sTexts.action_confirm}
+                              {sTexts.action_approve}
                             </button>
                           </>
                         ) : null}
-                        {s.status === "confirmada" ? (
+                        {s.status === "aprobada_rrhh" ? (
                           <button
                             type="button"
                             onClick={() => setPaying(s)}
@@ -450,7 +450,7 @@ export function SettlementsList({
                             {sTexts.action_pay}
                           </button>
                         ) : null}
-                        {(s.status === "generada" || s.status === "confirmada") ? (
+                        {(s.status === "generada" || s.status === "aprobada_rrhh") ? (
                           <button
                             type="button"
                             onClick={() => setAnnulling(s)}
@@ -570,60 +570,60 @@ export function SettlementsList({
         ) : null}
       </Modal>
 
-      {/* Confirm one */}
+      {/* Approve one (US-40) */}
       <Modal
-        open={confirmingOne !== null}
-        onClose={() => !confirmPending && setConfirmingOne(null)}
-        title={sTexts.confirm_modal_title}
+        open={approvingOne !== null}
+        onClose={() => !approvePending && setApprovingOne(null)}
+        title={sTexts.approve_modal_title}
         size="sm"
-        closeDisabled={confirmPending}
+        closeDisabled={approvePending}
       >
-        {confirmingOne ? (
+        {approvingOne ? (
           <form
             action={(fd) =>
               runAction(
-                confirmAction,
+                approveAction,
                 fd,
-                () => setConfirmingOne(null),
-                setConfirmPending,
+                () => setApprovingOne(null),
+                setApprovePending,
               )
             }
             className="grid gap-4"
           >
-            <input type="hidden" name="settlement_id" value={confirmingOne.id} />
-            {confirmingOne.totalAmount === 0 ? (
+            <input type="hidden" name="settlement_id" value={approvingOne.id} />
+            {approvingOne.totalAmount === 0 ? (
               <>
-                <FormBanner variant="warning">{sTexts.confirm_zero_warning}</FormBanner>
-                <input type="hidden" name="confirm_zero" value="true" />
+                <FormBanner variant="warning">{sTexts.approve_zero_warning}</FormBanner>
+                <input type="hidden" name="approve_zero" value="true" />
               </>
             ) : null}
             <FormField>
               <FormFieldLabel>{sTexts.col_member}</FormFieldLabel>
               <FormReadonly>
-                {confirmingOne.staffMemberName ?? "—"} ·{" "}
-                {formatPeriodLabel(confirmingOne.periodYear, confirmingOne.periodMonth)}
+                {approvingOne.staffMemberName ?? "—"} ·{" "}
+                {formatPeriodLabel(approvingOne.periodYear, approvingOne.periodMonth)}
               </FormReadonly>
             </FormField>
             <FormField>
               <FormFieldLabel>{sTexts.col_total}</FormFieldLabel>
               <FormReadonly>
-                {formatAmount(confirmingOne.totalAmount, clubCurrencyCode)}
+                {formatAmount(approvingOne.totalAmount, clubCurrencyCode)}
               </FormReadonly>
             </FormField>
             <ModalFooter
-              onCancel={() => setConfirmingOne(null)}
+              onCancel={() => setApprovingOne(null)}
               cancelLabel={sTexts.cancel_cta}
-              submitLabel={sTexts.confirm_submit_cta}
+              submitLabel={sTexts.approve_submit_cta}
               pendingLabel={sTexts.submit_pending}
             />
           </form>
         ) : null}
       </Modal>
 
-      {/* Confirm bulk */}
+      {/* Approve bulk (US-40) */}
       <Modal
-        open={confirmingBulk}
-        onClose={() => !bulkPending && setConfirmingBulk(false)}
+        open={approvingBulk}
+        onClose={() => !bulkPending && setApprovingBulk(false)}
         title={sTexts.bulk_modal_title}
         description={sTexts.bulk_modal_description}
         size="md"
@@ -632,10 +632,10 @@ export function SettlementsList({
         <form
           action={(fd) =>
             runAction(
-              confirmBulkAction,
+              approveBulkAction,
               fd,
               () => {
-                setConfirmingBulk(false);
+                setApprovingBulk(false);
                 setSelectedIds([]);
               },
               setBulkPending,
@@ -666,14 +666,14 @@ export function SettlementsList({
           </Card>
           {selectedHasZero ? (
             <FormCheckboxCard
-              name="confirm_zero"
+              name="approve_zero"
               value="true"
-              label={sTexts.bulk_confirm_zero_label}
-              description={sTexts.bulk_confirm_zero_description}
+              label={sTexts.bulk_approve_zero_label}
+              description={sTexts.bulk_approve_zero_description}
             />
           ) : null}
           <ModalFooter
-            onCancel={() => setConfirmingBulk(false)}
+            onCancel={() => setApprovingBulk(false)}
             cancelLabel={sTexts.cancel_cta}
             submitLabel={sTexts.bulk_submit_cta}
             pendingLabel={sTexts.submit_pending}

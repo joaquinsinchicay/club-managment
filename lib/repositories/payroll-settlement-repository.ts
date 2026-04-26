@@ -99,8 +99,8 @@ type SettlementRow = {
   requires_hours_input: boolean;
   notes: string | null;
   status: PayrollSettlementStatus;
-  confirmed_at: string | null;
-  confirmed_by_user_id: string | null;
+  approved_at: string | null;
+  approved_by_user_id: string | null;
   paid_at: string | null;
   paid_movement_id: string | null;
   annulled_at: string | null;
@@ -123,7 +123,7 @@ type AdjustmentRow = {
 };
 
 const SETTLEMENT_COLUMNS =
-  "id,club_id,contract_id,period_year,period_month,base_amount,adjustments_total,total_amount,hours_worked,classes_worked,requires_hours_input,notes,status,confirmed_at,confirmed_by_user_id,paid_at,paid_movement_id,annulled_at,annulled_reason,annulled_by_user_id,created_at,updated_at,created_by_user_id,updated_by_user_id";
+  "id,club_id,contract_id,period_year,period_month,base_amount,adjustments_total,total_amount,hours_worked,classes_worked,requires_hours_input,notes,status,approved_at,approved_by_user_id,paid_at,paid_movement_id,annulled_at,annulled_reason,annulled_by_user_id,created_at,updated_at,created_by_user_id,updated_by_user_id";
 
 const ADJUSTMENT_COLUMNS =
   "id,settlement_id,type,concept,amount,created_at,created_by_user_id";
@@ -245,8 +245,8 @@ function mapSettlement(row: SettlementRow, maps: EnrichmentMaps): PayrollSettlem
     requiresHoursInput: row.requires_hours_input,
     notes: row.notes,
     status: row.status,
-    confirmedAt: row.confirmed_at,
-    confirmedByUserId: row.confirmed_by_user_id,
+    approvedAt: row.approved_at,
+    approvedByUserId: row.approved_by_user_id,
     paidAt: row.paid_at,
     paidMovementId: row.paid_movement_id,
     annulledAt: row.annulled_at,
@@ -582,24 +582,24 @@ export const payrollSettlementRepository = {
     };
   },
 
-  async callConfirm(params: {
+  async callApprove(params: {
     clubId: string;
     settlementId: string;
-    confirmZero: boolean;
+    approveZero: boolean;
   }): Promise<{ ok: boolean; code: string }> {
-    const supabase = requireAdminClient("rpc_hr_confirm_settlement", params);
+    const supabase = requireAdminClient("rpc_hr_approve_settlement", params);
     const { error: setErr } = await supabase.rpc("set_current_club", {
       p_club_id: params.clubId,
     });
     if (setErr && setErr.code !== "42883") {
       console.warn("[payroll-settlement-repo] set_current_club failed", setErr);
     }
-    const { data, error } = await supabase.rpc("hr_confirm_settlement", {
+    const { data, error } = await supabase.rpc("hr_approve_settlement", {
       p_settlement_id: params.settlementId,
-      p_confirm_zero: params.confirmZero,
+      p_approve_zero: params.approveZero,
     });
     if (error) {
-      throw new PayrollSettlementRepositoryInfraError("rpc_failed", "hr_confirm_settlement", {
+      throw new PayrollSettlementRepositoryInfraError("rpc_failed", "hr_approve_settlement", {
         cause: error,
       });
     }
@@ -607,18 +607,18 @@ export const payrollSettlementRepository = {
     return { ok: Boolean(payload.ok), code: String(payload.code ?? "unknown_error") };
   },
 
-  async callConfirmBulk(params: {
+  async callApproveBulk(params: {
     clubId: string;
     ids: string[];
-    confirmZero: boolean;
+    approveZero: boolean;
   }): Promise<{
     ok: boolean;
     code: string;
-    confirmedCount: number;
+    approvedCount: number;
     skippedCount: number;
     errors: Array<{ id: string; code: string }>;
   }> {
-    const supabase = requireAdminClient("rpc_hr_confirm_settlements_bulk", {
+    const supabase = requireAdminClient("rpc_hr_approve_settlements_bulk", {
       clubId: params.clubId,
       count: params.ids.length,
     });
@@ -628,28 +628,28 @@ export const payrollSettlementRepository = {
     if (setErr && setErr.code !== "42883") {
       console.warn("[payroll-settlement-repo] set_current_club failed", setErr);
     }
-    const { data, error } = await supabase.rpc("hr_confirm_settlements_bulk", {
+    const { data, error } = await supabase.rpc("hr_approve_settlements_bulk", {
       p_ids: params.ids,
-      p_confirm_zero: params.confirmZero,
+      p_approve_zero: params.approveZero,
     });
     if (error) {
       throw new PayrollSettlementRepositoryInfraError(
         "rpc_failed",
-        "hr_confirm_settlements_bulk",
+        "hr_approve_settlements_bulk",
         { cause: error },
       );
     }
     const payload = (data ?? {}) as {
       ok?: boolean;
       code?: string;
-      confirmed_count?: number;
+      approved_count?: number;
       skipped_count?: number;
       errors?: Array<{ id: string; code: string }>;
     };
     return {
       ok: Boolean(payload.ok),
       code: String(payload.code ?? "unknown_error"),
-      confirmedCount: Number(payload.confirmed_count ?? 0),
+      approvedCount: Number(payload.approved_count ?? 0),
       skippedCount: Number(payload.skipped_count ?? 0),
       errors: Array.isArray(payload.errors) ? payload.errors : [],
     };

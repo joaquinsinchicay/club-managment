@@ -61,10 +61,10 @@ const SUCCESS_CODES = new Set<string>([
   "contract_attachment_uploaded",
   "contract_attachment_deleted",
 
-  // Dashboard · RRHH · payroll settlements (US-61 / US-62 / US-63 / US-66)
+  // Dashboard · RRHH · payroll settlements (US-38/39/40/44, ex US-61/62/63/66)
   "settlement_generated",
-  "settlement_confirmed",
-  "settlement_confirmed_bulk",
+  "settlement_approved",
+  "settlement_approved_bulk",
   "settlement_annulled",
   "settlement_adjustment_added",
   "settlement_adjustment_updated",

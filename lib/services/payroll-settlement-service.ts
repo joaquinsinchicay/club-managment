@@ -33,8 +33,8 @@ export type PayrollSettlementActionCode =
   | "no_active_club"
   | "forbidden"
   | "generated"
-  | "confirmed"
-  | "confirmed_bulk"
+  | "approved"
+  | "approved_bulk"
   | "annulled"
   | "adjustment_added"
   | "adjustment_updated"
@@ -52,13 +52,13 @@ export type PayrollSettlementActionCode =
   | "amount_must_be_positive"
   | "hours_required"
   | "classes_required"
-  | "edit_blocked_confirmed"
+  | "edit_blocked_approved"
   | "edit_blocked_paid"
   | "edit_blocked_annulled"
   | "total_negative"
-  | "zero_amount_requires_confirm"
+  | "zero_amount_requires_approval"
   | "invalid_status"
-  | "already_confirmed"
+  | "already_approved"
   | "already_annulled"
   | "movement_still_active"
   | "partial"
@@ -344,7 +344,7 @@ async function requireEditableSettlement(
 ): Promise<PayrollSettlement | PayrollSettlementActionCode> {
   const settlement = await payrollSettlementRepository.getById(clubId, settlementId);
   if (!settlement) return "settlement_not_found";
-  if (settlement.status === "confirmada") return "edit_blocked_confirmed";
+  if (settlement.status === "aprobada_rrhh") return "edit_blocked_approved";
   if (settlement.status === "pagada") return "edit_blocked_paid";
   if (settlement.status === "anulada") return "edit_blocked_annulled";
   return settlement;
@@ -562,13 +562,13 @@ export async function updateHoursOrNotes(params: {
 }
 
 // -------------------------------------------------------------------------
-// Confirmation (US-63)
+// Approval (US-40, ex US-63)
 // -------------------------------------------------------------------------
 
-export type ConfirmRawInput = { settlementId?: unknown; confirmZero?: unknown };
+export type ApproveRawInput = { settlementId?: unknown; approveZero?: unknown };
 
-export async function confirmSettlement(
-  raw: ConfirmRawInput,
+export async function approveSettlement(
+  raw: ApproveRawInput,
 ): Promise<PayrollSettlementActionResult> {
   const g = await guard();
   if (!g.ok) return err(g.code);
@@ -576,13 +576,13 @@ export async function confirmSettlement(
 
   const settlementId = typeof raw.settlementId === "string" ? raw.settlementId.trim() : "";
   if (!settlementId) return err("settlement_not_found");
-  const confirmZero = normalizeBool(raw.confirmZero, false);
+  const approveZero = normalizeBool(raw.approveZero, false);
 
   try {
-    const res = await payrollSettlementRepository.callConfirm({
+    const res = await payrollSettlementRepository.callApprove({
       clubId: ctx.clubId,
       settlementId,
-      confirmZero,
+      approveZero,
     });
     if (!res.ok) {
       switch (res.code) {
@@ -590,12 +590,12 @@ export async function confirmSettlement(
           return err("settlement_not_found");
         case "invalid_status":
           return err("invalid_status");
-        case "already_confirmed":
-          return err("already_confirmed");
+        case "already_approved":
+          return err("already_approved");
         case "hours_required":
           return err("hours_required");
-        case "zero_amount_requires_confirm":
-          return err("zero_amount_requires_confirm");
+        case "zero_amount_requires_approval":
+          return err("zero_amount_requires_approval");
         case "total_negative":
           return err("total_negative");
         case "forbidden":
@@ -604,21 +604,21 @@ export async function confirmSettlement(
           return err("unknown_error");
       }
     }
-    return ok("confirmed");
+    return ok("approved");
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.confirm]", error);
+      console.error("[payroll-settlement-service.approve]", error);
     }
     return err("unknown_error");
   }
 }
 
-export async function confirmSettlementsBulk(params: {
+export async function approveSettlementsBulk(params: {
   ids: string[];
-  confirmZero?: boolean;
+  approveZero?: boolean;
 }): Promise<
   PayrollSettlementActionResult<{
-    confirmedCount: number;
+    approvedCount: number;
     skippedCount: number;
     errors: Array<{ id: string; code: string }>;
   }>
@@ -632,24 +632,24 @@ export async function confirmSettlementsBulk(params: {
   }
 
   try {
-    const res = await payrollSettlementRepository.callConfirmBulk({
+    const res = await payrollSettlementRepository.callApproveBulk({
       clubId: ctx.clubId,
       ids: params.ids,
-      confirmZero: Boolean(params.confirmZero),
+      approveZero: Boolean(params.approveZero),
     });
     if (!res.ok) {
       if (res.code === "forbidden") return err("forbidden");
       return err("unknown_error");
     }
     const data = {
-      confirmedCount: res.confirmedCount,
+      approvedCount: res.approvedCount,
       skippedCount: res.skippedCount,
       errors: res.errors,
     };
-    return ok(res.errors.length > 0 ? "partial" : "confirmed_bulk", data);
+    return ok(res.errors.length > 0 ? "partial" : "approved_bulk", data);
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.confirm-bulk]", error);
+      console.error("[payroll-settlement-service.approve-bulk]", error);
     }
     return err("unknown_error");
   }

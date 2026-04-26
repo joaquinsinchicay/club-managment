@@ -153,7 +153,7 @@ const SETTLEMENT_TONES: Record<
   { tone: SettlementChipTone; labelKey: keyof typeof cdTexts }
 > = {
   generada: { tone: "warning", labelKey: "settlements_status_generada" },
-  confirmada: { tone: "info", labelKey: "settlements_status_confirmada" },
+  aprobada_rrhh: { tone: "info", labelKey: "settlements_status_aprobada_rrhh" },
   pagada: { tone: "income", labelKey: "settlements_status_pagada" },
   anulada: { tone: "neutral", labelKey: "settlements_status_anulada" },
 };
