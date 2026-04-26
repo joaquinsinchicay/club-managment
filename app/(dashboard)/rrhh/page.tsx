@@ -6,6 +6,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canAccessHrModule, canOperateHrSettlements } from "@/lib/domain/authorization";
+import { hasMembershipRole } from "@/lib/domain/membership-roles";
 import { getHrDashboardSummary } from "@/lib/services/hr-dashboard-service";
 import { texts } from "@/lib/texts";
 
@@ -46,6 +47,12 @@ export default async function RrhhPage() {
   const home = rrhhTexts.home;
   const dashboard = rrhhTexts.dashboard;
   const canSettlements = canOperateHrSettlements(context.activeMembership);
+  // US-47 · Card "Pendientes de pago" pertenece a Tesoreria. Solo se muestra
+  // si el usuario tambien tiene rol tesoreria en el club activo (un rol RRHH
+  // puro no necesita ver pagos pendientes — su trabajo termina en aprobar).
+  const hasTreasuryRole = context.activeMembership
+    ? hasMembershipRole(context.activeMembership, "tesoreria")
+    : false;
   const clubCurrencyCode = context.activeClub!.currencyCode;
 
   const summaryResult = await getHrDashboardSummary();
@@ -127,32 +134,34 @@ export default async function RrhhPage() {
             </CardBody>
           </Card>
 
-          <Card padding="comfortable">
-            <CardHeader
-              eyebrow={dashboard.card_pending_pay_eyebrow}
-              title={dashboard.card_pending_pay_title}
-              description={dashboard.card_pending_pay_description}
-            />
-            <CardBody>
-              <div className="flex flex-col gap-1">
-                <span className="text-h2 font-semibold text-foreground">
-                  {summary.pendingPay.count}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {formatAmount(summary.pendingPay.totalAmount, clubCurrencyCode)}
-                </span>
-                {canSettlements && summary.pendingPay.count > 0 ? (
-                  <LinkButton
-                    href="/rrhh/settlements?status=aprobada_rrhh"
-                    variant="secondary"
-                    size="sm"
-                  >
-                    {dashboard.card_pending_pay_cta}
-                  </LinkButton>
-                ) : null}
-              </div>
-            </CardBody>
-          </Card>
+          {hasTreasuryRole ? (
+            <Card padding="comfortable">
+              <CardHeader
+                eyebrow={dashboard.card_pending_pay_eyebrow}
+                title={dashboard.card_pending_pay_title}
+                description={dashboard.card_pending_pay_description}
+              />
+              <CardBody>
+                <div className="flex flex-col gap-1">
+                  <span className="text-h2 font-semibold text-foreground">
+                    {summary.pendingPay.count}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {formatAmount(summary.pendingPay.totalAmount, clubCurrencyCode)}
+                  </span>
+                  {canSettlements && summary.pendingPay.count > 0 ? (
+                    <LinkButton
+                      href="/treasury/payroll"
+                      variant="secondary"
+                      size="sm"
+                    >
+                      {dashboard.card_pending_pay_cta}
+                    </LinkButton>
+                  ) : null}
+                </div>
+              </CardBody>
+            </Card>
+          ) : null}
 
           <Card padding="comfortable">
             <CardHeader

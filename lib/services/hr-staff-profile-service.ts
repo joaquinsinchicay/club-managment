@@ -16,7 +16,7 @@ import {
   createRequiredAdminSupabaseClient,
 } from "@/lib/supabase/admin";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { canAccessHrModule } from "@/lib/domain/authorization";
+import { canViewStaffProfile } from "@/lib/domain/authorization";
 import type { PayrollSettlement } from "@/lib/domain/payroll-settlement";
 import type { StaffContract } from "@/lib/domain/staff-contract";
 import type { StaffMember } from "@/lib/domain/staff-member";
@@ -137,7 +137,7 @@ export async function getStaffProfile(memberId: string): Promise<StaffProfileRes
   if (!session.activeClub || !session.activeMembership) {
     return { ok: false, code: "no_active_club" };
   }
-  if (!canAccessHrModule(session.activeMembership)) {
+  if (!canViewStaffProfile(session.activeMembership)) {
     return { ok: false, code: "forbidden" };
   }
 

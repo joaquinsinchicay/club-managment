@@ -53,9 +53,14 @@ type StaffProfileViewProps = {
   profile: StaffProfile;
   structures: SalaryStructure[];
   clubCurrencyCode: string;
+  /**
+   * Cuando es false, la ficha es read-only (mirror para rol Tesorería en
+   * /treasury/staff/[id], US-46). Los CTAs de "Nuevo contrato" y "Editar"
+   * se ocultan y las actions correspondientes son opcionales.
+   */
   canMutate: boolean;
-  updateAction: (formData: FormData) => Promise<RrhhActionResult>;
-  createContractAction: (formData: FormData) => Promise<RrhhActionResult>;
+  updateAction?: (formData: FormData) => Promise<RrhhActionResult>;
+  createContractAction?: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 function formatAmount(amount: number | null | undefined, currencyCode: string): string {
@@ -161,6 +166,7 @@ export function StaffProfileView({
   );
 
   async function handleEditSubmit(formData: FormData) {
+    if (!updateAction) return;
     setEditPending(true);
     try {
       const result = await updateAction(formData);
@@ -175,6 +181,7 @@ export function StaffProfileView({
   }
 
   async function handleCreateContractSubmit(formData: FormData) {
+    if (!createContractAction) return;
     setNewContractPending(true);
     try {
       const result = await createContractAction(formData);

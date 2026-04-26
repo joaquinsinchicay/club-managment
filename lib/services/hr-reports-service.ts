@@ -10,7 +10,7 @@
  */
 
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { canAccessHrModule } from "@/lib/domain/authorization";
+import { canViewHrReports } from "@/lib/domain/authorization";
 import type { PayrollSettlement } from "@/lib/domain/payroll-settlement";
 import type { StaffContract } from "@/lib/domain/staff-contract";
 import { payrollSettlementRepository } from "@/lib/repositories/payroll-settlement-repository";
@@ -141,7 +141,7 @@ export async function getHrReport(
   if (!session.activeClub || !session.activeMembership) {
     return { ok: false, code: "no_active_club" };
   }
-  if (!canAccessHrModule(session.activeMembership)) {
+  if (!canViewHrReports(session.activeMembership)) {
     return { ok: false, code: "forbidden" };
   }
 

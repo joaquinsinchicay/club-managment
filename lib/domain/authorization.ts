@@ -148,3 +148,49 @@ export function canAccessTreasuryPayrollTray(membership: MembershipLike) {
   if (!active) return false;
   return hasMembershipRole(active, "tesoreria");
 }
+
+/**
+ * US-46 · Ficha de colaborador.
+ *
+ * Lectura de la ficha disponible para rol RRHH (en /rrhh/staff/[id]) y
+ * rol Tesorería (en /treasury/staff/[id], mirror read-only). El service
+ * subyacente usa este guard "permisivo" — los guards de cada página son
+ * los que deciden quién entra a qué ruta y con qué CTAs.
+ */
+export function canViewStaffProfile(membership: MembershipLike) {
+  const active = getActiveMembership(membership);
+  if (!active) return false;
+  return hasMembershipRole(active, "rrhh") || hasMembershipRole(active, "tesoreria");
+}
+
+/**
+ * US-46 · Acceso al mirror de la ficha en /treasury/staff/[id]. Solo rol
+ * Tesorería: la ficha en /rrhh sigue gateada por canAccessHrModule.
+ */
+export function canAccessTreasuryStaffProfile(membership: MembershipLike) {
+  const active = getActiveMembership(membership);
+  if (!active) return false;
+  return hasMembershipRole(active, "tesoreria");
+}
+
+/**
+ * US-48 · Reportes RRHH desde Tesorería.
+ *
+ * Mirror read-only de /rrhh/reports en /treasury/reports/payroll. Solo
+ * rol Tesorería: los reportes en /rrhh siguen gateados por canAccessHrModule.
+ */
+export function canAccessTreasuryPayrollReports(membership: MembershipLike) {
+  const active = getActiveMembership(membership);
+  if (!active) return false;
+  return hasMembershipRole(active, "tesoreria");
+}
+
+/**
+ * US-48 · Lectura de reportes RRHH (servicio común para /rrhh/reports y
+ * /treasury/reports/payroll). Permite RRHH o Tesorería.
+ */
+export function canViewHrReports(membership: MembershipLike) {
+  const active = getActiveMembership(membership);
+  if (!active) return false;
+  return hasMembershipRole(active, "rrhh") || hasMembershipRole(active, "tesoreria");
+}

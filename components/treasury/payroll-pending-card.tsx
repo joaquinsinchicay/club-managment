@@ -51,6 +51,11 @@ export function TreasuryPayrollPendingCard({
             {formatAmount(totalAmount, clubCurrencyCode)}
           </span>
         </div>
+        <div className="mt-3">
+          <LinkButton href="/treasury/reports/payroll" variant="secondary" size="sm">
+            {cardTexts.dashboard_card_reports_cta}
+          </LinkButton>
+        </div>
       </CardBody>
     </Card>
   );

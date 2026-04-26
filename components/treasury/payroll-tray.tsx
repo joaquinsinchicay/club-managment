@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import type { SettlementActionResult } from "@/app/(dashboard)/rrhh/settlements/actions";
@@ -280,9 +281,18 @@ export function TreasuryPayrollTray({
                   </span>
                 </DataTableCell>
                 <DataTableCell>
-                  <span className="font-medium text-foreground">
-                    {s.staffMemberName ?? "—"}
-                  </span>
+                  {s.staffMemberId ? (
+                    <Link
+                      href={`/treasury/staff/${s.staffMemberId}`}
+                      className="font-medium text-foreground hover:underline"
+                    >
+                      {s.staffMemberName ?? "—"}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-foreground">
+                      {s.staffMemberName ?? "—"}
+                    </span>
+                  )}
                 </DataTableCell>
                 <DataTableCell>
                   <span className="grid leading-tight">

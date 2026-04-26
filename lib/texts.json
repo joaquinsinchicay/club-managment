@@ -356,7 +356,8 @@
         "dashboard_card_eyebrow": "Pendientes de pago",
         "dashboard_card_title": "Pagos de nomina pendientes",
         "dashboard_card_description": "Liquidaciones aprobadas por RRHH listas para ejecutar el pago.",
-        "dashboard_card_cta": "Abrir bandeja"
+        "dashboard_card_cta": "Abrir bandeja",
+        "dashboard_card_reports_cta": "Ver reportes"
       }
     },
     "treasury_role": {
