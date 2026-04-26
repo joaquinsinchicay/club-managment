@@ -589,8 +589,11 @@ activo y se integran con Tesorería a través de `treasury_movements`.
   la estructura, o un `frozen_amount` congelado en el contrato.
   Una estructura admite un único contrato vigente simultáneamente.
 - **PayrollSettlement** — liquidación mensual por contrato. Lifecycle:
-  `generada → confirmada → pagada` con transición lateral a `anulada`
-  desde cualquier estado vigente. Almacena monto base + ajustes + total.
+  `generada → aprobada_rrhh → pagada` con transición lateral a `anulada`
+  desde cualquier estado vigente y posibilidad de retroceder de
+  `aprobada_rrhh → generada` con motivo (US-41). Almacena monto base
+  + ajustes + total. Estado renombrado de `confirmada` → `aprobada_rrhh`
+  el 2026-04-27 (E04 refactor Notion US-40).
 - **PayrollSettlementAdjustment** — ajuste sobre una liquidación:
   adicional, descuento o reintegro. Un trigger recalcula
   `adjustments_total` y `total_amount` en el padre.
@@ -614,16 +617,23 @@ activo y se integran con Tesorería a través de `treasury_movements`.
 ### Ciclo de vida de una liquidación
 
 ```
-generada  -- hr_confirm_settlement -->  confirmada  -- hr_pay_settlement -->  pagada
-   \\                                      \\                                    |
-    \\                                      \\                                   v
-     \\                                      \\-- hr_annul_settlement -->  anulada
-      \\                                                                       ^
-       \\-- hr_annul_settlement ----------------------------------------------//
+generada  -- hr_approve_settlement -->  aprobada_rrhh  -- hr_pay_settlement -->  pagada
+   ^                                       |                                       |
+   |                                       |                                       v
+   +-- hr_return_settlement_to_generated --+                              hr_annul_settlement
+   |                                       |                                       |
+   +--- hr_annul_settlement ---------------+--------------------------------> anulada
 ```
 
-La transición a `anulada` desde `pagada` requiere que el movimiento
-vinculado esté `cancelled` (US-66).
+- US-40 (rename 2026-04-27): `confirmada` → `aprobada_rrhh`. RPCs
+  `hr_confirm_*` renombradas a `hr_approve_*`. Columnas
+  `confirmed_at`/`confirmed_by_user_id` → `approved_at`/`approved_by_user_id`.
+- US-41 (NUEVA 2026-04-27): `aprobada_rrhh → generada` con motivo
+  obligatorio, disponible para rol `rrhh` o `tesoreria`. Resetea
+  `approved_*` a null y graba `returned_*`. Indicador "Devuelta por [rol]"
+  visible mientras la liquidación esté en `generada` con `returned_by_role≠null`.
+- La transición a `anulada` desde `pagada` requiere que el movimiento
+  vinculado esté `cancelled` (US-66).
 
 ### Integración con Tesorería (US-64/65)
 
@@ -776,7 +786,7 @@ Cards implementadas:
 - **Últimas liquidaciones** — hasta 5 filas via
   `listSettlementsForContract(contractId, 5)` (nuevo método del
   repositorio, filtra por `contract_id`). Status chip por estado
-  (`generada`/`confirmada`/`pagada`/`anulada`).
+  (`generada`/`aprobada_rrhh`/`pagada`/`anulada`).
 
 #### TODO ficha de contrato (diferido a iteraciones posteriores)
 
@@ -839,19 +849,15 @@ El mockup incluye features que requieren esquema nuevo sobre
   sub-tabla `staff_addresses`).
 - **Datos bancarios detallados** (banco, tipo de cuenta, CBU
   completo, alias separado) — hoy sólo `cbu_alias` consolidado.
-- **"Dar de baja..."** — ✅ implementado. `staff_members` expone
-  `deactivated_at`, `deactivated_by_user_id`, `deactivation_reason`.
-  La baja pasa por la RPC SECURITY DEFINER
-  `hr_deactivate_staff_member(p_staff_member_id, p_reason)` que
-  rechaza con `has_active_contracts` si hay contratos vigentes y
-  con `already_deactivated` si ya está dado de baja. Servicio:
-  `deactivateStaffMember` con `canMutateHrMasters`. Action:
-  `deactivateStaffMemberAction`. UI: CTA `destructive-outline` en
-  el header del perfil + modal con motivo (textarea opcional que
-  se persiste). Cuando el colaborador está dado de baja, la ficha
-  muestra un banner warning con fecha y motivo y oculta los CTAs
-  mutadores (Nuevo contrato, Editar, Dar de baja). Reactivación
-  queda pendiente.
+- **"Dar de baja..."** — ❌ **REVERTIDO** (E04 refactor 2026-04-27,
+  US-31). El nuevo modelo Notion exige que el colaborador NO tenga
+  estado activo/inactivo. Migración `20260427030000` dropea las
+  columnas `deactivated_at`, `deactivated_by_user_id`,
+  `deactivation_reason` + drop RPC `hr_deactivate_staff_member`. El
+  colaborador conserva todo el histórico (contratos, liquidaciones,
+  pagos) aunque no tenga contratos vigentes; el listado los marca
+  vía toggle "vigente / todos" (US-31 Scenario 4) y la alerta
+  US-37.
 - **Actividad reciente** (timeline de revisiones + liquidaciones +
   contratos) — requiere agregación + ordenamiento cronológico de
   múltiples fuentes; por ahora la info vive en cards separadas.

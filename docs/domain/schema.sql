@@ -465,7 +465,7 @@ create type salary_structure_status as enum ('activa','inactiva');
 create type salary_payment_type as enum ('sueldo','viatico','honorarios');
 create type staff_vinculo_type as enum ('relacion_dependencia','monotributista','honorarios');
 create type staff_contract_status as enum ('vigente','finalizado');
-create type payroll_settlement_status as enum ('generada','confirmada','pagada','anulada');
+create type payroll_settlement_status as enum ('generada','aprobada_rrhh','pagada','anulada');
 create type payroll_adjustment_type as enum ('adicional','descuento','reintegro');
 create type hr_job_run_status as enum ('running','success','partial','failed');
 
@@ -531,11 +531,10 @@ create table staff_members (
   vinculo_type staff_vinculo_type not null,
   cbu_alias text,
   hire_date date not null default current_date,
-  -- Baja lógica (US-56). La RPC hr_deactivate_staff_member rechaza si
-  -- hay contratos vigentes. Reactivación queda pendiente.
-  deactivated_at timestamptz,
-  deactivated_by_user_id uuid references auth.users(id) on delete set null,
-  deactivation_reason text,
+  -- US-31 (ex US-56) · El colaborador NO tiene estado activo/inactivo.
+  -- Si no tiene contratos vigentes, aparece marcado en el listado vía
+  -- toggle "con contrato vigente / todos" (US-31 Scenario 4) y la
+  -- alerta US-37. Migración 20260427030000 dropea el soft-delete legacy.
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by_user_id uuid references users(id),
@@ -583,8 +582,17 @@ create table payroll_settlements (
   requires_hours_input boolean not null default false,
   notes text,
   status payroll_settlement_status not null default 'generada',
-  confirmed_at timestamptz,
-  confirmed_by_user_id uuid references users(id),
+  -- US-40 (ex US-63): rename 2026-04-27 confirmed_* → approved_*
+  approved_at timestamptz,
+  approved_by_user_id uuid references users(id),
+  -- US-41 (NUEVA 2026-04-27): devolución a "generada" con motivo.
+  -- Cuando se devuelve, status vuelve a 'generada', approved_* se
+  -- resetea a null y se setean returned_*. Indicador visual en UI:
+  -- "Devuelta por [rol]" en filas con status='generada' + returned_by_role≠null.
+  returned_at timestamptz,
+  returned_by_user_id uuid references users(id),
+  returned_by_role text check (returned_by_role is null or returned_by_role in ('rrhh','tesoreria')),
+  returned_reason text,
   paid_at timestamptz,
   paid_movement_id uuid,
   annulled_at timestamptz,

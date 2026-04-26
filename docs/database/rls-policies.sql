@@ -1448,16 +1448,37 @@ as $$
 $$;
 
 -- =========================================
--- E04 RRHH · RLS policies (Fases 1-7)
+-- E04 RRHH · RLS policies (refactor 2026-04-27)
 -- =========================================
 -- Todas las tablas RRHH con RLS enabled + policy club-scoped usando
 -- `app.current_club_id`. hr_job_runs deny-all (acceso via RPCs SECURITY
 -- DEFINER).
+--
+-- Modelo: las RLS son **permisivas por club_id** (cualquier user activo
+-- del club puede leer/escribir). La autorización fina por rol vive en
+-- la capa app (guards en lib/domain/authorization.ts) y en los RPCs
+-- SECURITY DEFINER que validan el rol del actor antes de mutar.
+--
+-- Esto permite que rol Tesorería acceda a las mirrors read-only en
+-- /treasury (US-46/47/48) sin políticas RLS específicas: el guard de
+-- página decide quién entra y el service usa el guard "permisivo"
+-- (canViewStaffProfile / canViewHrReports). Cualquier mutación pasa
+-- por una RPC SECURITY DEFINER que valida el rol via membership_roles.
+--
+-- Notas:
+--   - `staff_members`: drop columnas deactivated_* en migración
+--     20260427030000 (US-31). El colaborador no tiene estado.
+--   - `payroll_settlements`: enum status renombrado en migración
+--     20260427040000 (US-40, confirmada→aprobada_rrhh) + 4 columnas
+--     returned_* en 20260427050000 (US-41).
+--   - `salary_structure_versions`: tabla dropeada en migración
+--     20260424000000 (refactor monto-al-contrato). Reemplazada por
+--     staff_contract_revisions.
 
 alter table public.salary_structures enable row level security;
-alter table public.salary_structure_versions enable row level security;
 alter table public.staff_members enable row level security;
 alter table public.staff_contracts enable row level security;
+alter table public.staff_contract_revisions enable row level security;
 alter table public.payroll_settlements enable row level security;
 alter table public.payroll_settlement_adjustments enable row level security;
 alter table public.payroll_payment_batches enable row level security;
@@ -1470,19 +1491,13 @@ create policy salary_structures_club_scope on public.salary_structures
   using (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid)
   with check (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid);
 
--- salary_structure_versions (scope via join con salary_structures)
-create policy salary_structure_versions_club_scope on public.salary_structure_versions
+-- staff_contract_revisions (US-32/34/35) — reemplaza al legacy
+-- salary_structure_versions. Política definida en la migración
+-- 20260424000000 (refactor monto-al-contrato).
+create policy staff_contract_revisions_club_scope on public.staff_contract_revisions
   as permissive for all to authenticated
-  using (exists (
-    select 1 from public.salary_structures ss
-    where ss.id = salary_structure_versions.salary_structure_id
-      and ss.club_id = nullif(current_setting('app.current_club_id', true), '')::uuid
-  ))
-  with check (exists (
-    select 1 from public.salary_structures ss
-    where ss.id = salary_structure_versions.salary_structure_id
-      and ss.club_id = nullif(current_setting('app.current_club_id', true), '')::uuid
-  ));
+  using (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid)
+  with check (club_id = nullif(current_setting('app.current_club_id', true), '')::uuid);
 
 -- staff_members
 create policy staff_members_club_scope on public.staff_members

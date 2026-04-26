@@ -1629,21 +1629,34 @@ mutadores registran eventos en `hr_activity_log`.
 - Códigos: `generated`, `partial`, `no_active_contracts`, `forbidden`,
   `invalid_period`.
 
-#### `hr_confirm_settlement(p_settlement_id, p_confirm_zero)`
+#### `hr_approve_settlement(p_settlement_id, p_approve_zero)` · US-40 (ex US-63, rename 2026-04-27)
 - Valida horas para contratos variables, bloqueo por total<0, requiere
-  confirmación explícita para total=0. Cambia a `confirmada`.
-- Códigos: `confirmed`, `settlement_not_found`, `forbidden`,
-  `invalid_status`, `already_confirmed`, `hours_required`,
-  `total_negative`, `zero_amount_requires_confirm`.
+  confirmación explícita para total=0. Cambia a `aprobada_rrhh`.
+  Setea `approved_at = now()`, `approved_by_user_id`. Audit log:
+  action `SETTLEMENT_APPROVED`.
+- Códigos: `approved`, `settlement_not_found`, `forbidden`,
+  `invalid_status`, `already_approved`, `hours_required`,
+  `total_negative`, `zero_amount_requires_approval`.
 
-#### `hr_confirm_settlements_bulk(p_ids, p_confirm_zero)`
+#### `hr_approve_settlements_bulk(p_ids, p_approve_zero)` · US-40 (ex US-63)
 - Itera cada id delegando al RPC individual. Retorna
-  `{confirmed_count, skipped_count, errors: [{id, code}]}` con fallos
+  `{approved_count, skipped_count, errors: [{id, code}]}` con fallos
   por item sin abortar el batch.
+
+#### `hr_return_settlement_to_generated(p_settlement_id, p_reason)` · US-41 (NUEVA, 2026-04-27)
+- Disponible para rol `rrhh` o `tesoreria` activo en el club. Devuelve
+  una liquidación `aprobada_rrhh` al estado `generada`. Motivo
+  obligatorio. Resetea `approved_at` / `approved_by_user_id` y setea
+  `returned_at`, `returned_by_user_id`, `returned_by_role` (auto-detectado
+  desde `memberships` + `membership_roles`), `returned_reason`. Audit:
+  `SETTLEMENT_RETURNED_TO_GENERATED`.
+- Códigos: `returned_to_generated`, `settlement_not_found`, `forbidden`,
+  `invalid_status`, `reason_required`.
+- Retorno: `{ok, code, returned_by_role}`.
 
 #### `hr_annul_settlement(p_settlement_id, p_reason)`
 - Para `pagada` requiere que el movement linkeado esté en
-  `status='cancelled'`. Para `generada`/`confirmada` es directo.
+  `status='cancelled'`. Para `generada`/`aprobada_rrhh` es directo.
 - Códigos: `annulled`, `settlement_not_found`, `forbidden`,
   `already_annulled`, `movement_still_active`.
 
