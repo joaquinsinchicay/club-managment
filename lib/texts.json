@@ -414,6 +414,7 @@
       "movements_filter_from_label": "Desde",
       "movements_filter_to_label": "Hasta",
       "movements_filter_apply_cta": "Aplicar",
+      "movements_filter_apply_pending_cta": "Aplicando...",
       "movements_filter_reset_cta": "Restablecer",
       "movements_filter_aria_label": "Filtrar movimientos por rango de fechas",
       "movements_concept_label": "Concepto",

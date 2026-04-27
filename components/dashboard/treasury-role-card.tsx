@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useEffect, useState, type ReactNode } from "react";
+import { startTransition, useEffect, useState, useTransition, type ReactNode } from "react";
 
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import { TreasuryConciliacionTab } from "@/components/dashboard/treasury-conciliacion-tab";
@@ -798,7 +798,8 @@ function MovimientosTab({
   onCreateMovement,
   onCreateTransfer,
   onCreateFx,
-  onUpdateDateRange
+  onUpdateDateRange,
+  isDateRangePending
 }: {
   dashboard: TreasuryRoleDashboard;
   selectedAccountId: string | null;
@@ -811,6 +812,7 @@ function MovimientosTab({
   onCreateTransfer: () => void;
   onCreateFx: () => void;
   onUpdateDateRange: (range: { fromDate: string | null; toDate: string | null }) => void;
+  isDateRangePending: boolean;
 }) {
   const allMovementGroups = getAllMovementGroups(dashboard.movementGroups);
   const filteredGroups =
@@ -823,6 +825,11 @@ function MovimientosTab({
   const subtitle = buildMovementsWindowSubtitle(dashboard.movementsWindow);
   const [draftFrom, setDraftFrom] = useState(dashboard.movementsWindow.fromDate);
   const [draftTo, setDraftTo] = useState(dashboard.movementsWindow.toDate);
+  // Reset drafts si el rango remoto cambia (ej. otro componente reescribe la URL).
+  useEffect(() => {
+    setDraftFrom(dashboard.movementsWindow.fromDate);
+    setDraftTo(dashboard.movementsWindow.toDate);
+  }, [dashboard.movementsWindow.fromDate, dashboard.movementsWindow.toDate]);
   const isDirty =
     draftFrom !== dashboard.movementsWindow.fromDate || draftTo !== dashboard.movementsWindow.toDate;
   const isCustomRange =
@@ -840,10 +847,11 @@ function MovimientosTab({
         </div>
         <form
           aria-label={texts.dashboard.treasury_role.movements_filter_aria_label}
+          aria-busy={isDateRangePending}
           className="flex flex-wrap items-end gap-2"
           onSubmit={(event) => {
             event.preventDefault();
-            if (!isDirty) return;
+            if (!isDirty || isDateRangePending) return;
             onUpdateDateRange({ fromDate: draftFrom, toDate: draftTo });
           }}
         >
@@ -853,8 +861,9 @@ function MovimientosTab({
               type="date"
               value={draftFrom}
               max={draftTo || undefined}
+              disabled={isDateRangePending}
               onChange={(event) => setDraftFrom(event.target.value)}
-              className="min-h-9 rounded-btn border border-border bg-card px-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10"
+              className="min-h-9 rounded-btn border border-border bg-card px-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </label>
           <label className="flex flex-col gap-1 text-eyebrow text-muted-foreground">
@@ -863,22 +872,32 @@ function MovimientosTab({
               type="date"
               value={draftTo}
               min={draftFrom || undefined}
+              disabled={isDateRangePending}
               onChange={(event) => setDraftTo(event.target.value)}
-              className="min-h-9 rounded-btn border border-border bg-card px-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10"
+              className="min-h-9 rounded-btn border border-border bg-card px-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </label>
           <button
             type="submit"
-            disabled={!isDirty}
-            className="rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!isDirty || isDateRangePending}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {texts.dashboard.treasury_role.movements_filter_apply_cta}
+            {isDateRangePending && (
+              <span
+                aria-hidden="true"
+                className="size-3 animate-spin rounded-full border-2 border-white/40 border-t-white"
+              />
+            )}
+            {isDateRangePending
+              ? texts.dashboard.treasury_role.movements_filter_apply_pending_cta
+              : texts.dashboard.treasury_role.movements_filter_apply_cta}
           </button>
           {isCustomRange && (
             <button
               type="button"
+              disabled={isDateRangePending}
               onClick={() => onUpdateDateRange({ fromDate: null, toDate: null })}
-              className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40"
+              className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {texts.dashboard.treasury_role.movements_filter_reset_cta}
             </button>
@@ -1100,6 +1119,7 @@ export function TreasuryRoleCard({
   const [isFxSubmissionPending, setIsFxSubmissionPending] = useState(false);
   const [isTransferSubmissionPending, setIsTransferSubmissionPending] = useState(false);
   const [isAccountSubmissionPending, setIsAccountSubmissionPending] = useState(false);
+  const [isMovementsRangePending, startMovementsRangeTransition] = useTransition();
 
   const totalBalances = getTotalBalances(dashboard.accounts);
   const canCreateMovement = dashboard.availableActions.includes("create_movement");
@@ -1309,8 +1329,11 @@ export function TreasuryRoleCard({
               else params.delete("movements_from");
               if (toDate) params.set("movements_to", toDate);
               else params.delete("movements_to");
-              router.push(`?${params.toString()}`, { scroll: false });
+              startMovementsRangeTransition(() => {
+                router.push(`?${params.toString()}`, { scroll: false });
+              });
             }}
+            isDateRangePending={isMovementsRangePending}
           />
         )}
 
