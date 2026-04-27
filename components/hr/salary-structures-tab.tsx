@@ -250,12 +250,7 @@ export function SalaryStructuresTab({
             {filtered.map((s) => (
               <DataTableRow key={s.id} density="comfortable" hoverReveal>
                 <DataTableCell>
-                  <span className="grid leading-tight">
-                    <span className="font-medium text-foreground">{s.functionalRole}</span>
-                    {s.name && s.name !== s.functionalRole ? (
-                      <span className="text-small text-muted-foreground">{s.name}</span>
-                    ) : null}
-                  </span>
+                  <span className="font-medium text-foreground">{s.name}</span>
                 </DataTableCell>
                 <DataTableCell>
                   {s.divisions.length === 0 ? (
