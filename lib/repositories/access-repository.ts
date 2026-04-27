@@ -711,7 +711,7 @@ function createStore(): MockStore {
       id: "membership-active-001",
       userId: ACTIVE_USER_ID,
       clubId: CLUB_ID,
-    roles: ["admin"],
+      roles: ["admin", "rrhh", "tesoreria", "secretaria"],
       status: "activo",
       joinedAt: createdAt
     },
