@@ -481,24 +481,6 @@ export const SYSTEM_TREASURY_CATEGORY_DEFINITIONS: SystemTreasuryCategoryDefinit
     movementType: "egreso",
     visibleForSecretaria: true,
     visibleForTesoreria: true
-  },
-  {
-    subCategoryName: "Egreso e/cuentas",
-    emoji: "➡️",
-    description: "Transferencias e/cuentas",
-    parentCategory: "Transferencias e/cuentas",
-    movementType: "egreso",
-    visibleForSecretaria: true,
-    visibleForTesoreria: true
-  },
-  {
-    subCategoryName: "Ingreso e/cuentas",
-    emoji: "⬅️",
-    description: "Transferencias e/cuentas",
-    parentCategory: "Transferencias e/cuentas",
-    movementType: "ingreso",
-    visibleForSecretaria: true,
-    visibleForTesoreria: true
   }
 ];
 
