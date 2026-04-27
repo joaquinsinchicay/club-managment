@@ -29,8 +29,8 @@ import {
   FormReadonly,
   FormSelect,
 } from "@/components/ui/modal-form";
-import { EditIconButton } from "@/components/ui/edit-icon-button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { ViewIconLink } from "@/components/ui/view-icon-link";
 import type { ClubActivity } from "@/lib/domain/access";
 import {
   composeStructureName,
@@ -52,7 +52,6 @@ type SalaryStructuresTabProps = {
   activities: ClubActivity[];
   canMutate: boolean;
   createAction: (formData: FormData) => Promise<RrhhActionResult>;
-  updateAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 type StatusFilter = "all" | SalaryStructureStatus;
@@ -70,7 +69,6 @@ export function SalaryStructuresTab({
   activities,
   canMutate,
   createAction,
-  updateAction,
 }: SalaryStructuresTabProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -80,10 +78,7 @@ export function SalaryStructuresTab({
   const [activityFilter, setActivityFilter] = useState<string>("all");
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [editing, setEditing] = useState<SalaryStructure | null>(null);
-
   const [createPending, setCreatePending] = useState(false);
-  const [editPending, setEditPending] = useState(false);
 
   const activeActivities = useMemo(
     () => activities.filter((a) => a.visibleForSecretaria || a.visibleForTesoreria),
@@ -126,21 +121,6 @@ export function SalaryStructuresTab({
       }
     } finally {
       setCreatePending(false);
-    }
-  }
-
-  async function handleEditSubmit(formData: FormData) {
-    if (!editing) return;
-    setEditPending(true);
-    try {
-      const result = await updateAction(formData);
-      triggerClientFeedback("settings", result.code);
-      if (result.ok) {
-        setEditing(null);
-        startTransition(() => router.refresh());
-      }
-    } finally {
-      setEditPending(false);
     }
   }
 
@@ -319,11 +299,11 @@ export function SalaryStructuresTab({
                   )}
                 </DataTableCell>
                 <DataTableCell align="right">
-                  {canMutate ? (
+                  {s.activityId ? (
                     <DataTableActions>
-                      <EditIconButton
-                        label={ssTexts.action_edit}
-                        onClick={() => setEditing(s)}
+                      <ViewIconLink
+                        href={`/rrhh/structures/${s.activityId}`}
+                        label={ssTexts.action_view_detail}
                       />
                     </DataTableActions>
                   ) : null}
@@ -344,10 +324,7 @@ export function SalaryStructuresTab({
         closeDisabled={createPending}
       >
         <form action={handleCreateSubmit} className="grid gap-4">
-          <StructureFormFields
-            activities={activeActivities}
-            mode="create"
-          />
+          <CreateStructureFields activities={activeActivities} />
           <ModalFooter
             onCancel={() => setCreateOpen(false)}
             cancelLabel={ssTexts.cancel_cta}
@@ -357,53 +334,13 @@ export function SalaryStructuresTab({
         </form>
       </Modal>
 
-      {/* Edit modal */}
-      <Modal
-        open={editing !== null}
-        onClose={() => !editPending && setEditing(null)}
-        title={ssTexts.edit_modal_title}
-        description={ssTexts.edit_modal_description}
-        size="md"
-        closeDisabled={editPending}
-      >
-        {editing ? (
-          <form action={handleEditSubmit} className="grid gap-4">
-            <input type="hidden" name="salary_structure_id" value={editing.id} />
-            <StructureFormFields
-              mode="edit"
-              activities={activeActivities}
-              structure={editing}
-            />
-            <ModalFooter
-              onCancel={() => setEditing(null)}
-              cancelLabel={ssTexts.cancel_cta}
-              submitLabel={ssTexts.edit_submit_cta}
-              pendingLabel={ssTexts.submit_pending}
-            />
-          </form>
-        ) : null}
-      </Modal>
-
     </div>
   );
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
- * Shared form fields
+ * CreateStructureFields — fields para el modal de creación
  * ────────────────────────────────────────────────────────────────────────── */
-
-type StructureFormFieldsProps = {
-  mode: "create" | "edit";
-  activities: ClubActivity[];
-  structure?: SalaryStructure;
-};
-
-function StructureFormFields(props: StructureFormFieldsProps) {
-  if (props.mode === "create") {
-    return <CreateStructureFields activities={props.activities} />;
-  }
-  return <EditStructureFields structure={props.structure!} />;
-}
 
 function CreateStructureFields({ activities }: { activities: ClubActivity[] }) {
   const [role, setRole] = useState<string>("");
@@ -517,97 +454,6 @@ function CreateStructureFields({ activities }: { activities: ClubActivity[] }) {
   );
 }
 
-function EditStructureFields({ structure }: { structure: SalaryStructure }) {
-  return (
-    <>
-      <FormField>
-        <FormFieldLabel required>{ssTexts.form_name_label}</FormFieldLabel>
-        <FormInput
-          type="text"
-          name="name"
-          defaultValue={structure.name}
-          placeholder={ssTexts.form_name_placeholder}
-          minLength={2}
-          maxLength={120}
-          required
-        />
-      </FormField>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField>
-          <FormFieldLabel>{ssTexts.form_role_label}</FormFieldLabel>
-          <FormReadonly>{structure.functionalRole}</FormReadonly>
-          <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
-        </FormField>
-
-        <FormField>
-          <FormFieldLabel>{ssTexts.form_activity_label}</FormFieldLabel>
-          <FormReadonly>{structure.activityName ?? "—"}</FormReadonly>
-          <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
-        </FormField>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField>
-          <FormFieldLabel>{ssTexts.form_divisions_label}</FormFieldLabel>
-          <FormReadonly>
-            {structure.divisions.length === 0 ? "—" : structure.divisions.join(" / ")}
-          </FormReadonly>
-          <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
-        </FormField>
-
-        <FormField>
-          <FormFieldLabel>{ssTexts.form_payment_type_label}</FormFieldLabel>
-          <FormReadonly>{ssTexts.payment_type_options[structure.paymentType]}</FormReadonly>
-          <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
-        </FormField>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField>
-          <FormFieldLabel required>{ssTexts.form_remuneration_type_label}</FormFieldLabel>
-          <FormSelect
-            name="remuneration_type"
-            defaultValue={structure.remunerationType}
-            required
-          >
-            <option value="" disabled>
-              {ssTexts.form_remuneration_type_placeholder}
-            </option>
-            {SALARY_REMUNERATION_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {ssTexts.remuneration_type_options[t]}
-              </option>
-            ))}
-          </FormSelect>
-        </FormField>
-
-        <FormField>
-          <FormFieldLabel>{ssTexts.form_workload_hours_label}</FormFieldLabel>
-          <FormInput
-            type="number"
-            name="workload_hours"
-            inputMode="decimal"
-            min="0"
-            step="0.5"
-            defaultValue={structure.workloadHours ?? ""}
-            placeholder={ssTexts.form_workload_hours_placeholder}
-          />
-          <FormHelpText>{ssTexts.form_workload_hours_helper}</FormHelpText>
-        </FormField>
-      </div>
-
-      <FormField>
-        <FormFieldLabel required>{ssTexts.form_status_label}</FormFieldLabel>
-        <FormSelect name="status" defaultValue={structure.status} required>
-          <option value="activa">{ssTexts.status_options.activa}</option>
-          <option value="inactiva">{ssTexts.status_options.inactiva}</option>
-        </FormSelect>
-        <FormHelpText>{ssTexts.form_status_helper}</FormHelpText>
-      </FormField>
-    </>
-  );
-}
 
 /* ──────────────────────────────────────────────────────────────────────────
  * DivisionsMultiSelect — dropdown con checkboxes interno

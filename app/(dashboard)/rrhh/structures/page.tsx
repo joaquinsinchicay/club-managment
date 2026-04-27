@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
 
-import {
-  createSalaryStructureAction,
-  updateSalaryStructureAction,
-} from "@/app/(dashboard)/settings/rrhh/actions";
+import { createSalaryStructureAction } from "@/app/(dashboard)/settings/rrhh/actions";
 import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
 import { SalaryStructuresTab } from "@/components/hr/salary-structures-tab";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
@@ -35,7 +32,6 @@ export default async function RrhhStructuresPage() {
         activities={activities}
         canMutate={canMutate}
         createAction={createSalaryStructureAction}
-        updateAction={updateSalaryStructureAction}
       />
     </>
   );
