@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/modal-form";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import {
+  composeStructureName,
   SALARY_REMUNERATION_TYPES,
   type SalaryStructure,
 } from "@/lib/domain/salary-structure";
@@ -65,18 +66,26 @@ export function StructureEditModal({
     >
       <form action={handleSubmit} className="grid gap-4">
         <input type="hidden" name="salary_structure_id" value={structure.id} />
+        <input
+          type="hidden"
+          name="name"
+          value={composeStructureName(
+            structure.functionalRole,
+            structure.divisions,
+            structure.activityName,
+          )}
+        />
 
         <FormField>
-          <FormFieldLabel required>{ssTexts.form_name_label}</FormFieldLabel>
-          <FormInput
-            type="text"
-            name="name"
-            defaultValue={structure.name}
-            placeholder={ssTexts.form_name_placeholder}
-            minLength={2}
-            maxLength={120}
-            required
-          />
+          <FormFieldLabel>{ssTexts.form_name_label}</FormFieldLabel>
+          <FormReadonly>
+            {composeStructureName(
+              structure.functionalRole,
+              structure.divisions,
+              structure.activityName,
+            )}
+          </FormReadonly>
+          <FormHelpText>{ssTexts.form_locked_field_hint}</FormHelpText>
         </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">

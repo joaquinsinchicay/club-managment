@@ -189,24 +189,28 @@ export function requiresWorkloadHours(type: SalaryRemunerationType): boolean {
 }
 
 /**
- * Compone el nombre de una estructura a partir de sus partes operativas.
+ * Compone el nombre canónico de una estructura: "<Rol> · <Divisiones> (<Actividad>)".
  * La UI y el service usan el mismo helper para mantener consistencia
  * entre preview (client) y persistencia (server). Ejemplos:
- *   ("DT", ["4ta"], "FUTSAL AFA")   → "DT 4ta FUTSAL AFA"
- *   ("Administrativo", [], null)     → "Administrativo"
- *   ("Profesor", ["4ta","5ta"], "Boxeo") → "Profesor 4ta/5ta Boxeo"
+ *   ("Ayudante de Campo", ["1ra"], "Futsal AFA") → "Ayudante de Campo · 1ra (Futsal AFA)"
+ *   ("Administrativo", [], null)                  → "Administrativo"
+ *   ("Prensa", [], null)                          → "Prensa"
+ *   ("DT", ["4ta","5ta"], "Boxeo")                → "DT · 4ta/5ta (Boxeo)"
+ *   ("DT", [], "Escuelita")                       → "DT (Escuelita)"
+ *   ("Entrenador", ["5ta","6ta"], null)           → "Entrenador · 5ta/6ta"
  */
 export function composeStructureName(
   functionalRole: string,
   divisions: readonly SalaryDivision[],
   activityName: string | null | undefined,
 ): string {
-  const parts: string[] = [functionalRole.trim()];
+  let base = functionalRole.trim();
   if (divisions.length > 0) {
-    parts.push(sortDivisions(divisions).join("/"));
+    base = `${base} · ${sortDivisions(divisions).join("/")}`;
   }
-  if (activityName && activityName.trim()) {
-    parts.push(activityName.trim());
+  const activity = activityName?.trim();
+  if (activity) {
+    return `${base} (${activity})`;
   }
-  return parts.filter(Boolean).join(" ");
+  return base;
 }
