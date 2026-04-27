@@ -3586,10 +3586,18 @@ async function runClubScopedReadRpc<T>(
     return [] as unknown as T;
   }
 
-  const { data, error } = await supabase.rpc(rpcName, {
-    p_club_id: clubId,
-    ...(options?.params ?? {})
-  });
+  // PostgREST aplica un limite default de 1000 filas a respuestas RPC. Esto
+  // hace que cuentas con >1000 movimientos historicos (ej. el import 2021 con
+  // 1185 movs en Efectivo Secretaria) truncan los datos y los saldos calculados
+  // en cliente quedan rotos. .range(0, 99_999) eleva el limite a 100k filas,
+  // suficiente para cualquier cuenta razonable. Las RPCs que aplican LIMIT
+  // propio en SQL no se ven afectadas.
+  const { data, error } = await supabase
+    .rpc(rpcName, {
+      p_club_id: clubId,
+      ...(options?.params ?? {})
+    })
+    .range(0, 99_999);
 
   if (error || !data) {
     if (!options?.suppressLog) {
