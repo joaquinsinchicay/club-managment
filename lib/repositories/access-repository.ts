@@ -3586,42 +3586,73 @@ async function runClubScopedReadRpc<T>(
     return [] as unknown as T;
   }
 
-  // PostgREST aplica un limite default de 1000 filas a respuestas RPC. Esto
-  // hace que cuentas con >1000 movimientos historicos (ej. el import 2021 con
-  // 1185 movs en Efectivo Secretaria) truncan los datos y los saldos calculados
-  // en cliente quedan rotos. .range(0, 99_999) eleva el limite a 100k filas,
-  // suficiente para cualquier cuenta razonable. Las RPCs que aplican LIMIT
-  // propio en SQL no se ven afectadas.
-  const { data, error } = await supabase
-    .rpc(rpcName, {
-      p_club_id: clubId,
-      ...(options?.params ?? {})
-    })
-    .range(0, 99_999);
+  // PostgREST aplica un cap server-side `max_rows = 1000` (supabase/config.toml)
+  // a TODAS las respuestas, incluyendo RPCs. Es enforced en el HTTP layer:
+  // pedir `.range(0, 99_999)` no lo override. Sin paginacion los saldos
+  // calculados en cliente quedan rotos para cuentas con >1000 movs (ej.
+  // Efectivo Secretaria del import 2021 tiene 1177 movs ARS y mostraba
+  // -26.709,51 cuando el saldo real es 724,49).
+  //
+  // Solucion: paginar pidiendo bloques de 1000 hasta que una pagina devuelva
+  // menos filas que la pagina pedida (señal de fin de datos). Backward-
+  // compatible: cuentas con <1000 movs hacen 1 sola request.
+  const PAGE_SIZE = 1000;
+  const SAFETY_CAP = 100_000;
+  const aggregated: unknown[] = [];
+  let offset = 0;
 
-  if (error || !data) {
-    if (!options?.suppressLog) {
-      console.error("[club-scoped-rpc-read-failure]", {
+  while (true) {
+    const { data, error } = await supabase
+      .rpc(rpcName, {
+        p_club_id: clubId,
+        ...(options?.params ?? {})
+      })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error || !data) {
+      if (!options?.suppressLog) {
+        console.error("[club-scoped-rpc-read-failure]", {
+          operation: options?.operation ?? rpcName,
+          rpcName,
+          clubId,
+          ...(options?.details ?? {}),
+          errorCode: getSupabaseErrorCode(error),
+          missingRpcName: getMissingClubScopedRpcName(error, rpcName),
+          error
+        });
+      }
+
+      if (options?.strict) {
+        throw new AccessRepositoryInfraError("club_scoped_rpc_failed", options?.operation ?? rpcName, {
+          cause: error
+        });
+      }
+
+      return [] as unknown as T;
+    }
+
+    const page = Array.isArray(data) ? data : [];
+    aggregated.push(...page);
+
+    if (page.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+
+    if (offset >= SAFETY_CAP) {
+      console.warn("[club-scoped-rpc-read] reached safety cap of 100k rows", {
         operation: options?.operation ?? rpcName,
         rpcName,
-        clubId,
-        ...(options?.details ?? {}),
-        errorCode: getSupabaseErrorCode(error),
-        missingRpcName: getMissingClubScopedRpcName(error, rpcName),
-        error
+        clubId
       });
+      break;
     }
-
-    if (options?.strict) {
-      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", options?.operation ?? rpcName, {
-        cause: error
-      });
-    }
-
-    return [] as unknown as T;
   }
 
-  return data as T;
+  // Si la respuesta original no era array (RPC scalar), devolver el primer
+  // valor crudo. Si era array, devolver concatenacion completa.
+  if (aggregated.length === 0 && offset === 0) {
+    return [] as unknown as T;
+  }
+  return aggregated as T;
 }
 
 async function runClubScopedMutationRpc<T>(
