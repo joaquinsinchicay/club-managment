@@ -134,13 +134,19 @@ const RULES = [
 const JSX_RULES = [
   // Gap A — inputs/selects/textareas crudos con estilo canónico de FormInput/FormSelect/FormTextarea.
   // settings-tab-shell.tsx es un primitivo compartido (search input del shell de /settings),
-  // no un form de dominio. Queda fuera del alcance de FormInput.
+  // no un form de dominio. staff-members-tab.tsx tiene un search input con icono leading
+  // (mismo caso de uso, no se puede usar FormInput porque no soporta slot leading). Quedan
+  // fuera del alcance de FormInput.
   {
     tag: "input",
     id: "form-input-hardcoded",
     pattern: /className="[^"]*rounded-(2xl|card)[^"]*bg-card/,
     message: "Input hardcoded. Usá <FormInput> de @/components/ui/modal-form.",
-    allowFiles: ["components/ui/", "components/settings/settings-tab-shell.tsx"],
+    allowFiles: [
+      "components/ui/",
+      "components/settings/settings-tab-shell.tsx",
+      "components/hr/staff-members-tab.tsx",
+    ],
   },
   {
     tag: "select",
