@@ -182,11 +182,11 @@ function progressPercent(cc: CostCenter, agg: CostCenterAggregates): number {
 
 function progressBarColor(cc: CostCenter, agg: CostCenterAggregates): string {
   const pct = progressPercent(cc, agg);
-  if (cc.type === "deuda" && cc.amount && agg.totalEgreso >= cc.amount) return "bg-emerald-500";
-  if (cc.type === "presupuesto" && pct >= 100) return "bg-ds-rose-500";
-  if (cc.type === "presupuesto" && pct >= 80) return "bg-ds-amber-500";
+  if (cc.type === "deuda" && cc.amount && agg.totalEgreso >= cc.amount) return "bg-ds-green";
+  if (cc.type === "presupuesto" && pct >= 100) return "bg-ds-red";
+  if (cc.type === "presupuesto" && pct >= 80) return "bg-ds-amber";
   if ((cc.type === "sponsor" || cc.type === "publicidad") && cc.amount && agg.totalIngreso >= cc.amount)
-    return "bg-emerald-500";
+    return "bg-ds-green";
   return "bg-slate-400";
 }
 
@@ -466,8 +466,8 @@ function CostCenterForm({
         <FormField>
           <FormFieldLabel required>{tCC.form_type_label}</FormFieldLabel>
           <FormSelect
-            name="type"
-            required
+            name={lockedInEdit ? undefined : "type"}
+            required={!lockedInEdit}
             defaultValue={costCenter?.type ?? "presupuesto"}
             disabled={lockedInEdit}
             onChange={(e) => setType(e.target.value as CostCenterType)}
@@ -479,6 +479,9 @@ function CostCenterForm({
               </option>
             ))}
           </FormSelect>
+          {lockedInEdit && costCenter && (
+            <input type="hidden" name="type" value={costCenter.type} />
+          )}
         </FormField>
 
         <FormField>
@@ -520,8 +523,8 @@ function CostCenterForm({
           <FormField>
             <FormFieldLabel required>{tCC.form_currency_label}</FormFieldLabel>
             <FormSelect
-              name="currency_code"
-              required
+              name={lockedInEdit ? undefined : "currency_code"}
+              required={!lockedInEdit}
               defaultValue={costCenter?.currencyCode ?? availableCurrencies[0] ?? ""}
               disabled={lockedInEdit}
               title={lockedInEdit ? editLockHint : undefined}
@@ -532,6 +535,9 @@ function CostCenterForm({
                 </option>
               ))}
             </FormSelect>
+            {lockedInEdit && costCenter?.currencyCode && (
+              <input type="hidden" name="currency_code" value={costCenter.currencyCode} />
+            )}
           </FormField>
         ) : legacyCurrencyCode ? (
           <input type="hidden" name="currency_code" value={legacyCurrencyCode} />
@@ -542,9 +548,9 @@ function CostCenterForm({
             <FormFieldLabel required>{tCC.form_amount_label}</FormFieldLabel>
             <FormInput
               type="text"
-              name="amount"
+              name={lockedInEdit ? undefined : "amount"}
               inputMode="decimal"
-              required
+              required={!lockedInEdit}
               value={amountInput}
               disabled={lockedInEdit}
               title={lockedInEdit ? editLockHint : undefined}
@@ -556,6 +562,9 @@ function CostCenterForm({
               }}
               className="tabular-nums"
             />
+            {lockedInEdit && costCenter?.amount != null && (
+              <input type="hidden" name="amount" value={String(costCenter.amount)} />
+            )}
           </FormField>
         ) : null}
 
