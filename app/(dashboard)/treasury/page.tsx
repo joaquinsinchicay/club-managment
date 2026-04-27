@@ -55,6 +55,11 @@ function formatSessionDateLabel(sessionDate: string): string {
   return `${cap} · ${dateStr}`;
 }
 
+// Forzar render dinámico en cada request — la página depende de auth + datos
+// frescos de movements/balances. Sin esto, Vercel puede servir SSR cacheado
+// (visto en deploy ky38oli3z mostrando saldos pre-import).
+export const dynamic = "force-dynamic";
+
 type TreasuryDashboardPageProps = {
   searchParams?: {
     tab?: string;
