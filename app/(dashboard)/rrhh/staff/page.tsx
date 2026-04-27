@@ -38,7 +38,7 @@ export default async function RrhhStaffPage({
   const members = membersData.ok ? membersData.members : [];
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
+    <>
       <RrhhModuleNav activeTab="staff" />
       <StaffMembersTab
         members={members}
@@ -46,6 +46,6 @@ export default async function RrhhStaffPage({
         createAction={createStaffMemberAction}
         initialContractFilter={initialContractFilter}
       />
-    </main>
+    </>
   );
 }

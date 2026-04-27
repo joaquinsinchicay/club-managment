@@ -45,7 +45,7 @@ export default async function RrhhSettlementsPage() {
   );
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
+    <>
       <RrhhModuleNav activeTab="settlements" />
       <SettlementsList
         settlements={settlements}
@@ -64,6 +64,6 @@ export default async function RrhhSettlementsPage() {
         payAction={payStaffSettlementAction}
         payBatchAction={payStaffSettlementsBatchAction}
       />
-    </main>
+    </>
   );
 }

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { RrhhModuleNav } from "@/components/hr/rrhh-module-nav";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
-import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canAccessHrModule, canOperateHrSettlements } from "@/lib/domain/authorization";
 import { hasMembershipRole } from "@/lib/domain/membership-roles";
@@ -24,16 +23,6 @@ function formatAmount(amount: number, currencyCode: string): string {
 
 function formatPeriod(year: number, month: number): string {
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
-}
-
-const DATE_CHIP_WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-
-function formatDateChip(date: Date): string {
-  const dow = DATE_CHIP_WEEKDAYS[date.getDay()] ?? "";
-  const dd = String(date.getDate()).padStart(2, "0");
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const yyyy = date.getFullYear();
-  return `${dow} · ${dd}/${mm}/${yyyy}`;
 }
 
 export default async function RrhhPage() {
@@ -70,22 +59,9 @@ export default async function RrhhPage() {
       };
 
   const periodLabel = formatPeriod(summary.periodYear, summary.periodMonth);
-  const dateChipLabel = formatDateChip(new Date());
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
-      <PageContentHeader
-        eyebrow={home.eyebrow}
-        title={home.title}
-        description={home.description}
-        actions={
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-small font-semibold text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-ds-pink" aria-hidden="true" />
-            {dateChipLabel}
-          </div>
-        }
-      />
-
+    <>
       <RrhhModuleNav activeTab="resumen" />
 
       <section className="grid gap-3">
@@ -264,6 +240,6 @@ export default async function RrhhPage() {
           </CardBody>
         </Card>
       </section>
-    </main>
+    </>
   );
 }

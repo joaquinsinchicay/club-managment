@@ -342,7 +342,6 @@ export function StaffProfileView({
                   </button>
                 ) : undefined
               }
-              divider
             />
             <CardBody>
               {profile.contracts.length === 0 ? (
@@ -411,7 +410,7 @@ export function StaffProfileView({
 
           {/* Liquidaciones */}
           <Card padding="comfortable">
-            <CardHeader title={profileTexts.settlements_title} divider />
+            <CardHeader title={profileTexts.settlements_title} />
             <CardBody>
               {profile.settlements.length === 0 ? (
                 <DataTableEmpty
