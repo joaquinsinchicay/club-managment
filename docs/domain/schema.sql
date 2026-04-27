@@ -294,6 +294,15 @@ transfer_group_id uuid,
 fx_operation_group_id uuid,
 consolidation_batch_id uuid,
 
+-- Idempotencia para imports históricos (US importación CSV 2021).
+-- Único por (club_id, external_id) cuando external_id IS NOT NULL.
+external_id text,
+
+-- Trackeo directo a contrato RRHH (carga histórica de pagos pre-flujo
+-- de liquidaciones US-64/65). Para pagos del flujo nuevo, este campo
+-- queda NULL y la trazabilidad va via payroll_settlement_id (más abajo).
+staff_contract_id uuid references staff_contracts(id),
+
 created_at timestamp default now()
 );
 
@@ -439,6 +448,14 @@ create index idx_movements_club_account_created_at on treasury_movements(club_id
 create index idx_movements_club_date_created_at on treasury_movements(club_id, movement_date, created_at desc);
 create index idx_movements_club_date on treasury_movements(club_id, movement_date);
 create index idx_movements_club_display_id on treasury_movements(club_id, display_id);
+
+-- Idempotencia de imports históricos (CSV 2021): cada row del CSV mapea a 1 movimiento por club.
+create unique index treasury_movements_unique_external_per_club
+  on treasury_movements (club_id, external_id) where external_id is not null;
+
+-- Lookup de pagos por contrato RRHH (carga histórica pre-US-64/65).
+create index treasury_movements_staff_contract_id_idx
+  on treasury_movements (staff_contract_id) where staff_contract_id is not null;
 
 create index idx_memberships_user on memberships(user_id);
 create index idx_memberships_club on memberships(club_id);
