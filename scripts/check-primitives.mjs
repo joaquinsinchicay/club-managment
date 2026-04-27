@@ -146,6 +146,7 @@ const JSX_RULES = [
       "components/ui/",
       "components/settings/settings-tab-shell.tsx",
       "components/hr/staff-members-tab.tsx",
+      "components/hr/salary-structures-tab.tsx",
     ],
   },
   {
