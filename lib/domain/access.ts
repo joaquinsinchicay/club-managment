@@ -367,6 +367,11 @@ export type TreasuryRoleDashboard = {
     hasConciliatedMovements: boolean;
   }>;
   movementGroups: TreasuryRoleDashboardMovementDateGroup[];
+  movementsWindow: {
+    fromDate: string;
+    toDate: string;
+    count: number;
+  };
   availableActions: Array<"create_movement" | "create_fx_operation" | "create_transfer">;
   monthlyStats: Array<{ currencyCode: string; ingreso: number; egreso: number }>;
   pendingConciliationCount: number;

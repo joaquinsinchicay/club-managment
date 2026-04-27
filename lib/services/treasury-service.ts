@@ -1181,7 +1181,10 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
   };
 }
 
-export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryRoleDashboard | null> {
+export async function getTreasuryRoleDashboardForActiveClub(options?: {
+  movementsFromDate?: string;
+  movementsToDate?: string;
+}): Promise<TreasuryRoleDashboard | null> {
   const context = await getTesoreriaSession();
 
   if (!context?.activeClub) {
@@ -1190,7 +1193,11 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
 
   const clubId = context.activeClub.id;
   const sessionDate = getTodayDate();
-  const movementWindowStartDate = getRelativeDate(sessionDate, -4);
+  // Default: ultimos 30 dias (movimientos de [today-29, today]).
+  // El UI puede pasar fromDate/toDate para custom ranges via querystring.
+  const movementsToDate = options?.movementsToDate ?? sessionDate;
+  const movementsFromDate = options?.movementsFromDate ?? getRelativeDate(movementsToDate, -29);
+  const movementWindowStartDate = movementsFromDate;
   const accounts = getAccountsVisibleForRole(await accessRepository.listTreasuryAccountsForClub(clubId), "tesoreria");
   const visibleAccountIds = new Set(accounts.map((account) => account.id));
 
@@ -1248,7 +1255,7 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
     .filter((movement) => visibleAccountIds.has(movement.accountId))
     .filter((movement) => shouldIncludeMovementInRoleBalances(movement, "tesoreria"))
     .filter((movement) =>
-      isMovementWithinOperationalWindow(movement.movementDate, movementWindowStartDate, sessionDate)
+      isMovementWithinOperationalWindow(movement.movementDate, movementWindowStartDate, movementsToDate)
     );
   const users = await accessRepository.findUsersByIds(
     [...new Set(visibleRoleMovements.map((movement) => movement.createdByUserId))]
@@ -1344,6 +1351,11 @@ export async function getTreasuryRoleDashboardForActiveClub(): Promise<TreasuryR
       hasConciliatedMovements: movements.length > 0
     })),
     movementGroups,
+    movementsWindow: {
+      fromDate: movementsFromDate,
+      toDate: movementsToDate,
+      count: dashboardMovements.length
+    },
     availableActions: ["create_movement", "create_fx_operation", "create_transfer"],
     monthlyStats,
     pendingConciliationCount

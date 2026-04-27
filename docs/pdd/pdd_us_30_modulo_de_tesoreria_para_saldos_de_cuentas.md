@@ -34,7 +34,7 @@ El sistema debe mostrar en `/dashboard` una card operativa para usuarios con rol
 - Estado vacío cuando no existen cuentas visibles para Tesorería.
 - Navegación al detalle de cuenta desde el dashboard.
 - Formulario inline para registrar movimientos de Tesorería.
-- Listado de `Ultimos movimientos` de los ultimos 5 dias operativos con misma UX base de Secretaría.
+- Listado de `Movimientos` con filtro por rango de fechas (default últimos 30 días) con misma UX base de Secretaría.
 - Edición de movimientos visibles desde el listado del dashboard.
 
 ### No incluye
@@ -84,8 +84,9 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - La card no muestra estado de jornada ni CTAs de apertura/cierre.
 - Tesorería puede registrar movimientos sin requerir `daily_cash_session_id`.
 - La tabla de movimientos debe usar el mismo patrón UX/UI base que Secretaría, incluyendo columna de detalle y acción de edición visible.
-- El listado del dashboard debe titularse `Ultimos movimientos`.
-- El listado de Tesorería debe incluir hoy y los 4 dias operativos anteriores segun `movement_date`.
+- El listado de la pestaña Movimientos del módulo Tesorería debe titularse `Movimientos`.
+- El listado debe incluir un filtro por rango de fechas (`movements_from` / `movements_to` en querystring). Default: últimos 30 días (today − 29 → today).
+- El subtítulo debe mostrar el rango activo y la cantidad de registros, ej. `Últimos 30 días · 48 registros` o `Del 01/04/2026 al 27/04/2026 · 12 registros`.
 - El listado debe agruparse primero por fecha operativa y luego por cuenta.
 - El listado debe incluir movimientos `posted` y `consolidated`.
 - El listado no debe incluir movimientos `pending_consolidation`, `integrated` ni `cancelled`.
@@ -131,7 +132,7 @@ Usuario autenticado con membership `activo` y rol `tesoreria` en el club activo.
 - Debe mostrar saldos acumulados de forma escaneable por cuenta, sin desglose por moneda (cada cuenta opera en una única moneda).
 - Debe ofrecer acceso al detalle, formulario inline y edición de movimientos en la misma pantalla.
 - El bloque de movimientos debe reutilizar la densidad informativa de Secretaría para `Concepto`, `Cuenta`, `Detalle del movimiento`, `Monto` y `Acciones`.
-- El bloque de movimientos debe mostrar una ventana de 5 dias operativos agrupada por fecha y luego por cuenta.
+- El bloque de movimientos debe mostrar el rango de fechas seleccionado (default últimos 30 días) agrupado por fecha y luego por cuenta.
 - No debe haber textos hardcodeados.
 
 ---

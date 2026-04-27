@@ -64,8 +64,17 @@ type TreasuryDashboardPageProps = {
   searchParams?: {
     tab?: string;
     date?: string;
+    /** Inicio del rango de movimientos (YYYY-MM-DD). Default: today - 29 días. */
+    movements_from?: string;
+    /** Fin del rango de movimientos (YYYY-MM-DD). Default: today. */
+    movements_to?: string;
   };
 };
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function sanitizeDateParam(value: string | undefined) {
+  return value && ISO_DATE_RE.test(value) ? value : undefined;
+}
 
 export default async function TreasuryDashboardPage({ searchParams }: TreasuryDashboardPageProps) {
   const context = await getAuthenticatedSessionContext();
@@ -82,8 +91,11 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
     redirect("/dashboard");
   }
 
+  const movementsFromDate = sanitizeDateParam(searchParams?.movements_from);
+  const movementsToDate = sanitizeDateParam(searchParams?.movements_to);
+
   const [dashboard, consolidationDashboard] = await Promise.all([
-    getTreasuryRoleDashboardForActiveClub(),
+    getTreasuryRoleDashboardForActiveClub({ movementsFromDate, movementsToDate }),
     getTreasuryConsolidationDashboard(searchParams?.date)
   ]);
 

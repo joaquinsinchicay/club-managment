@@ -749,6 +749,44 @@ function CuentasTab({
 
 // ─── Movimientos tab ──────────────────────────────────────────────────────────
 
+const DEFAULT_MOVEMENTS_WINDOW_DAYS = 30;
+
+function diffDaysInclusive(fromDate: string, toDate: string) {
+  const from = new Date(`${fromDate}T00:00:00`);
+  const to = new Date(`${toDate}T00:00:00`);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return null;
+  return Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+}
+
+function formatLocalizedDateLabel(isoDate: string) {
+  const date = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+}
+
+function buildMovementsWindowSubtitle(window: TreasuryRoleDashboard["movementsWindow"]) {
+  const days = diffDaysInclusive(window.fromDate, window.toDate);
+  const isDefault = days === DEFAULT_MOVEMENTS_WINDOW_DAYS;
+  const rangeLabel = isDefault
+    ? texts.dashboard.treasury_role.movements_window_default_days_label.replace(
+        "{days}",
+        String(DEFAULT_MOVEMENTS_WINDOW_DAYS)
+      )
+    : texts.dashboard.treasury_role.movements_window_custom_label
+        .replace("{from}", formatLocalizedDateLabel(window.fromDate))
+        .replace("{to}", formatLocalizedDateLabel(window.toDate));
+
+  const countLabel =
+    window.count === 1
+      ? texts.dashboard.treasury_role.movements_window_count_singular
+      : texts.dashboard.treasury_role.movements_window_count_plural.replace(
+          "{count}",
+          String(window.count)
+        );
+
+  return `${rangeLabel}${texts.dashboard.treasury_role.movements_window_separator}${countLabel}`;
+}
+
 function MovimientosTab({
   dashboard,
   selectedAccountId,
@@ -759,7 +797,8 @@ function MovimientosTab({
   canCreateTransfer,
   onCreateMovement,
   onCreateTransfer,
-  onCreateFx
+  onCreateFx,
+  onUpdateDateRange
 }: {
   dashboard: TreasuryRoleDashboard;
   selectedAccountId: string | null;
@@ -771,6 +810,7 @@ function MovimientosTab({
   onCreateMovement: () => void;
   onCreateTransfer: () => void;
   onCreateFx: () => void;
+  onUpdateDateRange: (range: { fromDate: string | null; toDate: string | null }) => void;
 }) {
   const allMovementGroups = getAllMovementGroups(dashboard.movementGroups);
   const filteredGroups =
@@ -780,9 +820,72 @@ function MovimientosTab({
 
   const isEmpty = filteredGroups.length === 0;
   const hasMultipleAccounts = dashboard.accounts.length >= 2;
+  const subtitle = buildMovementsWindowSubtitle(dashboard.movementsWindow);
+  const [draftFrom, setDraftFrom] = useState(dashboard.movementsWindow.fromDate);
+  const [draftTo, setDraftTo] = useState(dashboard.movementsWindow.toDate);
+  const isDirty =
+    draftFrom !== dashboard.movementsWindow.fromDate || draftTo !== dashboard.movementsWindow.toDate;
+  const isCustomRange =
+    diffDaysInclusive(dashboard.movementsWindow.fromDate, dashboard.movementsWindow.toDate) !==
+    DEFAULT_MOVEMENTS_WINDOW_DAYS;
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-col gap-3 rounded-card border border-border bg-card px-4 py-3.5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold tracking-tight text-foreground">
+            {texts.dashboard.treasury_role.movements_card_title}
+          </p>
+          <p className="mt-0.5 text-meta text-muted-foreground">{subtitle}</p>
+        </div>
+        <form
+          aria-label={texts.dashboard.treasury_role.movements_filter_aria_label}
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!isDirty) return;
+            onUpdateDateRange({ fromDate: draftFrom, toDate: draftTo });
+          }}
+        >
+          <label className="flex flex-col gap-1 text-eyebrow text-muted-foreground">
+            {texts.dashboard.treasury_role.movements_filter_from_label}
+            <input
+              type="date"
+              value={draftFrom}
+              max={draftTo || undefined}
+              onChange={(event) => setDraftFrom(event.target.value)}
+              className="min-h-9 rounded-btn border border-border bg-card px-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-eyebrow text-muted-foreground">
+            {texts.dashboard.treasury_role.movements_filter_to_label}
+            <input
+              type="date"
+              value={draftTo}
+              min={draftFrom || undefined}
+              onChange={(event) => setDraftTo(event.target.value)}
+              className="min-h-9 rounded-btn border border-border bg-card px-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={!isDirty}
+            className="rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {texts.dashboard.treasury_role.movements_filter_apply_cta}
+          </button>
+          {isCustomRange && (
+            <button
+              type="button"
+              onClick={() => onUpdateDateRange({ fromDate: null, toDate: null })}
+              className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40"
+            >
+              {texts.dashboard.treasury_role.movements_filter_reset_cta}
+            </button>
+          )}
+        </form>
+      </div>
+
       <div className="flex flex-wrap items-center justify-end gap-2">
         {canCreateMovement && (
           <button
@@ -1199,6 +1302,15 @@ export function TreasuryRoleCard({
             onCreateMovement={() => setActiveModal("movement")}
             onCreateTransfer={() => setActiveModal("transfer")}
             onCreateFx={() => setActiveModal("fx")}
+            onUpdateDateRange={({ fromDate, toDate }) => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("tab", "movimientos");
+              if (fromDate) params.set("movements_from", fromDate);
+              else params.delete("movements_from");
+              if (toDate) params.set("movements_to", toDate);
+              else params.delete("movements_to");
+              router.push(`?${params.toString()}`, { scroll: false });
+            }}
           />
         )}
 
