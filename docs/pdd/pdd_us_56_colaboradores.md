@@ -153,7 +153,7 @@ Si al reactivar existe otro colaborador activo con el mismo DNI: bloquea con `du
 - `section_title`, `section_description`, `create_cta`, `search_placeholder`
 - `filter_all`, `filter_active`, `filter_inactive`
 - `form_first_name_label`, `form_last_name_label`, `form_dni_label`, `form_cuit_label`, `form_email_label`, `form_phone_label`, `form_vinculo_label`, `form_cbu_alias_label`, `form_hire_date_label`, `form_status_label`
-- `vinculo_options.{relacion_dependencia,monotributista,honorarios}`
+- `vinculo_options.{relacion_dependencia,monotributista,honorarios,contrato_locacion}`
 - `status_options.{activo,inactivo}`
 - `deactivate_cta`, `deactivate_modal_title`, `deactivate_confirm`, `reactivate_cta`
 - `feedback.{created,updated,deactivated,reactivated,first_name_required,last_name_required,dni_required,invalid_dni,cuit_required,invalid_cuit_cuil,vinculo_required,email_invalid,phone_invalid,duplicate_dni,duplicate_cuit_cuil,has_active_contracts,forbidden,unknown_error}`
@@ -169,7 +169,7 @@ Si al reactivar existe otro colaborador activo con el mismo DNI: bloquea con `du
   - `first_name text not null`, `last_name text not null`
   - `dni text not null`, `cuit_cuil text not null`
   - `email text null`, `phone text null`
-  - `vinculo_type text not null check (vinculo_type in ('relacion_dependencia','monotributista','honorarios'))`
+  - `vinculo_type text not null check (vinculo_type in ('relacion_dependencia','monotributista','honorarios','contrato_locacion'))`
   - `cbu_alias text null`
   - `hire_date date not null default current_date`
   - `status text not null default 'activo' check (status in ('activo','inactivo'))`

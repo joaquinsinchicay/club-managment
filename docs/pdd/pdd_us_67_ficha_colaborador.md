@@ -107,7 +107,7 @@ Una página `/rrhh/staff/[id]` accesible desde el listado de colaboradores (US-5
 
 ### A. Colaborador sin contratos ni liquidaciones
 - Secciones "Contratos", "Liquidaciones", "Pagos" muestran `<EmptyState variant="dashed">` específico.
-- Totales en cero.
+- Card "Actividad reciente" muestra fallback `activity_empty`.
 
 ### B. Colaborador inactivo
 - Banner informativo `<FormBanner variant="info">Colaborador inactivo desde {fecha}`.
@@ -121,13 +121,15 @@ Una página `/rrhh/staff/[id]` accesible desde el listado de colaboradores (US-5
 ## 11. UI / UX
 
 ### Reglas
-- Layout mobile-first, grid de 2 columnas en desktop.
-- Encabezado con `<Avatar name size="lg">` + nombre + chips de estado y tipo de vínculo.
-- Card de datos personales: `<Card padding="comfortable">` con 2 columnas.
-- Card de totales: dos números grandes (año, mes) con labels.
+- Layout mobile-first, grid de 2 columnas en desktop (`lg:grid-cols-[2fr_1fr]`).
+- Encabezado con `<Avatar name size="lg">` + nombre (`text-h1`) + eyebrow + chips de estado y tipo de vínculo.
+- Cards de información (Datos personales, Contacto, Datos bancarios): `<Card padding="comfortable">` con `<CardHeader>` **sin** `divider` — el título y la descripción quedan flush con el grid de campos. Tipografía via tokens DS (`text-eyebrow tracking-card-eyebrow` para labels, `text-body` para valores).
 - Sección contratos: `<DataTable density="comfortable">` con columnas Estructura, Rol, Actividad, Fechas, Monto, Estado.
 - Sección liquidaciones: `<DataTable density="compact">` con columnas Período, Contrato, Monto final, Estado, con filtro por mes/año y estado.
 - Sección pagos: `<DataTable density="compact">` con columnas Fecha, Monto, Cuenta, Movimiento.
+- **Aside derecha**:
+  1. **Antigüedad en el club** — `<Card tone="accent-rrhh">` con eyebrow + número grande (`text-h1`) + fecha de alta.
+  2. **Actividad reciente** — `<Card padding="comfortable">` con eyebrow `Actividad reciente` y lista de hasta 8 entradas derivadas de `hr_activity_log` (ver § 13). Cada entrada muestra label de la acción + detalle (fecha · período · monto · código de contrato según el tipo). Empty state inline con `activity_empty`. **No hay cards "Totales pagado"** — la información de totales pagados se consulta desde Liquidaciones.
 - Empty states con `<DataTableEmpty>`.
 - Alerta colaborador sin contratos: `<FormBanner variant="warning">` al top.
 - CTAs con `<LinkButton>` / `<Button>` del canon.
@@ -140,13 +142,14 @@ Una página `/rrhh/staff/[id]` accesible desde el listado de colaboradores (US-5
 `rrhh.staff_profile.*`
 
 ### Keys mínimas
-- `section_personal_data`, `section_contracts`, `section_settlements`, `section_payments`, `section_totals`
-- `total_paid_year_label`, `total_paid_month_label`
-- `new_contract_cta`, `edit_staff_cta`
-- `empty_contracts`, `empty_settlements`, `empty_payments`
-- `alert_no_contracts_title`, `alert_no_contracts_description`, `deactivate_cta`, `ignore_alert_cta`
-- `inactive_banner`
-- Columnas de cada tabla.
+- `info_title`, `info_description`, `info_*_label`
+- `contact_title`, `contact_description`, `contact_*_label`
+- `bank_title`, `bank_description`, `bank_cbu_label`
+- `tenure_eyebrow`, `tenure_*_singular/plural`, `tenure_zero`, `tenure_since_template`
+- `activity_eyebrow`, `activity_empty`, `activity_actions.{staff_member_created,staff_member_updated,staff_member_bank_updated,staff_contract_created,staff_contract_finalized,staff_contract_revision_created,payroll_settlement_generated,payroll_settlement_approved,payroll_settlement_paid,payroll_settlement_returned,payroll_settlement_voided,fallback}`
+- `contracts_*`, `settlements_*`, `payments_*` (títulos, columnas, empty states)
+- `new_contract_cta`, `edit_cta`
+- `alert_no_active_contracts`
 
 ---
 
@@ -176,14 +179,31 @@ join salary_structures ss on ss.id = sc.salary_structure_id
 where sc.staff_member_id = $id
 order by ps.period_year desc, ps.period_month desc;
 
--- Totales
-select
-  coalesce(sum(case when extract(year from ps.paid_at) = extract(year from current_date) then ps.total_amount end), 0) as total_year,
-  coalesce(sum(case when date_trunc('month', ps.paid_at) = date_trunc('month', current_date) then ps.total_amount end), 0) as total_month
-from payroll_settlements ps
-join staff_contracts sc on sc.id = ps.contract_id
-where sc.staff_member_id = $id and ps.status = 'pagada';
+-- Actividad reciente (US-67 v2)
+-- Une eventos del miembro + sus contratos + sus liquidaciones, ordenados desc.
+select id, entity_type, action, performed_at, payload_before, payload_after
+from hr_activity_log
+where club_id = current_setting('app.current_club_id')::uuid
+  and (
+       (entity_type = 'staff_member' and entity_id = $id)
+    or (entity_type = 'staff_contract' and entity_id in (select id from staff_contracts where staff_member_id = $id))
+    or (entity_type = 'payroll_settlement' and entity_id in (
+          select ps.id from payroll_settlements ps
+          join staff_contracts sc on sc.id = ps.contract_id
+          where sc.staff_member_id = $id))
+  )
+order by performed_at desc
+limit 8;
 ```
+
+#### Mapping `(entity_type, action) → label`
+- `staff_member.created` → `staff_member_created` ("Colaborador creado").
+- `staff_member.updated` → `staff_member_updated`. Si el único campo cambiado entre `payload_before` y `payload_after` es `cbuAlias`, se reescribe a `staff_member_bank_updated` ("Datos bancarios actualizados").
+- `staff_contract.created` → `staff_contract_created` (detalle: código de contrato).
+- `staff_contract.finalized` → `staff_contract_finalized`.
+- `staff_contract_revision.created` → `staff_contract_revision_created` (detalle: monto formateado).
+- `payroll_settlement.{generated|approved|paid|returned|voided}` → label correspondiente (detalle: período + total).
+- Cualquier otra combinación cae a `activity_actions.fallback`.
 
 ### RLS
 - Todas las tablas son club-scoped. No se requieren policies adicionales.

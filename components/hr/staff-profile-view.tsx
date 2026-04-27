@@ -34,7 +34,10 @@ import {
   formatContractCode,
   type StaffContract,
 } from "@/lib/domain/staff-contract";
-import type { StaffProfile } from "@/lib/services/hr-staff-profile-service";
+import type {
+  StaffActivityEntry,
+  StaffProfile,
+} from "@/lib/services/hr-staff-profile-service";
 import { texts } from "@/lib/texts";
 
 const profileTexts = texts.rrhh.staff_profile;
@@ -198,7 +201,7 @@ export function StaffProfileView({
   return (
     <div className="flex flex-col gap-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <nav className="flex items-center gap-2 text-eyebrow uppercase tracking-card-eyebrow text-muted-foreground">
         <Link href="/rrhh/staff" className="hover:text-foreground">
           {profileTexts.breadcrumb_root}
         </Link>
@@ -212,11 +215,11 @@ export function StaffProfileView({
           <div className="flex items-start gap-4">
             <Avatar name={fullName} size="lg" tone="neutral" />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-eyebrow uppercase tracking-card-eyebrow text-muted-foreground">
                 {headerAltaLabel}
               </p>
-              <h1 className="break-words text-h2 font-bold text-foreground">{fullName}</h1>
-              <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+              <h1 className="break-words text-h1 text-foreground">{fullName}</h1>
+              <div className="flex flex-wrap items-center gap-1.5 text-body text-muted-foreground">
                 <span>DNI {member.dni}</span>
                 {member.cuitCuil ? (
                   <>
@@ -279,10 +282,9 @@ export function StaffProfileView({
             <CardHeader
               title={profileTexts.info_title}
               description={profileTexts.info_description}
-              divider
             />
             <CardBody>
-              <dl className="grid gap-x-6 gap-y-4 text-sm grid-cols-2 lg:grid-cols-3">
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-4 lg:grid-cols-3">
                 <InfoItem label={profileTexts.info_fullname_label} value={fullName} />
                 <InfoItem label={profileTexts.info_dni_label} value={member.dni} />
                 <InfoItem label={profileTexts.info_cuil_label} value={member.cuitCuil} />
@@ -303,10 +305,9 @@ export function StaffProfileView({
             <CardHeader
               title={profileTexts.contact_title}
               description={profileTexts.contact_description}
-              divider
             />
             <CardBody>
-              <dl className="grid gap-x-6 gap-y-4 text-sm grid-cols-1 sm:grid-cols-2">
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
                 <InfoItem label={profileTexts.contact_email_label} value={member.email} />
                 <InfoItem label={profileTexts.contact_phone_label} value={member.phone} />
               </dl>
@@ -318,10 +319,9 @@ export function StaffProfileView({
             <CardHeader
               title={profileTexts.bank_title}
               description={profileTexts.bank_description}
-              divider
             />
             <CardBody>
-              <dl className="grid gap-x-6 gap-y-4 text-sm grid-cols-1">
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-4">
                 <InfoItem label={profileTexts.bank_cbu_label} value={member.cbuAlias} />
               </dl>
             </CardBody>
@@ -466,39 +466,36 @@ export function StaffProfileView({
           {/* Antigüedad (accent-rrhh) */}
           <Card padding="comfortable" tone="accent-rrhh">
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ds-pink-700">
+              <p className="text-eyebrow uppercase tracking-card-eyebrow text-ds-pink-700">
                 {profileTexts.tenure_eyebrow}
               </p>
-              <p className="break-words text-2xl font-bold text-foreground sm:text-h1">
-                {tenureLabel}
-              </p>
-              <p className="text-sm text-muted-foreground">{hireLabel}</p>
+              <p className="break-words text-h1 text-foreground">{tenureLabel}</p>
+              <p className="text-body text-muted-foreground">{hireLabel}</p>
             </div>
           </Card>
 
-          {/* Totales */}
+          {/* Actividad reciente */}
           <Card padding="comfortable">
-            <CardHeader
-              eyebrow={profileTexts.totals_eyebrow}
-              title={profileTexts.totals_year_title}
-            />
-            <CardBody>
-              <span className="break-words text-2xl font-bold tabular-nums text-foreground sm:text-h1">
-                {formatAmount(profile.totals.yearToDate, clubCurrencyCode)}
-              </span>
-            </CardBody>
-          </Card>
-
-          <Card padding="comfortable">
-            <CardHeader
-              eyebrow={profileTexts.totals_eyebrow}
-              title={profileTexts.totals_month_title}
-            />
-            <CardBody>
-              <span className="break-words text-2xl font-bold tabular-nums text-foreground sm:text-h1">
-                {formatAmount(profile.totals.currentMonth, clubCurrencyCode)}
-              </span>
-            </CardBody>
+            <div className="flex flex-col gap-3">
+              <p className="text-eyebrow uppercase tracking-card-eyebrow text-muted-foreground">
+                {profileTexts.activity_eyebrow}
+              </p>
+              {profile.recentActivity.length === 0 ? (
+                <p className="text-body text-muted-foreground">
+                  {profileTexts.activity_empty}
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {profile.recentActivity.map((entry) => (
+                    <RecentActivityItem
+                      key={entry.id}
+                      entry={entry}
+                      currencyCode={clubCurrencyCode}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
           </Card>
         </aside>
       </div>
@@ -564,12 +561,81 @@ type InfoItemProps = {
 function InfoItem({ label, value }: InfoItemProps) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <dt className="text-eyebrow uppercase tracking-card-eyebrow text-muted-foreground">
         {label}
       </dt>
-      <dd className="break-words text-sm text-foreground">
+      <dd className="break-words text-body text-foreground">
         {value && value.length > 0 ? value : profileTexts.info_value_fallback}
       </dd>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RecentActivityItem — fila del feed de actividad reciente (US-67)
+// ---------------------------------------------------------------------------
+
+const activityActionTexts = profileTexts.activity_actions as Record<string, string>;
+
+function activityKey(entry: StaffActivityEntry): string {
+  // staff_member updated cuando solo cambian los campos bancarios → label específico
+  if (entry.entityType === "staff_member" && entry.action === "updated") {
+    const before = entry.payloadBefore ?? {};
+    const after = entry.payloadAfter ?? {};
+    const changed = new Set<string>();
+    for (const k of Object.keys(after)) {
+      if (JSON.stringify(before[k]) !== JSON.stringify(after[k])) changed.add(k);
+    }
+    if (changed.size > 0 && [...changed].every((k) => k === "cbuAlias" || k === "cbu_alias")) {
+      return "staff_member_bank_updated";
+    }
+  }
+  return `${entry.entityType}_${entry.action}`;
+}
+
+function activityDetail(
+  entry: StaffActivityEntry,
+  currencyCode: string,
+): string {
+  const performed = formatIsoDate(entry.performedAt);
+  const after = entry.payloadAfter ?? {};
+  const parts: string[] = [performed];
+  if (entry.entityType === "payroll_settlement") {
+    const py = typeof after.periodYear === "number" ? after.periodYear : null;
+    const pm = typeof after.periodMonth === "number" ? after.periodMonth : null;
+    if (py && pm) parts.push(formatPeriodLabel(py, pm));
+    const total = typeof after.totalAmount === "number" ? after.totalAmount : null;
+    if (total !== null) parts.push(formatAmount(total, currencyCode));
+  } else if (entry.entityType === "staff_contract" && entry.action === "created") {
+    const code = typeof after.id === "string" ? formatContractCode(after.id) : null;
+    if (code) parts.push(code);
+  } else if (entry.entityType === "staff_contract_revision") {
+    const amount = typeof after.amount === "number" ? after.amount : null;
+    if (amount !== null) parts.push(formatAmount(amount, currencyCode));
+  }
+  return parts.join(" · ");
+}
+
+type RecentActivityItemProps = {
+  entry: StaffActivityEntry;
+  currencyCode: string;
+};
+
+function RecentActivityItem({ entry, currencyCode }: RecentActivityItemProps) {
+  const key = activityKey(entry);
+  const label = activityActionTexts[key] ?? activityActionTexts.fallback;
+  return (
+    <li className="flex items-start gap-3">
+      <span
+        aria-hidden="true"
+        className="mt-2 size-1.5 shrink-0 rounded-full bg-ds-pink-600"
+      />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <p className="break-words text-body font-semibold text-foreground">{label}</p>
+        <p className="break-words text-small text-muted-foreground">
+          {activityDetail(entry, currencyCode)}
+        </p>
+      </div>
+    </li>
   );
 }

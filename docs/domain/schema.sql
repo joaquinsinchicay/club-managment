@@ -463,7 +463,7 @@ create index idx_cost_center_audit_cc on cost_center_audit_log(cost_center_id, c
 create type salary_remuneration_type as enum ('mensual_fijo','por_hora','por_clase');
 create type salary_structure_status as enum ('activa','inactiva');
 create type salary_payment_type as enum ('sueldo','viatico','honorarios');
-create type staff_vinculo_type as enum ('relacion_dependencia','monotributista','honorarios');
+create type staff_vinculo_type as enum ('relacion_dependencia','monotributista','honorarios','contrato_locacion');
 create type staff_contract_status as enum ('vigente','finalizado');
 create type payroll_settlement_status as enum ('generada','aprobada_rrhh','pagada','anulada');
 create type payroll_adjustment_type as enum ('adicional','descuento','reintegro');

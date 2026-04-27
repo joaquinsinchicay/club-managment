@@ -12,6 +12,7 @@ export const STAFF_VINCULO_TYPES = [
   "relacion_dependencia",
   "monotributista",
   "honorarios",
+  "contrato_locacion",
 ] as const;
 export type StaffVinculoType = (typeof STAFF_VINCULO_TYPES)[number];
 

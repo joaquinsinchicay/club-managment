@@ -1415,9 +1415,24 @@
     "staff_profile": {
       "eyebrow": "Ficha",
       "alert_no_active_contracts": "Este colaborador esta activo pero no tiene contratos vigentes. Evalua reactivar un contrato o darlo de baja.",
-      "totals_eyebrow": "Totales",
-      "totals_year_title": "Pagado en el año",
-      "totals_month_title": "Pagado en el mes",
+      "activity_eyebrow": "Actividad reciente",
+      "activity_empty": "Sin actividad registrada todavía.",
+      "activity_actor_template": "por {name}",
+      "activity_unknown_actor": "Sistema",
+      "activity_actions": {
+        "staff_member_created": "Colaborador creado",
+        "staff_member_updated": "Datos del colaborador actualizados",
+        "staff_member_bank_updated": "Datos bancarios actualizados",
+        "staff_contract_created": "Nuevo contrato agregado",
+        "staff_contract_finalized": "Contrato finalizado",
+        "staff_contract_revision_created": "Revisión salarial aplicada",
+        "payroll_settlement_generated": "Liquidación generada",
+        "payroll_settlement_approved": "Liquidación aprobada por RRHH",
+        "payroll_settlement_paid": "Liquidación pagada",
+        "payroll_settlement_returned": "Liquidación devuelta a RRHH",
+        "payroll_settlement_voided": "Liquidación anulada",
+        "fallback": "Actividad registrada"
+      },
       "personal_eyebrow": "Datos personales",
       "personal_title": "Datos de contacto y pago",
       "personal_email": "Email",
@@ -1725,7 +1740,8 @@
       "vinculo_options": {
         "relacion_dependencia": "Relación de dependencia",
         "monotributista": "Monotributista",
-        "honorarios": "Honorarios"
+        "honorarios": "Honorarios",
+        "contrato_locacion": "Contrato de locación"
       },
       "empty_title": "Sin colaboradores configurados",
       "empty_description": "Cargue los colaboradores rentados del club para poder generar contratos.",

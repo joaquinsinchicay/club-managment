@@ -6,7 +6,7 @@
  *   - contracts (vigente + finalizado) enriched with structure info
  *   - settlements filtered by the staff member's contracts
  *   - payments (movements with a link back to the settlement)
- *   - consolidated totals (year-to-date + current month)
+ *   - recent activity feed (hr_activity_log for the member + child entities)
  *
  * All reads are scoped by the repository layer to the active club.
  */
@@ -35,15 +35,21 @@ export type StaffProfilePayment = {
   settlementId: string | null;
 };
 
+export type StaffActivityEntry = {
+  id: string;
+  entityType: "staff_member" | "staff_contract" | "payroll_settlement" | string;
+  action: string;
+  performedAt: string;
+  payloadBefore: Record<string, unknown> | null;
+  payloadAfter: Record<string, unknown> | null;
+};
+
 export type StaffProfile = {
   member: StaffMember;
   contracts: StaffContract[];
   settlements: PayrollSettlement[];
   payments: StaffProfilePayment[];
-  totals: {
-    yearToDate: number;
-    currentMonth: number;
-  };
+  recentActivity: StaffActivityEntry[];
   hasActiveContract: boolean;
 };
 
@@ -131,6 +137,51 @@ async function fetchPaymentsForContracts(
     .sort((a, b) => (a.movementDate < b.movementDate ? 1 : -1));
 }
 
+async function fetchRecentActivity(
+  clubId: string,
+  memberId: string,
+  contractIds: string[],
+  settlementIds: string[],
+): Promise<StaffActivityEntry[]> {
+  const admin = createRequiredAdminSupabaseClient();
+  const ors: string[] = [`and(entity_type.eq.staff_member,entity_id.eq.${memberId})`];
+  if (contractIds.length > 0) {
+    ors.push(`and(entity_type.eq.staff_contract,entity_id.in.(${contractIds.join(",")}))`);
+  }
+  if (settlementIds.length > 0) {
+    ors.push(
+      `and(entity_type.eq.payroll_settlement,entity_id.in.(${settlementIds.join(",")}))`,
+    );
+  }
+  const { data, error } = await admin
+    .from("hr_activity_log")
+    .select("id,entity_type,action,performed_at,payload_before,payload_after")
+    .eq("club_id", clubId)
+    .or(ors.join(","))
+    .order("performed_at", { ascending: false })
+    .limit(8);
+  if (error) {
+    console.error("[hr-staff-profile-service.recentActivity]", error);
+    return [];
+  }
+  type Row = {
+    id: string;
+    entity_type: string;
+    action: string;
+    performed_at: string;
+    payload_before: Record<string, unknown> | null;
+    payload_after: Record<string, unknown> | null;
+  };
+  return (data as Row[] | null ?? []).map((row) => ({
+    id: row.id,
+    entityType: row.entity_type,
+    action: row.action,
+    performedAt: row.performed_at,
+    payloadBefore: row.payload_before,
+    payloadAfter: row.payload_after,
+  }));
+}
+
 export async function getStaffProfile(memberId: string): Promise<StaffProfileResult> {
   const session = await getAuthenticatedSessionContext();
   if (!session) return { ok: false, code: "unauthenticated" };
@@ -157,20 +208,13 @@ export async function getStaffProfile(memberId: string): Promise<StaffProfileRes
       fetchPaymentsForContracts(clubId, contractIds),
     ]);
     const settlements = settlementsAll;
-
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-
-    let yearToDate = 0;
-    let currentMonth = 0;
-    for (const s of settlements) {
-      if (s.status !== "pagada" || !s.paidAt) continue;
-      const paid = new Date(s.paidAt);
-      if (paid.getFullYear() !== year) continue;
-      yearToDate += s.totalAmount;
-      if (paid.getMonth() + 1 === month) currentMonth += s.totalAmount;
-    }
+    const settlementIds = settlements.map((s) => s.id);
+    const recentActivity = await fetchRecentActivity(
+      clubId,
+      memberId,
+      contractIds,
+      settlementIds,
+    );
 
     return {
       ok: true,
@@ -179,7 +223,7 @@ export async function getStaffProfile(memberId: string): Promise<StaffProfileRes
         contracts,
         settlements,
         payments,
-        totals: { yearToDate, currentMonth },
+        recentActivity,
         hasActiveContract: contracts.some((c) => c.status === "vigente"),
       },
     };
