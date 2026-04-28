@@ -131,7 +131,7 @@ def main():
             "amount": r["amount"],
             "movement_date": r["movement_date"],
             "concept": r.get("concept") or "",
-            "status": "consolidated",
+            "status": "posted",
             "display_id": r["external_id"],
             "external_id": r["external_id"],
             "staff_contract_id": r.get("staff_contract_id"),
