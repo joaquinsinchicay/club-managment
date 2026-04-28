@@ -30,8 +30,7 @@ export default async function ActivityDetailPage({
     redirect("/rrhh/structures");
   }
 
-  const allStaff = await staffMemberRepository.listForClub(context.activeClub.id, {});
-  const eligibleStaff = allStaff.filter((s) => s.activeContractCount === 0);
+  const staffMembers = await staffMemberRepository.listForClub(context.activeClub.id, {});
 
   return (
     <>
@@ -40,7 +39,7 @@ export default async function ActivityDetailPage({
         detail={result.detail}
         clubCurrencyCode={clubCurrencyCode}
         canMutate={canMutate}
-        eligibleStaff={eligibleStaff}
+        staffMembers={staffMembers}
         updateStructureAction={updateSalaryStructureAction}
         createContractAction={createStaffContractAction}
       />

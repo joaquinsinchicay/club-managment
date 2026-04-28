@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
 
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
 import { Avatar } from "@/components/ui/avatar";
@@ -10,8 +11,9 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { DataTableChip } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
-import { AssignContractToActivityModal } from "@/components/hr/assign-contract-to-activity-modal";
+import { CreateContractForm } from "@/components/hr/create-contract-form";
 import { StructureEditModal } from "@/components/hr/structure-edit-modal";
+import { triggerClientFeedback } from "@/lib/client-feedback";
 import type { SalaryStructure } from "@/lib/domain/salary-structure";
 import type { StaffMember } from "@/lib/domain/staff-member";
 import { texts } from "@/lib/texts";
@@ -23,13 +25,14 @@ import type {
 
 const adTexts = texts.rrhh.activity_detail;
 const ssTexts = texts.rrhh.salary_structures;
+const scTexts = texts.rrhh.staff_contracts;
 const monthLabels = adTexts.month_short_labels as Record<string, string>;
 
 type ActivityDetailViewProps = {
   detail: ActivityDetail;
   clubCurrencyCode: string;
   canMutate: boolean;
-  eligibleStaff: StaffMember[];
+  staffMembers: StaffMember[];
   updateStructureAction: (formData: FormData) => Promise<RrhhActionResult>;
   createContractAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
@@ -84,10 +87,12 @@ export function ActivityDetailView({
   detail,
   clubCurrencyCode,
   canMutate,
-  eligibleStaff,
+  staffMembers,
   updateStructureAction,
   createContractAction,
 }: ActivityDetailViewProps) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const { activity, structures, divisions, collaborators, totals, costEvolution } = detail;
 
   const groups = useMemo(() => groupByDivision(collaborators), [collaborators]);
@@ -100,6 +105,12 @@ export function ActivityDetailView({
   const [editingStructure, setEditingStructure] = useState<SalaryStructure | null>(null);
   const [editPickerOpen, setEditPickerOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [assignPending, setAssignPending] = useState(false);
+
+  const availableStructures = useMemo(
+    () => structures.filter((s) => s.status === "activa" && !s.hasActiveContract),
+    [structures],
+  );
 
   const delta = buildDelta(totals.monthlyCost, totals.monthlyCostPrevious);
 
@@ -110,6 +121,20 @@ export function ActivityDetailView({
       return;
     }
     setEditPickerOpen(true);
+  }
+
+  async function handleCreateContract(formData: FormData) {
+    setAssignPending(true);
+    try {
+      const result = await createContractAction(formData);
+      triggerClientFeedback("settings", result.code);
+      if (result.ok) {
+        setAssignOpen(false);
+        startTransition(() => router.refresh());
+      }
+    } finally {
+      setAssignPending(false);
+    }
   }
 
   return (
@@ -298,15 +323,22 @@ export function ActivityDetailView({
         />
       ) : null}
 
-      <AssignContractToActivityModal
+      <Modal
         open={assignOpen}
-        onClose={() => setAssignOpen(false)}
-        activityName={activity.name}
-        structures={structures}
-        eligibleStaff={eligibleStaff}
-        clubCurrencyCode={clubCurrencyCode}
-        createContractAction={createContractAction}
-      />
+        onClose={() => !assignPending && setAssignOpen(false)}
+        title={scTexts.create_modal_title}
+        description={scTexts.create_modal_description}
+        size="md"
+        closeDisabled={assignPending}
+      >
+        <CreateContractForm
+          members={staffMembers}
+          structures={availableStructures}
+          clubCurrencyCode={clubCurrencyCode}
+          onCancel={() => setAssignOpen(false)}
+          onSubmit={handleCreateContract}
+        />
+      </Modal>
     </div>
   );
 }

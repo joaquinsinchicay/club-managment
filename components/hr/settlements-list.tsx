@@ -622,7 +622,11 @@ export function SettlementsList({
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField>
               <FormFieldLabel required>{sTexts.generate_month_label}</FormFieldLabel>
-              <FormSelect name="month" defaultValue={String(periodFilter.month)} required>
+              <FormSelect
+                name="month"
+                defaultValue={String(currentPeriodYearMonth().month)}
+                required
+              >
                 {Array.from({ length: 12 }).map((_, i) => (
                   <option key={i + 1} value={String(i + 1)}>
                     {String(i + 1).padStart(2, "0")}
@@ -635,7 +639,7 @@ export function SettlementsList({
               <FormInput
                 type="number"
                 name="year"
-                defaultValue={periodFilter.year}
+                defaultValue={currentPeriodYearMonth().year}
                 min={2024}
                 max={2100}
                 required
