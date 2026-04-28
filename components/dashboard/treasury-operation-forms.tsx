@@ -813,7 +813,9 @@ export function SecretariaMovementEditForm({
   copy = texts.dashboard.treasury,
   extraHiddenFields,
   editableMovementDate = false,
-  onCancel
+  onCancel,
+  costCenters,
+  initialCostCenterIds
 }: BaseMovementFormProps & {
   movement: EditableMovement;
   copy?: OperationalFormCopy;
@@ -821,11 +823,28 @@ export function SecretariaMovementEditForm({
   editableMovementDate?: boolean;
   onCancel: () => void;
 }) {
+  const ccCopy = texts.dashboard.treasury_role.cost_centers;
   const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
+  // US-53 / edit: cost center multiselect (solo se renderiza cuando el caller
+  // pasa `costCenters`, indicando rol con permiso). `initialCostCenterIds`
+  // arranca con los CC ya linkeados al movimiento (si los conocemos).
+  const [selectedCostCenterIds, setSelectedCostCenterIds] = useState<string[]>(
+    () => initialCostCenterIds ?? []
+  );
+  function toggleCostCenter(id: string) {
+    setSelectedCostCenterIds((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    );
+  }
+  const activeCostCenters = (costCenters ?? []).filter((cc) => cc.status === "activo");
 
   useEffect(() => {
     setFormState(buildEditMovementFormState(movement));
   }, [movement]);
+
+  useEffect(() => {
+    setSelectedCostCenterIds(initialCostCenterIds ?? []);
+  }, [initialCostCenterIds]);
 
   const availableCurrencies = useMemo(() => {
     const selectedAccount = accounts.find((a) => a.id === formState.accountId);
@@ -834,13 +853,28 @@ export function SecretariaMovementEditForm({
   }, [accounts, currencies, formState.accountId]);
 
   const availableCategories = useMemo(
-    () =>
-      categories.filter((c) => {
+    () => {
+      const filtered = categories.filter((c) => {
         if (c.isLegacy || c.movementType === "saldo") return false;
         if (!formState.movementType) return true;
         return c.movementType === formState.movementType;
-      }),
-    [categories, formState.movementType]
+      });
+      // Defensive: incluir la categoria actual aunque este oculta para el rol o
+      // su movement_type no matchee el actual del form. Asi el edit modal no
+      // pierde el dato cuando un movimiento historico apunta a una categoria
+      // que despues fue desactivada.
+      if (
+        formState.categoryId &&
+        !filtered.some((c) => c.id === formState.categoryId)
+      ) {
+        const current = categories.find((c) => c.id === formState.categoryId);
+        if (current && !current.isLegacy && current.movementType !== "saldo") {
+          return [current, ...filtered];
+        }
+      }
+      return filtered;
+    },
+    [categories, formState.movementType, formState.categoryId]
   );
 
   useEffect(() => {
@@ -1117,6 +1151,57 @@ export function SecretariaMovementEditForm({
             </div>
           </div>
         ) : null}
+
+        {/* COST CENTERS (US-53, rol tesoreria) */}
+        {costCenters !== undefined && (
+          <div className="grid gap-2">
+            <p className={FIELD_LABEL_CLASSNAME}>{ccCopy.movements_cost_centers_label}</p>
+            <input type="hidden" name="cost_centers_present" value="1" />
+            {activeCostCenters.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {ccCopy.movements_cost_centers_empty_options}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {activeCostCenters.map((cc) => {
+                  const selected = selectedCostCenterIds.includes(cc.id);
+                  const currencyMismatch =
+                    formState.currencyCode && cc.currencyCode !== formState.currencyCode;
+                  return (
+                    <label
+                      key={cc.id}
+                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50"
+                    >
+                      <input
+                        type="checkbox"
+                        name="cost_center_ids"
+                        value={cc.id}
+                        checked={selected}
+                        onChange={() => toggleCostCenter(cc.id)}
+                        className="size-4 rounded border-border text-foreground focus:ring-foreground"
+                      />
+                      <span className="flex-1 truncate font-medium">{cc.name}</span>
+                      <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-slate-700">
+                        {cc.type}
+                      </span>
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                        {cc.currencyCode}
+                      </span>
+                      {selected && currencyMismatch ? (
+                        <span
+                          className="rounded-xs bg-ds-amber-050 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-amber-700"
+                          title={ccCopy.movements_cost_centers_currency_mismatch}
+                        >
+                          ⚠
+                        </span>
+                      ) : null}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* BUTTONS */}
         <ModalFooter

@@ -111,10 +111,18 @@ export function SecretariaMovementList({ items }: SecretariaMovementListProps) {
 
                   {/* Tags + datetime */}
                   <div className="mt-1.5 flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <DataTableChip>{item.accountName}</DataTableChip>
-                      {item.categoryName ? <DataTableChip>{item.categoryName}</DataTableChip> : null}
-                      {item.activityName ? <DataTableChip>{item.activityName}</DataTableChip> : null}
+                      {item.categoryName ? (
+                        <span className="text-small font-medium text-muted-foreground">
+                          {item.categoryName}
+                        </span>
+                      ) : null}
+                      {item.activityName ? (
+                        <span className="text-small font-medium text-muted-foreground">
+                          {item.activityName}
+                        </span>
+                      ) : null}
                     </div>
                     <p className="shrink-0 text-meta tabular-nums text-muted-foreground">
                       {formatMovementDateTime(item.createdAt)}

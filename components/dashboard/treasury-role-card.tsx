@@ -1407,6 +1407,7 @@ export function TreasuryRoleCard({
             pendingLabel={texts.dashboard.treasury_role.update_loading}
             movement={selectedMovement}
             copy={texts.dashboard.treasury_role}
+            costCenters={activeCostCenters}
             onCancel={() => {
               setActiveModal(null);
               setSelectedMovement(null);
