@@ -159,20 +159,20 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
       />
     ) : undefined;
 
-  // US-53: only pass the multiselect options when the user can mutate CC.
-  // Secretaría edits will not include `cost_centers_present`, so the action
-  // leaves links untouched.
-  const activeCostCentersForMovements =
+  // US-53: pasar TODOS los CCs (activos + inactivos) al form. Los inactivos
+  // se renderizan en el multiselect solo si ya estan seleccionados en el
+  // movimiento (para no perder visibilidad del link historico) y aparecen
+  // como disabled si no estan seleccionados (para evitar nuevos links a CCs
+  // cerrados). Secretaria sigue sin recibir el field.
+  const costCentersForMovements =
     canSeeCostCenters && costCentersData && costCentersData.ok
-      ? costCentersData.costCenters
-          .filter((cc) => cc.status === "activo")
-          .map((cc) => ({
-            id: cc.id,
-            name: cc.name,
-            type: cc.type,
-            currencyCode: cc.currencyCode,
-            status: cc.status
-          }))
+      ? costCentersData.costCenters.map((cc) => ({
+          id: cc.id,
+          name: cc.name,
+          type: cc.type,
+          currencyCode: cc.currencyCode,
+          status: cc.status
+        }))
       : undefined;
 
   // Lista minima de contratos RRHH para el selector "Contrato" en los forms
@@ -228,7 +228,7 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
         updateTransferBeforeConsolidationAction={updateTransferBeforeConsolidationAction}
         executeDailyConsolidationAction={executeDailyConsolidationAction}
         costCentersTab={costCentersTabNode}
-        activeCostCenters={activeCostCentersForMovements}
+        activeCostCenters={costCentersForMovements}
         staffContracts={staffContractsForMovements}
       />
     </main>

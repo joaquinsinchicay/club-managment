@@ -695,6 +695,11 @@ function CostCenterMultiSelect({
         >
           {options.map((cc) => {
             const checked = selectedIds.includes(cc.id);
+            const isInactive = cc.status === "inactivo";
+            // Inactivos no seleccionados: no se pueden tildar (impedir nuevos
+            // links a CCs cerrados). Inactivos ya seleccionados se pueden
+            // destildar para desvincular si el usuario quiere.
+            const lockNew = isInactive && !checked;
             const currencyMismatch =
               checked && Boolean(formStateCurrency) && cc.currencyCode !== formStateCurrency;
             return (
@@ -702,15 +707,26 @@ function CostCenterMultiSelect({
                 key={cc.id}
                 role="option"
                 aria-selected={checked}
-                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-btn px-3 py-2 text-sm text-foreground transition hover:bg-secondary/60"
+                aria-disabled={lockNew}
+                title={lockNew ? "CC inactivo — no se puede agregar" : undefined}
+                className={cn(
+                  "flex min-h-10 items-center gap-3 rounded-btn px-3 py-2 text-sm text-foreground transition",
+                  lockNew ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-secondary/60"
+                )}
               >
                 <input
                   type="checkbox"
                   checked={checked}
+                  disabled={lockNew}
                   onChange={() => toggle(cc.id)}
-                  className="size-4 rounded border-border text-foreground focus:ring-foreground"
+                  className="size-4 rounded border-border text-foreground focus:ring-foreground disabled:cursor-not-allowed"
                 />
                 <span className="flex-1 truncate font-medium">{cc.name}</span>
+                {isInactive ? (
+                  <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    Inactivo
+                  </span>
+                ) : null}
                 <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-slate-700">
                   {cc.type}
                 </span>
@@ -1076,7 +1092,12 @@ export function SecretariaMovementEditForm({
       current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
     );
   }
-  const activeCostCenters = (costCenters ?? []).filter((cc) => cc.status === "activo");
+  // Mostrar todos los CCs activos + los inactivos que ya estan seleccionados
+  // en el movimiento (preservar links historicos). El multiselect deshabilita
+  // los inactivos no seleccionados para impedir nuevos links a CCs cerrados.
+  const visibleCostCenters = (costCenters ?? []).filter(
+    (cc) => cc.status === "activo" || selectedCostCenterIds.includes(cc.id)
+  );
 
   useEffect(() => {
     setFormState(buildEditMovementFormState(movement));
@@ -1409,7 +1430,7 @@ export function SecretariaMovementEditForm({
           <div className="grid gap-2">
             <p className={FIELD_LABEL_CLASSNAME}>{ccCopy.movements_cost_centers_label}</p>
             <CostCenterMultiSelect
-              options={activeCostCenters}
+              options={visibleCostCenters}
               selectedIds={selectedCostCenterIds}
               onChange={setSelectedCostCenterIds}
               formStateCurrency={formState.currencyCode}
@@ -2069,7 +2090,12 @@ export function TreasuryRoleMovementForm({
       current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
     );
   }
-  const activeCostCenters = (costCenters ?? []).filter((cc) => cc.status === "activo");
+  // Mostrar todos los CCs activos + los inactivos que ya estan seleccionados
+  // en el movimiento (preservar links historicos). El multiselect deshabilita
+  // los inactivos no seleccionados para impedir nuevos links a CCs cerrados.
+  const visibleCostCenters = (costCenters ?? []).filter(
+    (cc) => cc.status === "activo" || selectedCostCenterIds.includes(cc.id)
+  );
 
   const [formState, setFormState] = useState<MovementFormState>(() => ({
     accountId: "",
@@ -2371,7 +2397,7 @@ export function TreasuryRoleMovementForm({
           <div className="grid gap-2">
             <p className={FIELD_LABEL_CLASSNAME}>{ccCopy.movements_cost_centers_label}</p>
             <CostCenterMultiSelect
-              options={activeCostCenters}
+              options={visibleCostCenters}
               selectedIds={selectedCostCenterIds}
               onChange={setSelectedCostCenterIds}
               formStateCurrency={formState.currencyCode}
