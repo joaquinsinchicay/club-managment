@@ -346,14 +346,16 @@ export default async function RrhhPage() {
                 >
                   {monthlyDeltaLabel}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  {templateFill(dashboard.card_monthly_cost_history_template, {
-                    prevLabel: summary.monthlyCost.previousLabel,
-                    prev: formatAmount(summary.monthlyCost.previous, clubCurrencyCode),
-                    twoLabel: summary.monthlyCost.twoMonthsAgoLabel,
-                    two: formatAmount(summary.monthlyCost.twoMonthsAgo, clubCurrencyCode),
-                  })}
-                </span>
+                {summary.monthlyCost.previous > 0 || summary.monthlyCost.twoMonthsAgo > 0 ? (
+                  <span className="text-xs text-muted-foreground">
+                    {templateFill(dashboard.card_monthly_cost_history_template, {
+                      prevLabel: summary.monthlyCost.previousLabel,
+                      prev: formatAmount(summary.monthlyCost.previous, clubCurrencyCode),
+                      twoLabel: summary.monthlyCost.twoMonthsAgoLabel,
+                      two: formatAmount(summary.monthlyCost.twoMonthsAgo, clubCurrencyCode),
+                    })}
+                  </span>
+                ) : null}
               </div>
             </CardBody>
           </Card>
