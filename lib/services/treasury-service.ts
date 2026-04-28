@@ -519,7 +519,8 @@ function buildDashboardMovementView(input: {
     amount: movement.amount,
     createdByUserName: usersById.get(movement.createdByUserId)?.fullName ?? "",
     createdAt: movement.createdAt,
-    canEdit
+    canEdit,
+    staffContractId: movement.staffContractId ?? null
   };
 }
 

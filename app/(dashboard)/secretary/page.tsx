@@ -22,6 +22,7 @@ import {
   getEnabledCalendarEventsForSecretaria,
   getEnabledMovementTypesForSecretaria
 } from "@/lib/services/treasury-service";
+import { listStaffContractsForMovementSelector } from "@/lib/services/staff-contract-service";
 import { texts } from "@/lib/texts";
 
 function formatSessionDateChip(sessionDate: string): string {
@@ -55,6 +56,9 @@ export default async function SecretariaDashboardPage() {
 
   const canOpenSession = treasuryCard.availableActions.includes("open_session");
   const canCloseSession = treasuryCard.availableActions.includes("close_session");
+
+  const staffContractsResult = await listStaffContractsForMovementSelector();
+  const staffContractsForMovements = staffContractsResult.ok ? staffContractsResult.options : [];
 
   const [
     allTreasuryAccounts,
@@ -119,6 +123,7 @@ export default async function SecretariaDashboardPage() {
         createAccountTransferAction={createAccountTransferAction}
         closeDailyCashSessionModalAction={closeDailyCashSessionModalAction}
         openDailyCashSessionModalAction={openDailyCashSessionModalAction}
+        staffContracts={staffContractsForMovements}
       />
     </main>
   );

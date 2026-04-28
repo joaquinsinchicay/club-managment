@@ -30,6 +30,7 @@ import {
 } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import { listCostCentersForActiveClub } from "@/lib/services/cost-center-service";
+import { listStaffContractsForMovementSelector } from "@/lib/services/staff-contract-service";
 import { getTreasuryPayrollSummary } from "@/lib/services/treasury-payroll-service";
 import {
   getActiveActivitiesForTesoreria,
@@ -174,6 +175,13 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
           }))
       : undefined;
 
+  // Lista minima de contratos RRHH para el selector "Contrato" en los forms
+  // de creacion y edicion de movimientos. Falla silenciosa: si no hay
+  // contratos o el call falla, el field no se renderiza.
+  const staffContractsForMovementsResult = await listStaffContractsForMovementSelector();
+  const staffContractsForMovements =
+    staffContractsForMovementsResult.ok ? staffContractsForMovementsResult.options : [];
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
       <PageContentHeader
@@ -221,6 +229,7 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
         executeDailyConsolidationAction={executeDailyConsolidationAction}
         costCentersTab={costCentersTabNode}
         activeCostCenters={activeCostCentersForMovements}
+        staffContracts={staffContractsForMovements}
       />
     </main>
   );

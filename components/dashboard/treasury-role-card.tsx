@@ -82,6 +82,12 @@ type TreasuryRoleCardProps = {
     currencyCode: string;
     status: "activo" | "inactivo";
   }>;
+  // Contratos RRHH para el selector "Contrato" en los modales de movimiento.
+  staffContracts?: Array<{
+    contractId: string;
+    staffMemberId: string;
+    label: string;
+  }>;
 };
 
 type SubTab = "resumen" | "cuentas" | "movimientos" | "conciliacion" | "cost_centers";
@@ -1090,7 +1096,8 @@ export function TreasuryRoleCard({
   updateTransferBeforeConsolidationAction,
   executeDailyConsolidationAction,
   costCentersTab,
-  activeCostCenters
+  activeCostCenters,
+  staffContracts
 }: TreasuryRoleCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1380,6 +1387,7 @@ export function TreasuryRoleCard({
           sessionDate={dashboard.sessionDate}
           onCancel={() => setActiveModal(null)}
           costCenters={activeCostCenters}
+          staffContracts={staffContracts}
         />
       </Modal>
 
@@ -1408,6 +1416,7 @@ export function TreasuryRoleCard({
             movement={selectedMovement}
             copy={texts.dashboard.treasury_role}
             costCenters={activeCostCenters}
+          staffContracts={staffContracts}
             onCancel={() => {
               setActiveModal(null);
               setSelectedMovement(null);

@@ -250,6 +250,8 @@ export type TreasuryMovement = {
   createdByUserId: string;
   status: TreasuryMovementStatus;
   createdAt: string;
+  /** FK a staff_contracts(id). Carga historica + futuro UI de pagos RRHH. */
+  staffContractId?: string | null;
 };
 
 export type DailyConsolidationBatch = {
@@ -341,6 +343,15 @@ export type TreasuryDashboardMovement = {
   createdByUserName: string;
   createdAt: string;
   canEdit: boolean;
+  /** FK a staff_contracts(id), si el movimiento esta linkeado a un contrato. */
+  staffContractId?: string | null;
+};
+
+/** Opcion de contrato RRHH para el selector de movimientos. */
+export type StaffContractMovementOption = {
+  contractId: string;
+  staffMemberId: string;
+  label: string;
 };
 
 export type TreasuryRoleDashboardMovementAccountGroup = {

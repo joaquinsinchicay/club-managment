@@ -475,6 +475,16 @@ type AccessRepository = {
     payloadAfter: Record<string, unknown> | null;
     performedByUserId: string;
   }): Promise<MovementAuditLog | null>;
+  /**
+   * Setea o limpia el FK staff_contract_id de un movimiento. Pasar null para
+   * desvincular. Idempotente: si el valor coincide con el actual, no hace
+   * nada. Devuelve true si la fila existe, false si no.
+   */
+  setTreasuryMovementStaffContract(input: {
+    clubId: string;
+    movementId: string;
+    staffContractId: string | null;
+  }): Promise<boolean>;
   createAccountTransfer(input: {
     clubId: string;
     dailyCashSessionId: string | null;
@@ -1727,7 +1737,11 @@ function mapTreasuryMovementRow(row: TreasuryMovementRow): TreasuryMovement {
     movementDate: row.movement_date,
     createdByUserId: row.created_by_user_id,
     status: row.status ?? "pending_consolidation",
-    createdAt: row.created_at ?? now()
+    createdAt: row.created_at ?? now(),
+    // staff_contract_id solo viene cuando el RPC lo retorna (RPCs nuevas
+    // tras 20260427260000_treasury_movement_rpcs_include_staff_contract).
+    staffContractId: (row as TreasuryMovementRow & { staff_contract_id?: string | null })
+      .staff_contract_id ?? null
   };
 }
 
@@ -5554,6 +5568,37 @@ export const accessRepository: AccessRepository = {
 
     getStore().movementAuditLogs.push(log);
     return log;
+  },
+  async setTreasuryMovementStaffContract(input) {
+    if (shouldUseSupabaseDatabase()) {
+      const supabase = createRequiredTreasurySettingsAdminClient(
+        "set_treasury_movement_staff_contract",
+        { clubId: input.clubId, movementId: input.movementId }
+      );
+      const { data, error } = await supabase
+        .from("treasury_movements")
+        .update({ staff_contract_id: input.staffContractId })
+        .eq("id", input.movementId)
+        .eq("club_id", input.clubId)
+        .select("id")
+        .maybeSingle();
+      if (error) {
+        throwTreasurySettingsWriteFailure(
+          "set_treasury_movement_staff_contract",
+          { clubId: input.clubId, movementId: input.movementId },
+          error
+        );
+      }
+      return Boolean(data);
+    }
+
+    const movement = getStore().treasuryMovements.find(
+      (m) => m.id === input.movementId && m.clubId === input.clubId
+    );
+    if (!movement) return false;
+    (movement as TreasuryMovement & { staffContractId?: string | null }).staffContractId =
+      input.staffContractId;
+    return true;
   },
   async createAccountTransfer(input) {
     if (shouldUseSupabaseDatabase()) {

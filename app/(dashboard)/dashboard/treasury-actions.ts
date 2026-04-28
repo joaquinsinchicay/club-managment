@@ -19,6 +19,34 @@ import {
   updateTreasuryAccountForActiveClub
 } from "@/lib/services/treasury-settings-service";
 import { syncMovementCostCenterLinks } from "@/lib/services/cost-center-service";
+import { accessRepository } from "@/lib/repositories/access-repository";
+import { getAuthenticatedSessionContext } from "@/lib/auth/service";
+
+/**
+ * Sincroniza el FK staff_contract_id del movimiento con lo enviado en el
+ * form. Best-effort: si falla, loguea pero no rompe el flow del create/update
+ * del movimiento (que ya se commitea antes).
+ *
+ * El form rinde un `<input type="hidden" name="staff_contract_present" value="1">`
+ * para indicar que el campo esta visible y hay que sincronizar. El value es
+ * staff_contract_id (uuid) o "" para desvincular.
+ */
+async function syncStaffContractFromFormData(formData: FormData, movementId: string) {
+  if (formData.get("staff_contract_present") !== "1") return;
+  const ctx = await getAuthenticatedSessionContext();
+  if (!ctx?.activeClub) return;
+  const raw = String(formData.get("staff_contract_id") ?? "").trim();
+  const value = raw || null;
+  try {
+    await accessRepository.setTreasuryMovementStaffContract({
+      clubId: ctx.activeClub.id,
+      movementId,
+      staffContractId: value
+    });
+  } catch (error) {
+    console.error("[treasury-actions.sync_staff_contract]", { movementId, error });
+  }
+}
 
 export type TreasuryActionResponse = {
   ok: boolean;
@@ -88,6 +116,11 @@ export async function createTreasuryMovementAction(formData: FormData) {
     amount: String(formData.get("amount") ?? "")
   });
 
+  // Sync staff_contract_id si la form lo envia (Tesoreria + Secretaria).
+  if (result.ok && result.movementId) {
+    await syncStaffContractFromFormData(formData, result.movementId);
+  }
+
   revalidatePath("/dashboard");
   revalidatePath("/secretary");
 
@@ -131,6 +164,7 @@ export async function createTreasuryRoleMovementAction(formData: FormData) {
         });
       }
     }
+    await syncStaffContractFromFormData(formData, result.movementId);
   }
 
   revalidatePath("/dashboard");
@@ -179,6 +213,7 @@ export async function updateTreasuryRoleMovementAction(formData: FormData) {
         });
       }
     }
+    await syncStaffContractFromFormData(formData, movementId);
   }
 
   revalidatePath("/dashboard");
@@ -192,8 +227,9 @@ export async function updateTreasuryRoleMovementAction(formData: FormData) {
 }
 
 export async function updateSecretariaMovementAction(formData: FormData) {
+  const movementId = String(formData.get("movement_id") ?? "");
   const result = await updateSecretariaMovementInOpenSession({
-    movementId: String(formData.get("movement_id") ?? ""),
+    movementId,
     accountId: String(formData.get("account_id") ?? ""),
     movementType: String(formData.get("movement_type") ?? ""),
     categoryId: String(formData.get("category_id") ?? ""),
@@ -204,6 +240,10 @@ export async function updateSecretariaMovementAction(formData: FormData) {
     currencyCode: String(formData.get("currency_code") ?? ""),
     amount: String(formData.get("amount") ?? "")
   });
+
+  if (result.ok && movementId) {
+    await syncStaffContractFromFormData(formData, movementId);
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/secretary");

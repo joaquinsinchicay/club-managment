@@ -172,6 +172,47 @@ export async function listStaffContractsForActiveClub(
   }
 }
 
+/**
+ * Variante minima de listForClub para el selector de Contrato en los forms
+ * de Movimientos (Tesoreria + Secretaria). Devuelve solo (id, staffMemberId,
+ * label) y bypassa el guard de RRHH — necesario porque tesoreria/secretaria
+ * vinculan pagos a contratos pero no tienen permisos de RRHH.
+ *
+ * Acceso: requiere ser miembro del club activo. La RLS server-side en
+ * staff_contracts ya valida ese acceso.
+ */
+export async function listStaffContractsForMovementSelector(): Promise<{
+  ok: true;
+  options: import("@/lib/domain/access").StaffContractMovementOption[];
+} | { ok: false; code: StaffContractActionCode }> {
+  const { getAuthenticatedSessionContext } = await import("@/lib/auth/service");
+  const context = await getAuthenticatedSessionContext();
+  if (!context?.activeClub) return { ok: false, code: "forbidden" };
+
+  try {
+    const contracts = await staffContractRepository.listForClub(context.activeClub.id);
+    const options = contracts
+      .map((c) => ({
+        contractId: c.id,
+        staffMemberId: c.staffMemberId,
+        label: [
+          c.staffMemberName ?? "(sin nombre)",
+          c.salaryStructureRole ? `· ${c.salaryStructureRole}` : null,
+          c.status === "finalizado" ? "(finalizado)" : null
+        ]
+          .filter(Boolean)
+          .join(" ")
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, "es"));
+    return { ok: true, options };
+  } catch (error) {
+    if (isStaffContractRepositoryInfraError(error)) {
+      console.error("[staff-contract-service.list-for-movement]", error);
+    }
+    return { ok: false, code: "unknown_error" };
+  }
+}
+
 export type GetStaffContractResult =
   | { ok: true; contract: StaffContract }
   | { ok: false; code: StaffContractActionCode };

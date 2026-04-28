@@ -55,6 +55,16 @@ type BaseMovementFormProps = {
     status: "activo" | "inactivo";
   }>;
   initialCostCenterIds?: string[];
+  /**
+   * Lista de contratos RRHH para el selector "Contrato" del movimiento.
+   * Cuando se omite, el campo no se renderiza. Cuando se pasa array vacio,
+   * el field aparece deshabilitado con "No hay contratos".
+   */
+  staffContracts?: Array<{
+    contractId: string;
+    staffMemberId: string;
+    label: string;
+  }>;
 };
 
 type OperationalFormCopy = {
@@ -117,6 +127,8 @@ type MovementFormState = {
   concept: string;
   currencyCode: string;
   amount: string;
+  /** FK opcional a staff_contracts(id). Vacio = "Sin asignar". */
+  staffContractId: string;
 };
 
 type TransferFormState = {
@@ -141,6 +153,7 @@ type EditableMovement = {
   concept: string;
   currencyCode: string;
   amount: number;
+  staffContractId?: string | null;
 };
 
 function FormField({
@@ -447,7 +460,8 @@ function buildEmptySecretariaMovementFormState(): MovementFormState {
     receiptNumber: "",
     concept: "",
     currencyCode: "",
-    amount: ""
+    amount: "",
+    staffContractId: ""
   };
 }
 
@@ -461,7 +475,8 @@ function buildEditMovementFormState(movement: EditableMovement): MovementFormSta
     receiptNumber: movement.receiptNumber ?? "",
     concept: movement.concept,
     currencyCode: movement.currencyCode,
-    amount: formatLocalizedAmount(movement.amount)
+    amount: formatLocalizedAmount(movement.amount),
+    staffContractId: movement.staffContractId ?? ""
   };
 }
 
@@ -506,6 +521,70 @@ function formatSessionDateLong(sessionDate: string): string {
     year: "numeric"
   }).format(date);
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * StaffContractSelect — select simple para vincular un movimiento a un
+ * contrato RRHH (carga historica + futuro flow de pagos manuales).
+ *
+ * Renderiza un <select> nativo con la lista de contratos del club + opcion
+ * "Sin asignar". Hidden flag `staff_contract_present` indica que el form
+ * incluye el campo (asi la action server-side hace el sync).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+type StaffContractOption = {
+  contractId: string;
+  staffMemberId: string;
+  label: string;
+};
+
+function StaffContractField({
+  options,
+  value,
+  onChange,
+  label,
+  placeholder,
+  emptyOptionsLabel
+}: {
+  options: StaffContractOption[];
+  value: string;
+  onChange: (next: string) => void;
+  label: string;
+  placeholder: string;
+  emptyOptionsLabel: string;
+}) {
+  const isEmpty = options.length === 0;
+  // Si la opcion seleccionada no esta en la lista (ej. contrato historico
+  // finalizado que no se devolvio por filtro), preservala via hidden input
+  // para no perder el dato al guardar.
+  const valueInOptions = options.some((o) => o.contractId === value);
+  return (
+    <div className="grid gap-2">
+      <p className={FIELD_LABEL_CLASSNAME}>{label}</p>
+      <input type="hidden" name="staff_contract_present" value="1" />
+      {!valueInOptions && value ? (
+        <input type="hidden" name="staff_contract_id" value={value} />
+      ) : null}
+      <FormSelect
+        name={valueInOptions || !value ? "staff_contract_id" : undefined}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={isEmpty}
+      >
+        <option value="">{isEmpty ? emptyOptionsLabel : placeholder}</option>
+        {options.map((option) => (
+          <option key={option.contractId} value={option.contractId}>
+            {option.label}
+          </option>
+        ))}
+        {!valueInOptions && value ? (
+          <option value={value} disabled>
+            {value}
+          </option>
+        ) : null}
+      </FormSelect>
+    </div>
+  );
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -667,7 +746,8 @@ export function SecretariaMovementForm({
   submitAction,
   sessionDate,
   onCancel,
-  copy = texts.dashboard.treasury
+  copy = texts.dashboard.treasury,
+  staffContracts
 }: BaseMovementFormProps & {
   sessionDate: string;
   onCancel: () => void;
@@ -933,6 +1013,18 @@ export function SecretariaMovementForm({
           />
         </label>
 
+        {/* CONTRATO RRHH (opcional) */}
+        {staffContracts !== undefined && (
+          <StaffContractField
+            options={staffContracts}
+            value={formState.staffContractId}
+            onChange={(next) => setFormState((s) => ({ ...s, staffContractId: next }))}
+            label={texts.dashboard.treasury_role.staff_contract_label}
+            placeholder={texts.dashboard.treasury_role.staff_contract_placeholder}
+            emptyOptionsLabel={texts.dashboard.treasury_role.staff_contract_empty}
+          />
+        )}
+
         {/* BUTTONS */}
         <ModalFooter
           onCancel={onCancel}
@@ -962,7 +1054,8 @@ export function SecretariaMovementEditForm({
   editableMovementDate = false,
   onCancel,
   costCenters,
-  initialCostCenterIds
+  initialCostCenterIds,
+  staffContracts
 }: BaseMovementFormProps & {
   movement: EditableMovement;
   copy?: OperationalFormCopy;
@@ -1298,6 +1391,18 @@ export function SecretariaMovementEditForm({
             </div>
           </div>
         ) : null}
+
+        {/* CONTRATO RRHH (opcional) */}
+        {staffContracts !== undefined && (
+          <StaffContractField
+            options={staffContracts}
+            value={formState.staffContractId}
+            onChange={(next) => setFormState((s) => ({ ...s, staffContractId: next }))}
+            label={texts.dashboard.treasury_role.staff_contract_label}
+            placeholder={texts.dashboard.treasury_role.staff_contract_placeholder}
+            emptyOptionsLabel={texts.dashboard.treasury_role.staff_contract_empty}
+          />
+        )}
 
         {/* COST CENTERS (US-53, rol tesoreria) */}
         {costCenters !== undefined && (
@@ -1948,7 +2053,8 @@ export function TreasuryRoleMovementForm({
   sessionDate,
   onCancel,
   costCenters,
-  initialCostCenterIds
+  initialCostCenterIds,
+  staffContracts
 }: BaseMovementFormProps & { sessionDate: string; onCancel?: () => void }) {
   const copy = texts.dashboard.treasury_role;
   const ccCopy = texts.dashboard.treasury_role.cost_centers;
@@ -1973,7 +2079,8 @@ export function TreasuryRoleMovementForm({
     receiptNumber: "",
     concept: "",
     currencyCode: "",
-    amount: ""
+    amount: "",
+    staffContractId: ""
   }));
 
   const availableCurrencies = useMemo(() => {
@@ -2026,7 +2133,8 @@ export function TreasuryRoleMovementForm({
       receiptNumber: "",
       concept: "",
       currencyCode: "",
-      amount: ""
+      amount: "",
+      staffContractId: ""
     });
 
   return (
@@ -2245,6 +2353,18 @@ export function TreasuryRoleMovementForm({
             placeholder={texts.dashboard.treasury.concept_placeholder}
           />
         </label>
+
+        {/* CONTRATO RRHH (opcional) */}
+        {staffContracts !== undefined && (
+          <StaffContractField
+            options={staffContracts}
+            value={formState.staffContractId}
+            onChange={(next) => setFormState((s) => ({ ...s, staffContractId: next }))}
+            label={texts.dashboard.treasury_role.staff_contract_label}
+            placeholder={texts.dashboard.treasury_role.staff_contract_placeholder}
+            emptyOptionsLabel={texts.dashboard.treasury_role.staff_contract_empty}
+          />
+        )}
 
         {/* COST CENTERS (US-53, rol tesoreria) */}
         {costCenters !== undefined && (

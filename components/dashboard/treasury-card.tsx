@@ -63,6 +63,12 @@ type TreasuryCardProps = {
   createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   closeDailyCashSessionModalAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   openDailyCashSessionModalAction: (formData: FormData) => Promise<TreasuryActionResponse>;
+  /** Contratos RRHH para el selector "Contrato" en los modales de movimiento. */
+  staffContracts?: Array<{
+    contractId: string;
+    staffMemberId: string;
+    label: string;
+  }>;
 };
 
 function formatSessionTime(isoString: string | null): string | null {
@@ -490,7 +496,8 @@ export function TreasuryCard({
   updateSecretariaTransferAction,
   createAccountTransferAction,
   closeDailyCashSessionModalAction,
-  openDailyCashSessionModalAction
+  openDailyCashSessionModalAction,
+  staffContracts
 }: TreasuryCardProps) {
   const router = useRouter();
   const [localTreasuryCard, setLocalTreasuryCard] = useState(treasuryCard);
@@ -759,6 +766,7 @@ export function TreasuryCard({
           pendingLabel={texts.dashboard.treasury.create_loading}
           sessionDate={localTreasuryCard.sessionDate}
           onCancel={() => setActiveModal(null)}
+          staffContracts={staffContracts}
         />
       </Modal>
 
@@ -785,6 +793,7 @@ export function TreasuryCard({
             submitLabel={texts.dashboard.treasury.update_cta}
             pendingLabel={texts.dashboard.treasury.update_loading}
             movement={selectedMovement}
+            staffContracts={staffContracts}
             onCancel={() => {
               setActiveModal(null);
               setSelectedMovement(null);
