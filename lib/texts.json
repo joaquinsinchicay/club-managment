@@ -356,8 +356,7 @@
         "dashboard_card_eyebrow": "Pendientes de pago",
         "dashboard_card_title": "Pagos de nomina pendientes",
         "dashboard_card_description": "Liquidaciones aprobadas por RRHH listas para ejecutar el pago.",
-        "dashboard_card_cta": "Abrir bandeja",
-        "dashboard_card_reports_cta": "Ver reportes"
+        "dashboard_card_cta": "Abrir bandeja"
       }
     },
     "treasury_role": {
@@ -1442,7 +1441,6 @@
     "dashboard": {
       "section_eyebrow": "Dashboard",
       "section_title": "Estado del mes",
-      "reports_cta": "Ver reportes",
       "card_pending_approve_eyebrow": "Por aprobar",
       "card_pending_approve_title": "Liquidaciones pendientes de aprobar",
       "card_pending_approve_description": "Liquidaciones en estado generada esperando aprobacion de RRHH.",
@@ -1562,44 +1560,6 @@
       "contracts_amount_unit_por_clase": "/ clase",
       "new_contract_modal_title": "Nuevo contrato",
       "new_contract_modal_description": "Asocia al colaborador con una Estructura Salarial disponible."
-    },
-    "reports": {
-      "page_eyebrow": "RRHH",
-      "page_title": "Reportes",
-      "page_description": "Analizar el gasto en personal por periodo, colaborador, actividad y comparar proyectado vs ejecutado.",
-      "back_cta": "Volver al dashboard",
-      "filters_eyebrow": "Filtros",
-      "filters_title": "Configura el reporte",
-      "filter_grouping_label": "Agrupar por",
-      "filter_from_label": "Desde",
-      "filter_to_label": "Hasta",
-      "filter_staff_label": "Colaborador",
-      "filter_structure_label": "Estructura",
-      "filter_activity_label": "Actividad",
-      "filter_any": "Todos",
-      "apply_cta": "Aplicar filtros",
-      "reset_cta": "Limpiar",
-      "grouping_period": "Por periodo",
-      "grouping_staff": "Por colaborador",
-      "grouping_activity": "Por actividad",
-      "grouping_projected_executed": "Proyectado vs Ejecutado",
-      "result_eyebrow": "Resultado",
-      "result_title": "Totales del reporte",
-      "result_paid_note": "Solo se cuentan liquidaciones en estado pagada.",
-      "result_projected_note": "Comparacion mes a mes entre costo proyectado y pagado.",
-      "range_too_large": "El rango de fechas seleccionado supera los 24 meses. Achica el rango para generar el reporte.",
-      "export_csv_cta": "Exportar CSV",
-      "total_label": "Total",
-      "col_period": "Periodo",
-      "col_staff": "Colaborador",
-      "col_activity": "Actividad",
-      "col_total": "Total pagado",
-      "col_projected": "Proyectado",
-      "col_executed": "Ejecutado",
-      "col_diff": "Diferencia",
-      "col_diff_pct": "Desvio %",
-      "empty_title": "Sin datos en el rango",
-      "empty_description": "Ajusta los filtros o ampliá el rango de fechas para ver resultados."
     },
     "settlements": {
       "page_eyebrow": "RRHH",

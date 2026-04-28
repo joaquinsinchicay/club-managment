@@ -65,21 +65,16 @@ export default async function RrhhPage() {
       <RrhhModuleNav activeTab="resumen" />
 
       <section className="grid gap-3">
-        <header className="flex items-end justify-between gap-3">
-          <div className="grid gap-1">
-            <span className="text-eyebrow uppercase text-muted-foreground">
-              {dashboard.section_eyebrow}
+        <header className="grid gap-1">
+          <span className="text-eyebrow uppercase text-muted-foreground">
+            {dashboard.section_eyebrow}
+          </span>
+          <h2 className="text-lg font-semibold text-foreground">
+            {dashboard.section_title}{" "}
+            <span className="text-sm font-normal text-muted-foreground">
+              · {periodLabel}
             </span>
-            <h2 className="text-lg font-semibold text-foreground">
-              {dashboard.section_title}{" "}
-              <span className="text-sm font-normal text-muted-foreground">
-                · {periodLabel}
-              </span>
-            </h2>
-          </div>
-          <LinkButton href="/rrhh/reports" variant="secondary" size="sm">
-            {dashboard.reports_cta}
-          </LinkButton>
+          </h2>
         </header>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

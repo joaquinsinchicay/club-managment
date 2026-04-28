@@ -174,24 +174,3 @@ export function canAccessTreasuryStaffProfile(membership: MembershipLike) {
   return hasMembershipRole(active, "tesoreria");
 }
 
-/**
- * US-69 (Notion alias US-48) · Reportes RRHH desde Tesorería.
- *
- * Mirror read-only de /rrhh/reports en /treasury/reports/payroll. Solo
- * rol Tesorería: los reportes en /rrhh siguen gateados por canAccessHrModule.
- */
-export function canAccessTreasuryPayrollReports(membership: MembershipLike) {
-  const active = getActiveMembership(membership);
-  if (!active) return false;
-  return hasMembershipRole(active, "tesoreria");
-}
-
-/**
- * US-69 (Notion alias US-48) · Lectura de reportes RRHH (servicio común
- * para /rrhh/reports y /treasury/reports/payroll). Permite RRHH o Tesorería.
- */
-export function canViewHrReports(membership: MembershipLike) {
-  const active = getActiveMembership(membership);
-  if (!active) return false;
-  return hasMembershipRole(active, "rrhh") || hasMembershipRole(active, "tesoreria");
-}
