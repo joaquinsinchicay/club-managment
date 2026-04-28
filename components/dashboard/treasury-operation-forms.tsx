@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   formatLocalizedAmount,
@@ -506,6 +506,153 @@ function formatSessionDateLong(sessionDate: string): string {
     year: "numeric"
   }).format(date);
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * CostCenterMultiSelect — dropdown con checkboxes interno (US-53).
+ *
+ * Reemplaza la lista plana de checkboxes que se renderizaba antes en los
+ * forms de creacion / edicion de movimientos por un trigger compacto que
+ * abre un panel desplegable. Sigue serializando como `cost_center_ids`
+ * (multiples hidden inputs) + flag `cost_centers_present` para que la
+ * action server-side sincronice los links sin asumirlos por defecto.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+type CostCenterOption = {
+  id: string;
+  name: string;
+  type: string;
+  currencyCode: string;
+  status: "activo" | "inactivo";
+};
+
+type CostCenterMultiSelectProps = {
+  options: CostCenterOption[];
+  selectedIds: string[];
+  onChange: (next: string[]) => void;
+  formStateCurrency: string;
+  emptyOptionsLabel: string;
+  placeholder: string;
+  selectedSummary: (count: number) => string;
+  currencyMismatchTitle: string;
+};
+
+function CostCenterMultiSelect({
+  options,
+  selectedIds,
+  onChange,
+  formStateCurrency,
+  emptyOptionsLabel,
+  placeholder,
+  selectedSummary,
+  currencyMismatchTitle
+}: CostCenterMultiSelectProps) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: PointerEvent) {
+      if (!wrapperRef.current) return;
+      if (!wrapperRef.current.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  function toggle(id: string) {
+    onChange(selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]);
+  }
+
+  const selectedCount = selectedIds.length;
+  const triggerLabel = selectedCount === 0 ? placeholder : selectedSummary(selectedCount);
+  const isPlaceholder = selectedCount === 0;
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      {/* Hidden flag + multiples hidden inputs para FormData (compat backend). */}
+      <input type="hidden" name="cost_centers_present" value="1" />
+      {selectedIds.map((id) => (
+        <input key={id} type="hidden" name="cost_center_ids" value={id} />
+      ))}
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={options.length === 0}
+        className={cn(
+          "min-h-11 w-full rounded-card border border-border bg-card px-4 py-3 text-left text-sm focus:outline-none focus:ring-2 focus:ring-foreground/10",
+          "flex items-center justify-between gap-2",
+          isPlaceholder ? "text-muted-foreground" : "text-foreground",
+          options.length === 0 && "cursor-not-allowed opacity-60"
+        )}
+      >
+        <span className="truncate">{options.length === 0 ? emptyOptionsLabel : triggerLabel}</span>
+        <svg
+          className={cn("size-4 shrink-0 text-muted-foreground transition", open && "rotate-180")}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <polyline points="6 9 12 15 18 9" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && options.length > 0 ? (
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          className="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-card border border-border bg-card p-1 shadow-lg"
+        >
+          {options.map((cc) => {
+            const checked = selectedIds.includes(cc.id);
+            const currencyMismatch =
+              checked && Boolean(formStateCurrency) && cc.currencyCode !== formStateCurrency;
+            return (
+              <label
+                key={cc.id}
+                role="option"
+                aria-selected={checked}
+                className="flex min-h-10 cursor-pointer items-center gap-3 rounded-btn px-3 py-2 text-sm text-foreground transition hover:bg-secondary/60"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(cc.id)}
+                  className="size-4 rounded border-border text-foreground focus:ring-foreground"
+                />
+                <span className="flex-1 truncate font-medium">{cc.name}</span>
+                <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-slate-700">
+                  {cc.type}
+                </span>
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  {cc.currencyCode}
+                </span>
+                {currencyMismatch ? (
+                  <span
+                    className="rounded-xs bg-ds-amber-050 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-amber-700"
+                    title={currencyMismatchTitle}
+                  >
+                    ⚠
+                  </span>
+                ) : null}
+              </label>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function SecretariaMovementForm({
@@ -1156,50 +1303,23 @@ export function SecretariaMovementEditForm({
         {costCenters !== undefined && (
           <div className="grid gap-2">
             <p className={FIELD_LABEL_CLASSNAME}>{ccCopy.movements_cost_centers_label}</p>
-            <input type="hidden" name="cost_centers_present" value="1" />
-            {activeCostCenters.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                {ccCopy.movements_cost_centers_empty_options}
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {activeCostCenters.map((cc) => {
-                  const selected = selectedCostCenterIds.includes(cc.id);
-                  const currencyMismatch =
-                    formState.currencyCode && cc.currencyCode !== formState.currencyCode;
-                  return (
-                    <label
-                      key={cc.id}
-                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50"
-                    >
-                      <input
-                        type="checkbox"
-                        name="cost_center_ids"
-                        value={cc.id}
-                        checked={selected}
-                        onChange={() => toggleCostCenter(cc.id)}
-                        className="size-4 rounded border-border text-foreground focus:ring-foreground"
-                      />
-                      <span className="flex-1 truncate font-medium">{cc.name}</span>
-                      <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-slate-700">
-                        {cc.type}
-                      </span>
-                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                        {cc.currencyCode}
-                      </span>
-                      {selected && currencyMismatch ? (
-                        <span
-                          className="rounded-xs bg-ds-amber-050 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-amber-700"
-                          title={ccCopy.movements_cost_centers_currency_mismatch}
-                        >
-                          ⚠
-                        </span>
-                      ) : null}
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+            <CostCenterMultiSelect
+              options={activeCostCenters}
+              selectedIds={selectedCostCenterIds}
+              onChange={setSelectedCostCenterIds}
+              formStateCurrency={formState.currencyCode}
+              emptyOptionsLabel={ccCopy.movements_cost_centers_empty_options}
+              placeholder={ccCopy.movements_cost_centers_placeholder ?? ccCopy.movements_cost_centers_label}
+              selectedSummary={(count) =>
+                count === 1
+                  ? (ccCopy.movements_cost_centers_selected_singular ?? "1 seleccionado")
+                  : (ccCopy.movements_cost_centers_selected_plural ?? "{count} seleccionados").replace(
+                      "{count}",
+                      String(count)
+                    )
+              }
+              currencyMismatchTitle={ccCopy.movements_cost_centers_currency_mismatch}
+            />
           </div>
         )}
 
@@ -2130,53 +2250,23 @@ export function TreasuryRoleMovementForm({
         {costCenters !== undefined && (
           <div className="grid gap-2">
             <p className={FIELD_LABEL_CLASSNAME}>{ccCopy.movements_cost_centers_label}</p>
-            {/* Flag for the server action to know this form includes the field
-                (so edits preserve other roles' links when the field is not
-                rendered). */}
-            <input type="hidden" name="cost_centers_present" value="1" />
-            {activeCostCenters.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                {ccCopy.movements_cost_centers_empty_options}
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {activeCostCenters.map((cc) => {
-                  const selected = selectedCostCenterIds.includes(cc.id);
-                  const currencyMismatch =
-                    formState.currencyCode && cc.currencyCode !== formState.currencyCode;
-                  return (
-                    <label
-                      key={cc.id}
-                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50"
-                    >
-                      <input
-                        type="checkbox"
-                        name="cost_center_ids"
-                        value={cc.id}
-                        checked={selected}
-                        onChange={() => toggleCostCenter(cc.id)}
-                        className="size-4 rounded border-border text-foreground focus:ring-foreground"
-                      />
-                      <span className="flex-1 truncate font-medium">{cc.name}</span>
-                      <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-slate-700">
-                        {cc.type}
-                      </span>
-                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                        {cc.currencyCode}
-                      </span>
-                      {selected && currencyMismatch ? (
-                        <span
-                          className="rounded-xs bg-ds-amber-050 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-amber-700"
-                          title={ccCopy.movements_cost_centers_currency_mismatch}
-                        >
-                          ⚠
-                        </span>
-                      ) : null}
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+            <CostCenterMultiSelect
+              options={activeCostCenters}
+              selectedIds={selectedCostCenterIds}
+              onChange={setSelectedCostCenterIds}
+              formStateCurrency={formState.currencyCode}
+              emptyOptionsLabel={ccCopy.movements_cost_centers_empty_options}
+              placeholder={ccCopy.movements_cost_centers_placeholder ?? ccCopy.movements_cost_centers_label}
+              selectedSummary={(count) =>
+                count === 1
+                  ? (ccCopy.movements_cost_centers_selected_singular ?? "1 seleccionado")
+                  : (ccCopy.movements_cost_centers_selected_plural ?? "{count} seleccionados").replace(
+                      "{count}",
+                      String(count)
+                    )
+              }
+              currencyMismatchTitle={ccCopy.movements_cost_centers_currency_mismatch}
+            />
           </div>
         )}
 

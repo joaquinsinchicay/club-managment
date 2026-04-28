@@ -611,6 +611,8 @@
         "movements_cost_centers_empty_options": "No hay Centros de Costo activos.",
         "movements_cost_centers_currency_mismatch": "La moneda del movimiento no coincide con la del CC.",
         "movements_cost_centers_inactive_hint": "Inactivo",
+        "movements_cost_centers_selected_singular": "1 seleccionado",
+        "movements_cost_centers_selected_plural": "{count} seleccionados",
         "feedback": {
           "cost_center_created": "Centro de Costo creado.",
           "cost_center_updated": "Centro de Costo actualizado.",
