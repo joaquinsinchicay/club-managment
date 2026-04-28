@@ -2,6 +2,17 @@
 
 Carga histórica del CSV `Movimientos-Grid View.csv` (3.724 rows, 2022) al club activo.
 
+## ⚠️ Lecciones aprendidas (post-mortem 2026-04-28)
+
+El primer pass del import introdujo **2 errores de modelo** que se corrigieron post-aplicación con migraciones dedicadas:
+
+1. **Transferencias entre cuentas mal modeladas**: las 88 parejas (176 filas con `Transacción = ID TRX N` en el CSV) se importaron como movimientos sueltos categorizados con 2 subcategorías legacy `Egreso/Ingreso e/cuentas` que YO creé en `20260428200000_masters_for_2022_import.sql` sin que nadie lo pidiera. Esas subcats habían sido **eliminadas del producto** en el commit `2a0f53c` (refactor 2026-04-27).
+   - **Modelo correcto** (US-25): cada par = 1 fila en `account_transfers` + 2 movs hijos con `transfer_group_id = <transfer.id>` y `category_id = NULL`. Confirmado contra las 4 transferencias del 2021 modeladas bien.
+   - **Corrección aplicada**: migración `20260428250000_fix_transferencias_2022_a_account_transfers.sql` (88 transfers creados, 176 movs linkeados) + `20260428260000_drop_legacy_transferencias_subcategories.sql` (2 subcats eliminadas).
+2. **Bloque (3) de la migración masters quedó inerte**: ya no crea las subcats fantasma. Para una re-ejecución desde cero, el script `parse_csv.py` marca esas filas como `kind="transfer"` y `rest-import.py` aborta si las encuentra (no soporta el procesamiento de `account_transfers` aún).
+
+**Convención canónica para imports futuros**: si el CSV trae filas con columna `Transacción ≠ ""`, NO crear subcategorías ni movs sueltos — se modelan como `account_transfers` + `transfer_group_id`. Ver `CLAUDE.md` § "Convenciones del modelo".
+
 ## Resultados
 
 - **3.724 treasury_movements** importados con `display_id = IMP2022-N`.

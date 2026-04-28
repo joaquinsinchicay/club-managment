@@ -42,6 +42,18 @@ Si hay conflicto:
 
 ---
 
+## 📐 Convenciones del modelo de datos
+
+### Transferencias entre cuentas (US-25)
+
+Una transferencia entre cuentas del club se modela con **una fila en `account_transfers`** (con `source_account_id`, `target_account_id`, `currency_code`, `amount`, `concept`) y **2 movimientos hijos en `treasury_movements`** que comparten `transfer_group_id = <account_transfers.id>` y tienen `category_id = NULL` y `movement_type` complementario (`egreso` desde la source, `ingreso` hacia el target).
+
+**NUNCA** se crean subcategorías "Egreso e/cuentas" / "Ingreso e/cuentas" — esas existieron en el legacy pre-rediseño y se eliminaron del producto en commit `2a0f53c` (refactor 2026-04-27). El bug se reintrodujo accidentalmente durante el import 2022 (`20260428200000_masters_for_2022_import.sql`) y se corrigió post-mortem con migraciones `20260428250000_fix_transferencias_2022_a_account_transfers.sql` + `20260428260000_drop_legacy_transferencias_subcategories.sql`.
+
+**Para imports históricos**: si el CSV trae filas con columna `Transacción = ID TRX N` (o equivalente), agruparlas por ese ID y crearlas como `account_transfers` + 2 movs hijos. Validación: cada grupo debe tener exactamente 1 egreso + 1 ingreso del mismo monto en cuentas distintas.
+
+---
+
 ## ⚠️ Regla crítica: textos
 
 ### ❌ PROHIBIDO

@@ -43,36 +43,15 @@ WHERE c.id = (SELECT id FROM public.clubs ORDER BY created_at LIMIT 1)
     WHERE tc.account_id = a.id AND tc.currency_code = 'ARS'
   );
 
--- 3) Re-crear subcategorías legacy "Egreso e/cuentas" / "Ingreso e/cuentas"
--- Eliminadas en commit 2a0f53c (refactor categorías 2026-04-27). Necesarias para
--- el import histórico — quedan invisibles en la UI (visible_for_*=false).
-WITH ac AS (SELECT id FROM public.clubs ORDER BY created_at LIMIT 1)
-INSERT INTO public.treasury_categories (
-  id, club_id, name, sub_category_name, parent_category, movement_type,
-  status, visible_for_secretaria, visible_for_tesoreria, is_system, is_legacy
-)
-SELECT gen_random_uuid(), (SELECT id FROM ac),
-       'Egreso e/cuentas', 'Egreso e/cuentas', 'Transferencias e/cuentas',
-       'egreso', 'inactivo', false, false, false, true
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.treasury_categories
-  WHERE club_id = (SELECT id FROM ac)
-    AND lower(coalesce(sub_category_name, name)) = 'egreso e/cuentas'
-);
-
-WITH ac AS (SELECT id FROM public.clubs ORDER BY created_at LIMIT 1)
-INSERT INTO public.treasury_categories (
-  id, club_id, name, sub_category_name, parent_category, movement_type,
-  status, visible_for_secretaria, visible_for_tesoreria, is_system, is_legacy
-)
-SELECT gen_random_uuid(), (SELECT id FROM ac),
-       'Ingreso e/cuentas', 'Ingreso e/cuentas', 'Transferencias e/cuentas',
-       'ingreso', 'inactivo', false, false, false, true
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.treasury_categories
-  WHERE club_id = (SELECT id FROM ac)
-    AND lower(coalesce(sub_category_name, name)) = 'ingreso e/cuentas'
-);
+-- 3) [REMOVIDO 2026-04-28] Originalmente esta migración creaba 2 subcategorías
+-- "Egreso e/cuentas" / "Ingreso e/cuentas" (is_legacy=true) para soportar el
+-- import histórico de transferencias entre cuentas. Esa decisión fue
+-- INCORRECTA: las transferencias se modelan con `account_transfers` +
+-- `transfer_group_id` y `category_id=NULL` (US-25). Las subcategorías
+-- creadas se eliminaron en 20260428260000_drop_legacy_transferencias_subcategories.sql
+-- y los movs afectados se promovieron a transferencias en
+-- 20260428250000_fix_transferencias_2022_a_account_transfers.sql.
+-- Para re-ejecuciones desde cero, este bloque ya no aplica.
 
 -- 4) 8 cost centers nuevos del 2022. Tipo elegido por contexto del nombre.
 -- Status='inactivo' por default — son históricos; el usuario los activa si los

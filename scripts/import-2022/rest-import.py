@@ -103,6 +103,19 @@ def main():
     if args.limit:
         rows = rows[:args.limit]
 
+    # Aborta si el JSON normalizado tiene filas kind="transfer" — este script
+    # no las soporta. El handling correcto requiere insertar primero a
+    # account_transfers y luego los 2 movs hijos con transfer_group_id.
+    # Pendiente de implementar si se vuelve a importar histórico.
+    transfer_rows = [r for r in rows if r.get("kind") == "transfer"]
+    if transfer_rows:
+        print(f"❌ {len(transfer_rows)} filas con kind='transfer' detectadas.")
+        print("Este script no las procesa. Se requiere lógica adicional para")
+        print("crear account_transfers + movs hijos. Ver migración")
+        print("20260428250000_fix_transferencias_2022_a_account_transfers.sql")
+        print("para el patrón correcto a aplicar post-import.")
+        sys.exit(2)
+
     for r in rows:
         if not r["account_id"] or not r["subcategory_id"] or not r["movement_date"]:
             skipped += 1

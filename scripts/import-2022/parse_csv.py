@@ -259,7 +259,19 @@ def main():
                 or cats_by_name.get(normalize(sub_name))
                 or cats_by_name.get(normalize(cat_name))
             )
-            if not sub_id:
+
+            # Transferencia entre cuentas (US-25): cuando el CSV trae
+            # "Transacción = ID TRX N", la fila NO es un movimiento normal sino
+            # un lado de un par. Se modela como account_transfer + 2 movs hijos
+            # con category_id=NULL y transfer_group_id. NUNCA crear subcategorías
+            # "Egreso/Ingreso e/cuentas" (eliminadas del modelo en commit 2a0f53c).
+            trx = row.get("Transacción", "").strip()
+            is_transfer = bool(trx)
+            if is_transfer:
+                # Para transferencias, el sub_id se ignora — la fila irá al pipeline
+                # de account_transfers, no al INSERT de movimientos categorizados.
+                sub_id = None
+            elif not sub_id:
                 summary["subcats_unknown"][f"{cat_name} > {sub_name}"] += 1
 
             mvtype = row.get("Tipo de movimiento (From SubCat)", "").strip()
@@ -324,6 +336,11 @@ def main():
             rows_normalized.append({
                 "csv_id": row_id,
                 "external_id": f"IMP2022-{row_id}",
+                # kind="transfer" → procesador downstream agrupa por trx_id,
+                # crea account_transfer + 2 movs hijos (category_id=NULL,
+                # transfer_group_id=<new>). kind="movement" → INSERT directo.
+                "kind": "transfer" if is_transfer else "movement",
+                "trx_id": trx if is_transfer else None,
                 "movement_date": d.isoformat() if d else None,
                 "account_csv": account_name_csv,
                 "account_id": account_id,
