@@ -9,6 +9,11 @@ import {
   updateTreasuryRoleMovementAction
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import {
+  payStaffSettlementAction,
+  payStaffSettlementsBatchAction,
+  returnSettlementToGeneratedAction
+} from "@/app/(dashboard)/rrhh/settlements/actions";
+import {
   executeDailyConsolidationAction,
   updateMovementBeforeConsolidationAction,
   updateTransferBeforeConsolidationAction
@@ -19,6 +24,7 @@ import {
 } from "@/app/(dashboard)/treasury/cost-centers/actions";
 import { CostCentersTab } from "@/components/treasury/cost-centers-tab";
 import { TreasuryPayrollPendingCard } from "@/components/treasury/payroll-pending-card";
+import { TreasuryPayrollTab } from "@/components/treasury/treasury-payroll-tab";
 import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
@@ -31,7 +37,10 @@ import {
 import { accessRepository } from "@/lib/repositories/access-repository";
 import { listCostCentersForActiveClub } from "@/lib/services/cost-center-service";
 import { listStaffContractsForMovementSelector } from "@/lib/services/staff-contract-service";
-import { getTreasuryPayrollSummary } from "@/lib/services/treasury-payroll-service";
+import {
+  getTreasuryPayrollSummary,
+  listApprovedSettlementsForTreasury
+} from "@/lib/services/treasury-payroll-service";
 import {
   getActiveActivitiesForTesoreria,
   getEnabledCalendarEventsForTesoreria,
@@ -123,10 +132,30 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
   );
 
   // US-45: Card "Pagos de nómina pendientes" — solo rol tesoreria.
+  // US-71: Sub-tab "Pagos pendientes" embebido en TreasuryRoleCard. Cargamos
+  // tanto el summary (para la card del Resumen) como la lista completa para
+  // el tab. Si el rol no aplica, ambos quedan en null y el tab no renderiza.
   const canSeePayroll = canAccessTreasuryPayrollTray(context.activeMembership);
-  const payrollSummary = canSeePayroll ? await getTreasuryPayrollSummary() : null;
+  const [payrollSummary, payrollListResult] = canSeePayroll
+    ? await Promise.all([getTreasuryPayrollSummary(), listApprovedSettlementsForTreasury()])
+    : [null, null];
   const payrollPending =
     payrollSummary && payrollSummary.ok ? payrollSummary.summary : null;
+  const payrollSettlements =
+    payrollListResult && payrollListResult.ok ? payrollListResult.settlements : [];
+  const payrollAdjustments =
+    payrollListResult && payrollListResult.ok
+      ? payrollListResult.adjustmentsBySettlementId
+      : {};
+  const payrollApproverNames =
+    payrollListResult && payrollListResult.ok
+      ? payrollListResult.approverNamesByUserId
+      : {};
+  const payableAccounts = canSeePayroll
+    ? allAccounts.filter(
+        (a) => a.visibleForTesoreria && a.currencies.includes(context.activeClub!.currencyCode)
+      )
+    : [];
 
   // US-52: Centros de Costo — solo rol tesoreria. Se prefetch en server para
   // pasar por prop al slot de la sub-tab. Si el rol no aplica, costCentersTab
@@ -145,6 +174,19 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
       ].filter(Boolean)
     )
   );
+
+  const payrollTabNode = canSeePayroll ? (
+    <TreasuryPayrollTab
+      settlements={payrollSettlements}
+      adjustmentsBySettlementId={payrollAdjustments}
+      approverNamesByUserId={payrollApproverNames}
+      clubCurrencyCode={context.activeClub.currencyCode}
+      payableAccounts={payableAccounts}
+      payAction={payStaffSettlementAction}
+      payBatchAction={payStaffSettlementsBatchAction}
+      returnAction={returnSettlementToGeneratedAction}
+    />
+  ) : undefined;
 
   const costCentersTabNode =
     canSeeCostCenters && costCentersData && costCentersData.ok ? (
@@ -230,6 +272,8 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
         costCentersTab={costCentersTabNode}
         activeCostCenters={costCentersForMovements}
         staffContracts={staffContractsForMovements}
+        payrollTab={payrollTabNode}
+        payrollPendingCount={payrollPending?.count ?? 0}
       />
     </main>
   );

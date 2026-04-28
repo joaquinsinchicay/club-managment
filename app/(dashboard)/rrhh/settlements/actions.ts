@@ -198,7 +198,7 @@ export async function returnSettlementToGeneratedAction(
     reason: formData.get("reason"),
   });
   revalidatePath("/rrhh/settlements");
-  revalidatePath("/treasury/payroll");
+  revalidatePath("/treasury");
   return { ok: result.ok, code: toFeedbackCode(result.code) };
 }
 

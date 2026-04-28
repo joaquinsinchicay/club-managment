@@ -39,7 +39,7 @@ export function TreasuryPayrollPendingCard({
         title={cardTexts.dashboard_card_title}
         description={cardTexts.dashboard_card_description}
         action={
-          <LinkButton href="/treasury/payroll" variant="primary" size="sm">
+          <LinkButton href="/treasury?tab=payroll" variant="primary" size="sm">
             {cardTexts.dashboard_card_cta}
           </LinkButton>
         }

@@ -2,9 +2,12 @@
 
 > **Epic**: E04 · 👥 RRHH
 > **Notion alias**: US-45 (numeración local al epic en Notion)
-> **Estado**: implementado en Fase 3 del refactor E04 (2026-04-27). Feature
-> nueva del refactor — numerada US-71 siguiendo la secuencia global del
-> backlog del repo.
+> **Estado**: implementado en Fase 3 del refactor E04 (2026-04-27).
+> **Rediseño 2026-04-28**: la bandeja deja de ser ruta separada
+> (`/treasury/payroll`) y pasa a ser sub-tab `?tab=payroll` dentro de
+> `/treasury`, con header denso, filtros por colaborador y estructura,
+> ordenamiento explícito y export CSV. La funcionalidad transaccional
+> (pagar / devolver / pago en lote) no cambia.
 
 ---
 
@@ -31,15 +34,18 @@ solo se renderiza cuando hay al menos una liquidación pendiente.
 | # | Escenario | Cobertura |
 |---|---|---|
 | 01-02 | Acceso solo rol Tesorería | ✅ Guard `canAccessTreasuryPayrollTray` (`hasMembershipRole(active, "tesoreria")`). Página y service redirigen / devuelven `forbidden` si no aplica. |
-| 03 | Contador en navegación | ⚠️ **Parcial**. Decisión: mostramos contador en la **card del dashboard `/treasury`** (más visible, ya destacada) en lugar de modificar el header global. Modificar `app-header.tsx` requeriría fetch global por navegación con blast radius alto. **TODO documentado**: si el negocio lo pide, sumar badge al tab "Tesorería" del header con server-side fetch ligero. |
-| 04 | Listado con colaborador, contrato, período, monto, fecha aprobación, usuario aprobador, notas | ✅ Tabla con `col_period`, `col_member`, `col_structure`, `col_total`, `col_approved_at`. Usuario aprobador y notas ya están en el modelo (`approvedByUserId`, `notes`) — quedan visibles en el detalle / podrían exponerse como columna extra si se pide. |
-| 05 | Filtros: período, colaborador, estructura | ✅ Búsqueda libre (cubre colaborador, estructura, rol, actividad, período label) + chips por período disponible. |
-| 06 | Acciones por fila: Pagar (US-64), Devolver a RRHH (US-70), Ver detalle | ✅ Pagar y Devolver implementados. **Ver detalle**: por simplicidad reusa el modal de pago como vista (datos no editables). Si se pide vista detallada con ajustes, conectar `adjustmentsBySettlementId` (ya pre-cargado por el service). |
-| 07 | Selección múltiple para pago en lote (US-65) | ✅ Multi-select con barra "Seleccionadas: N · Total $X" y CTA "Pagar seleccionadas". Reusa `payStaffSettlementsBatchAction`. |
-| 08 | Card destacada en dashboard `/treasury` | ✅ `TreasuryPayrollPendingCard` con count + monto total + CTA "Abrir bandeja". Se renderiza solo si hay pendientes. |
-| 09 | Estado vacío | ✅ `<DataTableEmpty>` con dos variantes (`empty_*` cuando no hay nada / `empty_filter_*` cuando no hay match). |
-| 10 | Liquidaciones devueltas desaparecen automáticamente | ✅ La query del service filtra por `status === 'aprobada_rrhh'`. La devolución cambia el status a `generada`, por lo que la fila ya no aparece en el siguiente fetch (`router.refresh()` se dispara desde el handler de devolución). |
-| 11 | Consistencia por club activo | ✅ Service usa `session.activeClub.id`; las RPCs subyacentes (US-64 / US-65 / US-70) verifican `app.current_club_id`. |
+| 03 | Contador en navegación | ✅ **Resuelto en sub-tab**. El label del sub-tab muestra `"Pagos pendientes · {count}"` cuando hay pendientes. Se calcula server-side (`getTreasuryPayrollSummary`) y se pasa al shell como prop `payrollPendingCount`. La card del dashboard de Resumen también muestra el conteo. |
+| 04 | Listado con colaborador, contrato, período, monto, fecha aprobación, usuario aprobador, notas | ✅ Cada fila muestra avatar circular con iniciales, nombre + código de contrato (`formatContractCode`), rol · estructura · actividad, período + fecha aprobación + nombre del aprobador (resuelto vía lookup en `users`), notas inline en italics si existen, monto + sigla de moneda. |
+| 05 | Filtros: período, colaborador, estructura | ✅ 3 selects independientes (`<FormSelect>`) — Período, Colaborador, Estructura — con opciones derivadas de las liquidaciones cargadas. Línea inferior `Mostrando X de Y · Limpiar filtros`. |
+| 06 | Acciones por fila: Pagar (US-64), Devolver a RRHH (US-70), Ver detalle | ✅ Botones `Pagar` (primary) + `Devolver` (secondary) + chevron expand. Al expandir muestra los ajustes (`adjustmentsBySettlementId`) o "Sin ajustes registrados". |
+| 07 | Selección múltiple para pago en lote (US-65) | ✅ Multi-select con "Seleccionar todas" + barra "Seleccionadas: N · Total $X" y CTA "Pagar seleccionadas". |
+| 08 | Card destacada en dashboard `/treasury` | ✅ `TreasuryPayrollPendingCard` con count + monto total + CTA "Abrir bandeja" → `/treasury?tab=payroll`. |
+| 09 | Estado vacío | ✅ `<DataTableEmpty>` con dos variantes. |
+| 10 | Liquidaciones devueltas desaparecen automáticamente | ✅ El service filtra por `status === 'aprobada_rrhh'`. Devolver cambia a `generada` → fila desaparece en el siguiente fetch (`router.refresh()` post-action). |
+| 11 | Consistencia por club activo | ✅ Service usa `session.activeClub.id`; RPCs subyacentes verifican `app.current_club_id`. |
+| 12 | Ordenamiento explícito | ✅ Select `Ordenar` con 8 opciones: Período (desc/asc), Monto (desc/asc), Aprobación (desc/asc), Colaborador (A-Z/Z-A). Default `period_desc`. |
+| 13 | Export CSV de las filas filtradas | ✅ Botón "Exportar CSV" en el header. Genera client-side vía `formatPayrollPendingCsv` (UTF-8 con BOM, separador coma). Filename `pagos-pendientes-YYYY-MM-DD.csv`. Columnas: Período, Colaborador, Contrato, Rol, Actividad, Estructura, Monto, Aprobada el, Aprobada por, Notas. |
+| 14 | Badge de antigüedad ("aging") | ✅ Chip "+N días" automático cuando la liquidación lleva > 7 días aprobada (tone `warning`) o > 14 días (tone `expense`/destructive). |
 
 ## 4. Backend
 
@@ -56,69 +62,86 @@ guard es específico del flujo de pago de nómina.
 
 ### Service
 
-[lib/services/treasury-payroll-service.ts](lib/services/treasury-payroll-service.ts) — nuevo:
+[lib/services/treasury-payroll-service.ts](lib/services/treasury-payroll-service.ts):
 
 - `listApprovedSettlementsForTreasury()` → filtra `payroll_settlements`
-  por `status = 'aprobada_rrhh'` y precarga ajustes por id.
+  por `status = 'aprobada_rrhh'`, precarga ajustes por id y resuelve
+  `approverNamesByUserId` con un lookup adicional a `users` (best-effort:
+  si falla, se devuelve mapa vacío y la UI hace fallback a "fecha sin
+  nombre").
 - `getTreasuryPayrollSummary()` → `{ count, totalAmount }` agregado
-  para la card del dashboard.
+  para la card del dashboard y para el label del sub-tab.
 
 Ambos usan el guard `canAccessTreasuryPayrollTray`. **No** crean nuevas
 RPCs: las mutaciones reusan `payStaffSettlement`,
 `payStaffSettlementsBatch` (US-64 / US-65) y `returnSettlementToGenerated`
 (US-70) ya implementados.
 
+### Helper de export CSV
+
+[lib/services/treasury-payroll-csv.ts](lib/services/treasury-payroll-csv.ts) — funciones puras
+`formatPayrollPendingCsv(settlements, currencyCode, approverNames)` y
+`buildPayrollCsvFileName()`. Cliente puro, sin auth, sin DB.
+
 ### Server actions
 
-No hay actions nuevas. La página `/treasury/payroll` importa
-directamente:
+No hay actions nuevas. El page importa de `app/(dashboard)/rrhh/settlements/actions.ts`:
 
-- `payStaffSettlementAction` (de `app/(dashboard)/rrhh/settlements/actions.ts`)
-- `payStaffSettlementsBatchAction` (idem)
-- `returnSettlementToGeneratedAction` (idem)
-
-Estas actions ya hacen `revalidatePath("/treasury/payroll")` —
-agregado en Fase 2.2 anticipando este uso.
+- `payStaffSettlementAction`
+- `payStaffSettlementsBatchAction`
+- `returnSettlementToGeneratedAction`
 
 ## 5. UI
 
-### Ruta
+### Ubicación
 
-[app/(dashboard)/treasury/payroll/page.tsx](app/(dashboard)/treasury/payroll/page.tsx) — server component. Carga
-liquidaciones + cuentas pagables (`visibleForTesoreria` + currency
-matching) y los pasa al componente.
+Sub-tab `?tab=payroll` dentro de [app/(dashboard)/treasury/page.tsx](app/(dashboard)/treasury/page.tsx).
+La ruta dedicada `/treasury/payroll` fue eliminada en el rediseño 2026-04-28.
+
+El page server prepara el slot `payrollTab` con todos los datos cargados y lo
+pasa a `<TreasuryRoleCard payrollTab={...} payrollPendingCount={...}>`.
+El shell decide si mostrar la sub-tab (solo si el rol Tesorería está activo)
+y aplica el contador en el label.
 
 ### Componente
 
-[components/treasury/payroll-tray.tsx](components/treasury/payroll-tray.tsx) — `"use client"`. Estructura:
+[components/treasury/treasury-payroll-tab.tsx](components/treasury/treasury-payroll-tab.tsx) — `"use client"`. Estructura:
 
-- `<PageContentHeader>` con eyebrow + título + descripción.
-- Filtros: input de búsqueda + chips de período disponibles.
-- Barra de selección (visible cuando hay items seleccionados).
-- `<DataTable>` con grid `32px 90px minmax(0,1.2fr) minmax(0,1.2fr) 130px 130px 200px`.
-- 3 modales: Pagar (single), Pagar bulk, Devolver a RRHH.
-- Patrón canónico de submit: `setModalOpen(false) → action → triggerClientFeedback → router.refresh`.
-- Reusa todos los textos `rrhh.settlements.*` para los modales (mismo flujo, no duplicar texto).
+- Header: eyebrow `LIQUIDACIONES APROBADAS POR RRHH` + título + descripción + botón "Exportar CSV" alineado a la derecha.
+- Línea de resumen: `{count} pendientes · {total} total`.
+- Card de filtros: 3 selects (`<FormSelect>` Período / Colaborador / Estructura) + línea inferior con contador filtrado + "Limpiar filtros" + select de "Ordenar" con 8 opciones.
+- Barra de selección sticky (visible cuando hay items seleccionados).
+- `<DataTable density="compact">` con filas `useGrid={false}` y layout flex interno: checkbox + `<Avatar>` + nombre/contrato/rol + período/aprobador/notas + monto + acciones `Pagar`/`Devolver`/expand.
+- Chip aging "+N días" automático según `daysSince(approvedAt)`.
+- 3 modales: Pagar (single), Pagar bulk, Devolver a RRHH — sin cambios respecto a la versión previa.
+- Patrón canónico de submit: `setModal(...) → action → triggerClientFeedback → router.refresh`.
+- Reusa textos `rrhh.settlements.*` para los modales.
 
 ### Card en dashboard
 
 [components/treasury/payroll-pending-card.tsx](components/treasury/payroll-pending-card.tsx) — `<Card>` con
-`<CardHeader>` + acción `<LinkButton href="/treasury/payroll">`. Muestra
+`<CardHeader>` + acción `<LinkButton href="/treasury?tab=payroll">`. Muestra
 count y monto total. Solo se renderiza desde
 [app/(dashboard)/treasury/page.tsx](app/(dashboard)/treasury/page.tsx) si `payrollPending.count > 0`
-y el actor tiene rol Tesorería (guard `canAccessTreasuryPayrollTray`).
+y el actor tiene rol Tesorería.
 
-## 6. Textos nuevos
+## 6. Textos
 
 `lib/texts.json` bajo `dashboard.treasury.payroll.*`:
 
-- `page_eyebrow`, `page_title`, `page_description`, `subtitle_counts`
-- `search_placeholder`, `filter_period_all`
-- Columnas: `col_period`, `col_member`, `col_structure`, `col_total`, `col_approved_at`
-- Acciones: `action_pay`, `action_return`
-- Multi-select: `select_all_label`, `select_row_label`, `bulk_selected_prefix`, `bulk_clear_cta`, `bulk_pay_cta`
-- Empty state: `empty_title`, `empty_description`, `empty_filter_title`, `empty_filter_description`
-- Card del dashboard: `dashboard_card_eyebrow`, `dashboard_card_title`, `dashboard_card_description`, `dashboard_card_cta`
+- Header: `header_eyebrow`, `header_title`, `header_description`, `export_cta`, `summary_template`.
+- Filtros: `filter_period_label`, `filter_staff_label`, `filter_structure_label`, `filter_all_period`, `filter_all_staff`, `filter_all_structure`, `filter_count_template`, `filter_clear_cta`.
+- Sort: `sort_label` + `sort_{period,amount,approved,staff}_{asc,desc}` (8 opciones).
+- Filas: `row_period_template`, `row_approved_template`, `row_approved_template_no_user`, `row_aging_days_template`.
+- Acciones: `action_pay`, `action_return`.
+- Detalle expandible: `detail_expand_label`, `detail_collapse_label`, `detail_adjustments_title`, `detail_no_adjustments`.
+- Multi-select: `select_all_label`, `select_row_label`, `bulk_selected_prefix`, `bulk_clear_cta`, `bulk_pay_cta`.
+- Empty state: `empty_title`, `empty_description`, `empty_filter_title`, `empty_filter_description`.
+- Card del dashboard: `dashboard_card_eyebrow`, `dashboard_card_title`, `dashboard_card_description`, `dashboard_card_cta`.
+
+`lib/texts.json` bajo `dashboard.treasury_role.*`:
+
+- `tab_payroll`, `tab_payroll_count_template` para el sub-tab.
 
 ## 7. Testing manual (smoke)
 
@@ -135,24 +158,27 @@ y el actor tiene rol Tesorería (guard `canAccessTreasuryPayrollTray`).
 
 ## 8. Decisión: contador en navegación (Scenario 03)
 
-La US pide "contador en el ítem de navegación (ej. 'Tesorería (12)')".
-Optamos por mostrar el contador en la **card del dashboard** en lugar de
-modificar `AppHeader`:
-
-- `AppHeader` es un client component sticky activo en todas las páginas.
-- Agregarle un fetch del contador implica server prop o un client fetch
-  por navegación → blast radius alto y costo de red recurrente.
-- La card del dashboard es la primera cosa visible al entrar a Tesorería
-  y muestra exactamente la misma información (count + monto).
-- Si el negocio lo pide en una iteración futura, sumar el badge al tab
-  "Tesorería" via prop server-side desde el layout.
+Resuelto en el rediseño 2026-04-28: el label del sub-tab muestra
+`"Pagos pendientes · {count}"` cuando hay pendientes. La card destacada
+del Resumen sigue existiendo como entrada de atención. No se modifica
+`AppHeader` (sigue valiendo el argumento de blast radius para no agregar
+fetches globales).
 
 ## 9. Archivos tocados
 
+Originales (Fase 3, 2026-04-27):
 - `lib/domain/authorization.ts` (guard `canAccessTreasuryPayrollTray`)
-- `lib/services/treasury-payroll-service.ts` (nuevo)
-- `app/(dashboard)/treasury/payroll/page.tsx` (nuevo)
-- `app/(dashboard)/treasury/page.tsx` (sumar card)
-- `components/treasury/payroll-tray.tsx` (nuevo)
-- `components/treasury/payroll-pending-card.tsx` (nuevo)
+- `lib/services/treasury-payroll-service.ts`
+- `components/treasury/payroll-pending-card.tsx`
 - `lib/texts.json` (sección `dashboard.treasury.payroll`)
+
+Rediseño (2026-04-28):
+- ❌ `app/(dashboard)/treasury/payroll/page.tsx` — eliminado.
+- ❌ `components/treasury/payroll-tray.tsx` — eliminado.
+- ✅ `components/treasury/treasury-payroll-tab.tsx` — nuevo, reemplaza al anterior.
+- ✅ `lib/services/treasury-payroll-csv.ts` — nuevo helper de export.
+- ✏️ `lib/services/treasury-payroll-service.ts` — agrega lookup de aprobadores en `users`.
+- ✏️ `app/(dashboard)/treasury/page.tsx` — pre-carga lista + monta sub-tab y lo pasa al shell.
+- ✏️ `components/dashboard/treasury-role-card.tsx` — agrega sub-tab `payroll` con count en el label.
+- ✏️ `components/treasury/payroll-pending-card.tsx` — CTA apunta a `/treasury?tab=payroll`.
+- ✏️ `lib/texts.json` — keys nuevas para header denso, filtros, sort, export, aging, detail expand.

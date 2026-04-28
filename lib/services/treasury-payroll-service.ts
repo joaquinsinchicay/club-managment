@@ -19,6 +19,7 @@ import {
   isPayrollSettlementRepositoryInfraError,
   payrollSettlementRepository,
 } from "@/lib/repositories/payroll-settlement-repository";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 // -------------------------------------------------------------------------
 // Result codes
@@ -36,6 +37,7 @@ export type TreasuryPayrollListResult =
       ok: true;
       settlements: PayrollSettlement[];
       adjustmentsBySettlementId: Record<string, PayrollSettlementAdjustment[]>;
+      approverNamesByUserId: Record<string, string>;
     }
   | { ok: false; code: TreasuryPayrollActionCode };
 
@@ -75,7 +77,38 @@ export async function listApprovedSettlementsForTreasury(): Promise<TreasuryPayr
       }),
     );
 
-    return { ok: true, settlements, adjustmentsBySettlementId };
+    // Resolver nombres de aprobadores (US-71). Best-effort: si falla la
+    // consulta a `users` o no hay admin client, devolvemos mapa vacío y la
+    // UI hace fallback a "fecha sin nombre".
+    const approverIds = Array.from(
+      new Set(
+        settlements
+          .map((s) => s.approvedByUserId)
+          .filter((id): id is string => id !== null),
+      ),
+    );
+    const approverNamesByUserId: Record<string, string> = {};
+    if (approverIds.length > 0) {
+      try {
+        const supabase = createAdminSupabaseClient();
+        if (supabase) {
+          const { data, error } = await supabase
+            .from("users")
+            .select("id,full_name,email")
+            .in("id", approverIds);
+          if (!error && data) {
+            for (const row of data) {
+              const name = (row.full_name?.trim() || row.email?.trim()) ?? "";
+              if (name) approverNamesByUserId[row.id] = name;
+            }
+          }
+        }
+      } catch (lookupError) {
+        console.warn("[treasury-payroll-service.list.approver_lookup]", lookupError);
+      }
+    }
+
+    return { ok: true, settlements, adjustmentsBySettlementId, approverNamesByUserId };
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
       console.error("[treasury-payroll-service.list]", error);

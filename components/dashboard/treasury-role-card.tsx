@@ -88,9 +88,19 @@ type TreasuryRoleCardProps = {
     staffMemberId: string;
     label: string;
   }>;
+  // US-71: Sub-tab "Pagos pendientes" embebido. Se renderiza solo cuando el
+  // usuario tiene rol Tesorería y el page server prepara los datos.
+  payrollTab?: ReactNode;
+  payrollPendingCount?: number;
 };
 
-type SubTab = "resumen" | "cuentas" | "movimientos" | "conciliacion" | "cost_centers";
+type SubTab =
+  | "resumen"
+  | "payroll"
+  | "cuentas"
+  | "movimientos"
+  | "conciliacion"
+  | "cost_centers";
 
 type TotalBalance = {
   currencyCode: string;
@@ -311,24 +321,38 @@ function AccountAvatar({
 
 function SubTabNav({
   active,
-  onChange
+  onChange,
+  showPayroll,
+  payrollCount
 }: {
   active: SubTab;
   onChange: (tab: SubTab) => void;
+  showPayroll: boolean;
+  payrollCount: number;
 }) {
+  const t = texts.dashboard.treasury_role;
   const items: SegmentedNavItem[] = [
-    { id: "resumen", label: texts.dashboard.treasury_role.tab_resumen, onClick: () => onChange("resumen") },
-    { id: "cuentas", label: texts.dashboard.treasury_role.tab_cuentas, onClick: () => onChange("cuentas") },
-    { id: "movimientos", label: texts.dashboard.treasury_role.tab_movimientos, onClick: () => onChange("movimientos") },
-    { id: "conciliacion", label: texts.dashboard.treasury_role.tab_conciliacion, onClick: () => onChange("conciliacion") },
-    { id: "cost_centers", label: texts.dashboard.treasury_role.tab_cost_centers, onClick: () => onChange("cost_centers") }
+    { id: "resumen", label: t.tab_resumen, onClick: () => onChange("resumen") }
   ];
+  if (showPayroll) {
+    const label =
+      payrollCount > 0
+        ? t.tab_payroll_count_template.replace("{count}", String(payrollCount))
+        : t.tab_payroll;
+    items.push({ id: "payroll", label, onClick: () => onChange("payroll") });
+  }
+  items.push(
+    { id: "cuentas", label: t.tab_cuentas, onClick: () => onChange("cuentas") },
+    { id: "movimientos", label: t.tab_movimientos, onClick: () => onChange("movimientos") },
+    { id: "conciliacion", label: t.tab_conciliacion, onClick: () => onChange("conciliacion") },
+    { id: "cost_centers", label: t.tab_cost_centers, onClick: () => onChange("cost_centers") }
+  );
 
   return (
     <SegmentedNav
       items={items}
       activeId={active}
-      ariaLabel={texts.dashboard.treasury_role.sub_tab_nav_aria_label}
+      ariaLabel={t.sub_tab_nav_aria_label}
     />
   );
 }
@@ -1097,10 +1121,13 @@ export function TreasuryRoleCard({
   executeDailyConsolidationAction,
   costCentersTab,
   activeCostCenters,
-  staffContracts
+  staffContracts,
+  payrollTab,
+  payrollPendingCount = 0
 }: TreasuryRoleCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const showPayrollTab = payrollTab !== undefined;
 
   const initialTab = ((): SubTab => {
     const raw = searchParams.get("tab");
@@ -1112,6 +1139,7 @@ export function TreasuryRoleCard({
     ) {
       return raw;
     }
+    if (raw === "payroll" && showPayrollTab) return "payroll";
     return "resumen";
   })();
   const [activeTab, setActiveTab] = useState<SubTab>(initialTab);
@@ -1283,7 +1311,14 @@ export function TreasuryRoleCard({
       <BlockingStatusOverlay open={pendingOverlayLabel !== null} label={pendingOverlayLabel ?? ""} />
 
       <div className="space-y-4">
-        <SubTabNav active={activeTab} onChange={setActiveTab} />
+        <SubTabNav
+          active={activeTab}
+          onChange={setActiveTab}
+          showPayroll={showPayrollTab}
+          payrollCount={payrollPendingCount}
+        />
+
+        {activeTab === "payroll" && payrollTab}
 
         {activeTab === "resumen" && (
           <ResumenTab
