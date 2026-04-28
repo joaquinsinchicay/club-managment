@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
+import { ActiveClubSelector } from "@/components/dashboard/active-club-selector";
 import { AvatarSessionMenu } from "@/components/navigation/avatar-session-menu";
 import { getInitials } from "@/components/ui/avatar";
 import type { SessionContext } from "@/lib/auth/service";
@@ -52,7 +53,7 @@ function getActiveTab(pathname: string): TabKey {
   return "dashboard";
 }
 
-export function AppHeader({ context }: AppHeaderProps) {
+export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
   const pathname = usePathname();
   const activeTab = getActiveTab(pathname);
 
@@ -63,6 +64,8 @@ export function AppHeader({ context }: AppHeaderProps) {
   const clubInitials = getInitials(clubLabel);
   const clubLogoUrl = context.activeClub?.logoUrl ?? null;
   const clubPrimaryColor = context.activeClub?.colorPrimary ?? null;
+  const showClubSwitcher =
+    !!setActiveClubAction && context.availableClubs.length > 1 && !!context.activeClub;
 
   const canDashboard  = canAccessDashboardSummary(context.activeMembership);
   const canSecretaria = canOperateSecretaria(context.activeMembership);
@@ -105,9 +108,18 @@ export function AppHeader({ context }: AppHeaderProps) {
             <span className="text-eyebrow uppercase text-muted-foreground">
               {texts.header.active_club_label}
             </span>
-            <span className="truncate text-body font-semibold leading-tight tracking-tight text-foreground">
-              {clubLabel}
-            </span>
+            {showClubSwitcher ? (
+              <ActiveClubSelector
+                clubs={context.availableClubs}
+                activeClubId={context.activeClub!.id}
+                setActiveClubAction={setActiveClubAction!}
+                inline
+              />
+            ) : (
+              <span className="truncate text-body font-semibold leading-tight tracking-tight text-foreground">
+                {clubLabel}
+              </span>
+            )}
           </div>
         </div>
 
