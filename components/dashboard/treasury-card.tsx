@@ -793,6 +793,7 @@ export function TreasuryCard({
             submitLabel={texts.dashboard.treasury.update_cta}
             pendingLabel={texts.dashboard.treasury.update_loading}
             movement={selectedMovement}
+            initialCostCenterIds={selectedMovement.costCenterIds ?? []}
             staffContracts={staffContracts}
             onCancel={() => {
               setActiveModal(null);

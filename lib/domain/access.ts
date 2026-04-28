@@ -345,6 +345,8 @@ export type TreasuryDashboardMovement = {
   canEdit: boolean;
   /** FK a staff_contracts(id), si el movimiento esta linkeado a un contrato. */
   staffContractId?: string | null;
+  /** IDs de cost_centers linkeados al movimiento (US-53). */
+  costCenterIds?: string[];
 };
 
 /** Opcion de contrato RRHH para el selector de movimientos. */

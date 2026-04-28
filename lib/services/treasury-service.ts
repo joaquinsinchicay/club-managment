@@ -24,6 +24,7 @@ import type {
   User
 } from "@/lib/domain/access";
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
+import { costCenterRepository } from "@/lib/repositories/cost-center-repository";
 import { texts } from "@/lib/texts";
 
 type TreasuryVisibilityRole = "secretaria" | "tesoreria";
@@ -495,8 +496,18 @@ function buildDashboardMovementView(input: {
   calendarEventsById: Map<string, ClubCalendarEvent>;
   usersById: Map<string, User>;
   canEdit: boolean;
+  costCenterIdsByMovement?: Map<string, string[]>;
 }): DashboardTreasuryCard["movements"][number] {
-  const { movement, accountsById, categoriesById, activitiesById, calendarEventsById, usersById, canEdit } = input;
+  const {
+    movement,
+    accountsById,
+    categoriesById,
+    activitiesById,
+    calendarEventsById,
+    usersById,
+    canEdit,
+    costCenterIdsByMovement
+  } = input;
 
   return {
     movementId: movement.id,
@@ -520,7 +531,8 @@ function buildDashboardMovementView(input: {
     createdByUserName: usersById.get(movement.createdByUserId)?.fullName ?? "",
     createdAt: movement.createdAt,
     canEdit,
-    staffContractId: movement.staffContractId ?? null
+    staffContractId: movement.staffContractId ?? null,
+    costCenterIds: costCenterIdsByMovement?.get(movement.id) ?? []
   };
 }
 
@@ -1266,10 +1278,22 @@ export async function getTreasuryRoleDashboardForActiveClub(options?: {
   const accountsById = new Map(accounts.map((account) => [account.id, account]));
   const activitiesById = new Map(activities.map((activity) => [activity.id, activity]));
   const calendarEventsById = new Map(calendarEvents.map((event) => [event.id, event]));
+  // Bulk-load CC links de los movimientos visibles para precargar el
+  // multiselect del edit modal sin N+1.
+  let costCenterIdsByMovement = new Map<string, string[]>();
+  try {
+    costCenterIdsByMovement = await costCenterRepository.listLinksForMovementsMap(
+      clubId,
+      visibleRoleMovements.map((m) => m.id)
+    );
+  } catch (error) {
+    console.error("[treasury-role-dashboard.cost_center_links_failed]", { clubId, error });
+  }
   const dashboardMovements = visibleRoleMovements
     .map((movement) =>
       buildDashboardMovementView({
         movement,
+        costCenterIdsByMovement,
         accountsById,
         categoriesById,
         activitiesById,

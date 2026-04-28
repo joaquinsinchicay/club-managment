@@ -512,6 +512,42 @@ export const costCenterRepository = {
     }));
   },
 
+  /**
+   * Bulk variant of listLinksForMovement: devuelve un Map<movementId, costCenterId[]>
+   * para todos los movement IDs pasados, scope al club. Usado por el dashboard
+   * service para precargar los CCs de cada movimiento sin N+1.
+   */
+  async listLinksForMovementsMap(
+    clubId: string,
+    movementIds: string[]
+  ): Promise<Map<string, string[]>> {
+    const result = new Map<string, string[]>();
+    if (movementIds.length === 0) return result;
+    const supabase = requireAdminClient("list_links_for_movements_map", { clubId });
+    const { data, error } = await supabase
+      .from("treasury_movement_cost_centers")
+      .select("movement_id, cost_center_id, cost_centers!inner(club_id)")
+      .in("movement_id", movementIds)
+      .eq("cost_centers.club_id", clubId);
+    if (error) {
+      logReadFailure("list_links_for_movements_map", { clubId, count: movementIds.length }, error);
+      throw new CostCenterRepositoryInfraError(
+        "read_failed",
+        "list_links_for_movements_map",
+        { cause: error }
+      );
+    }
+    for (const row of (data ?? []) as Array<{
+      movement_id: string;
+      cost_center_id: string;
+    }>) {
+      const arr = result.get(row.movement_id) ?? [];
+      arr.push(row.cost_center_id);
+      result.set(row.movement_id, arr);
+    }
+    return result;
+  },
+
   async syncLinksForMovement(input: LinkMovementToCostCentersInput): Promise<{
     added: string[];
     removed: string[];

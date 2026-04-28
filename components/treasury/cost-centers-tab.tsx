@@ -502,12 +502,15 @@ function CostCenterForm({
           <FormFieldLabel required>{tCC.form_start_date_label}</FormFieldLabel>
           <FormInput
             type="date"
-            name="start_date"
-            required
+            name={lockedByLinks ? undefined : "start_date"}
+            required={!lockedByLinks}
             defaultValue={costCenter?.startDate ?? ""}
             disabled={lockedByLinks}
             title={lockedByLinks ? tCC.form_disabled_hint : undefined}
           />
+          {lockedByLinks && costCenter?.startDate ? (
+            <input type="hidden" name="start_date" value={costCenter.startDate} />
+          ) : null}
         </FormField>
 
         <FormField>

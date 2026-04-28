@@ -1416,7 +1416,8 @@ export function TreasuryRoleCard({
             movement={selectedMovement}
             copy={texts.dashboard.treasury_role}
             costCenters={activeCostCenters}
-          staffContracts={staffContracts}
+            initialCostCenterIds={selectedMovement.costCenterIds ?? []}
+            staffContracts={staffContracts}
             onCancel={() => {
               setActiveModal(null);
               setSelectedMovement(null);
