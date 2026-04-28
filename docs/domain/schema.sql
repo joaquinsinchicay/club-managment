@@ -689,12 +689,13 @@ alter table treasury_movements
 -- alter type membership_role add value 'rrhh';
 
 -- Índices RRHH
-create unique index salary_structures_unique_active_role_div_activity
+create unique index salary_structures_unique_active_role_div_activity_remun
   on salary_structures (
     club_id,
     lower(trim(functional_role)),
     divisions,
-    coalesce(activity_id::text, '')
+    coalesce(activity_id::text, ''),
+    remuneration_type
   )
   where status = 'activa';
 create index idx_salary_structures_club_status on salary_structures (club_id, status);

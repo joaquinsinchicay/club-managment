@@ -87,8 +87,8 @@ Usuario autenticado con membership `activo` y rol `admin` o `rrhh` en el club ac
 - Carga horaria esperada es opcional (relevante cuando el tipo es `por_hora` o `por_clase`).
 
 ### Unicidad
-- Unique parcial `(club_id, lower(trim(functional_role)), activity_id) where status = 'activa'`. Para operar dos colaboradores en la misma actividad se usan valores distintos de `functional_role` (ej. `Profesor titular` vs `Profesor suplente`).
-- No hay unicidad de `name` porque el nombre es descriptivo; la unicidad funcional vive en el par rol+actividad.
+- Unique parcial `(club_id, lower(trim(functional_role)), divisions, coalesce(activity_id::text, ''), remuneration_type) where status = 'activa'`. Las cinco coordenadas componen la identidad funcional de la estructura. Si dos colaboradores ocupan el mismo rol en la misma actividad y divisiones, se usa `functional_role` distinto (`Profesor titular` vs `Profesor suplente`); si la única diferencia es la remuneración (`mensual_fijo` vs `por_hora`), se admiten estructuras separadas porque `remuneration_type` participa de la unicidad.
+- No hay unicidad de `name` porque el nombre es descriptivo; la unicidad funcional vive en `(role, divisions, activity, remuneration_type)`.
 
 ### Campos inmutables en edición
 - Rol funcional, Actividad y Monto base (vigente) son **inmutables desde esta US**.
