@@ -35,7 +35,7 @@ Los Product Definition Documents (PDDs) viven en este directorio.
 | US-45 | **US-71** | `pdd_us_71_bandeja_tesoreria.md` | Bandeja Tesorería dedicada (NUEVA) |
 | US-46 | **US-67** | `pdd_us_67_ficha_colaborador.md` § 16 | Ficha colaborador + mirror Tesorería |
 | US-47 | **US-68** | `pdd_us_68_dashboard_rrhh.md` § 16 | Dashboard cards diferenciadas por rol |
-| US-48 | **US-69** | `pdd_us_69_reportes_rrhh.md` § 16 | Reportes RRHH + mirror Tesorería |
+| US-48 | ~~US-69~~ | `pdd_us_69_reportes_rrhh.md` (DEPRECADO 2026-04-28) | Reportes RRHH + mirror Tesorería — eliminado, métricas absorbidas por US-68 |
 
 ## US nuevas creadas en el refactor 2026-04-27
 

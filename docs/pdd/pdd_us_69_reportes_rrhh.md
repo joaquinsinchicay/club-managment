@@ -1,5 +1,13 @@
 # PDD — US-69 · Reportes de gasto en personal
 
+> ⚠️ **DEPRECADO (2026-04-28).** La pantalla `/rrhh/reports`, su mirror
+> `/treasury/reports/payroll`, el endpoint `/api/rrhh/reports/export` y el
+> service `hr-reports-service.ts` se eliminaron del producto. Las
+> comparativas mes a mes (proyectado vs ejecutado, costo del mes vs
+> anteriores) se cubren ahora dentro del Resumen RRHH (US-68) con cards
+> densas y la sección "Próximos hitos". Este archivo se conserva como
+> referencia histórica del alcance original.
+
 > PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-48`. En el repo: **US-69**. (Pre-refactor 2026-04-27 el alias era `US-45`.)
 
 ---
