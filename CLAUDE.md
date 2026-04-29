@@ -399,7 +399,7 @@ Regla de `tone`: `neutral` → usuarios; `bancaria/virtual/efectivo` → cuentas
 ### Primitivos obligatorios
 - Todo contenedor con radio + borde + fondo propio (fuera de tablas y modales) usa **`<Card>`** desde `@/components/ui/card`.
 - Headers de card con título + descripción + acción opcional usan **`<CardHeader>`**.
-- `<CardShell>` queda reservado para auth pages.
+- Para "auth-style hero card" (login, pending-approval, forbidden) componer `<Card maxWidth="md" padding="spacious" className="rounded-dialog">` + header inline con `<StatusBadge tone="neutral">` + `<h1 className="text-2xl ...">`. El primitivo legacy `<CardShell>` fue eliminado en Fase 4 · T3.3 — no reintroducir.
 
 ### API canónica
 ```tsx

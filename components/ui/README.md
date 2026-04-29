@@ -141,7 +141,6 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 
 | Primitivo | Para qué |
 |---|---|
-| `card-shell.tsx` (`<CardShell>`) | Reservado para auth pages. No usar en app interna — preferir `<Card>`. |
 | `club-mark.tsx` | Branding del club. Usa `getInitials` internamente. |
 | `edit-icon-button.tsx` | Botón icon-only de "editar" (lápiz). |
 | `google-logo.tsx` | SVG del logo de Google para login. |

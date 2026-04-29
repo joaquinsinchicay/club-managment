@@ -1,5 +1,6 @@
-import { CardShell } from "@/components/ui/card-shell";
+import { Card } from "@/components/ui/card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { StatusMessage } from "@/components/ui/status-message";
 import { texts } from "@/lib/texts";
 
@@ -14,16 +15,22 @@ export function ClubSettingsForbiddenCard() {
         backLabel={texts.settings.club.back_to_dashboard_cta}
       />
 
-      <CardShell
-        eyebrow={texts.settings.club.eyebrow}
-        title={texts.settings.club.forbidden_title}
-        description={texts.settings.club.forbidden_description}
-        className="max-w-2xl"
-      >
+      <Card maxWidth="2xl" padding="spacious" className="rounded-dialog">
+        <header className="mb-6 space-y-3">
+          <StatusBadge label={texts.settings.club.eyebrow} tone="neutral" />
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-card-foreground">
+              {texts.settings.club.forbidden_title}
+            </h1>
+            <p className="text-sm leading-6 text-muted-foreground">
+              {texts.settings.club.forbidden_description}
+            </p>
+          </div>
+        </header>
         <div className="space-y-4">
           <StatusMessage tone="destructive" message={texts.settings.club.forbidden_description} />
         </div>
-      </CardShell>
+      </Card>
     </main>
   );
 }
