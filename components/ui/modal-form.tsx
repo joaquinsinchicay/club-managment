@@ -24,7 +24,7 @@ export const CONTROL_CLASSNAME =
 export const CONTROL_DISABLED_CLASSNAME = "disabled:opacity-60";
 export const FIELD_LABEL_CLASSNAME = "text-xs font-semibold text-foreground";
 export const FORM_SECTION_LABEL_CLASSNAME =
-  "text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground";
+  "text-xs font-semibold uppercase tracking-section text-muted-foreground";
 export const FORM_HELP_TEXT_CLASSNAME = "text-xs text-muted-foreground";
 export const FORM_ERROR_CLASSNAME = "text-xs font-medium text-destructive";
 export const FORM_READONLY_CLASSNAME =
