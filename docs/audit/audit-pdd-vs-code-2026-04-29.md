@@ -482,18 +482,18 @@ Para cada US se muestra una tabla con columnas:
 
 ## Apéndice — totales y top blockers
 
-### Conteo de hallazgos por bounded context (segunda pasada 2026-04-29)
+### Conteo de hallazgos por bounded context (cierre final 2026-04-29)
 
 | Bounded context | blocker | major | minor | Total | Δ vs inicial |
 |---|---:|---:|---:|---:|---:|
 | A · Auth & Identidad | 0 | 0 | 0 | 0 | -7 |
 | B1 · Tesorería: operaciones | 0 | 0 | 0 | 0 | -6 |
-| B2 · Tesorería: configuración | 0 | 0 | 1 | 1 | -26 |
+| B2 · Tesorería: configuración | 0 | 0 | 0 | 0 | -27 |
 | C1 · RRHH: masters & colaboradores | 0 | 0 | 0 | 0 | -8 |
 | C2 · RRHH: liquidaciones & pagos | 0 | 0 | 0 | 0 | -3 |
-| **Total** | **0** | **0** | **1** | **1** | **-50** |
+| **Total** | **0** | **0** | **0** | **0** | **-51** |
 
-> **Único hallazgo abierto post-2da pasada**: US-18 #2 marcado **AMBIGUO** — `normalizeAccountVisibility()` filtra roles inválidos pero no valida explícitamente que al menos un rol quede seleccionado tras la normalización. Decisión de producto requerida: ¿el receipt format puede guardarse sin roles (queda invisible) o debe rechazarse? Ref: `lib/services/treasury-settings-service.ts:214-232, 1103-1104`.
+> **Audit cerrado completamente**. El último hallazgo abierto (US-18 #2 marcado AMBIGUO en la segunda pasada) resultó ser **falso positivo**: los PDDs US-15 §C, US-18 §10.A y US-20 §C ya documentan explícitamente "guardar sin roles → master oculto" como flujo alternativo válido. La función `normalizeAccountVisibility()` está alineada con el comportamiento que pide el PDD.
 
 > **Cambios 2026-04-29 — primera pasada (alineación PDDs + fixes RLS + último admin):**
 >
@@ -525,8 +525,8 @@ Para cada US se muestra una tabla con columnas:
 > - **B2 cerrados (12)**: US-17 #1 #2 (recibo en `secretaria-movement-list.tsx:69` + validación `treasury-service.ts:1529`); US-19 #2 #3 (actividad en detalle + visibilidad por booleans); US-21 #1 #2 (calendar event en meta); US-22 #2 (`getEnabledCalendarEventsForTesoreria` filtra `isEnabledForTreasury`); US-23 #3 (filtro de monedas por cuenta en formulario); US-24 #2 (consumo en formulario); US-29 #3 (`BlockingStatusOverlay` cuando jornada open); US-30 #1 #2 #3 (saldos + form inline + 30 días con filtros).
 > - **B1+C1 falsos positivos (2)**: US-13 #2 (vista de detalle no existe como ruta separada — alineado con scope actual); US-55 #2 (modelo refactorizado movió historial al contrato).
 >
-> **AMBIGUO pendiente de decisión de producto (1):**
-> - US-18 #2: ¿el receipt format / category / activity puede guardarse con array de roles vacío (queda invisible) o debe rechazarse server-side?
+> **Falso positivo final (1):**
+> - US-18 #2 (originalmente AMBIGUO): los flujos alternativos US-15 §C, US-18 §10.A y US-20 §C ya documentan que "guardar sin roles" deja el master oculto pero válido. El código (`normalizeAccountVisibility`) está alineado.
 
 ### ~~Top 10 blockers~~ → 3 blockers reales, todos cerrados con la misma migración
 
