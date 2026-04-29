@@ -121,13 +121,13 @@ Para cada US se muestra una tabla con columnas:
 
 | # | Scenario | Discrepancia | Severidad | Referencia |
 |---|---|---|---|---|
-| 1 | (todos los scenarios) | Sin validación cliente-side visible para email/teléfono en `ClubDataTab`. Inputs usan `type="email"`/`type="tel"` con `required` pero sin regex ni validación E.164. Validación sólo server-side. | major | `components/settings/tabs/club-data-tab.tsx:247` |
+| 1 | (todos los scenarios) | ~~Sin validación cliente-side para email/teléfono.~~ **CERRADO 2026-04-29** (commit `2f38bf1`): `ClubDataTab` consume `isValidEmail` y `validatePhone` de `lib/validators/contact`; errores inline con `FormError`, normalización E.164 en blur, copy desde `texts.json`. | — | `components/settings/tabs/club-data-tab.tsx` |
 
 ### US-50 · Optimización del logo al subirlo a Storage
 
 | # | Scenario | Discrepancia | Severidad | Referencia |
 |---|---|---|---|---|
-| 1 | (todos los scenarios) | Pipeline de optimización (compresión PNG, minificación SVG) no visible en el código del tab. Subida en `updateClubIdentityAction` sin evidencia de invocar pipeline de optimización. | major | `components/settings/tabs/club-data-tab.tsx` |
+| 1 | (todos los scenarios) | ~~Pipeline de optimización no visible.~~ **CERRADO 2026-04-29** (commit `2f38bf1`): `lib/services/logo-pipeline.ts` exporta `optimizePngBuffer` (sharp con `compressionLevel: 9` + `palette: true`) y `optimizeSvgBuffer` (minify de comments/metadata/scripts/inkscape attrs); ambos invocados desde `club-identity-service.ts`. Auditoría inicial sólo miró `ClubDataTab` y no trazó hasta el service. | — | `lib/services/logo-pipeline.ts` + `lib/services/club-identity-service.ts:144` |
 
 ### US-51 · Aislamiento multitenant de la identidad del club
 
@@ -493,7 +493,11 @@ Para cada US se muestra una tabla con columnas:
 | C2 · RRHH: liquidaciones & pagos | 0 | 0 | 0 | 0 | -3 |
 | **Total** | **0** | **0** | **0** | **0** | **-51** |
 
-> **Audit cerrado completamente**. El último hallazgo abierto (US-18 #2 marcado AMBIGUO en la segunda pasada) resultó ser **falso positivo**: los PDDs US-15 §C, US-18 §10.A y US-20 §C ya documentan explícitamente "guardar sin roles → master oculto" como flujo alternativo válido. La función `normalizeAccountVisibility()` está alineada con el comportamiento que pide el PDD.
+> **Audit cerrado completamente** (51/51).
+>
+> Los 2 hallazgos que escaparon de las primeras pasadas (US-49 #1 validación E.164, US-50 #1 pipeline de logo) se cerraron en commit `2f38bf1` con Opción B (fix de código): `ClubDataTab` ahora valida email/teléfono client-side con `lib/validators/contact`, y `optimizePngBuffer` usa `sharp` para re-encoding real (antes era no-op stub).
+>
+> El último hallazgo "AMBIGUO" (US-18 #2) resultó **falso positivo**: los PDDs US-15 §C, US-18 §10.A y US-20 §C ya documentan "guardar sin roles → master oculto" como flujo alternativo válido.
 
 > **Cambios 2026-04-29 — primera pasada (alineación PDDs + fixes RLS + último admin):**
 >
