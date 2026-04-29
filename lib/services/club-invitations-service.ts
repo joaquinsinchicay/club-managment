@@ -1,6 +1,6 @@
 import type { MembershipRole } from "@/lib/domain/access";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
-import { hasMembershipRole, isMembershipRole } from "@/lib/domain/membership-roles";
+import { hasMembershipRole, isMembershipRole, sortMembershipRoles } from "@/lib/domain/membership-roles";
 import { accessRepository } from "@/lib/repositories/access-repository";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -12,6 +12,7 @@ export type ClubInvitationActionCode =
   | "email_required"
   | "email_invalid"
   | "role_required"
+  | "roles_required"
   | "invalid_role"
   | "forbidden"
   | "unknown_error";
@@ -39,9 +40,9 @@ async function getAdminSession() {
   return context;
 }
 
-export async function inviteUserToActiveClub(
+export async function createClubUser(
   email: string,
-  role: string
+  roles: string[]
 ): Promise<ClubInvitationActionResult> {
   const context = await getAdminSession();
 
@@ -59,13 +60,26 @@ export async function inviteUserToActiveClub(
     return { ok: false, code: "email_invalid" };
   }
 
-  if (!role) {
-    return { ok: false, code: "role_required" };
+  if (!roles || roles.length === 0) {
+    return { ok: false, code: "roles_required" };
   }
 
-  if (!isMembershipRole(role)) {
-    return { ok: false, code: "invalid_role" };
+  const validatedRoles: MembershipRole[] = [];
+  for (const role of roles) {
+    if (!role) continue;
+    if (!isMembershipRole(role)) {
+      return { ok: false, code: "invalid_role" };
+    }
+    if (!validatedRoles.includes(role)) {
+      validatedRoles.push(role);
+    }
   }
+
+  if (validatedRoles.length === 0) {
+    return { ok: false, code: "roles_required" };
+  }
+
+  const sortedRoles = sortMembershipRoles(validatedRoles);
 
   const members = await accessRepository.listClubMembers(context.activeClub.id);
   const alreadyMember = members.some((member) => member.email.toLowerCase() === normalizedEmail);
@@ -83,17 +97,29 @@ export async function inviteUserToActiveClub(
     return { ok: false, code: "already_invited" };
   }
 
-  const invitation = await accessRepository.createClubInvitation(
-    context.activeClub.id,
-    normalizedEmail,
-    role
-  );
+  for (const role of sortedRoles) {
+    const invitation = await accessRepository.createClubInvitation(
+      context.activeClub.id,
+      normalizedEmail,
+      role
+    );
 
-  if (!invitation) {
-    return { ok: false, code: "unknown_error" };
+    if (!invitation) {
+      return { ok: false, code: "unknown_error" };
+    }
   }
 
   return { ok: true, code: "invitation_created" };
+}
+
+/**
+ * @deprecated Use `createClubUser(email, roles[])` instead. Kept as alias for compatibility.
+ */
+export async function inviteUserToActiveClub(
+  email: string,
+  role: string
+): Promise<ClubInvitationActionResult> {
+  return createClubUser(email, role ? [role] : []);
 }
 
 export async function processPendingInvitationsForUser(userId: string, email: string) {
@@ -104,27 +130,56 @@ export async function processPendingInvitationsForUser(userId: string, email: st
     return [];
   }
 
+  const groupedByClub = new Map<string, { roles: MembershipRole[]; invitationIds: string[] }>();
+  for (const invitation of invitations) {
+    const entry = groupedByClub.get(invitation.clubId) ?? { roles: [], invitationIds: [] };
+    if (!entry.roles.includes(invitation.role)) {
+      entry.roles.push(invitation.role);
+    }
+    entry.invitationIds.push(invitation.id);
+    groupedByClub.set(invitation.clubId, entry);
+  }
+
   const currentMemberships = await accessRepository.listMembershipsForUser(userId);
-  const currentClubIds = new Set(currentMemberships.map((membership) => membership.clubId));
+  const membershipByClubId = new Map(
+    currentMemberships.map((membership) => [membership.clubId, membership])
+  );
   const activatedClubIds: string[] = [];
 
-  for (const invitation of invitations) {
-    if (!currentClubIds.has(invitation.clubId)) {
-      const createdMembership = await accessRepository.createMembership(
+  for (const [clubId, group] of groupedByClub) {
+    const sortedRoles = sortMembershipRoles(group.roles);
+    let membership = membershipByClubId.get(clubId) ?? null;
+
+    if (!membership) {
+      const created = await accessRepository.createMembership(
         userId,
-        invitation.clubId,
-        invitation.role,
+        clubId,
+        sortedRoles[0],
         "activo",
         null
       );
 
-      if (createdMembership) {
-        activatedClubIds.push(invitation.clubId);
-        currentClubIds.add(invitation.clubId);
+      if (created) {
+        membership = created;
+        activatedClubIds.push(clubId);
       }
     }
 
-    await accessRepository.markInvitationAsUsed(invitation.id);
+    if (membership && sortedRoles.length > 1) {
+      const mergedRoles = sortMembershipRoles(
+        Array.from(new Set<MembershipRole>([...membership.roles, ...sortedRoles]))
+      );
+      const sameRoles =
+        mergedRoles.length === membership.roles.length &&
+        mergedRoles.every((role, index) => role === membership.roles[index]);
+      if (!sameRoles) {
+        await accessRepository.updateMembershipRoles(membership.id, mergedRoles);
+      }
+    }
+
+    for (const invitationId of group.invitationIds) {
+      await accessRepository.markInvitationAsUsed(invitationId);
+    }
   }
 
   return activatedClubIds;

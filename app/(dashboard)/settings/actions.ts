@@ -8,7 +8,7 @@ import {
   removeClubMembership,
   updateClubMembershipRole
 } from "@/lib/services/club-members-service";
-import { inviteUserToActiveClub } from "@/lib/services/club-invitations-service";
+import { createClubUser } from "@/lib/services/club-invitations-service";
 import {
   createClubActivityForActiveClub,
   createReceiptFormatForActiveClub,
@@ -34,7 +34,7 @@ export async function approveClubMembershipAction(formData: FormData) {
   const role = String(formData.get("role") ?? "");
   const result = await approveClubMembership(membershipId, role);
 
-  redirectToSettings(result.code, "members");
+  redirectToSettings(result.code, "miembros");
 }
 
 export async function updateClubMembershipRoleAction(formData: FormData) {
@@ -45,7 +45,7 @@ export async function updateClubMembershipRoleAction(formData: FormData) {
     .filter(Boolean);
   const result = await updateClubMembershipRole(membershipId, roles);
 
-  redirectToSettings(result.code, "members");
+  redirectToSettings(result.code, "miembros");
 }
 
 export async function removeClubMembershipAction(formData: FormData) {
@@ -63,15 +63,18 @@ export async function removeClubMembershipAction(formData: FormData) {
     redirect(result.redirectPath);
   }
 
-  redirectToSettings(result.code, "members");
+  redirectToSettings(result.code, "miembros");
 }
 
-export async function inviteClubUserAction(formData: FormData) {
+export async function createClubUserAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
-  const role = String(formData.get("role") ?? "");
-  const result = await inviteUserToActiveClub(email, role);
+  const roles = formData
+    .getAll("roles")
+    .map((value) => String(value))
+    .filter(Boolean);
+  const result = await createClubUser(email, roles);
 
-  redirectToSettings(result.code, "members");
+  redirectToSettings(result.code, "miembros");
 }
 
 export async function createTreasuryCategoryAction(formData: FormData) {

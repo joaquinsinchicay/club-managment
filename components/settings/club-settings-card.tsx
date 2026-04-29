@@ -18,8 +18,7 @@ type ClubSettingsCardProps = {
   members: ClubMember[];
   pendingInvitations: PendingClubInvitation[];
   treasurySettings: TreasurySettings;
-  inviteUserAction: (formData: FormData) => Promise<void>;
-  approveMembershipAction: (formData: FormData) => Promise<void>;
+  createUserAction: (formData: FormData) => Promise<void>;
   updateMembershipRolesAction: (formData: FormData) => Promise<void>;
   removeMembershipAction: (formData: FormData) => Promise<void>;
   createTreasuryCategoryAction: (formData: FormData) => Promise<void>;
@@ -35,8 +34,7 @@ export function ClubSettingsCard({
   members,
   pendingInvitations,
   treasurySettings,
-  inviteUserAction,
-  approveMembershipAction,
+  createUserAction,
   updateMembershipRolesAction,
   removeMembershipAction,
   createTreasuryCategoryAction,
@@ -98,21 +96,10 @@ export function ClubSettingsCard({
           members={members}
           pendingInvitations={pendingInvitations}
           currentUserId={context.user.id}
-          inviteUserAction={inviteUserAction}
-          approveMembershipAction={approveMembershipAction}
+          clubName={activeClub?.name ?? ""}
+          createUserAction={createUserAction}
           updateMembershipRoleAction={updateMembershipRolesAction}
           removeMembershipAction={removeMembershipAction}
-        />
-      )
-    },
-    {
-      id: "permisos-por-rol",
-      label: texts.settings.club.tabs.role_permissions,
-      content: (
-        <PlaceholderTab
-          eyebrow={placeholders.role_permissions.eyebrow}
-          title={placeholders.role_permissions.title}
-          description={placeholders.role_permissions.description}
         />
       )
     },
