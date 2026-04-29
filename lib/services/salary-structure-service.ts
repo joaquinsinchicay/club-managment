@@ -405,12 +405,13 @@ export async function createSalaryStructure(
   const input = validation.input;
 
   try {
-    // Check uniqueness por rol + divisiones + actividad (null-safe).
+    // Check uniqueness por rol + divisiones + actividad + tipo de remuneración (null-safe).
     const duplicate = await salaryStructureRepository.existsByRoleActivity({
       clubId: ctx.clubId,
       functionalRole: input.functionalRole,
       activityId: input.activityId,
       divisions: input.divisions,
+      remunerationType: input.remunerationType,
     });
     if (duplicate) return err<{ structure: SalaryStructure }>("duplicate_role_activity");
 
@@ -484,6 +485,21 @@ export async function updateSalaryStructure(
     if (!existing) return err<{ structure: SalaryStructure }>("structure_not_found");
 
     const isStatusChange = existing.status !== input.status;
+
+    if (
+      input.remunerationType !== existing.remunerationType &&
+      input.status === "activa"
+    ) {
+      const duplicate = await salaryStructureRepository.existsByRoleActivity({
+        clubId: ctx.clubId,
+        functionalRole: existing.functionalRole,
+        activityId: existing.activityId,
+        divisions: existing.divisions,
+        remunerationType: input.remunerationType,
+        excludingStructureId: structureId,
+      });
+      if (duplicate) return err<{ structure: SalaryStructure }>("duplicate_role_activity");
+    }
 
     const updated = await salaryStructureRepository.update({
       structureId,

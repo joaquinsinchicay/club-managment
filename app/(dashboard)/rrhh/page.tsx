@@ -261,7 +261,7 @@ export default async function RrhhPage() {
                       })}
                     </span>
                     {canSettlements ? (
-                      <LinkButton href="/treasury/payroll" variant="secondary" size="sm">
+                      <LinkButton href="/treasury?tab=payroll" variant="secondary" size="sm">
                         {dashboard.card_pay_this_week_cta}
                       </LinkButton>
                     ) : null}

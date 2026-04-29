@@ -1,3 +1,5 @@
+import sharp from "sharp";
+
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 export type LogoDimensions = {
@@ -76,8 +78,12 @@ export function minifySvg(svg: string): string {
   return output.trim();
 }
 
-export function optimizePngBuffer(buffer: Buffer): Buffer {
-  return buffer;
+export async function optimizePngBuffer(buffer: Buffer): Promise<Buffer> {
+  // Re-encode con compresión máxima + cuantización a paleta cuando es viable.
+  // sharp internamente delega en libvips/zlib; ratios típicos 30-60% sobre PNGs no optimizados.
+  return sharp(buffer)
+    .png({ compressionLevel: 9, palette: true, effort: 7 })
+    .toBuffer();
 }
 
 export function optimizeSvgBuffer(buffer: Buffer): Buffer {

@@ -1,13 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
 
-import { buttonClass } from "@/components/ui/button";
-import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
 import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { DataTableChip } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Modal } from "@/components/ui/modal";
+import { CreateContractForm } from "@/components/hr/create-contract-form";
+import { StructureEditModal } from "@/components/hr/structure-edit-modal";
+import { triggerClientFeedback } from "@/lib/client-feedback";
+import type { SalaryStructure } from "@/lib/domain/salary-structure";
+import type { StaffMember } from "@/lib/domain/staff-member";
 import { texts } from "@/lib/texts";
 import type {
   ActivityCollaborator,
@@ -16,12 +24,17 @@ import type {
 } from "@/lib/services/hr-activity-detail-service";
 
 const adTexts = texts.rrhh.activity_detail;
+const ssTexts = texts.rrhh.salary_structures;
+const scTexts = texts.rrhh.staff_contracts;
 const monthLabels = adTexts.month_short_labels as Record<string, string>;
 
 type ActivityDetailViewProps = {
   detail: ActivityDetail;
   clubCurrencyCode: string;
   canMutate: boolean;
+  staffMembers: StaffMember[];
+  updateStructureAction: (formData: FormData) => Promise<RrhhActionResult>;
+  createContractAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
 function formatAmount(amount: number, currencyCode: string): string {
@@ -74,7 +87,12 @@ export function ActivityDetailView({
   detail,
   clubCurrencyCode,
   canMutate,
+  staffMembers,
+  updateStructureAction,
+  createContractAction,
 }: ActivityDetailViewProps) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const { activity, structures, divisions, collaborators, totals, costEvolution } = detail;
 
   const groups = useMemo(() => groupByDivision(collaborators), [collaborators]);
@@ -82,7 +100,42 @@ export function ActivityDetailView({
     .replace("{collaborators}", String(totals.collaboratorCount))
     .replace("{divisions}", String(divisions.length));
 
+  const coordinator = useMemo(() => findCoordinator(collaborators), [collaborators]);
+
+  const [editingStructure, setEditingStructure] = useState<SalaryStructure | null>(null);
+  const [editPickerOpen, setEditPickerOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignPending, setAssignPending] = useState(false);
+
+  const availableStructures = useMemo(
+    () => structures.filter((s) => s.status === "activa" && !s.hasActiveContract),
+    [structures],
+  );
+
   const delta = buildDelta(totals.monthlyCost, totals.monthlyCostPrevious);
+
+  function handleEditClick() {
+    if (structures.length === 0) return;
+    if (structures.length === 1) {
+      setEditingStructure(structures[0]);
+      return;
+    }
+    setEditPickerOpen(true);
+  }
+
+  async function handleCreateContract(formData: FormData) {
+    setAssignPending(true);
+    try {
+      const result = await createContractAction(formData);
+      triggerClientFeedback("settings", result.code);
+      if (result.ok) {
+        setAssignOpen(false);
+        startTransition(() => router.refresh());
+      }
+    } finally {
+      setAssignPending(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -97,12 +150,24 @@ export function ActivityDetailView({
 
       {/* Header card */}
       <Card padding="comfortable">
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-2">
             <p className="text-eyebrow uppercase tracking-card-eyebrow text-muted-foreground">
               {headerEyebrow}
             </p>
             <h1 className="break-words text-h1 text-foreground">{activity.name}</h1>
+            {coordinator ? (
+              <p className="text-body text-muted-foreground">
+                {adTexts.header_coordinator_subtitle_template
+                  .split("{name}")[0]}
+                <Link
+                  href={`/rrhh/staff/${coordinator.staffMemberId}`}
+                  className="font-medium text-foreground hover:underline"
+                >
+                  {coordinator.staffMemberName}
+                </Link>
+              </p>
+            ) : null}
             {divisions.length > 0 ? (
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 {divisions.map((d) => (
@@ -114,14 +179,17 @@ export function ActivityDetailView({
             ) : null}
           </div>
           {canMutate && structures.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                disabled
-                className={buttonClass({ variant: "accent-rrhh", size: "md" })}
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <Button variant="secondary" size="md" onClick={handleEditClick}>
+                {adTexts.cta_edit_structure}
+              </Button>
+              <Button
+                variant="accent-rrhh"
+                size="md"
+                onClick={() => setAssignOpen(true)}
               >
                 {adTexts.cta_new_contract}
-              </button>
+              </Button>
             </div>
           ) : null}
         </div>
@@ -213,8 +281,75 @@ export function ActivityDetailView({
         </CardBody>
       </Card>
 
+      {/* Edit picker modal — solo cuando N>1 estructuras */}
+      <Modal
+        open={editPickerOpen}
+        onClose={() => setEditPickerOpen(false)}
+        title={adTexts.edit_picker_modal_title}
+        description={adTexts.edit_picker_modal_description}
+        size="md"
+      >
+        <ul className="flex flex-col gap-2">
+          {structures.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditPickerOpen(false);
+                  setEditingStructure(s);
+                }}
+                className="flex w-full flex-col items-start gap-0.5 rounded-card border border-border bg-card px-4 py-3 text-left text-body text-foreground transition hover:bg-secondary"
+              >
+                <span className="font-medium">{s.functionalRole}</span>
+                <span className="text-small text-muted-foreground">
+                  {s.divisions.length === 0
+                    ? adTexts.edit_picker_no_divisions_label
+                    : s.divisions.join(" / ")}
+                  {" · "}
+                  {ssTexts.remuneration_type_options[s.remunerationType]}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Modal>
+
+      {editingStructure ? (
+        <StructureEditModal
+          structure={editingStructure}
+          open={editingStructure !== null}
+          onClose={() => setEditingStructure(null)}
+          updateAction={updateStructureAction}
+        />
+      ) : null}
+
+      <Modal
+        open={assignOpen}
+        onClose={() => !assignPending && setAssignOpen(false)}
+        title={scTexts.create_modal_title}
+        description={scTexts.create_modal_description}
+        size="md"
+        closeDisabled={assignPending}
+      >
+        <CreateContractForm
+          members={staffMembers}
+          structures={availableStructures}
+          clubCurrencyCode={clubCurrencyCode}
+          onCancel={() => setAssignOpen(false)}
+          onSubmit={handleCreateContract}
+        />
+      </Modal>
     </div>
   );
+}
+
+function findCoordinator(
+  collaborators: ActivityCollaborator[],
+): ActivityCollaborator | null {
+  for (const c of collaborators) {
+    if (/^coordinador/i.test(c.functionalRole.trim())) return c;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -370,8 +505,6 @@ function CostEvolutionChart({ points, currencyCode }: CostEvolutionChartProps) {
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
-
-import { useMemo } from "react";
 
 type Group = {
   key: string;

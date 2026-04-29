@@ -196,6 +196,7 @@ export type ExistsByRoleActivityInput = {
   functionalRole: string;
   activityId: string | null;
   divisions: SalaryDivision[];
+  remunerationType: SalaryRemunerationType;
   excludingStructureId?: string | null;
 };
 
@@ -314,12 +315,13 @@ export const salaryStructureRepository = {
     const supabase = requireAdminClient("exists_by_role_activity", input);
     let query = supabase
       .from("salary_structures")
-      .select("id,functional_role,activity_id,divisions,status", {
+      .select("id,functional_role,activity_id,divisions,remuneration_type,status", {
         count: "exact",
         head: false,
       })
       .eq("club_id", input.clubId)
-      .eq("status", "activa");
+      .eq("status", "activa")
+      .eq("remuneration_type", input.remunerationType);
 
     if (input.activityId === null) {
       query = query.is("activity_id", null);

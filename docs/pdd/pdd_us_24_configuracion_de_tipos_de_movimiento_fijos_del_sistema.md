@@ -1,5 +1,7 @@
 # PDD — US-24 · Visualización de tipos de movimiento fijos del sistema
 
+> ⚠️ **SCOPE REDUCIDO — 2026-04-29**: no existe una sección de settings que renderice los tipos en modo read-only. El catálogo `["ingreso", "egreso"]` vive como constante del sistema en `lib/services/treasury-settings-service.ts:80` y se consume directamente desde el formulario de movimientos (`treasury/page.tsx:116, 249`). Si en el futuro Producto requiere exponer un panel informativo de tipos, abrirlo como nueva US.
+
 ---
 
 ## 1. Identificación

@@ -1,5 +1,7 @@
 # PDD — US-03 · Asignación de rol
 
+> ⚠️ **REDISEÑO UNIFICADO — 2026-04-28** (commit `4d4db7e`): el modal "Crear / Invitar usuario" del tab `Usuarios` (`components/settings/tabs/members-tab.tsx`) cubre tanto el **alta directa con rol** (caso de esta US-03) como la **invitación a usuario nuevo** (US-07). Las invitaciones pendientes se listan inline dentro de la misma tabla de miembros (`source: "invitation"`), no en una sección separada. La aprobación previa de un estado `pendiente_aprobacion` quedó cubierta por el flujo de creación multi-rol; no hay un screen de "aprobación de pendientes" diferenciado.
+
 ---
 
 ## 1. Identificación

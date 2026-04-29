@@ -5,10 +5,9 @@ import { getClubSettingsPermissions } from "@/lib/domain/authorization";
 import { getClubMembersForActiveClub } from "@/lib/services/club-members-service";
 import { getTreasurySettingsForActiveClub } from "@/lib/services/treasury-settings-service";
 import {
-  approveClubMembershipAction,
   createClubActivityAction,
+  createClubUserAction,
   createTreasuryCategoryAction,
-  inviteClubUserAction,
   removeClubMembershipAction,
   updateClubActivityAction,
   updateClubIdentityAction,
@@ -50,8 +49,7 @@ export default async function ClubSettingsPage() {
       members={clubMembersData.members}
       pendingInvitations={clubMembersData.pendingInvitations}
       treasurySettings={treasurySettings}
-      inviteUserAction={inviteClubUserAction}
-      approveMembershipAction={approveClubMembershipAction}
+      createUserAction={createClubUserAction}
       updateMembershipRolesAction={updateClubMembershipRoleAction}
       removeMembershipAction={removeClubMembershipAction}
       createTreasuryCategoryAction={createTreasuryCategoryAction}

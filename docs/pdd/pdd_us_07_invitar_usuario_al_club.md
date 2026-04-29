@@ -1,5 +1,7 @@
 # PDD — US-07 · Invitar usuario al club
 
+> ⚠️ **REDISEÑO UNIFICADO — 2026-04-28** (commit `4d4db7e`): el formulario de invitación quedó fusionado con el de creación de usuario en un único modal accesible desde el CTA `texts.settings.club.invitations.toggle_cta` ("Invitar usuario") del tab `Usuarios`. Las invitaciones pendientes ya no viven en una sección visual separada — se listan dentro de la tabla de miembros con la marca `source: "invitation"`. La validación "usuario ya pertenece al club" sigue siendo server-side (la action `createUserAction` resuelve el conflicto y el feedback llega vía toast); no hay validación visual previa en el formulario.
+
 ---
 
 ## 1. Identificación

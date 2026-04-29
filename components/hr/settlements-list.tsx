@@ -67,6 +67,8 @@ type SettlementsListProps = {
 
 type StatusFilter = "all" | PayrollSettlementStatus;
 
+type PeriodValue = { year: number; month: number };
+
 const sTexts = texts.rrhh.settlements;
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
@@ -76,6 +78,47 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "pagada", label: sTexts.filter_pagada },
   { value: "anulada", label: sTexts.filter_anulada },
 ];
+
+const MONTH_LABELS_LONG = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
+function formatPeriodLong(year: number, month: number): string {
+  return `${MONTH_LABELS_LONG[month - 1]} ${year}`;
+}
+
+function shiftPeriod(p: PeriodValue, delta: number): PeriodValue {
+  const totalMonths = p.year * 12 + (p.month - 1) + delta;
+  return {
+    year: Math.floor(totalMonths / 12),
+    month: (((totalMonths % 12) + 12) % 12) + 1,
+  };
+}
+
+function findLatestPeriod(settlements: PayrollSettlement[]): PeriodValue | null {
+  let latest: PeriodValue | null = null;
+  for (const s of settlements) {
+    if (
+      !latest ||
+      s.periodYear > latest.year ||
+      (s.periodYear === latest.year && s.periodMonth > latest.month)
+    ) {
+      latest = { year: s.periodYear, month: s.periodMonth };
+    }
+  }
+  return latest;
+}
 
 function formatAmount(amount: number | null | undefined, currencyCode: string): string {
   if (amount === null || amount === undefined) return "—";
@@ -119,7 +162,9 @@ export function SettlementsList({
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [periodFilter, setPeriodFilter] = useState<string>("all"); // "YYYY-MM"
+  const [periodFilter, setPeriodFilter] = useState<PeriodValue>(
+    () => findLatestPeriod(settlements) ?? currentPeriodYearMonth(),
+  );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [generateOpen, setGenerateOpen] = useState(false);
@@ -139,30 +184,27 @@ export function SettlementsList({
   const [payPending, setPayPending] = useState(false);
   const [payBulkPending, setPayBulkPending] = useState(false);
 
-  const availablePeriods = useMemo(() => {
-    const set = new Set<string>();
-    for (const s of settlements) {
-      set.add(formatPeriodLabel(s.periodYear, s.periodMonth));
-    }
-    return Array.from(set).sort().reverse();
-  }, [settlements]);
+  const settlementsForPeriod = useMemo(
+    () =>
+      settlements.filter(
+        (s) =>
+          s.periodYear === periodFilter.year && s.periodMonth === periodFilter.month,
+      ),
+    [settlements, periodFilter],
+  );
 
   const countsByStatus = useMemo(() => {
     const map = new Map<PayrollSettlementStatus, number>();
-    for (const s of settlements) {
+    for (const s of settlementsForPeriod) {
       map.set(s.status, (map.get(s.status) ?? 0) + 1);
     }
     return map;
-  }, [settlements]);
+  }, [settlementsForPeriod]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return settlements.filter((s) => {
+    return settlementsForPeriod.filter((s) => {
       if (statusFilter !== "all" && s.status !== statusFilter) return false;
-      if (periodFilter !== "all") {
-        const label = formatPeriodLabel(s.periodYear, s.periodMonth);
-        if (label !== periodFilter) return false;
-      }
       if (!q) return true;
       const periodLabel = formatPeriodLabel(s.periodYear, s.periodMonth);
       return (
@@ -173,7 +215,9 @@ export function SettlementsList({
         periodLabel.toLowerCase().includes(q)
       );
     });
-  }, [settlements, search, statusFilter, periodFilter]);
+  }, [settlementsForPeriod, search, statusFilter]);
+
+  const periodLabelLong = formatPeriodLong(periodFilter.year, periodFilter.month);
 
   const selectableIds = useMemo(
     () =>
@@ -228,8 +272,6 @@ export function SettlementsList({
     setSelectedIds((prev) => (prev.length === selectableIds.length ? [] : selectableIds));
   }
 
-  const { year: curYear, month: curMonth } = currentPeriodYearMonth();
-
   const subtitleCounts = sTexts.subtitle_counts
     .replace("{generada}", String(countsByStatus.get("generada") ?? 0))
     .replace("{aprobada_rrhh}", String(countsByStatus.get("aprobada_rrhh") ?? 0))
@@ -267,7 +309,7 @@ export function SettlementsList({
             {STATUS_FILTERS.map((f) => {
               const count =
                 f.value === "all"
-                  ? settlements.length
+                  ? settlementsForPeriod.length
                   : countsByStatus.get(f.value as PayrollSettlementStatus) ?? 0;
               return (
                 <ChipButton
@@ -280,19 +322,51 @@ export function SettlementsList({
               );
             })}
           </div>
-          {/* eslint-disable-next-line no-restricted-syntax -- Dropdown-chip (inline con ChipButtons): no existe primitivo dropdown-chip. Usa tokens canonicos rounded-chip + estilo inactive de ChipButton. */}
-          <select
-            value={periodFilter}
-            onChange={(e) => setPeriodFilter(e.target.value)}
-            className="inline-flex items-center rounded-chip border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
-          >
-            <option value="all">{sTexts.filter_period_all}</option>
-            {availablePeriods.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
+          <div className="inline-flex items-center gap-1 rounded-chip border border-border bg-card px-1 py-0.5 text-xs font-semibold text-foreground">
+            <button
+              type="button"
+              aria-label={sTexts.period_picker_aria_prev}
+              onClick={() => setPeriodFilter((p) => shiftPeriod(p, -1))}
+              className="inline-flex size-7 items-center justify-center rounded-full hover:bg-secondary"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <span className="px-2 tabular-nums">{periodLabelLong}</span>
+            <button
+              type="button"
+              aria-label={sTexts.period_picker_aria_next}
+              onClick={() => setPeriodFilter((p) => shiftPeriod(p, 1))}
+              className="inline-flex size-7 items-center justify-center rounded-full hover:bg-secondary"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -331,19 +405,24 @@ export function SettlementsList({
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <DataTableEmpty
-          title={settlements.length === 0 ? sTexts.empty_title : sTexts.empty_filter_title}
-          description={
-            settlements.length === 0 ? sTexts.empty_description : sTexts.empty_filter_description
-          }
-          action={
-            canOperate && settlements.length === 0 ? (
-              <Button variant="primary" size="sm" onClick={() => setGenerateOpen(true)}>
-                {sTexts.empty_cta}
-              </Button>
-            ) : undefined
-          }
-        />
+        settlementsForPeriod.length === 0 ? (
+          <DataTableEmpty
+            title={sTexts.period_empty_title_template.replace("{period}", periodLabelLong)}
+            description={sTexts.period_empty_description}
+            action={
+              canOperate ? (
+                <Button variant="primary" size="sm" onClick={() => setGenerateOpen(true)}>
+                  {sTexts.empty_cta}
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <DataTableEmpty
+            title={sTexts.empty_filter_title}
+            description={sTexts.empty_filter_description}
+          />
+        )
       ) : (
         <DataTable
           density="compact"
@@ -543,7 +622,11 @@ export function SettlementsList({
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField>
               <FormFieldLabel required>{sTexts.generate_month_label}</FormFieldLabel>
-              <FormSelect name="month" defaultValue={String(curMonth)} required>
+              <FormSelect
+                name="month"
+                defaultValue={String(currentPeriodYearMonth().month)}
+                required
+              >
                 {Array.from({ length: 12 }).map((_, i) => (
                   <option key={i + 1} value={String(i + 1)}>
                     {String(i + 1).padStart(2, "0")}
@@ -556,7 +639,7 @@ export function SettlementsList({
               <FormInput
                 type="number"
                 name="year"
-                defaultValue={curYear}
+                defaultValue={currentPeriodYearMonth().year}
                 min={2024}
                 max={2100}
                 required

@@ -2,6 +2,10 @@
 
 > Primer PDD del módulo **E04 · RRHH**. Fuente: Notion `E04 👥 RRHH` · `US-30` → en el repo se numera como **US-54** para respetar la numeración global del backlog (ver `docs/product/backlog_us_mvp.md`).
 
+> ⚠️ **MODELO REFACTORIZADO — 2026-04-24** (migración `20260424000000_hr_refactor_monto_al_contrato.sql`). El monto ya no vive en `salary_structures` ni en `salary_structure_versions` (esta última fue eliminada). Cada contrato (`staff_contracts`) lleva sus propias revisiones de monto en `staff_contract_revisions`. Las referencias en este PDD a "primera versión de monto" y a la tabla `salary_structure_versions` se conservan como contexto histórico; la implementación actual genera la primera revisión de monto sobre el contrato (ver US-57) y delega el versionado a US-55.
+
+> ⚠️ **PERMISO REVISADO — 2026-04-28**: el módulo `/rrhh` quedó restringido al rol `rrhh` exclusivo (ver CLAUDE.md). `admin` no accede al módulo. Las menciones a "Admin del club" en este PDD se interpretan como **Coordinador de RRHH** (rol `rrhh`).
+
 ---
 
 ## 1. Identificación
@@ -9,7 +13,7 @@
 | Campo | Valor |
 |---|---|
 | Epic | E04 · RRHH |
-| User Story | Como Admin del club, quiero configurar el catálogo de Estructuras Salariales, para definir las posiciones rentadas del club con su remuneración estándar. |
+| User Story | Como Coordinador de RRHH del club, quiero configurar el catálogo de Estructuras Salariales, para definir las posiciones rentadas del club con su remuneración estándar. |
 | Prioridad | Alta |
 | Objetivo de negocio | Establecer el maestro institucional de **posiciones rentadas** (rol funcional × actividad × tipo de remuneración) que sirve de fuente para armar contratos, proyectar costos y ejecutar liquidaciones mensuales. |
 
@@ -23,14 +27,14 @@ Hoy el club no tiene un lugar administrado para definir qué posiciones están h
 
 ## 3. Objetivo funcional
 
-Dentro del módulo **`/rrhh`**, la pestaña **`Estructuras`** (ruta `/rrhh/structures`) permite a un Admin o RRHH listar, crear y editar estructuras. Cada estructura representa una posición rentada con: nombre descriptivo, rol funcional, actividad, tipo de remuneración (`mensual_fijo | por_hora | por_clase`), monto vigente y estado (`activa | inactiva`). El monto inicial abre automáticamente la primera versión del historial de monto (ver US-55). La moneda se hereda del club (`clubs.currency_code`).
+Dentro del módulo **`/rrhh`**, la pestaña **`Estructuras`** (ruta `/rrhh/structures`) permite al Coordinador de RRHH (rol `rrhh`) listar, crear y editar estructuras. Cada estructura representa una posición rentada con: nombre descriptivo, rol funcional, actividad, tipo de remuneración (`mensual_fijo | por_hora | por_clase`), monto vigente y estado (`activa | inactiva`). El monto inicial abre automáticamente la primera versión del historial de monto (ver US-55). La moneda se hereda del club (`clubs.currency_code`).
 
 ---
 
 ## 4. Alcance
 
 ### Incluye
-- Pestaña **`Estructuras`** del módulo `/rrhh` (ruta `/rrhh/structures`), visible para roles `admin` y `rrhh`.
+- Pestaña **`Estructuras`** del módulo `/rrhh` (ruta `/rrhh/structures`), visible solo para rol `rrhh`.
 - Sección `Estructuras Salariales` con listado, búsqueda por nombre, filtros por `Estado` y `Actividad`.
 - Formulario de alta con: Nombre, Rol funcional, Actividad, Tipo de remuneración, Monto inicial, Carga horaria esperada (opcional), Estado.
 - Formulario de edición con: Nombre, Tipo de remuneración, Carga horaria esperada, Estado. Rol funcional, Actividad y Monto son inmutables desde este formulario.
@@ -50,14 +54,14 @@ Dentro del módulo **`/rrhh`**, la pestaña **`Estructuras`** (ruta `/rrhh/struc
 
 ## 5. Actor principal
 
-Usuario autenticado con membership `activo` y rol `admin` o `rrhh` en el club activo.
+Usuario autenticado con membership `activo` y rol `rrhh` en el club activo.
 
 ---
 
 ## 6. Precondiciones
 
 - Existe un club activo resuelto.
-- El usuario tiene rol `admin` o `rrhh` en ese club.
+- El usuario tiene rol `rrhh` en ese club.
 - El catálogo de `activities` del club tiene al menos un ítem activo (US-20).
 - `clubs.currency_code` está poblado (backfill `ARS` vía migración de Fase 0).
 
@@ -71,14 +75,14 @@ Usuario autenticado con membership `activo` y rol `admin` o `rrhh` en el club ac
 | Admin crea una estructura válida | La estructura queda en `activa` y se crea su primera versión de monto con `start_date = hoy` y `end_date = null`. |
 | Admin edita campos permitidos | Los cambios se persisten y quedan registrados en el historial de auditoría. |
 | Admin inactiva una estructura | La estructura deja de aparecer como seleccionable al crear contratos nuevos. Contratos vigentes sobre ella no se ven afectados. |
-| Usuario sin rol `admin` ni `rrhh` | No ve el módulo RRHH ni la pestaña. |
+| Usuario sin rol `rrhh` | No ve el módulo RRHH ni la pestaña. |
 
 ---
 
 ## 8. Reglas de negocio
 
 ### Acceso
-- Solo usuarios con rol `admin` o `rrhh` del club activo pueden listar y mutar estructuras.
+- Solo usuarios con rol `rrhh` del club activo pueden listar y mutar estructuras.
 - `tesoreria` no accede a la administración de estructuras (puede ver nombres de estructura en liquidaciones vía US-67 como read-only).
 
 ### Campos obligatorios
@@ -87,8 +91,8 @@ Usuario autenticado con membership `activo` y rol `admin` o `rrhh` en el club ac
 - Carga horaria esperada es opcional (relevante cuando el tipo es `por_hora` o `por_clase`).
 
 ### Unicidad
-- Unique parcial `(club_id, lower(trim(functional_role)), activity_id) where status = 'activa'`. Para operar dos colaboradores en la misma actividad se usan valores distintos de `functional_role` (ej. `Profesor titular` vs `Profesor suplente`).
-- No hay unicidad de `name` porque el nombre es descriptivo; la unicidad funcional vive en el par rol+actividad.
+- Unique parcial `(club_id, lower(trim(functional_role)), divisions, coalesce(activity_id::text, ''), remuneration_type) where status = 'activa'`. Las cinco coordenadas componen la identidad funcional de la estructura. Si dos colaboradores ocupan el mismo rol en la misma actividad y divisiones, se usa `functional_role` distinto (`Profesor titular` vs `Profesor suplente`); si la única diferencia es la remuneración (`mensual_fijo` vs `por_hora`), se admiten estructuras separadas porque `remuneration_type` participa de la unicidad.
+- No hay unicidad de `name` porque el nombre es descriptivo; la unicidad funcional vive en `(role, divisions, activity, remuneration_type)`.
 
 ### Campos inmutables en edición
 - Rol funcional, Actividad y Monto base (vigente) son **inmutables desde esta US**.
@@ -210,7 +214,7 @@ Usuario autenticado con membership `activo` y rol `admin` o `rrhh` en el club ac
 ## 14. Seguridad
 - Toda lectura y mutación se limita al club activo vía `app.current_club_id`.
 - El `club_id` lo resuelve el service a partir del contexto de sesión; nunca se acepta del cliente.
-- El rol se verifica server-side en el service (`admin | rrhh`).
+- El rol se verifica server-side en el service (`rrhh`).
 - Historial de auditoría append-only; no existe acción "delete" expuesta.
 
 ---
@@ -218,5 +222,5 @@ Usuario autenticado con membership `activo` y rol `admin` o `rrhh` en el club ac
 ## 15. Dependencias
 - **contracts:** `List salary structures`, `Create salary structure`, `Update salary structure`, `Get salary structure audit log`.
 - **domain entities:** `salary_structures`, `salary_structure_versions` (creación inicial), `hr_activity_log`, `activities`, `clubs.currency_code`.
-- **permissions:** rol `rrhh` (nuevo, ver Fase 1 RRHH) + `admin`.
+- **permissions:** rol `rrhh` (exclusivo del módulo `/rrhh` — ver guard `canAccessHrModule` en `lib/domain/authorization.ts`).
 - **otras US:** US-55 (versionado de monto — crea el primer version row), US-20 (activities), US-46 (`clubs.currency_code`).

@@ -12,7 +12,9 @@ Página `/rrhh/structures/[id]` que muestra el detalle de una actividad agrupand
 4. El layout `app/(dashboard)/rrhh/layout.tsx` ya provee `PageContentHeader` (eyebrow PERSONAL · CONTRATOS · LIQUIDACIONES + título RRHH + chip de fecha).
 5. La página renderiza:
    - Breadcrumb `Estructuras · {activity.name}`.
-   - Header card con eyebrow `Estructura · {N} colaboradores · {M} divisiones`, título = nombre de la actividad, chips de divisions, CTA "+ Contrato" (deshabilitado hasta que se apruebe el flujo de asignación masiva — Open question del plan).
+   - Header card con eyebrow `Estructura · {N} colaboradores · {M} divisiones`, título = nombre de la actividad, subtítulo opcional `Coordinación general: {nombre}` (link a la ficha del colaborador) cuando alguno de los `collaborators` tiene `functional_role` que matchea `/^coordinador/i`, chips de divisions y dos CTAs alineados a la derecha del título: `Editar` (secondary) y `+ Contrato` (accent-rrhh).
+     - `Editar` abre `<StructureEditModal>` directamente cuando la actividad tiene una sola estructura; cuando agrupa N>1 abre primero un modal `Elegí una estructura` con la lista, y al elegir una se abre el modal de edición.
+     - `+ Contrato` abre `<AssignContractToActivityModal>` que permite elegir una estructura de la actividad, un colaborador sin contrato vigente, fecha de inicio y monto inicial; submit reusa `createStaffContractAction`.
    - Tres stats cards en grid 3 cols: costo mensual + delta vs mes anterior, count de colaboradores + breakdown por `remuneration_type`, % del total RRHH con progress bar.
    - Card "Colaboradores · {actividad}" con la lista agrupada por `primaryDivision` (primera división del array de la estructura). Cada grupo tiene header `{DIVISION} · {N} colab.` + total mensual; cada item es un row con avatar + nombre + (rol · división) + monto, link a la ficha del colaborador.
    - Card "Evolución del costo mensual" con bar chart de los últimos 6 meses + bloque de detalle del último mes y % de variación.
@@ -121,6 +123,6 @@ where club_id = $clubId and status = 'pagada' and contract_id in (...)
 
 ## Open questions
 
-1. **CTA "+ Contrato"**: hoy queda deshabilitado en la ficha. Faltaría un modal `<AssignContractToActivityModal>` que permita elegir estructura (entre las de esta actividad) + colaborador y crear el contrato. Decisión por defecto del plan: posponer y abrir la ficha sin asignación masiva.
-2. **CTA "Editar"**: ocultado del header de la ficha (la actividad agrupa N estructuras, no hay un único target). Iteración futura: dropdown "Editar estructura" con la lista de N estructuras.
+1. ~~**CTA "+ Contrato"**: hoy queda deshabilitado en la ficha.~~ **Resuelto (2026-04-28)**: se habilitó con `<AssignContractToActivityModal>` que reusa `createStaffContractAction`. El modal filtra colaboradores con `activeContractCount === 0` y restringe el select de estructura a las de la actividad.
+2. ~~**CTA "Editar"**: ocultado del header de la ficha.~~ **Resuelto (2026-04-28)**: se reusa `<StructureEditModal>` existente. Si la actividad tiene una sola estructura, abre directo; si tiene N>1, primero pide elegir cuál editar.
 3. **Estructuras transversales**: sin vista propia. Iteración futura: definir si `/rrhh/structures/transversales` muestra una "actividad pseudo" agrupándolas.
