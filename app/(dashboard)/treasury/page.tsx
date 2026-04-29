@@ -26,6 +26,7 @@ import { CostCentersTab } from "@/components/treasury/cost-centers-tab";
 import { TreasuryPayrollPendingCard } from "@/components/treasury/payroll-pending-card";
 import { TreasuryPayrollTab } from "@/components/treasury/treasury-payroll-tab";
 import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
+import { TreasuryDataProvider } from "@/lib/contexts/treasury-data-context";
 import { PageContentHeader } from "@/components/ui/page-content-header";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import {
@@ -246,35 +247,48 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
         />
       ) : null}
 
-      <TreasuryRoleCard
-        dashboard={dashboard}
-        accounts={accounts}
-        categories={categories}
-        activities={activities}
-        calendarEvents={calendarEvents}
-        currencies={currencies}
-        movementTypes={movementTypes}
-        receiptFormats={receiptFormats}
-        createTreasuryRoleMovementAction={createTreasuryRoleMovementAction}
-        updateTreasuryRoleMovementAction={updateTreasuryRoleMovementAction}
-        createFxOperationAction={createFxOperationAction}
-        createAccountTransferAction={createAccountTransferAction}
-        createTreasuryAccountAction={createTreasuryAccountFromTreasuryAction}
-        updateTreasuryAccountAction={updateTreasuryAccountFromTreasuryAction}
-        allAccounts={allAccounts}
-        isAdmin={canMutateTreasurySettings(context.activeMembership)}
-        consolidationDashboard={consolidationDashboard}
-        transferSourceAccounts={transferSourceAccounts}
-        transferTargetAccounts={transferTargetAccounts}
-        updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
-        updateTransferBeforeConsolidationAction={updateTransferBeforeConsolidationAction}
-        executeDailyConsolidationAction={executeDailyConsolidationAction}
-        costCentersTab={costCentersTabNode}
-        activeCostCenters={costCentersForMovements}
-        staffContracts={staffContractsForMovements}
-        payrollTab={payrollTabNode}
-        payrollPendingCount={payrollPending?.count ?? 0}
-      />
+      {/*
+        Fase 4 · T3.2 — TreasuryDataProvider centraliza los datos de
+        dominio (accounts, categories, activities, currencies, etc.)
+        que antes se pasaban como props drilling de 8+ niveles. Por ahora
+        solo TreasuryRoleCard los consume vía useTreasuryData(); los 7
+        forms internos siguen recibiendolos por props desde TreasuryRoleCard.
+        La migración de los forms a context queda para una iteración futura.
+      */}
+      <TreasuryDataProvider
+        value={{
+          accounts,
+          allAccounts,
+          categories,
+          activities,
+          currencies,
+          movementTypes,
+          receiptFormats,
+          transferSourceAccounts,
+          transferTargetAccounts,
+          activeCostCenters: costCentersForMovements,
+          staffContracts: staffContractsForMovements,
+        }}
+      >
+        <TreasuryRoleCard
+          dashboard={dashboard}
+          calendarEvents={calendarEvents}
+          createTreasuryRoleMovementAction={createTreasuryRoleMovementAction}
+          updateTreasuryRoleMovementAction={updateTreasuryRoleMovementAction}
+          createFxOperationAction={createFxOperationAction}
+          createAccountTransferAction={createAccountTransferAction}
+          createTreasuryAccountAction={createTreasuryAccountFromTreasuryAction}
+          updateTreasuryAccountAction={updateTreasuryAccountFromTreasuryAction}
+          isAdmin={canMutateTreasurySettings(context.activeMembership)}
+          consolidationDashboard={consolidationDashboard}
+          updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
+          updateTransferBeforeConsolidationAction={updateTransferBeforeConsolidationAction}
+          executeDailyConsolidationAction={executeDailyConsolidationAction}
+          costCentersTab={costCentersTabNode}
+          payrollTab={payrollTabNode}
+          payrollPendingCount={payrollPending?.count ?? 0}
+        />
+      </TreasuryDataProvider>
     </main>
   );
 }

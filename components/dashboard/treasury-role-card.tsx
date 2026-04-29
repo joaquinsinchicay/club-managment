@@ -34,6 +34,7 @@ import {
 } from "@/lib/dates";
 import { getAccountAvatarTone, getCurrencySymbol } from "@/lib/treasury-ui-helpers";
 import { triggerClientFeedback } from "@/lib/client-feedback";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
   ClubActivity,
@@ -52,26 +53,24 @@ import type {
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
+// Datos de dominio (accounts, categories, activities, currencies,
+// movementTypes, receiptFormats, allAccounts, transferSource/Target,
+// activeCostCenters, staffContracts) ahora viven en
+// `<TreasuryDataProvider>` y se consumen vía useTreasuryData().
+// Las props del componente solo describen lo específico: dashboard
+// (estado local), acciones (server actions), permisos (isAdmin) y
+// slots embebidos (costCentersTab, payrollTab).
 type TreasuryRoleCardProps = {
   dashboard: TreasuryRoleDashboard;
-  accounts: TreasuryAccount[];
-  categories: TreasuryCategory[];
-  activities: ClubActivity[];
   calendarEvents: ClubCalendarEvent[];
-  currencies: TreasuryCurrencyConfig[];
-  movementTypes: TreasuryMovementType[];
-  receiptFormats: ReceiptFormat[];
   createTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateTreasuryRoleMovementAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createFxOperationAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   createTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   updateTreasuryAccountAction: (formData: FormData) => Promise<TreasuryActionResponse>;
-  allAccounts: TreasuryAccount[];
   isAdmin: boolean;
   consolidationDashboard: TreasuryConsolidationDashboard | null;
-  transferSourceAccounts: TreasuryAccount[];
-  transferTargetAccounts: TreasuryAccount[];
   updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   updateTransferBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
@@ -79,21 +78,6 @@ type TreasuryRoleCardProps = {
   // the current user can access it. The page server-side prepares this tree
   // with pre-fetched data and bound server actions.
   costCentersTab?: ReactNode;
-  // US-53: Active cost centers for the multiselect in the movement creation
-  // form. Only passed when the current user has role `tesoreria`.
-  activeCostCenters?: Array<{
-    id: string;
-    name: string;
-    type: string;
-    currencyCode: string;
-    status: "activo" | "inactivo";
-  }>;
-  // Contratos RRHH para el selector "Contrato" en los modales de movimiento.
-  staffContracts?: Array<{
-    contractId: string;
-    staffMemberId: string;
-    label: string;
-  }>;
   // US-71: Sub-tab "Pagos pendientes" embebido. Se renderiza solo cuando el
   // usuario tiene rol Tesorería y el page server prepara los datos.
   payrollTab?: ReactNode;
@@ -1080,33 +1064,37 @@ function ResumenTab({
 
 export function TreasuryRoleCard({
   dashboard,
-  accounts,
-  categories,
-  activities,
   calendarEvents,
-  currencies,
-  movementTypes,
-  receiptFormats,
   createTreasuryRoleMovementAction,
   updateTreasuryRoleMovementAction,
   createFxOperationAction,
   createAccountTransferAction,
   createTreasuryAccountAction,
   updateTreasuryAccountAction,
-  allAccounts,
   isAdmin,
   consolidationDashboard,
-  transferSourceAccounts,
-  transferTargetAccounts,
   updateMovementBeforeConsolidationAction,
   updateTransferBeforeConsolidationAction,
   executeDailyConsolidationAction,
   costCentersTab,
-  activeCostCenters,
-  staffContracts,
   payrollTab,
   payrollPendingCount = 0
 }: TreasuryRoleCardProps) {
+  // Datos de dominio del context (Fase 4 · T3.2). Antes eran 10 props.
+  const {
+    accounts,
+    allAccounts,
+    categories,
+    activities,
+    currencies,
+    movementTypes,
+    receiptFormats,
+    transferSourceAccounts,
+    transferTargetAccounts,
+    activeCostCenters,
+    staffContracts,
+  } = useTreasuryData();
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const showPayrollTab = payrollTab !== undefined;
