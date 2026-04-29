@@ -91,7 +91,7 @@ export function AccountDetailCard({
         backLabel={secondaryActionLabel}
       />
 
-      <Card as="section" className="w-full max-w-5xl p-6 sm:p-8" padding="none">
+      <Card as="section" maxWidth="5xl" padding="spacious">
         <div className="space-y-5">
           {accounts.length > 0 ? (
             <div className="grid gap-2">

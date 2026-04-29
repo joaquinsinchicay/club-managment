@@ -122,7 +122,7 @@ export function DailySessionBalanceCard({
         backLabel={texts.dashboard.treasury.back_to_secretaria_cta}
       />
 
-      <Card as="section" className="w-full max-w-5xl p-6 sm:p-8" padding="none">
+      <Card as="section" maxWidth="5xl" padding="spacious">
         <div className="space-y-5">
           <p className="text-sm leading-6 text-muted-foreground">
             {texts.dashboard.treasury.session_validation_description}

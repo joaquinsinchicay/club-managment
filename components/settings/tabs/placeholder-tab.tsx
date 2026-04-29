@@ -11,7 +11,7 @@ type PlaceholderTabProps = {
 
 export function PlaceholderTab({ eyebrow, title, description }: PlaceholderTabProps) {
   return (
-    <Card tone="muted" className="border-dashed p-6 sm:p-8">
+    <Card tone="muted" padding="spacious" dashed>
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <FormSection>{eyebrow}</FormSection>
