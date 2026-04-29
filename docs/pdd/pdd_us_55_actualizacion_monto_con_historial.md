@@ -2,6 +2,10 @@
 
 > PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-34` + `US-35` (revisión salarial individual + masiva). En el repo: **US-55**. (Pre-refactor 2026-04-27 el alias Notion era `US-31`.)
 
+> ⚠️ **MODELO REFACTORIZADO — 2026-04-24** (migración `20260424000000_hr_refactor_monto_al_contrato.sql`). El monto y su historial ya no viven en `salary_structures` ni en `salary_structure_versions` (eliminada). Cada contrato (`staff_contracts`) tiene su propio historial de revisiones de monto en `staff_contract_revisions`. La acción "Actualizar monto" en este PDD se interpreta hoy como **actualización de monto del contrato** (creando una nueva fila en `staff_contract_revisions` y cerrando la vigente), no de la estructura. La RPC `hr_update_salary_structure_amount` y la vista `salary_structure_current_amount` no existen en el modelo actual; se reemplazan por la lectura de la revisión vigente del contrato (`staff_contract_revisions where end_date is null`).
+
+> ⚠️ **PERMISO REVISADO — 2026-04-28**: el módulo `/rrhh` quedó restringido al rol `rrhh` exclusivo. Las menciones a "Admin" en este PDD se interpretan como **Coordinador de RRHH** (rol `rrhh`).
+
 ---
 
 ## 1. Identificación
@@ -9,7 +13,7 @@
 | Campo | Valor |
 |---|---|
 | Epic | E04 · RRHH |
-| User Story | Como Admin del club, quiero actualizar el monto de una Estructura Salarial manteniendo su historial, para reflejar cambios salariales y permitir consultar la evolución del monto en el tiempo. |
+| User Story | Como Coordinador de RRHH del club, quiero actualizar el monto de un contrato manteniendo su historial de revisiones, para reflejar cambios salariales y permitir consultar la evolución del monto en el tiempo. |
 | Prioridad | Alta |
 | Objetivo de negocio | Garantizar trazabilidad total de las actualizaciones salariales del club, preservando el histórico de montos por fecha de vigencia para reportes, auditorías y cálculo de liquidaciones futuras. |
 
@@ -23,14 +27,14 @@ Sin versionado, un cambio de monto sobreescribe el valor anterior y rompe la rec
 
 ## 3. Objetivo funcional
 
-Desde el detalle de una Estructura Salarial, el Admin puede ejecutar la acción **Actualizar monto**, indicando un **monto nuevo** y una **fecha de vigencia** (default hoy, editable). El sistema cierra la versión vigente anterior (`end_date = fecha_vigencia_nueva - 1 día`) y crea una nueva versión con `start_date = fecha_vigencia_nueva` y `end_date = null`. El historial es visible desde la ficha de la estructura con todas las versiones ordenadas cronológicamente.
+Desde el detalle de un contrato, el Coordinador de RRHH puede ejecutar la acción **Actualizar monto**, indicando un **monto nuevo** y una **fecha de vigencia** (default hoy, editable). El sistema cierra la versión vigente anterior (`end_date = fecha_vigencia_nueva - 1 día`) y crea una nueva versión con `start_date = fecha_vigencia_nueva` y `end_date = null`. El historial es visible desde la ficha de la estructura con todas las versiones ordenadas cronológicamente.
 
 ---
 
 ## 4. Alcance
 
 ### Incluye
-- Acción `Actualizar monto` disponible desde el detalle de la estructura (accesible para `admin` y `rrhh`).
+- Acción `Actualizar monto` disponible desde el detalle del contrato (accesible solo para `rrhh`).
 - Formulario con: Monto nuevo, Fecha de vigencia (default `current_date`).
 - Cierre atómico de la versión anterior + creación de la nueva versión en la misma transacción.
 - Vista de historial con Monto, Fecha inicio, Fecha fin, Actor.
@@ -47,7 +51,7 @@ Desde el detalle de una Estructura Salarial, el Admin puede ejecutar la acción 
 
 ## 5. Actor principal
 
-Usuario autenticado con rol `admin` o `rrhh` en el club activo.
+Usuario autenticado con rol `rrhh` en el club activo.
 
 ---
 

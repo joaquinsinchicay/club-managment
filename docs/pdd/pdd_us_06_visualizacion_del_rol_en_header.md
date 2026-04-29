@@ -1,5 +1,7 @@
 # PDD — US-06 · Visualización del rol en el club activo en el header
 
+> ⚠️ **SCOPE REDUCIDO — 2026-04-29**: el "mensaje de bienvenida personalizado" (`Bienvenido/a {name}, tu rol es {role}`) fue **descartado** durante implementación. El header renderiza una pareja compacta de eyebrow + valor: `Club Activo / {clubName}` a la izquierda y `Rol / {role}` a la derecha (ver `components/navigation/app-header.tsx`). Las keys `header.welcome_message_single` y `header.welcome_message_multiple` quedan en `texts.json` por compatibilidad pero no se consumen — pueden eliminarse en una limpieza posterior. La regla activa: el rol mostrado proviene siempre de la membership del club activo y se actualiza al cambiar de club.
+
 ---
 
 ## 1. Identificación
@@ -126,8 +128,9 @@ Usuario autenticado con club activo resuelto.
 | Tipo | Key | Contexto |
 |---|---|---|
 | fallback | `header.pending_club_label` | Label cuando todavía no hay club activo. |
-| body | `header.welcome_message_single` | Mensaje del header cuando la membership tiene un solo rol. |
-| body | `header.welcome_message_multiple` | Mensaje del header cuando la membership combina múltiples roles. |
+| label | `header.role_label` | Eyebrow `Rol` en el bloque de identidad del header. |
+| ~~body~~ | ~~`header.welcome_message_single`~~ | ~~Descartado 2026-04-29 — no se consume.~~ |
+| ~~body~~ | ~~`header.welcome_message_multiple`~~ | ~~Descartado 2026-04-29 — no se consume.~~ |
 | label | `settings.club.members.roles.admin` | Label legible para rol admin. |
 | label | `settings.club.members.roles.secretaria` | Label legible para rol secretaria. |
 | label | `settings.club.members.roles.tesoreria` | Label legible para rol tesoreria. |

@@ -97,6 +97,19 @@ export function MembersTab({
     [members, removingMembershipId],
   );
 
+  const activeAdminCount = useMemo(
+    () => members.filter((m) => m.roles.includes("admin")).length,
+    [members],
+  );
+
+  function isLastAdmin(member: { roles: MembershipRole[] } | null): boolean {
+    if (!member) return false;
+    return activeAdminCount === 1 && member.roles.includes("admin");
+  }
+
+  const editingIsLastAdmin = isLastAdmin(editingMember);
+  const removingIsLastAdmin = isLastAdmin(removingMember);
+
   const displayMembers = useMemo<DisplayMember[]>(() => {
     const invitationsByEmail = new Map<string, PendingClubInvitation[]>();
     for (const invitation of pendingInvitations) {
@@ -328,12 +341,18 @@ export function MembersTab({
                             <button
                               type="button"
                               onClick={() => setRemovingMembershipId(member.membershipId)}
+                              disabled={isLastAdmin(member)}
                               aria-label={
                                 member.isCurrentUser
                                   ? texts.settings.club.members.leave_club_cta
                                   : texts.settings.club.members.remove_cta
                               }
-                              className="inline-flex h-10 w-10 items-center justify-center rounded-btn border border-destructive/25 bg-destructive/10 text-destructive transition hover:bg-destructive/15"
+                              title={
+                                isLastAdmin(member)
+                                  ? texts.settings.club.members.feedback.last_admin_required
+                                  : undefined
+                              }
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-btn border border-destructive/25 bg-destructive/10 text-destructive transition hover:bg-destructive/15 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-destructive/10"
                             >
                               <svg
                                 className="h-4 w-4"
@@ -419,6 +438,12 @@ export function MembersTab({
             <PendingFieldset className="grid gap-4">
               <input type="hidden" name="membership_id" value={editingMember.membershipId} />
 
+              {editingIsLastAdmin ? (
+                <FormBanner variant="warning">
+                  {texts.settings.club.members.feedback.last_admin_required}
+                </FormBanner>
+              ) : null}
+
               <div className="grid gap-3">
                 <FormSection>{texts.settings.club.members.roles_label}</FormSection>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -430,6 +455,7 @@ export function MembersTab({
                       value={role}
                       label={getRoleLabel(role)}
                       defaultChecked={editingMember.roles.includes(role)}
+                      disabled={role === "admin" && editingIsLastAdmin}
                     />
                   ))}
                 </div>
@@ -456,6 +482,12 @@ export function MembersTab({
       >
         {removingMember ? (
           <>
+            {removingIsLastAdmin ? (
+              <FormBanner variant="warning">
+                {texts.settings.club.members.feedback.last_admin_required}
+              </FormBanner>
+            ) : null}
+
             <div className="rounded-card border border-border bg-secondary/40 px-4 py-3">
               <FormSection>{texts.settings.club.members.remove_dialog_member_label}</FormSection>
               <p className="mt-1 font-semibold text-foreground">{removingMember.fullName}</p>
@@ -471,6 +503,7 @@ export function MembersTab({
                   submitLabel={texts.settings.club.members.remove_dialog_confirm_cta}
                   pendingLabel={texts.settings.club.members.remove_loading}
                   submitVariant="destructive"
+                  submitDisabled={removingIsLastAdmin}
                 />
               </PendingFieldset>
             </form>

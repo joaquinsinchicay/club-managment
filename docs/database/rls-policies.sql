@@ -578,6 +578,9 @@ with check (
 drop policy if exists "Members can view categories" on treasury_categories;
 drop policy if exists "Admins manage categories in current club" on treasury_categories;
 drop policy if exists "Treasury manage categories in current club" on treasury_categories;
+drop policy if exists "Treasury insert categories in current club" on treasury_categories;
+drop policy if exists "Treasury update categories in current club" on treasury_categories;
+drop policy if exists "Treasury delete categories in current club" on treasury_categories;
 
 create policy "Members can view categories"
 on treasury_categories
@@ -588,17 +591,17 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Treasury manage categories in current club"
+create policy "Admins manage categories in current club"
 on treasury_categories
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (select current_user_has_role('admin'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (select current_user_has_role('admin'))
 );
 
 -- =========================================
@@ -608,6 +611,9 @@ with check (
 drop policy if exists "Members can view activities" on club_activities;
 drop policy if exists "Admins manage activities in current club" on club_activities;
 drop policy if exists "Treasury manage activities in current club" on club_activities;
+drop policy if exists "Treasury insert activities in current club" on club_activities;
+drop policy if exists "Treasury update activities in current club" on club_activities;
+drop policy if exists "Treasury delete activities in current club" on club_activities;
 
 create policy "Members can view activities"
 on club_activities
@@ -618,17 +624,17 @@ using (
   and is_member_of_current_club()
 );
 
-create policy "Treasury manage activities in current club"
+create policy "Admins manage activities in current club"
 on club_activities
 for all
 to authenticated
 using (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (select current_user_has_role('admin'))
 )
 with check (
   club_id = current_club_id()
-  and (select current_user_has_role('tesoreria'))
+  and (select current_user_has_role('admin'))
 );
 
 -- =========================================

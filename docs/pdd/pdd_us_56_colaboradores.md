@@ -2,6 +2,8 @@
 
 > PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-31`. En el repo: **US-56**. (Pre-refactor 2026-04-27 el alias era `US-32`.)
 
+> ⚠️ **PERMISO REVISADO — 2026-04-28**: el módulo `/rrhh` quedó restringido al rol `rrhh` exclusivo (ver CLAUDE.md y guard `canAccessHrModule`). `admin` no accede al módulo. Las menciones a "Admin del club" en este PDD se interpretan como **Coordinador de RRHH** (rol `rrhh`).
+
 ---
 
 ## 1. Identificación
@@ -9,7 +11,7 @@
 | Campo | Valor |
 |---|---|
 | Epic | E04 · RRHH |
-| User Story | Como Admin del club, quiero dar de alta, editar y dar de baja colaboradores, para mantener el maestro de personas rentadas del club. |
+| User Story | Como Coordinador de RRHH del club, quiero dar de alta, editar y dar de baja colaboradores, para mantener el maestro de personas rentadas del club. |
 | Prioridad | Alta |
 | Objetivo de negocio | Consolidar el maestro de personas rentadas con datos personales, de contacto y de pago, manteniendo su historial de vínculos con el club a lo largo del tiempo. |
 
@@ -23,7 +25,7 @@ Hoy no hay un registro formal de las personas que reciben remuneración del club
 
 ## 3. Objetivo funcional
 
-Dentro del módulo `/rrhh`, la pestaña **`Colaboradores`** (ruta `/rrhh/staff`) permite a `admin` y `rrhh` listar, crear, editar, activar y desactivar personas rentadas. Cada colaborador tiene nombre, DNI, CUIT/CUIL, datos de contacto, tipo de vínculo, CBU/alias, fecha de alta y estado. La baja lógica se bloquea si hay contratos vigentes.
+Dentro del módulo `/rrhh`, la pestaña **`Colaboradores`** (ruta `/rrhh/staff`) permite al rol `rrhh` listar, crear, editar, activar y desactivar personas rentadas. Cada colaborador tiene nombre, DNI, CUIT/CUIL, datos de contacto, tipo de vínculo, CBU/alias, fecha de alta y estado. La baja lógica se bloquea si hay contratos vigentes.
 
 ---
 
@@ -48,14 +50,14 @@ Dentro del módulo `/rrhh`, la pestaña **`Colaboradores`** (ruta `/rrhh/staff`)
 
 ## 5. Actor principal
 
-`admin` o `rrhh` del club activo.
+`rrhh` del club activo.
 
 ---
 
 ## 6. Precondiciones
 
 - Club activo resuelto.
-- Rol `admin` o `rrhh` confirmado.
+- Rol `rrhh` confirmado.
 
 ---
 
@@ -187,8 +189,8 @@ Si al reactivar existe otro colaborador activo con el mismo DNI: bloquea con `du
 ## 14. Seguridad
 
 - Club scoping por RLS.
-- Validación de rol `admin | rrhh` en service.
-- DNI, CUIT y CBU son **PII sensible**: logs y exports deben mascarar o requerir permisos explícitos. En la UI se muestran completos a `admin | rrhh`; no se exponen a otros roles.
+- Validación de rol `rrhh` en service.
+- DNI, CUIT y CBU son **PII sensible**: logs y exports deben mascarar o requerir permisos explícitos. En la UI se muestran completos a `rrhh`; no se exponen a otros roles.
 - Las API/server actions nunca reciben `club_id` del cliente.
 
 ---

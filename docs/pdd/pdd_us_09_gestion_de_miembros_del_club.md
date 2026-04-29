@@ -1,5 +1,7 @@
 # PDD — US-09 · Gestión de miembros del club
 
+> ⚠️ **VALIDACIÓN CLIENT-SIDE AGREGADA — 2026-04-29**: la regla "no se puede remover o degradar al último admin" ya tenía validación server-side (`feedback.last_admin_required`); se sumó **enforcement client-side** en `components/settings/tabs/members-tab.tsx` para evitar que el flujo se inicie cuando es bloqueable a priori. Implementación: cálculo `activeAdminCount`, helper `isLastAdmin(member)`, `disabled` en el botón de remover de la fila, `disabled` en el checkbox del rol `admin` del modal de edición de roles, `submitDisabled` en el modal de confirmación de remoción, y `<FormBanner variant="warning">` con la copy `last_admin_required` en ambos modales.
+
 ---
 
 ## 1. Identificación
