@@ -188,12 +188,8 @@ const RULES = [
     allowFiles: [
       // Bloque B1 (PR-2) — ✅ cerrado (modal.tsx).
       // Bloque B4 (PR-5) — ✅ cerrado.
-      // Bloque B6 (PR-6) — toast.tsx queda como única excepción residual:
-      // los text-[12-14px] del toast viven dentro de un componente con tema
-      // dark embebido (white/foreground en bg-foreground) y ameritan tokens
-      // dedicados de toast typography que aún no existen. Mantengo el opt-out
-      // explícito con razón documentada hasta que se defina la sub-escala.
-      "components/ui/toast/toast.tsx",
+      // Bloque B6 (PR-6) — ✅ cerrado.
+      // Fase 3.3 — toast.tsx ✅ cerrado (typography migrada a text-body/label/small).
     ],
   },
 ];

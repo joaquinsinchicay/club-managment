@@ -152,7 +152,7 @@ export function ToastItem({ entry, paused, onDismiss }: ToastItemProps) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-[14px] font-semibold leading-5 text-white">{title}</p>
+            <p className="text-body font-semibold leading-5 text-white">{title}</p>
             {action ? (
               <button
                 type="button"
@@ -160,15 +160,15 @@ export function ToastItem({ entry, paused, onDismiss }: ToastItemProps) {
                   action.onClick();
                   onDismiss();
                 }}
-                className="shrink-0 text-[13px] font-semibold text-white/90 hover:text-white"
+                className="shrink-0 text-label text-white/90 hover:text-white"
               >
                 {action.label}
               </button>
             ) : null}
           </div>
-          {desc ? <p className="mt-0.5 text-[13px] leading-5 text-white/70">{desc}</p> : null}
+          {desc ? <p className="mt-0.5 text-label font-normal leading-5 text-white/70">{desc}</p> : null}
           {meta ? (
-            <p className="mt-1 font-mono text-[12px] leading-4 text-white/50">{meta}</p>
+            <p className="mt-1 text-small font-mono leading-4 text-white/50">{meta}</p>
           ) : null}
         </div>
       </div>
