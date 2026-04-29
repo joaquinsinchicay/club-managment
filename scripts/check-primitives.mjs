@@ -141,8 +141,7 @@ const RULES = [
     message: "Color Tailwind crudo. Migrar a token semántico (warning/destructive/info/success) o brand (ds-{color}-{050|700}).",
     allowFiles: [
       // Bloque B1 (PR-2) — ✅ cerrado.
-      // Bloque B2 (PR-3) — header de Secretaría.
-      "app/(dashboard)/secretary/page.tsx",
+      // Bloque B2 (PR-3) — ✅ cerrado.
       // Bloque B6 (PR-6) — primitivos hand-rolled.
       "components/ui/segmented-nav.tsx",
       "components/ui/overlay.tsx",

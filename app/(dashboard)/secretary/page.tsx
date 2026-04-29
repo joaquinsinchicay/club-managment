@@ -97,7 +97,7 @@ export default async function SecretariaDashboardPage() {
         description={texts.dashboard.treasury.description}
         actions={
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-meta font-semibold text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+            <span className="size-1.5 rounded-full bg-ds-green" aria-hidden="true" />
             {formatSessionDateChip(treasuryCard.sessionDate)}
           </span>
         }
