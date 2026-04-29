@@ -366,6 +366,7 @@ def main():
                 "staff_contract_id": staff_contract_id,
                 "cost_centers_csv": cc_raw,
                 "cost_center_ids": cc_ids,  # may contain None for ones to-be-created
+                "receipt_csv": row.get("Recibo", "").strip() or None,
                 "cost_centers_pending": [
                     name for code, name in parse_cost_centers(cc_raw)
                     if normalize(name) not in cecos_by_norm

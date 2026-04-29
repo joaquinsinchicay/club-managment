@@ -92,6 +92,7 @@ def build_movement(r, club_id, override_concept=None, override_category_id="__us
         "amount": r["amount"],
         "movement_date": r["movement_date"],
         "concept": override_concept if override_concept is not None else (r.get("concept") or ""),
+        "receipt_number": r.get("receipt_csv") or None,
         "status": "posted",
         "display_id": r["external_id"],  # temporal IMP2023-N (renumerado en Fase 4.5)
         "external_id": r["external_id"],
