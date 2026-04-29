@@ -346,7 +346,7 @@ export function ContractDetailView({
   return (
     <div className="flex flex-col gap-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <nav className="flex items-center gap-2 text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
         <Link href="/rrhh/contracts" className="hover:text-foreground">
           {cdTexts.breadcrumb_root}
         </Link>
@@ -364,7 +364,7 @@ export function ContractDetailView({
               tone="neutral"
             />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                 {headerTitle}
               </p>
               <Link
@@ -662,7 +662,7 @@ export function ContractDetailView({
           {/* Monto vigente */}
           <Card padding="comfortable" tone="accent-rrhh">
             <div className="flex min-w-0 flex-col gap-3">
-              <p className="break-words text-xs font-semibold uppercase tracking-[0.18em] text-ds-pink-700">
+              <p className="break-words text-xs font-semibold uppercase tracking-card-eyebrow text-ds-pink-700">
                 {currentAmountEyebrow}
               </p>
               <p className="break-words text-2xl font-bold tabular-nums text-foreground sm:text-h1">
@@ -760,13 +760,13 @@ export function ContractDetailView({
           />
           <input type="hidden" name="reason" value={composedReason} />
 
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-ds-pink-700">
+          <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-ds-pink-700">
             {revisionContext}
           </p>
 
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-card border border-border bg-secondary/30 px-4 py-3">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                 {cdTexts.revision_preview_current_label}
               </span>
               <span className="break-words text-sm font-bold tabular-nums text-foreground">
@@ -775,7 +775,7 @@ export function ContractDetailView({
             </div>
             <span aria-hidden="true" className="text-muted-foreground">→</span>
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-ds-pink-700">
+              <span className="text-xs font-semibold uppercase tracking-card-eyebrow text-ds-pink-700">
                 {cdTexts.revision_preview_new_label}
               </span>
               <span className="break-words text-sm font-bold tabular-nums text-ds-pink-700">
@@ -959,7 +959,7 @@ type InfoItemProps = {
 function InfoItem({ label, value }: InfoItemProps) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <dt className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
         {label}
       </dt>
       <dd className="break-words text-sm text-foreground">

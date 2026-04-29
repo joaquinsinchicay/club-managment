@@ -74,7 +74,7 @@ export function CardHeader({
     >
       <div className="flex min-w-0 flex-col gap-1">
         {eyebrow ? (
-          <span className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <span className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
             {eyebrow}
           </span>
         ) : null}

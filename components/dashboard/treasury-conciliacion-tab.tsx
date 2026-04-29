@@ -113,7 +113,7 @@ function KpiTile({
 
   return (
     <div className="rounded-card border border-border bg-card px-4 py-4">
-      <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <p className="text-eyebrow font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
         {label}
       </p>
       <p className={cn("mt-2 text-3xl font-semibold tracking-tight", valueTone)}>{value}</p>
@@ -323,7 +323,7 @@ export function TreasuryConciliacionTab({
             className="flex flex-col gap-2 sm:flex-row sm:items-end"
           >
             <label className="flex-1 grid gap-1.5 text-sm text-foreground">
-              <span className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="text-eyebrow font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                 {texts.dashboard.treasury_role.conciliacion_date_label}
               </span>
               <FormInput

@@ -641,7 +641,7 @@ function TreasuryRoleMovementGroups({
       {groups.map((group) => (
         <section key={group.movementDate} className="space-y-3">
           <div className="rounded-card border border-border bg-card px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
               {texts.dashboard.treasury_role.date_label}
             </p>
             <p className="mt-1 text-base font-semibold text-foreground">

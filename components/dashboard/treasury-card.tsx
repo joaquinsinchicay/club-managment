@@ -223,7 +223,7 @@ function SessionCard({
           {isUnresolved ? "?" : cfg.iconText}
         </div>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <span className="text-eyebrow font-semibold uppercase tracking-eyebrow text-muted-foreground">
             {texts.dashboard.treasury.session_card_label}
           </span>
           <span className="text-card-title font-semibold leading-tight tracking-tight text-foreground">
@@ -250,7 +250,7 @@ function SessionCard({
         <div className="mx-4 mb-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-dashed border-border pt-3">
           {metaItems.map((item) => (
             <div key={item.label} className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <span className="text-eyebrow font-semibold uppercase tracking-eyebrow text-muted-foreground">
                 {item.label}
               </span>
               <span className="truncate text-label tabular-nums text-foreground">{item.value}</span>
@@ -334,7 +334,7 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-label font-medium text-foreground">{account.name}</span>
-                      <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      <span className="text-eyebrow font-semibold uppercase tracking-eyebrow text-muted-foreground">
                         {texts.dashboard.treasury_role.cash_account_label}
                       </span>
                     </div>

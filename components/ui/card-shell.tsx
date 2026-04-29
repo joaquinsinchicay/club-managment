@@ -23,7 +23,7 @@ export function CardShell({
       )}
     >
       <div className="mb-6 space-y-3">
-        <span className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <span className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
           {eyebrow}
         </span>
         <div className="space-y-2">

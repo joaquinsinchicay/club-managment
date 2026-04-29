@@ -724,19 +724,19 @@ function CostCenterMultiSelect({
                 />
                 <span className="flex-1 truncate font-medium">{cc.name}</span>
                 {isInactive ? (
-                  <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
                     Inactivo
                   </span>
                 ) : null}
-                <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-slate-700">
+                <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-eyebrow text-ds-slate-700">
                   {cc.type}
                 </span>
-                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                <span className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
                   {cc.currencyCode}
                 </span>
                 {currencyMismatch ? (
                   <span
-                    className="rounded-xs bg-ds-amber-050 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-amber-700"
+                    className="rounded-xs bg-ds-amber-050 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-eyebrow text-ds-amber-700"
                     title={currencyMismatchTitle}
                   >
                     ⚠

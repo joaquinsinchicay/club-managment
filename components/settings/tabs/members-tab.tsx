@@ -302,7 +302,7 @@ export function MembersTab({
                       <div className="flex shrink-0 items-center gap-3">
                         <span
                           className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold uppercase tracking-[0.18em]",
+                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold uppercase tracking-card-eyebrow",
                             "border-success/20 bg-success/10 text-success",
                           )}
                         >

@@ -187,26 +187,14 @@ const RULES = [
     message: "Tipografía hardcoded. Usar tokens text-{eyebrow|meta|small|label|body|card-title|h3|h4|h2|h1|display|mono} y tracking-{eyebrow|card-eyebrow|section}.",
     allowFiles: [
       // Bloque B1 (PR-2) — ✅ cerrado (modal.tsx).
-      // Bloque B4 (PR-5) — find/replace global de tracking-[0.18em] / tracking-[0.08em].
-      // Mientras tanto, allowlist masivo. Migrar todos juntos en PR-5.
-      "components/ui/avatar.tsx",
-      "components/ui/card.tsx",
-      "components/ui/card-shell.tsx",
-      "components/ui/club-mark.tsx",
-      "components/ui/status-badge.tsx",
-      "components/ui/toast/toast.tsx",
-      "components/settings/club-treasury-settings-manager.tsx",
-      "components/settings/tabs/members-tab.tsx",
-      "components/dashboard/active-club-selector.tsx",
-      "components/dashboard/close-session-modal-form.tsx",
-      "components/dashboard/treasury-card.tsx",
-      "components/dashboard/treasury-conciliacion-tab.tsx",
-      "components/dashboard/treasury-role-card.tsx",
-      "components/dashboard/treasury-operation-forms.tsx",
-      "components/hr/contract-detail-view.tsx",
-      "components/hr/settlements-list.tsx",
-      "app/(dashboard)/dashboard/page.tsx",
-      "app/(dashboard)/treasury/staff/[id]/page.tsx",
+      // Bloque B4 (PR-5) — ✅ cerrado.
+      // Bloque B6 (PR-6) — primitivos / consumers con typography hardcoded restante.
+      "components/ui/avatar.tsx",       // text-[10px] en sizes
+      "components/ui/toast/toast.tsx",  // text-[12-14px] en title/desc/meta
+      "components/dashboard/active-club-selector.tsx",  // text-[15px]
+      "components/dashboard/close-session-modal-form.tsx",  // text-[17px]
+      "components/dashboard/treasury-operation-forms.tsx",  // text-[12px] residual
+      "components/hr/settlements-list.tsx",  // text-[10px]
       // Bloque B6 (PR-6) — span con tracking-[0.14em] que debería ser <FormSection>.
       "components/treasury/account-form.tsx",
     ],

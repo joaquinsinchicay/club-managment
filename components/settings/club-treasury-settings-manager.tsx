@@ -542,7 +542,7 @@ export function ClubTreasurySettingsManager({
                   >
                     {getMovementTypeLabel(movementType)}
                   </p>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                     {texts.settings.club.treasury.movement_type_impacts[movementType]}
                   </p>
                 </div>

@@ -30,7 +30,7 @@ export function ActiveClubSelector({
           <span
             className={cn(
               "font-medium",
-              inline ? "sr-only" : "text-xs uppercase tracking-[0.18em] text-muted-foreground"
+              inline ? "sr-only" : "text-xs uppercase tracking-card-eyebrow text-muted-foreground"
             )}
           >
             {texts.dashboard.club_selector.label}
