@@ -300,15 +300,11 @@ export function MembersTab({
                       </div>
 
                       <div className="flex shrink-0 items-center gap-3">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold uppercase tracking-card-eyebrow",
-                            "border-success/20 bg-success/10 text-success",
-                          )}
-                        >
-                          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-success" />
-                          {texts.settings.club.members.active_status_label}
-                        </span>
+                        <StatusBadge
+                          label={texts.settings.club.members.active_status_label}
+                          tone="success"
+                          withDot
+                        />
 
                         {member.source === "member" && member.membershipId ? (
                           <DataTableActions>

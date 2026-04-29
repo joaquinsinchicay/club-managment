@@ -23,6 +23,14 @@ const config: Config = {
         "primary-foreground":       "hsl(var(--primary-foreground))",
         secondary:                  "hsl(var(--secondary))",
         "secondary-foreground":     "hsl(var(--secondary-foreground))",
+        // Toast — escala de opacidad sobre blanco para uso interno del primitivo
+        // de toasts (card dark embebido). No usar fuera de components/ui/toast/.
+        "toast-fg":           "rgb(255 255 255 / 0.9)",   // action label
+        "toast-fg-default":   "rgb(255 255 255 / 0.7)",   // description
+        "toast-fg-mute":      "rgb(255 255 255 / 0.6)",   // close icon
+        "toast-fg-faint":     "rgb(255 255 255 / 0.5)",   // meta line, progress fill
+        "toast-bg-overlay":   "rgb(255 255 255 / 0.1)",   // hover bg, progress base, ring
+        "toast-fg-spinner":   "rgb(255 255 255 / 0.4)",   // spinner border base
         // Opacidades semánticas del secondary — discretas, sin /N ad-hoc.
         "secondary-faint":           "hsl(var(--secondary) / 0.2)",   // strip headers, group bands
         "secondary-subtle":          "hsl(var(--secondary) / 0.3)",   // backgrounds tenues, separators

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type CardShellProps = Readonly<{
   eyebrow: string;
@@ -23,9 +24,7 @@ export function CardShell({
       )}
     >
       <div className="mb-6 space-y-3">
-        <span className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
-          {eyebrow}
-        </span>
+        <StatusBadge label={eyebrow} tone="neutral" />
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-card-foreground">{title}</h1>
           <p className="text-sm leading-6 text-muted-foreground">{description}</p>
