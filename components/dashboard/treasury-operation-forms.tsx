@@ -116,7 +116,7 @@ type OperationalFormCopy = {
 // Variante de CONTROL_CLASSNAME para inputs/selects deshabilitados.
 // No coincide con FORM_READONLY_CLASSNAME (que es inline-flex para <div>),
 // porque acá se aplica directamente a controles de form.
-const DISABLED_CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground";
+const DISABLED_CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-secondary-readonly px-4 py-3 text-sm text-muted-foreground";
 
 type MovementFormState = {
   movementDate?: string;
@@ -712,7 +712,7 @@ function CostCenterMultiSelect({
                 title={lockNew ? "CC inactivo — no se puede agregar" : undefined}
                 className={cn(
                   "flex min-h-10 items-center gap-3 rounded-btn px-3 py-2 text-sm text-foreground transition",
-                  lockNew ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-secondary/60"
+                  lockNew ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-secondary-pressed"
                 )}
               >
                 <input
@@ -2591,7 +2591,7 @@ export function TreasuryRoleFxForm({
               <span className="text-destructive" aria-hidden="true"> *</span>
             </p>
             <div className="flex overflow-hidden rounded-card border border-border bg-card focus-within:ring-2 focus-within:ring-foreground/10">
-              <span className="flex shrink-0 items-center border-r border-border bg-secondary/50 px-3 text-sm font-semibold text-muted-foreground">
+              <span className="flex shrink-0 items-center border-r border-border bg-secondary-hover px-3 text-sm font-semibold text-muted-foreground">
                 {sourceCurrencyCode}
               </span>
               {/* eslint-disable-next-line no-restricted-syntax -- Compound input (badge + input transparente): <FormInput> no soporta el layout inline con badge pegado. */}
@@ -2618,7 +2618,7 @@ export function TreasuryRoleFxForm({
             <span className="text-destructive" aria-hidden="true"> *</span>
           </p>
           <div className="flex overflow-hidden rounded-card border border-border bg-card focus-within:ring-2 focus-within:ring-foreground/10">
-            <span className="flex shrink-0 items-center border-r border-border bg-secondary/50 px-3 text-sm font-semibold text-muted-foreground">
+            <span className="flex shrink-0 items-center border-r border-border bg-secondary-hover px-3 text-sm font-semibold text-muted-foreground">
               1 USD =
             </span>
             {/* eslint-disable-next-line no-restricted-syntax -- Compound input (badge + input transparente): <FormInput> no soporta el layout inline con badge pegado. */}
@@ -2657,8 +2657,8 @@ export function TreasuryRoleFxForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <p className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.fx_target_amount_label}</p>
-            <div className="flex overflow-hidden rounded-card border border-border bg-secondary/40">
-              <span className="flex shrink-0 items-center border-r border-border bg-secondary/60 px-3 text-sm font-semibold text-muted-foreground">
+            <div className="flex overflow-hidden rounded-card border border-border bg-secondary-readonly">
+              <span className="flex shrink-0 items-center border-r border-border bg-secondary-pressed px-3 text-sm font-semibold text-muted-foreground">
                 {targetCurrencyCode}
               </span>
               <span className="flex min-h-11 flex-1 items-center justify-end px-3 text-sm tabular-nums text-muted-foreground">

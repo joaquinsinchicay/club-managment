@@ -161,6 +161,19 @@ const RULES = [
     ],
   },
   {
+    // Fase 3.2 · B5 — Opacidades ad-hoc del secondary. Usar tokens semánticos.
+    //   bg-secondary/20 → bg-secondary-faint
+    //   bg-secondary/30 → bg-secondary-subtle
+    //   bg-secondary/40 → bg-secondary-readonly
+    //   bg-secondary/50 → bg-secondary-hover
+    //   bg-secondary/60 → bg-secondary-pressed
+    // Definidos en tailwind.config.ts. Si necesitás una opacidad nueva,
+    // amplía el set discreto ahí en vez de introducir /N ad-hoc acá.
+    id: "secondary-opacity-ad-hoc",
+    pattern: /\bbg-secondary\/\d+\b|\bhover:bg-secondary\/\d+\b/,
+    message: "Opacidad ad-hoc de bg-secondary. Usar tokens secondary-{faint|subtle|readonly|hover|pressed}.",
+  },
+  {
     // Fase 3.2 · B3 — Tipografía hardcoded vía text-[Npx] o tracking-[Nem].
     // Tokens disponibles (lib/tokens/typography.ts):
     //   10px → text-eyebrow,  11px → text-meta,    12px → text-small,

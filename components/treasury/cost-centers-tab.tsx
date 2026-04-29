@@ -353,7 +353,7 @@ function CostCenterCard({
         </div>
 
         {cc.amount ? (
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary/60">
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary-pressed">
             <div
               className={cn("h-full rounded-full", progressBarColor(cc, aggregate))}
               style={{ width: `${Math.min(100, pct)}%` }}

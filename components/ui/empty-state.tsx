@@ -15,7 +15,7 @@ type EmptyStateProps = {
 
 const variantClasses: Record<EmptyStateVariant, string> = {
   card: "rounded-card border border-border bg-card px-6 py-8",
-  dashed: "rounded-card border border-dashed border-border bg-secondary/30 px-6 py-8",
+  dashed: "rounded-card border border-dashed border-border bg-secondary-subtle px-6 py-8",
   inline: "px-4 py-6",
 };
 

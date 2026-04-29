@@ -488,7 +488,7 @@ export function MembersTab({
               </FormBanner>
             ) : null}
 
-            <div className="rounded-card border border-border bg-secondary/40 px-4 py-3">
+            <div className="rounded-card border border-border bg-secondary-readonly px-4 py-3">
               <FormSection>{texts.settings.club.members.remove_dialog_member_label}</FormSection>
               <p className="mt-1 font-semibold text-foreground">{removingMember.fullName}</p>
               <p className="text-sm text-muted-foreground">{removingMember.email}</p>

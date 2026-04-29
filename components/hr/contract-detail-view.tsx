@@ -764,7 +764,7 @@ export function ContractDetailView({
             {revisionContext}
           </p>
 
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-card border border-border bg-secondary/30 px-4 py-3">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-card border border-border bg-secondary-subtle px-4 py-3">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                 {cdTexts.revision_preview_current_label}
@@ -808,7 +808,7 @@ export function ContractDetailView({
             <FormField>
               <FormFieldLabel required>{cdTexts.revision_percent_label}</FormFieldLabel>
               <div className="flex gap-2">
-                <span className="inline-flex h-11 shrink-0 items-center rounded-card border border-border bg-secondary/40 px-4 text-sm font-semibold text-muted-foreground">
+                <span className="inline-flex h-11 shrink-0 items-center rounded-card border border-border bg-secondary-readonly px-4 text-sm font-semibold text-muted-foreground">
                   %
                 </span>
                 <FormInput
@@ -826,7 +826,7 @@ export function ContractDetailView({
             <FormField>
               <FormFieldLabel required>{cdTexts.form_amount_label}</FormFieldLabel>
               <div className="flex gap-2">
-                <span className="inline-flex h-11 shrink-0 items-center rounded-card border border-border bg-secondary/40 px-4 text-sm font-semibold text-muted-foreground">
+                <span className="inline-flex h-11 shrink-0 items-center rounded-card border border-border bg-secondary-readonly px-4 text-sm font-semibold text-muted-foreground">
                   {clubCurrencyCode}
                 </span>
                 <FormInput

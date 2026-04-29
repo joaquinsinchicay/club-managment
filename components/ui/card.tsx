@@ -19,7 +19,7 @@ const paddingClasses: Record<CardPadding, string> = {
 
 const toneClasses: Record<CardTone, string> = {
   default: "bg-card",
-  muted: "bg-secondary/40",
+  muted: "bg-secondary-readonly",
   "accent-rrhh": "bg-ds-pink-050 border-ds-pink-050",
 };
 

@@ -23,6 +23,12 @@ const config: Config = {
         "primary-foreground":       "hsl(var(--primary-foreground))",
         secondary:                  "hsl(var(--secondary))",
         "secondary-foreground":     "hsl(var(--secondary-foreground))",
+        // Opacidades semánticas del secondary — discretas, sin /N ad-hoc.
+        "secondary-faint":           "hsl(var(--secondary) / 0.2)",   // strip headers, group bands
+        "secondary-subtle":          "hsl(var(--secondary) / 0.3)",   // backgrounds tenues, separators
+        "secondary-readonly":        "hsl(var(--secondary) / 0.4)",   // FormReadonly bg, info boxes
+        "secondary-hover":           "hsl(var(--secondary) / 0.5)",   // hover states de filas/checkboxes
+        "secondary-pressed":         "hsl(var(--secondary) / 0.6)",   // pressed/selected sutil
         border:                     "hsl(var(--border))",
         outline:                    "hsl(var(--outline))",
         muted:                      "hsl(var(--muted))",

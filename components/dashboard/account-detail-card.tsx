@@ -163,7 +163,7 @@ export function AccountDetailCard({
                 <DataTable density="compact">
                   {movementGroups.map((group, groupIndex) => (
                     <section key={group.movementDate}>
-                      <div className={`flex items-center gap-3 bg-secondary/20 px-4 py-2 ${groupIndex > 0 ? "border-t border-border/60" : ""}`}>
+                      <div className={`flex items-center gap-3 bg-secondary-faint px-4 py-2 ${groupIndex > 0 ? "border-t border-border/60" : ""}`}>
                         <p className="text-eyebrow font-semibold uppercase text-muted-foreground">
                           {formatMovementGroupDate(group.movementDate)}
                         </p>
@@ -267,7 +267,7 @@ export function AccountDetailCard({
                             {texts.dashboard.treasury.detail_pagination_previous_cta}
                           </LinkButton>
                         ) : (
-                          <span className={buttonClass({ variant: "secondary", className: "cursor-not-allowed border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/30" })}>
+                          <span className={buttonClass({ variant: "secondary", className: "cursor-not-allowed border-border bg-secondary-subtle text-muted-foreground hover:bg-secondary-subtle" })}>
                             {texts.dashboard.treasury.detail_pagination_previous_cta}
                           </span>
                         )}
@@ -277,7 +277,7 @@ export function AccountDetailCard({
                             {texts.dashboard.treasury.detail_pagination_next_cta}
                           </LinkButton>
                         ) : (
-                          <span className={buttonClass({ variant: "secondary", className: "cursor-not-allowed border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/30" })}>
+                          <span className={buttonClass({ variant: "secondary", className: "cursor-not-allowed border-border bg-secondary-subtle text-muted-foreground hover:bg-secondary-subtle" })}>
                             {texts.dashboard.treasury.detail_pagination_next_cta}
                           </span>
                         )}

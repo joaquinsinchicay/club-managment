@@ -97,7 +97,7 @@ function ClubActivityForm({
   defaultActivity
 }: ClubActivityFormProps) {
   return (
-    <form action={action} className="grid gap-4 rounded-shell border border-border bg-secondary/40 p-4">
+    <form action={action} className="grid gap-4 rounded-shell border border-border bg-secondary-readonly p-4">
       <PendingFieldset className="grid gap-4">
         {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 
@@ -193,7 +193,7 @@ function TreasuryAccountForm({
         event.preventDefault();
         setCurrenciesTouched(true);
       }}
-      className="grid gap-4 rounded-shell border border-border bg-secondary/40 p-4"
+      className="grid gap-4 rounded-shell border border-border bg-secondary-readonly p-4"
     >
       <PendingFieldset className="grid gap-4">
         {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
@@ -296,7 +296,7 @@ function TreasuryCategoryForm({
   const isSystemCategory = defaultCategory ? isSystemTreasuryCategoryName(defaultCategory.name) : false;
 
   return (
-    <form action={action} className="grid gap-4 rounded-shell border border-border bg-secondary/40 p-4">
+    <form action={action} className="grid gap-4 rounded-shell border border-border bg-secondary-readonly p-4">
       <PendingFieldset className="grid gap-4">
         {defaultCategory ? <input type="hidden" name="category_id" value={defaultCategory.id} /> : null}
         {isSystemCategory ? (

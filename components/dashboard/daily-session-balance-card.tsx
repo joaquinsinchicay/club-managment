@@ -151,7 +151,7 @@ export function DailySessionBalanceCard({
                     return (
                       <article
                         key={`${draft.accountId}-${draft.currencyCode}`}
-                        className="rounded-card border border-border bg-secondary/40 p-4"
+                        className="rounded-card border border-border bg-secondary-readonly p-4"
                       >
                         <input type="hidden" name="account_id" value={draft.accountId} />
                         <input type="hidden" name="currency_code" value={draft.currencyCode} />
@@ -251,7 +251,7 @@ export function DailySessionBalanceCard({
                       {adjustments.map((adjustment) => (
                         <div
                           key={`${adjustment.accountId}-${adjustment.currencyCode}`}
-                          className="rounded-card border border-border bg-secondary/40 px-4 py-3"
+                          className="rounded-card border border-border bg-secondary-readonly px-4 py-3"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <p className="text-sm font-semibold text-foreground">{adjustment.accountName}</p>

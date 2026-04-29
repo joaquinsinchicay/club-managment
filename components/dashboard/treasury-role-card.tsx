@@ -932,7 +932,7 @@ function MovimientosTab({
               type="button"
               disabled={isDateRangePending}
               onClick={() => onUpdateDateRange({ fromDate: null, toDate: null })}
-              className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary-readonly disabled:cursor-not-allowed disabled:opacity-50"
             >
               {texts.dashboard.treasury_role.movements_filter_reset_cta}
             </button>
@@ -945,7 +945,7 @@ function MovimientosTab({
           <button
             type="button"
             onClick={onCreateMovement}
-            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40"
+            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary-readonly"
           >
             {texts.dashboard.treasury_role.movements_cta_movement}
           </button>
@@ -954,7 +954,7 @@ function MovimientosTab({
           <button
             type="button"
             onClick={onCreateTransfer}
-            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40"
+            className="rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary-readonly"
           >
             {texts.dashboard.treasury_role.movements_cta_transfer}
           </button>
@@ -1060,7 +1060,7 @@ function ResumenTab({
             <button
               type="button"
               onClick={onViewAllAccounts}
-              className="shrink-0 rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary/40"
+              className="shrink-0 rounded-btn border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary-readonly"
             >
               {texts.dashboard.treasury_role.detail_accounts_cta}
             </button>

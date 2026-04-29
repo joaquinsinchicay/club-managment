@@ -28,9 +28,9 @@ export const FORM_SECTION_LABEL_CLASSNAME =
 export const FORM_HELP_TEXT_CLASSNAME = "text-xs text-muted-foreground";
 export const FORM_ERROR_CLASSNAME = "text-xs font-medium text-destructive";
 export const FORM_READONLY_CLASSNAME =
-  "inline-flex h-11 w-full items-center rounded-card border border-border bg-secondary/40 px-4 text-sm text-muted-foreground";
+  "inline-flex h-11 w-full items-center rounded-card border border-border bg-secondary-readonly px-4 text-sm text-muted-foreground";
 export const FORM_CHECKBOX_CARD_CLASSNAME =
-  "flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50";
+  "flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary-hover has-[:checked]:border-foreground has-[:checked]:bg-secondary-hover";
 export const FORM_BANNER_WARNING_CLASSNAME =
   "rounded-card border border-warning/20 bg-warning/10 px-4 py-3 text-xs leading-5 text-foreground";
 export const FORM_BANNER_DESTRUCTIVE_CLASSNAME =

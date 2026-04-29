@@ -89,7 +89,7 @@ export function CreateContractForm({
       <FormField>
         <FormFieldLabel required>{scTexts.form_initial_amount_label}</FormFieldLabel>
         <div className="flex gap-2">
-          <span className="inline-flex h-11 shrink-0 items-center rounded-card border border-border bg-secondary/40 px-4 text-sm font-semibold text-muted-foreground">
+          <span className="inline-flex h-11 shrink-0 items-center rounded-card border border-border bg-secondary-readonly px-4 text-sm font-semibold text-muted-foreground">
             {clubCurrencyCode}
           </span>
           <FormInput

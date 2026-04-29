@@ -238,7 +238,7 @@ export function CategoriesActivitiesTab({
                   setEditingActivity(activity);
                   setIsCreatingActivity(false);
                 }}
-                className="group relative inline-flex min-h-8 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 pr-8 text-sm font-semibold text-foreground transition hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10"
+                className="group relative inline-flex min-h-8 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 pr-8 text-sm font-semibold text-foreground transition hover:bg-secondary-readonly focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10"
               >
                 {activity.emoji ? <span aria-hidden="true">{activity.emoji}</span> : null}
                 <span>{activity.name}</span>
@@ -339,7 +339,7 @@ function CategoryGroupRow({ group, isExpanded, onToggle, onEditSubcategory }: Ca
         type="button"
         onClick={onToggle}
         aria-expanded={isExpanded}
-        className="flex w-full items-center gap-3 rounded-shell px-4 py-3 text-left transition hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="flex w-full items-center gap-3 rounded-shell px-4 py-3 text-left transition hover:bg-secondary-readonly focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <ChevronIcon isExpanded={isExpanded} />
         <span className="min-w-0 flex-1 truncate text-base font-semibold text-foreground">
@@ -361,7 +361,7 @@ function CategoryGroupRow({ group, isExpanded, onToggle, onEditSubcategory }: Ca
                 type="button"
                 onClick={() => onEditSubcategory(category)}
                 aria-label={treasuryTexts.edit_category_cta}
-                className="group flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="group flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-secondary-readonly focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {category.emoji ? (
                   <span aria-hidden="true" className="text-base">

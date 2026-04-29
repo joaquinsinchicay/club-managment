@@ -157,7 +157,7 @@ export function CloseSessionModalForm({
         </div>
 
         {/* Resumen del día */}
-        <div className="grid grid-cols-4 gap-3 rounded-card border border-border bg-secondary/30 px-4 py-3">
+        <div className="grid grid-cols-4 gap-3 rounded-card border border-border bg-secondary-subtle px-4 py-3">
           <div>
             <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_movements}</p>
             <p className="mt-0.5 text-h4 font-semibold tabular-nums text-foreground">{summary.total}</p>
