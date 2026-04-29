@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
 import { CreateContractForm } from "@/components/hr/create-contract-form";
@@ -44,7 +43,8 @@ import {
   type StaffContractStatus,
 } from "@/lib/domain/staff-contract";
 import type { StaffMember } from "@/lib/domain/staff-member";
-import { triggerClientFeedback } from "@/lib/client-feedback";
+import { useFilteredList } from "@/lib/hooks/use-filtered-list";
+import { useServerAction } from "@/lib/hooks/use-server-action";
 import { texts } from "@/lib/texts";
 
 type StaffContractsTabProps = {
@@ -93,16 +93,17 @@ export function StaffContractsTab({
   createAction,
   finalizeAction,
 }: StaffContractsTabProps) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
-  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("vigente");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [finalizing, setFinalizing] = useState<StaffContract | null>(null);
 
-  const [createPending, setCreatePending] = useState(false);
-  const [finalizePending, setFinalizePending] = useState(false);
+  // Hooks compartidos: useServerAction encapsula `setPending(true) → action
+  // → triggerClientFeedback → router.refresh → setPending(false)`.
+  const { isPending: createPending, runAction: runCreate } =
+    useServerAction<RrhhActionResult>("settings");
+  const { isPending: finalizePending, runAction: runFinalize } =
+    useServerAction<RrhhActionResult>("settings");
 
   // Para el create flow: todos los colaboradores (no hay concepto de
   // activo/inactivo) + estructuras activas sin contrato vigente.
@@ -123,37 +124,23 @@ export function StaffContractsTab({
   const vigenteCount = countsByStatus.get("vigente") ?? 0;
   const finalizadoCount = countsByStatus.get("finalizado") ?? 0;
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return contracts.filter((c) => {
-      if (statusFilter !== "all" && c.status !== statusFilter) return false;
-      if (!q) return true;
-      return (
-        (c.staffMemberName ?? "").toLowerCase().includes(q) ||
-        (c.salaryStructureName ?? "").toLowerCase().includes(q) ||
-        (c.salaryStructureRole ?? "").toLowerCase().includes(q)
-      );
-    });
-  }, [contracts, search, statusFilter]);
-
-  async function runAction(
-    action: (fd: FormData) => Promise<RrhhActionResult>,
-    formData: FormData,
-    onSuccess: () => void,
-    setPending: (v: boolean) => void,
-  ) {
-    setPending(true);
-    try {
-      const result = await action(formData);
-      triggerClientFeedback("settings", result.code);
-      if (result.ok) {
-        onSuccess();
-        startTransition(() => router.refresh());
-      }
-    } finally {
-      setPending(false);
-    }
-  }
+  const filterPredicate = useCallback(
+    (c: StaffContract) =>
+      statusFilter === "all" ? true : c.status === statusFilter,
+    [statusFilter],
+  );
+  const searchPredicate = useCallback(
+    (c: StaffContract, q: string) =>
+      (c.staffMemberName ?? "").toLowerCase().includes(q) ||
+      (c.salaryStructureName ?? "").toLowerCase().includes(q) ||
+      (c.salaryStructureRole ?? "").toLowerCase().includes(q),
+    [],
+  );
+  const { search, setSearch, filtered } = useFilteredList({
+    items: contracts,
+    searchPredicate,
+    filterPredicate,
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -314,9 +301,9 @@ export function StaffContractsTab({
           structures={availableStructures}
           clubCurrencyCode={clubCurrencyCode}
           onCancel={() => setCreateOpen(false)}
-          onSubmit={(fd) =>
-            runAction(createAction, fd, () => setCreateOpen(false), setCreatePending)
-          }
+          onSubmit={async (fd) => {
+            await runCreate(createAction, fd, () => setCreateOpen(false));
+          }}
         />
       </Modal>
 
@@ -331,9 +318,9 @@ export function StaffContractsTab({
       >
         {finalizing ? (
           <form
-            action={(fd) =>
-              runAction(finalizeAction, fd, () => setFinalizing(null), setFinalizePending)
-            }
+            action={async (fd) => {
+              await runFinalize(finalizeAction, fd, () => setFinalizing(null));
+            }}
             className="grid gap-4"
           >
             <input type="hidden" name="staff_contract_id" value={finalizing.id} />

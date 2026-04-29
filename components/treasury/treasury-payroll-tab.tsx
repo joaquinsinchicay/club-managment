@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+// useRouter ya no es necesario: useServerAction encapsula router.refresh().
 
 import type { SettlementActionResult } from "@/app/(dashboard)/rrhh/settlements/actions";
 import { Avatar } from "@/components/ui/avatar";
@@ -28,7 +28,7 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/modal-form";
-import { triggerClientFeedback } from "@/lib/client-feedback";
+import { useServerAction } from "@/lib/hooks/use-server-action";
 import type { TreasuryAccount } from "@/lib/domain/access";
 import {
   formatPeriodLabel,
@@ -107,8 +107,7 @@ export function TreasuryPayrollTab({
   payBatchAction,
   returnAction,
 }: Props) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
+  // El router/transition ahora vive dentro de useServerAction.
 
   const [periodFilter, setPeriodFilter] = useState<string>("all");
   const [staffFilter, setStaffFilter] = useState<string>("all");
@@ -121,9 +120,15 @@ export function TreasuryPayrollTab({
   const [payingBulk, setPayingBulk] = useState(false);
   const [returning, setReturning] = useState<PayrollSettlement | null>(null);
 
-  const [payPending, setPayPending] = useState(false);
-  const [payBulkPending, setPayBulkPending] = useState(false);
-  const [returnPending, setReturnPending] = useState(false);
+  // 3 instancias de useServerAction: cada flow (pay, payBulk, return) lleva
+  // su propio isPending para que se puedan disparar en paralelo sin
+  // colisión visual.
+  const { isPending: payPending, runAction: runPay } =
+    useServerAction<SettlementActionResult>("dashboard");
+  const { isPending: payBulkPending, runAction: runPayBulk } =
+    useServerAction<SettlementActionResult>("dashboard");
+  const { isPending: returnPending, runAction: runReturn } =
+    useServerAction<SettlementActionResult>("dashboard");
 
   const availablePeriods = useMemo(() => {
     const set = new Set<string>();
@@ -213,24 +218,7 @@ export function TreasuryPayrollTab({
   const hasFilters =
     periodFilter !== "all" || staffFilter !== "all" || structureFilter !== "all";
 
-  async function runAction(
-    action: (fd: FormData) => Promise<SettlementActionResult>,
-    formData: FormData,
-    onSuccess: () => void,
-    setPending: (v: boolean) => void,
-  ) {
-    setPending(true);
-    try {
-      const result = await action(formData);
-      triggerClientFeedback("dashboard", result.code);
-      if (result.ok) {
-        onSuccess();
-        startTransition(() => router.refresh());
-      }
-    } finally {
-      setPending(false);
-    }
-  }
+  // runAction local removido: ahora viene de useServerAction (Fase 4 · T2.2).
 
   function toggleSelection(id: string) {
     setSelectedIds((prev) =>
@@ -580,9 +568,9 @@ export function TreasuryPayrollTab({
       >
         {paying ? (
           <form
-            action={(fd) =>
-              runAction(payAction, fd, () => setPaying(null), setPayPending)
-            }
+            action={async (fd) => {
+              await runPay(payAction, fd, () => setPaying(null));
+            }}
             className="grid gap-4"
           >
             <input type="hidden" name="settlement_id" value={paying.id} />
@@ -658,17 +646,12 @@ export function TreasuryPayrollTab({
         closeDisabled={payBulkPending}
       >
         <form
-          action={(fd) =>
-            runAction(
-              payBatchAction,
-              fd,
-              () => {
-                setPayingBulk(false);
-                setSelectedIds([]);
-              },
-              setPayBulkPending,
-            )
-          }
+          action={async (fd) => {
+            await runPayBulk(payBatchAction, fd, () => {
+              setPayingBulk(false);
+              setSelectedIds([]);
+            });
+          }}
           className="grid gap-4"
         >
           {selectedSettlements.map((s) => (
@@ -741,9 +724,9 @@ export function TreasuryPayrollTab({
       >
         {returning ? (
           <form
-            action={(fd) =>
-              runAction(returnAction, fd, () => setReturning(null), setReturnPending)
-            }
+            action={async (fd) => {
+              await runReturn(returnAction, fd, () => setReturning(null));
+            }}
             className="grid gap-4"
           >
             <input type="hidden" name="settlement_id" value={returning.id} />
