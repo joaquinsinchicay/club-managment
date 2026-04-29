@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { Avatar, getInitials } from "@/components/ui/avatar";
 import { Button, buttonClass } from "@/components/ui/button";
 import {
+  FormError,
   FormField,
   FormFieldLabel,
   FormHelpText,
@@ -16,6 +17,7 @@ import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-fo
 import type { Club, ClubType, TreasuryCurrencyCode } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
+import { isValidEmail, validatePhone } from "@/lib/validators/contact";
 import { formatCuit, normalizeCuit } from "@/lib/validators/cuit";
 
 type ClubDataTabProps = {
@@ -38,6 +40,38 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
   const [colorPrimary, setColorPrimary] = useState<string>(club.colorPrimary ?? "#0f172a");
   const [colorSecondary, setColorSecondary] = useState<string>(club.colorSecondary ?? "#e2e8f0");
   const [cuit, setCuit] = useState<string>(club.cuit ?? "");
+  const [email, setEmail] = useState<string>(club.email ?? "");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [telefono, setTelefono] = useState<string>(club.telefono ?? "");
+  const [telefonoError, setTelefonoError] = useState<string | null>(null);
+
+  function handleEmailBlur(event: React.FocusEvent<HTMLInputElement>) {
+    const value = event.target.value.trim();
+    if (!value) {
+      setEmailError(null);
+      return;
+    }
+    setEmailError(isValidEmail(value) ? null : identityTexts.feedback.invalid_email);
+  }
+
+  function handleTelefonoBlur(event: React.FocusEvent<HTMLInputElement>) {
+    const value = event.target.value.trim();
+    if (!value) {
+      setTelefonoError(null);
+      return;
+    }
+    const result = validatePhone(value);
+    if (result.ok) {
+      setTelefono(result.normalized);
+      setTelefonoError(null);
+      return;
+    }
+    setTelefonoError(
+      result.reason === "missing_prefix"
+        ? identityTexts.feedback.invalid_telefono_missing_prefix
+        : identityTexts.feedback.invalid_telefono,
+    );
+  }
 
   function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -88,6 +122,10 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
     setColorPrimary(club.colorPrimary ?? "#0f172a");
     setColorSecondary(club.colorSecondary ?? "#e2e8f0");
     setCuit(club.cuit ?? "");
+    setEmail(club.email ?? "");
+    setEmailError(null);
+    setTelefono(club.telefono ?? "");
+    setTelefonoError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -249,12 +287,18 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
               <FormInput
                 type="email"
                 name="email"
-                defaultValue={club.email ?? ""}
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (emailError) setEmailError(null);
+                }}
+                onBlur={handleEmailBlur}
                 placeholder={identityTexts.email_placeholder}
                 autoComplete="email"
                 inputMode="email"
                 required
               />
+              {emailError ? <FormError>{emailError}</FormError> : null}
             </FormField>
 
             <FormField>
@@ -262,12 +306,18 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
               <FormInput
                 type="tel"
                 name="telefono"
-                defaultValue={club.telefono ?? ""}
+                value={telefono}
+                onChange={(event) => {
+                  setTelefono(event.target.value);
+                  if (telefonoError) setTelefonoError(null);
+                }}
+                onBlur={handleTelefonoBlur}
                 placeholder={identityTexts.telefono_placeholder}
                 inputMode="tel"
                 required
               />
               <FormHelpText>{identityTexts.telefono_helper}</FormHelpText>
+              {telefonoError ? <FormError>{telefonoError}</FormError> : null}
             </FormField>
           </div>
 

@@ -141,7 +141,7 @@ async function processLogoFile(file: File): Promise<LogoProcessingResult> {
     }
 
     try {
-      const optimized = optimizePngBuffer(inputBuffer);
+      const optimized = await optimizePngBuffer(inputBuffer);
       return { ok: true, buffer: optimized, contentType: "image/png", extension: "png" };
     } catch (error) {
       console.error("[club-identity-service] png optimization failed", error);
