@@ -215,7 +215,7 @@ function SessionCard({
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <div
           className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold",
+            "flex size-8 shrink-0 items-center justify-center rounded-card text-sm font-bold",
             isUnresolved ? "bg-ds-slate-100 text-ds-slate-500" : cn(cfg.iconBg, cfg.iconColor)
           )}
           aria-hidden="true"
@@ -235,7 +235,7 @@ function SessionCard({
         {!isUnresolved ? (
           <span
             className={cn(
-              "ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-meta font-semibold",
+              "ml-auto inline-flex items-center gap-1.5 rounded-btn px-2 py-1 text-meta font-semibold",
               cfg.badgeClass
             )}
           >
@@ -314,7 +314,7 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
         title={texts.dashboard.treasury.balances_visible_title}
         description={texts.dashboard.treasury.balances_visible_description}
         action={
-          <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-2 py-1 text-eyebrow font-semibold text-muted-foreground">
+          <span className="mt-0.5 shrink-0 rounded-btn bg-secondary px-2 py-1 text-eyebrow font-semibold text-muted-foreground">
             ARS
           </span>
         }

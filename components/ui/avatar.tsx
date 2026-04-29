@@ -18,7 +18,7 @@ type AvatarProps = {
 };
 
 const sizeClasses: Record<AvatarSize, string> = {
-  xs: "h-6 w-6 text-[10px]",
+  xs: "h-6 w-6 text-eyebrow",
   sm: "h-8 w-8 text-xs",
   md: "h-10 w-10 text-sm",
   lg: "h-12 w-12 text-base",
@@ -34,7 +34,7 @@ const toneClasses: Record<AvatarTone, string> = {
 
 const shapeClasses: Record<AvatarShape, string> = {
   circle: "rounded-full",
-  square: "rounded-lg",
+  square: "rounded-card",
 };
 
 export function getInitials(

@@ -187,7 +187,7 @@ function progressBarColor(cc: CostCenter, agg: CostCenterAggregates): string {
   if (cc.type === "presupuesto" && pct >= 80) return "bg-ds-amber";
   if ((cc.type === "sponsor" || cc.type === "publicidad") && cc.amount && agg.totalIngreso >= cc.amount)
     return "bg-ds-green";
-  return "bg-slate-400";
+  return "bg-muted-foreground";
 }
 
 function shortNameFromMember(member: ClubMember | undefined): string {

@@ -41,7 +41,7 @@ export function ActiveClubSelector({
             onChange={() => formRef.current?.requestSubmit()}
             className={
               inline
-                ? "min-h-0 border-0 bg-transparent px-0 py-0 text-[15px] font-semibold tracking-tight focus:ring-0"
+                ? "min-h-0 border-0 bg-transparent px-0 py-0 text-card-title font-semibold tracking-tight focus:ring-0"
                 : undefined
             }
           >

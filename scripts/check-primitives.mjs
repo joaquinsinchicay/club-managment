@@ -142,13 +142,7 @@ const RULES = [
     allowFiles: [
       // Bloque B1 (PR-2) — ✅ cerrado.
       // Bloque B2 (PR-3) — ✅ cerrado.
-      // Bloque B6 (PR-6) — primitivos hand-rolled.
-      "components/ui/segmented-nav.tsx",
-      "components/ui/overlay.tsx",
-      "components/dashboard/active-club-selector.tsx",
-      "components/dashboard/close-session-modal-form.tsx",
-      "components/treasury/cost-centers-tab.tsx",
-      "components/hr/staff-contracts-tab.tsx",
+      // Bloque B6 (PR-6) — ✅ cerrado.
       // Bloque B7 (PR-4) — ✅ cerrado.
     ],
   },
@@ -163,14 +157,7 @@ const RULES = [
     message: "Radio fuera de la taxonomía. Usar rounded-{xs|chip|btn|card|shell|dialog|toast} de lib/tokens/radii.ts.",
     allowFiles: [
       // Bloque B1 (PR-2) — ✅ cerrado.
-      // Bloque B6 (PR-6) — primitivos y consumers hand-rolled.
-      "components/ui/avatar.tsx",
-      "components/ui/segmented-nav.tsx",
-      "components/ui/status-message.tsx",
-      "components/settings/settings-tab-shell.tsx",
-      "components/settings/settings-page-layout.tsx",
-      "components/settings/club-treasury-settings-manager.tsx",
-      "components/dashboard/treasury-card.tsx",
+      // Bloque B6 (PR-6) — ✅ cerrado.
     ],
   },
   {
@@ -188,15 +175,12 @@ const RULES = [
     allowFiles: [
       // Bloque B1 (PR-2) — ✅ cerrado (modal.tsx).
       // Bloque B4 (PR-5) — ✅ cerrado.
-      // Bloque B6 (PR-6) — primitivos / consumers con typography hardcoded restante.
-      "components/ui/avatar.tsx",       // text-[10px] en sizes
-      "components/ui/toast/toast.tsx",  // text-[12-14px] en title/desc/meta
-      "components/dashboard/active-club-selector.tsx",  // text-[15px]
-      "components/dashboard/close-session-modal-form.tsx",  // text-[17px]
-      "components/dashboard/treasury-operation-forms.tsx",  // text-[12px] residual
-      "components/hr/settlements-list.tsx",  // text-[10px]
-      // Bloque B6 (PR-6) — span con tracking-[0.14em] que debería ser <FormSection>.
-      "components/treasury/account-form.tsx",
+      // Bloque B6 (PR-6) — toast.tsx queda como única excepción residual:
+      // los text-[12-14px] del toast viven dentro de un componente con tema
+      // dark embebido (white/foreground en bg-foreground) y ameritan tokens
+      // dedicados de toast typography que aún no existen. Mantengo el opt-out
+      // explícito con razón documentada hasta que se defina la sub-escala.
+      "components/ui/toast/toast.tsx",
     ],
   },
 ];

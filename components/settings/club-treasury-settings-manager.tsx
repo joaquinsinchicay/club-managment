@@ -370,7 +370,7 @@ function SettingsSectionShell({
   children
 }: SettingsSectionShellProps) {
   return (
-    <Card className="rounded-toast border-border/70 shadow-soft">
+    <Card className="border-border/70 shadow-soft">
       <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           {eyebrow ? <StatusBadge label={eyebrow} tone="neutral" /> : null}

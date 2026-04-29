@@ -160,23 +160,23 @@ export function CloseSessionModalForm({
         <div className="grid grid-cols-4 gap-3 rounded-card border border-border bg-secondary/30 px-4 py-3">
           <div>
             <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_movements}</p>
-            <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-foreground">{summary.total}</p>
+            <p className="mt-0.5 text-h4 font-semibold tabular-nums text-foreground">{summary.total}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_ingresos}</p>
-            <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-emerald-700">
+            <p className="mt-0.5 text-h4 font-semibold tabular-nums text-success">
               + {formatLocalizedAmount(summary.ingresos)}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_egresos}</p>
-            <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-ds-red-700">
+            <p className="mt-0.5 text-h4 font-semibold tabular-nums text-ds-red-700">
               − {formatLocalizedAmount(summary.egresos)}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_transfers}</p>
-            <p className="mt-0.5 text-[17px] font-semibold tabular-nums text-foreground">{summary.transfers}</p>
+            <p className="mt-0.5 text-h4 font-semibold tabular-nums text-foreground">{summary.transfers}</p>
           </div>
         </div>
 
