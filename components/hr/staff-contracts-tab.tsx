@@ -44,7 +44,7 @@ import {
 } from "@/lib/domain/staff-contract";
 import type { StaffMember } from "@/lib/domain/staff-member";
 import { useFilteredList } from "@/lib/hooks/use-filtered-list";
-import { useServerAction } from "@/lib/hooks/use-server-action";
+import { useFormModal } from "@/lib/hooks/use-form-modal";
 import { texts } from "@/lib/texts";
 
 type StaffContractsTabProps = {
@@ -95,15 +95,16 @@ export function StaffContractsTab({
 }: StaffContractsTabProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("vigente");
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [finalizing, setFinalizing] = useState<StaffContract | null>(null);
-
-  // Hooks compartidos: useServerAction encapsula `setPending(true) → action
-  // → triggerClientFeedback → router.refresh → setPending(false)`.
-  const { isPending: createPending, runAction: runCreate } =
-    useServerAction<RrhhActionResult>("settings");
-  const { isPending: finalizePending, runAction: runFinalize } =
-    useServerAction<RrhhActionResult>("settings");
+  // Hooks canonicos: useFormModal encapsula isOpen/target + isPending +
+  // handleSubmit que cierra el modal antes del await.
+  const create = useFormModal<void, RrhhActionResult>({
+    feedbackDomain: "settings",
+    action: createAction,
+  });
+  const finalize = useFormModal<StaffContract, RrhhActionResult>({
+    feedbackDomain: "settings",
+    action: finalizeAction,
+  });
 
   // Para el create flow: todos los colaboradores (no hay concepto de
   // activo/inactivo) + estructuras activas sin contrato vigente.
@@ -165,7 +166,7 @@ export function StaffContractsTab({
             </Link>
             <button
               type="button"
-              onClick={() => setCreateOpen(true)}
+              onClick={() => create.open()}
               className={buttonClass({ variant: "primary", size: "sm" })}
             >
               {scTexts.create_cta}
@@ -211,7 +212,7 @@ export function StaffContractsTab({
             canMutate && contracts.length === 0 ? (
               <button
                 type="button"
-                onClick={() => setCreateOpen(true)}
+                onClick={() => create.open()}
                 className={buttonClass({ variant: "primary", size: "sm" })}
               >
                 {scTexts.create_full_cta}
@@ -276,7 +277,7 @@ export function StaffContractsTab({
                     {canMutate && c.status === "vigente" ? (
                       <FinalizeIconButton
                         label={scTexts.action_finalize}
-                        onClick={() => setFinalizing(c)}
+                        onClick={() => finalize.openWith(c)}
                       />
                     ) : null}
                   </DataTableActions>
@@ -289,45 +290,38 @@ export function StaffContractsTab({
 
       {/* Create */}
       <Modal
-        open={createOpen}
-        onClose={() => !createPending && setCreateOpen(false)}
+        open={create.isOpen}
+        onClose={create.close}
         title={scTexts.create_modal_title}
         description={scTexts.create_modal_description}
         size="md"
-        closeDisabled={createPending}
+        closeDisabled={create.isPending}
       >
         <CreateContractForm
           members={activeMembers}
           structures={availableStructures}
           clubCurrencyCode={clubCurrencyCode}
-          onCancel={() => setCreateOpen(false)}
-          onSubmit={async (fd) => {
-            await runCreate(createAction, fd, () => setCreateOpen(false));
-          }}
+          onCancel={create.close}
+          onSubmit={create.handleSubmit}
         />
       </Modal>
 
       {/* Finalize */}
       <Modal
-        open={finalizing !== null}
-        onClose={() => !finalizePending && setFinalizing(null)}
+        open={finalize.isOpen}
+        onClose={finalize.close}
         title={scTexts.finalize_modal_title}
         description={scTexts.finalize_modal_description}
         size="sm"
-        closeDisabled={finalizePending}
+        closeDisabled={finalize.isPending}
       >
-        {finalizing ? (
-          <form
-            action={async (fd) => {
-              await runFinalize(finalizeAction, fd, () => setFinalizing(null));
-            }}
-            className="grid gap-4"
-          >
-            <input type="hidden" name="staff_contract_id" value={finalizing.id} />
+        {finalize.target ? (
+          <form action={finalize.handleSubmit} className="grid gap-4">
+            <input type="hidden" name="staff_contract_id" value={finalize.target.id} />
             <FormBanner variant="destructive">{scTexts.finalize_warning}</FormBanner>
             <FormField>
               <FormFieldLabel>{scTexts.form_member_label}</FormFieldLabel>
-              <FormReadonly>{finalizing.staffMemberName ?? "—"}</FormReadonly>
+              <FormReadonly>{finalize.target.staffMemberName ?? "—"}</FormReadonly>
             </FormField>
             <FormField>
               <FormFieldLabel required>{scTexts.form_end_date_label}</FormFieldLabel>
@@ -344,7 +338,7 @@ export function StaffContractsTab({
               />
             </FormField>
             <ModalFooter
-              onCancel={() => setFinalizing(null)}
+              onCancel={finalize.close}
               cancelLabel={scTexts.cancel_cta}
               submitLabel={scTexts.finalize_submit_cta}
               pendingLabel={scTexts.submit_pending}

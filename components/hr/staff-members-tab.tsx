@@ -30,7 +30,7 @@ import {
   type StaffVinculoType,
 } from "@/lib/domain/staff-member";
 import { useFilteredList } from "@/lib/hooks/use-filtered-list";
-import { useServerAction } from "@/lib/hooks/use-server-action";
+import { useFormModal } from "@/lib/hooks/use-form-modal";
 import { texts } from "@/lib/texts";
 
 type ContractFilter = "with_active" | "all" | "without_active";
@@ -74,9 +74,11 @@ export function StaffMembersTab({
   const [vinculoFilter, setVinculoFilter] = useState<VinculoFilter>("all");
   const [contractFilter, setContractFilter] = useState<ContractFilter>(initialContractFilter);
 
-  const [createOpen, setCreateOpen] = useState(false);
-
-  const { isPending: createPending, runAction } = useServerAction<RrhhActionResult>("settings");
+  // Hook canonico: state machine del modal + useServerAction interno.
+  const create = useFormModal<void, RrhhActionResult>({
+    feedbackDomain: "settings",
+    action: createAction,
+  });
 
   const alertsCount = useMemo(
     () => members.filter(isMemberInAlert).length,
@@ -121,7 +123,7 @@ export function StaffMembersTab({
         {canMutate ? (
           <button
             type="button"
-            onClick={() => setCreateOpen(true)}
+            onClick={() => create.open()}
             className={buttonClass({ variant: "primary", size: "sm" })}
           >
             {smTexts.create_cta}
@@ -228,7 +230,7 @@ export function StaffMembersTab({
             canMutate && members.length === 0 ? (
               <button
                 type="button"
-                onClick={() => setCreateOpen(true)}
+                onClick={() => create.open()}
                 className={buttonClass({ variant: "primary", size: "sm" })}
               >
                 {smTexts.empty_cta}
@@ -309,22 +311,17 @@ export function StaffMembersTab({
 
       {/* Create */}
       <Modal
-        open={createOpen}
-        onClose={() => !createPending && setCreateOpen(false)}
+        open={create.isOpen}
+        onClose={create.close}
         title={smTexts.create_modal_title}
         description={smTexts.create_modal_description}
         size="md"
-        closeDisabled={createPending}
+        closeDisabled={create.isPending}
       >
-        <form
-          action={async (fd) => {
-            await runAction(createAction, fd, () => setCreateOpen(false));
-          }}
-          className="grid gap-4"
-        >
+        <form action={create.handleSubmit} className="grid gap-4">
           <StaffMemberFormFields />
           <ModalFooter
-            onCancel={() => setCreateOpen(false)}
+            onCancel={create.close}
             cancelLabel={smTexts.cancel_cta}
             submitLabel={smTexts.create_submit_cta}
             pendingLabel={smTexts.submit_pending}
