@@ -64,11 +64,11 @@ export function Modal({
       >
         <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border/60 p-5 sm:p-6">
           <div className="space-y-1">
-            <h2 id="app-modal-title" className="text-[18px] font-semibold tracking-tight text-card-foreground">
+            <h2 id="app-modal-title" className="text-h4 font-semibold tracking-tight text-card-foreground">
               {title}
             </h2>
             {description ? (
-              <p id="app-modal-description" className="text-[13px] leading-5 text-muted-foreground">
+              <p id="app-modal-description" className="text-label font-normal leading-5 text-muted-foreground">
                 {description}
               </p>
             ) : null}

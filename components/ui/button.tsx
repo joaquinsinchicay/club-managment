@@ -10,7 +10,7 @@ type ButtonVariant =
   | "dark"
   | "accent-rrhh";
 type ButtonSize = "sm" | "md";
-type ButtonRadius = "btn" | "xl";
+type ButtonRadius = "btn" | "card";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
@@ -24,7 +24,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary: "border border-border bg-card text-foreground hover:bg-secondary",
   destructive: "bg-destructive text-white hover:opacity-90",
   "destructive-outline":
-    "border border-red-200 bg-card text-ds-red-700 hover:bg-ds-red-050",
+    "border border-destructive/30 bg-card text-destructive hover:bg-destructive/10",
   dark: "bg-ds-slate-900 text-white hover:bg-black",
   "accent-rrhh": "bg-ds-pink text-white hover:bg-ds-pink-700",
 };
@@ -36,13 +36,13 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 const radiusClasses: Record<ButtonRadius, string> = {
   btn: "rounded-btn",
-  xl: "rounded-xl",
+  card: "rounded-card",
 };
 
 export function buttonClass({
   variant = "primary",
   size = "md",
-  radius = "xl",
+  radius = "card",
   fullWidth = false,
   className,
 }: {
@@ -66,7 +66,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   {
     variant = "primary",
     size = "md",
-    radius = "xl",
+    radius = "card",
     fullWidth = false,
     className,
     type = "button",

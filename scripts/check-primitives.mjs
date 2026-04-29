@@ -140,10 +140,7 @@ const RULES = [
     pattern: /(?<!ds-)\b(bg|text|border|ring|hover:bg|hover:text|hover:border|focus:ring|focus:bg)-(amber|red|blue|emerald|green|slate|rose|indigo|pink|orange|yellow|teal|cyan)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
     message: "Color Tailwind crudo. Migrar a token semántico (warning/destructive/info/success) o brand (ds-{color}-{050|700}).",
     allowFiles: [
-      // Bloque B1 (PR-2) — tokenizar primitivos UI.
-      "components/ui/modal-form.tsx",
-      "components/ui/status-badge.tsx",
-      "components/ui/button.tsx",
+      // Bloque B1 (PR-2) — ✅ cerrado.
       // Bloque B2 (PR-3) — header de Secretaría.
       "app/(dashboard)/secretary/page.tsx",
       // Bloque B6 (PR-6) — primitivos hand-rolled.
@@ -169,8 +166,7 @@ const RULES = [
     pattern: /\brounded-(2xl|xl|lg|md|sm)\b|\brounded-\[\d+px\]/,
     message: "Radio fuera de la taxonomía. Usar rounded-{xs|chip|btn|card|shell|dialog|toast} de lib/tokens/radii.ts.",
     allowFiles: [
-      // Bloque B1 (PR-2) — Button radius="xl" pasa a "card".
-      "components/ui/button.tsx",
+      // Bloque B1 (PR-2) — ✅ cerrado.
       // Bloque B6 (PR-6) — primitivos y consumers hand-rolled.
       "components/ui/avatar.tsx",
       "components/ui/segmented-nav.tsx",
@@ -194,8 +190,7 @@ const RULES = [
     pattern: /\btext-\[\d+(\.\d+)?px\]|\btracking-\[0\.\d+em\]/,
     message: "Tipografía hardcoded. Usar tokens text-{eyebrow|meta|small|label|body|card-title|h3|h4|h2|h1|display|mono} y tracking-{eyebrow|card-eyebrow|section}.",
     allowFiles: [
-      // Bloque B1 (PR-2) — Modal title/description tokenizados.
-      "components/ui/modal.tsx",
+      // Bloque B1 (PR-2) — ✅ cerrado (modal.tsx).
       // Bloque B4 (PR-5) — find/replace global de tracking-[0.18em] / tracking-[0.08em].
       // Mientras tanto, allowlist masivo. Migrar todos juntos en PR-5.
       "components/ui/avatar.tsx",

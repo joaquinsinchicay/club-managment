@@ -32,11 +32,11 @@ export const FORM_READONLY_CLASSNAME =
 export const FORM_CHECKBOX_CARD_CLASSNAME =
   "flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50";
 export const FORM_BANNER_WARNING_CLASSNAME =
-  "rounded-card border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-slate-700";
+  "rounded-card border border-warning/20 bg-warning/10 px-4 py-3 text-xs leading-5 text-foreground";
 export const FORM_BANNER_DESTRUCTIVE_CLASSNAME =
-  "rounded-card border border-red-200 bg-red-50 px-4 py-3 text-xs leading-5 text-slate-700";
+  "rounded-card border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs leading-5 text-foreground";
 export const FORM_BANNER_INFO_CLASSNAME =
-  "rounded-card border border-blue-200 bg-blue-50 px-4 py-3 text-xs leading-5 text-slate-700";
+  "rounded-card border border-info/20 bg-info/10 px-4 py-3 text-xs leading-5 text-foreground";
 export const REQUIRED_SUFFIX = " *";
 
 type FormFieldProps = {
@@ -193,9 +193,9 @@ const BANNER_CLASS_BY_VARIANT: Record<FormBannerVariant, string> = {
 };
 
 const BANNER_ACCENT_BY_VARIANT: Record<FormBannerVariant, string> = {
-  warning: "font-bold text-amber-700",
-  destructive: "font-bold text-red-700",
-  info: "font-bold text-blue-700",
+  warning: "font-bold text-warning",
+  destructive: "font-bold text-destructive",
+  info: "font-bold text-info",
 };
 
 type FormBannerProps = HTMLAttributes<HTMLDivElement> & {
