@@ -198,7 +198,7 @@ export default async function DashboardPage() {
                 {texts.dashboard.overview.settings_description}
               </p>
 
-              <LinkButton href="/settings" fullWidth>
+              <LinkButton href="/settings" variant="secondary" fullWidth>
                 {texts.dashboard.overview.open_settings_cta}
               </LinkButton>
             </div>

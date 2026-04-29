@@ -24,8 +24,8 @@ import { cn } from "@/lib/utils";
  *  - Sin escape-hatch implícito: className opcional en cada nivel.
  * ────────────────────────────────────────────────────────────────────────── */
 
-type Density = "compact" | "comfortable";
-type CellAlign = "left" | "right" | "center";
+export type Density = "compact" | "comfortable";
+export type CellAlign = "left" | "right" | "center";
 
 const rowPaddingClasses: Record<Density, string> = {
   compact: "px-4 py-3",
@@ -282,7 +282,8 @@ export function DataTableEmpty({ title, description, icon, action, className }: 
 
 /* ── Chip ───────────────────────────────────────────────────────────────── */
 
-type ChipTone = "neutral" | "income" | "expense" | "warning" | "info";
+export type DataTableChipTone = "neutral" | "income" | "expense" | "warning" | "info";
+type ChipTone = DataTableChipTone;
 
 const chipToneClasses: Record<ChipTone, string> = {
   neutral: "bg-secondary-pressed text-foreground",
@@ -318,7 +319,8 @@ export function DataTableChip({
 
 /* ── Amount ─────────────────────────────────────────────────────────────── */
 
-type AmountType = "ingreso" | "egreso" | "neutral";
+export type DataTableAmountType = "ingreso" | "egreso" | "neutral";
+type AmountType = DataTableAmountType;
 
 const amountToneClasses: Record<AmountType, string> = {
   ingreso: "text-ds-green-700",

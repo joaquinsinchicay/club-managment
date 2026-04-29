@@ -9,6 +9,7 @@ import {
   parseLocalizedAmount,
   sanitizeLocalizedAmountInput
 } from "@/lib/amounts";
+import { formatSessionDateLong } from "@/lib/dates";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   CONTROL_CLASSNAME,
@@ -512,17 +513,7 @@ function isTransferFormValid(formState: TransferFormState, targetAccountCurrency
   );
 }
 
-function formatSessionDateLong(sessionDate: string): string {
-  const date = new Date(`${sessionDate}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return sessionDate;
-  const formatted = new Intl.DateTimeFormat("es-AR", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  }).format(date);
-  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-}
+// formatSessionDateLong importado de lib/dates.ts (Fase 4 · T1.1).
 
 /* ──────────────────────────────────────────────────────────────────────────
  * StaffContractSelect — select simple para vincular un movimiento a un

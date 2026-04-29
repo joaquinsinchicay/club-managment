@@ -28,6 +28,7 @@ import { Modal } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
+import { formatSessionTime } from "@/lib/dates";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
   ClubActivity,
@@ -71,12 +72,7 @@ type TreasuryCardProps = {
   }>;
 };
 
-function formatSessionTime(isoString: string | null): string | null {
-  if (!isoString) return null;
-  const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit" }).format(date);
-}
+// formatSessionTime importado de lib/dates.ts (Fase 4 · T1.1).
 
 type SessionConfig = {
   borderColor: string;

@@ -1,10 +1,10 @@
-import { type ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-type AvatarSize = "xs" | "sm" | "md" | "lg";
-type AvatarTone = "neutral" | "bancaria" | "virtual" | "efectivo" | "accent";
-type AvatarShape = "circle" | "square";
+export type AvatarSize = "xs" | "sm" | "md" | "lg";
+export type AvatarTone = "neutral" | "bancaria" | "virtual" | "efectivo" | "accent";
+export type AvatarShape = "circle" | "square";
 
 type AvatarProps = {
   name?: string | null;
@@ -52,19 +52,23 @@ export function getInitials(
   return letters || source[0]?.toUpperCase() || "?";
 }
 
-export function Avatar({
-  name,
-  email,
-  fallback,
-  size = "md",
-  tone = "neutral",
-  shape = "circle",
-  className,
-  children,
-}: AvatarProps) {
+export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
+  {
+    name,
+    email,
+    fallback,
+    size = "md",
+    tone = "neutral",
+    shape = "circle",
+    className,
+    children,
+  },
+  ref,
+) {
   const initials = children ? null : getInitials(name, email ?? fallback);
   return (
     <span
+      ref={ref}
       className={cn(
         "inline-flex shrink-0 items-center justify-center font-semibold leading-none select-none",
         shapeClasses[shape],
@@ -77,4 +81,4 @@ export function Avatar({
       {children ?? initials}
     </span>
   );
-}
+});

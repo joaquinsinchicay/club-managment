@@ -12,6 +12,7 @@ import {
   DataTableHeadCell,
   DataTableRow,
 } from "@/components/ui/data-table";
+import { formatMovementDateTimeStyle } from "@/lib/dates";
 import type { TreasuryMovementType } from "@/lib/domain/access";
 
 type MovementListItem = {
@@ -38,14 +39,9 @@ type MovementListProps = {
 const GRID_COLUMNS =
   "minmax(0,1.7fr) minmax(180px,0.95fr) minmax(150px,0.9fr) 88px";
 
-function formatMovementDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short"
-  }).format(date);
-}
+// formatMovementDateTimeStyle importado de lib/dates.ts (Fase 4 · T1.1).
+// Esta lista usa la variante con presets dateStyle/timeStyle (no es la "2-digit"
+// canónica de formatMovementDateTime).
 
 export function MovementList({
   items,
@@ -79,7 +75,7 @@ export function MovementList({
                 {item.concept}
               </p>
               <p className="mt-1.5 text-meta text-muted-foreground">
-                {formatMovementDateTime(item.createdAt)} · {createdByLabel} {item.createdByUserName}
+                {formatMovementDateTimeStyle(item.createdAt)} · {createdByLabel} {item.createdByUserName}
               </p>
             </DataTableCell>
 

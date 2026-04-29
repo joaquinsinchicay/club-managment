@@ -10,8 +10,10 @@ import {
   DataTableChip,
   DataTableRow,
 } from "@/components/ui/data-table";
+import { formatMovementDateTime } from "@/lib/dates";
 import type { TreasuryMovementType } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
+import { getMovementTypeBulletClass } from "@/lib/treasury-ui-helpers";
 
 type SecretariaMovementListItem = {
   movementId: string;
@@ -36,23 +38,8 @@ type SecretariaMovementListProps = {
   items: SecretariaMovementListItem[];
 };
 
-function getBulletClassName(type: TreasuryMovementType): string {
-  if (type === "ingreso") return "bg-ds-green";
-  if (type === "egreso") return "bg-ds-red";
-  return "bg-ds-slate-400";
-}
-
-function formatMovementDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(date);
-}
+// getBulletClassName movido a lib/treasury-ui-helpers.ts → getMovementTypeBulletClass (Fase 4 · T1.3).
+// formatMovementDateTime importado de lib/dates.ts (Fase 4 · T1.1).
 
 function getReferenceSuffix(value: string) {
   return value.slice(-6);
@@ -88,7 +75,7 @@ export function SecretariaMovementList({ items }: SecretariaMovementListProps) {
             >
               <div className="flex items-start gap-3">
                 <span
-                  className={`mt-1.5 size-2 shrink-0 rounded-full ${getBulletClassName(item.movementType)}`}
+                  className={`mt-1.5 size-2 shrink-0 rounded-full ${getMovementTypeBulletClass(item.movementType)}`}
                   aria-hidden="true"
                 />
 

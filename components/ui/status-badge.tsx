@@ -1,13 +1,14 @@
+import { forwardRef, type HTMLAttributes } from "react";
+
 import { cn } from "@/lib/utils";
 
-type StatusBadgeTone = "success" | "danger" | "warning" | "neutral" | "accent";
+export type StatusBadgeTone = "success" | "danger" | "warning" | "neutral" | "accent";
 
-type StatusBadgeProps = {
+type StatusBadgeProps = HTMLAttributes<HTMLSpanElement> & {
   label: string;
   tone?: StatusBadgeTone;
   /** Cuando true, prefija un bullet decorativo del color del tone. */
   withDot?: boolean;
-  className?: string;
 };
 
 const TONE_CLASSNAME: Record<StatusBadgeTone, string> = {
@@ -26,14 +27,14 @@ const DOT_CLASSNAME: Record<StatusBadgeTone, string> = {
   accent: "bg-background"
 };
 
-export function StatusBadge({
-  label,
-  tone = "neutral",
-  withDot = false,
-  className
-}: StatusBadgeProps) {
+export const StatusBadge = forwardRef<HTMLSpanElement, StatusBadgeProps>(function StatusBadge(
+  { label, tone = "neutral", withDot = false, className, ...rest },
+  ref,
+) {
   return (
     <span
+      ref={ref}
+      {...rest}
       className={cn(
         "inline-flex min-h-7 items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold uppercase tracking-card-eyebrow",
         TONE_CLASSNAME[tone],
@@ -46,4 +47,4 @@ export function StatusBadge({
       {label}
     </span>
   );
-}
+});

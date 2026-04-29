@@ -45,6 +45,7 @@ import {
   type PayrollSettlementAdjustment,
   type PayrollSettlementStatus,
 } from "@/lib/domain/payroll-settlement";
+import { getSettlementStatusTone } from "@/lib/labels";
 import { texts } from "@/lib/texts";
 
 type SettlementsListProps = {
@@ -133,12 +134,7 @@ function formatAmount(amount: number | null | undefined, currencyCode: string): 
   }
 }
 
-function settlementStatusTone(status: PayrollSettlementStatus) {
-  if (status === "generada") return "warning" as const;
-  if (status === "aprobada_rrhh") return "accent" as const;
-  if (status === "pagada") return "success" as const;
-  return "neutral" as const;
-}
+// settlementStatusTone movido a lib/labels.ts → getSettlementStatusTone (Fase 4 · T1.2).
 
 export function SettlementsList({
   settlements,
@@ -500,7 +496,7 @@ export function SettlementsList({
                   <DataTableCell>
                     <div className="flex flex-col items-start gap-0.5">
                       <StatusBadge
-                        tone={settlementStatusTone(s.status)}
+                        tone={getSettlementStatusTone(s.status)}
                         label={sTexts.status_options[s.status]}
                       />
                       {s.status === "generada" && s.returnedByRole ? (

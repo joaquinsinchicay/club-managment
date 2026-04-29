@@ -41,7 +41,7 @@ export function PageContentHeader({
           <div className="flex shrink-0 items-center gap-3">
             {actions}
             {backHref && backLabel ? (
-              <LinkButton href={backHref}>{backLabel}</LinkButton>
+              <LinkButton href={backHref} variant="secondary">{backLabel}</LinkButton>
             ) : null}
           </div>
         ) : null}

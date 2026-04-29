@@ -2,8 +2,8 @@ import { type ElementType, type HTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-type CardPadding = "none" | "compact" | "comfortable";
-type CardTone = "default" | "muted" | "accent-rrhh";
+export type CardPadding = "none" | "compact" | "comfortable";
+export type CardTone = "default" | "muted" | "accent-rrhh";
 
 type CardProps = HTMLAttributes<HTMLElement> & {
   as?: ElementType;

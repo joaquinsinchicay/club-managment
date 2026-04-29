@@ -38,6 +38,14 @@ import {
   formatLocalizedAmountInputOnFocus,
   sanitizeLocalizedAmountInput
 } from "@/lib/amounts";
+import { formatDateRange } from "@/lib/dates";
+import {
+  COST_CENTER_BADGE_LABELS as BADGE_LABEL,
+  COST_CENTER_BADGE_TONES as BADGE_TONES,
+  COST_CENTER_PERIODICITY_LABELS as PERIODICITY_LABEL,
+  COST_CENTER_STATUS_LABELS as STATUS_LABEL,
+  COST_CENTER_TYPE_LABELS as TYPE_LABEL,
+} from "@/lib/labels";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
@@ -83,32 +91,14 @@ type CostCentersTabProps = {
 };
 
 // -------------------------------------------------------------------------
-// Intl helpers
+// Labels & tones
 // -------------------------------------------------------------------------
+//
+// Los mappings de labels y tones de cost-center viven en lib/labels.ts
+// (Fase 4 · T1.2). Acá solo conservamos los filtros de UI que dependen
+// del orden visual (no son traducciones, son listas ordenadas).
 
 const tCC = texts.dashboard.treasury_role.cost_centers;
-
-const TYPE_LABEL: Record<CostCenterType, string> = {
-  deuda: tCC.type_debt,
-  evento: tCC.type_event,
-  jornada: tCC.type_workday,
-  presupuesto: tCC.type_budget,
-  publicidad: tCC.type_advertising,
-  sponsor: tCC.type_sponsor
-};
-
-const STATUS_LABEL: Record<CostCenterStatus, string> = {
-  activo: tCC.status_active,
-  inactivo: tCC.status_inactive
-};
-
-const PERIODICITY_LABEL: Record<CostCenterPeriodicity, string> = {
-  unico: tCC.periodicity_unique,
-  mensual: tCC.periodicity_monthly,
-  trimestral: tCC.periodicity_quarterly,
-  semestral: tCC.periodicity_biannual,
-  anual: tCC.periodicity_annual
-};
 
 const TYPE_FILTER_ORDER: Array<{ value: TypeFilter; label: string }> = [
   { value: "all", label: tCC.filter_all },
@@ -125,21 +115,7 @@ const STATUS_FILTER_ORDER: Array<{ value: CostCenterStatus; label: string }> = [
   { value: "inactivo", label: tCC.filter_status_inactive }
 ];
 
-const BADGE_LABEL: Record<CostCenterBadge["kind"], string> = {
-  debt_settled: tCC.badge_debt_settled,
-  budget_near_limit: tCC.badge_budget_near_limit,
-  budget_exceeded: tCC.badge_budget_exceeded,
-  goal_met: tCC.badge_goal_met,
-  overdue: tCC.badge_overdue
-};
-
-const BADGE_TONES: Record<CostCenterBadge["kind"], "income" | "warning" | "expense"> = {
-  debt_settled: "income",
-  budget_near_limit: "warning",
-  budget_exceeded: "expense",
-  goal_met: "income",
-  overdue: "expense"
-};
+// BADGE_TONES movido a lib/labels.ts → COST_CENTER_BADGE_TONES.
 
 function formatCurrency(amount: number | null, currencyCode: string): string {
   if (amount === null || Number.isNaN(amount)) return "—";
@@ -154,25 +130,7 @@ function formatCurrency(amount: number | null, currencyCode: string): string {
   }
 }
 
-function formatDateRange(startDate: string, endDate: string | null): string {
-  const start = new Date(`${startDate}T00:00:00`);
-  const startStr = Number.isNaN(start.getTime())
-    ? startDate
-    : new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", year: "numeric" }).format(
-        start
-      );
-
-  if (!endDate) return `${startStr} · Sin cierre`;
-
-  const end = new Date(`${endDate}T00:00:00`);
-  const endStr = Number.isNaN(end.getTime())
-    ? endDate
-    : new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", year: "numeric" }).format(
-        end
-      );
-
-  return `${startStr} → ${endStr}`;
-}
+// formatDateRange importado de lib/dates.ts (Fase 4 · T1.1).
 
 function progressPercent(cc: CostCenter, agg: CostCenterAggregates): number {
   if (!cc.amount || cc.amount === 0) return 0;

@@ -5,7 +5,7 @@ import { type ReactNode } from "react";
 import { texts } from "@/lib/texts";
 import { BlockingOverlay } from "@/components/ui/overlay";
 
-type ModalSize = "sm" | "md" | "lg";
+export type ModalSize = "sm" | "md" | "lg";
 
 type ModalProps = {
   open: boolean;

@@ -49,13 +49,16 @@ type ChipProps = HTMLAttributes<HTMLSpanElement> & {
   children: ReactNode;
 };
 
-export function Chip({ tone, size, className, children, ...rest }: ChipProps) {
+export const Chip = forwardRef<HTMLSpanElement, ChipProps>(function Chip(
+  { tone, size, className, children, ...rest },
+  ref,
+) {
   return (
-    <span {...rest} className={chipClass({ tone, size, className })}>
+    <span ref={ref} {...rest} className={chipClass({ tone, size, className })}>
       {children}
     </span>
   );
-}
+});
 
 type ChipButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   tone?: ChipTone;

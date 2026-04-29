@@ -27,6 +27,12 @@ import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { SegmentedNav, type SegmentedNavItem } from "@/components/ui/segmented-nav";
 import { formatLocalizedAmount } from "@/lib/amounts";
+import {
+  formatLastMovementDate,
+  formatLocalizedDateLabel,
+  formatMovementGroupDate,
+} from "@/lib/dates";
+import { getAccountAvatarTone, getCurrencySymbol } from "@/lib/treasury-ui-helpers";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
@@ -150,21 +156,7 @@ function getAllMovementGroups(groups: TreasuryRoleDashboardMovementDateGroup[]) 
   }));
 }
 
-function formatMovementGroupDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("es-AR", { dateStyle: "long" }).format(date);
-}
-
-function formatLastMovementDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${day}/${month} ${hours}:${minutes}`;
-}
+// Formatters movidos a lib/dates.ts (Fase 4 · T1.1).
 
 function formatAccountSubtitle(account: TreasuryAccount): string | null {
   const parts: Array<string | null | undefined> = [];
@@ -300,18 +292,11 @@ function AccountAvatar({
   name: string;
   accountType?: TreasuryAccountType;
 }) {
-  const tone =
-    accountType === "bancaria"
-      ? "bancaria"
-      : accountType === "billetera_virtual"
-        ? "virtual"
-        : "efectivo";
-
   return (
     <Avatar
       name={name}
       shape="square"
-      tone={tone}
+      tone={getAccountAvatarTone(accountType)}
       className="size-9 text-eyebrow tracking-wide"
     />
   );
@@ -404,7 +389,7 @@ function KpiGrid({
               >
                 <CurrencyChip code={b.currencyCode} />
                 <span className="text-h4 tabular-nums tracking-tight text-foreground">
-                  {b.currencyCode === "ARS" ? "$ " : "US$ "}
+                  {`${getCurrencySymbol(b.currencyCode)} `}
                   {formatLocalizedAmount(b.amount)}
                 </span>
               </div>
@@ -437,7 +422,7 @@ function KpiGrid({
                   "font-bold tabular-nums tracking-tight text-ds-green-700",
                   i === 0 ? "text-h4" : "text-small"
                 )}>
-                  + {s.currencyCode === "ARS" ? "$ " : "US$ "}
+                  + {`${getCurrencySymbol(s.currencyCode)} `}
                   {formatLocalizedAmount(s.ingreso)}
                 </span>
                 <CurrencyChip code={s.currencyCode} />
@@ -468,7 +453,7 @@ function KpiGrid({
                   "font-bold tabular-nums tracking-tight text-ds-red-700",
                   i === 0 ? "text-h4" : "text-small"
                 )}>
-                  − {s.currencyCode === "ARS" ? "$ " : "US$ "}
+                  − {`${getCurrencySymbol(s.currencyCode)} `}
                   {formatLocalizedAmount(s.egreso)}
                 </span>
                 <CurrencyChip code={s.currencyCode} />
@@ -718,7 +703,7 @@ function CuentasTab({
     `${accounts.length} ${texts.dashboard.treasury_role.accounts_tab_active_label}`,
     ...totalBalances.map(
       (b) =>
-        `${b.currencyCode} ${b.currencyCode === "ARS" ? "$" : "US$"} ${formatLocalizedAmount(b.amount)}`
+        `${b.currencyCode} ${getCurrencySymbol(b.currencyCode)} ${formatLocalizedAmount(b.amount)}`
     )
   ];
 
@@ -790,11 +775,7 @@ function diffDaysInclusive(fromDate: string, toDate: string) {
   return Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000)) + 1;
 }
 
-function formatLocalizedDateLabel(isoDate: string) {
-  const date = new Date(`${isoDate}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return isoDate;
-  return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
-}
+// formatLocalizedDateLabel movido a lib/dates.ts (Fase 4 · T1.1).
 
 function buildMovementsWindowSubtitle(window: TreasuryRoleDashboard["movementsWindow"]) {
   const days = diffDaysInclusive(window.fromDate, window.toDate);
