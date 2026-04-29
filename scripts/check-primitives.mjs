@@ -149,10 +149,7 @@ const RULES = [
       "components/dashboard/close-session-modal-form.tsx",
       "components/treasury/cost-centers-tab.tsx",
       "components/hr/staff-contracts-tab.tsx",
-      // Bloque B7 (PR-4) — limpiar treasury-operation-forms.
-      "components/dashboard/treasury-operation-forms.tsx",
-      "components/dashboard/treasury-role-card.tsx",
-      "app/(dashboard)/rrhh/page.tsx",
+      // Bloque B7 (PR-4) — ✅ cerrado.
     ],
   },
   {

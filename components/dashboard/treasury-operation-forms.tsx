@@ -16,6 +16,7 @@ import {
   FIELD_LABEL_CLASSNAME,
   FORM_GRID_CLASSNAME,
   FULL_WIDTH_FIELD_CLASSNAME,
+  FormBanner,
   FormInput,
   FormSelect,
   FormTextarea,
@@ -844,7 +845,7 @@ export function SecretariaMovementForm({
                     "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
                       ? isIngreso
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-success/30 bg-success/10 text-success"
                         : "border-ds-red-200 bg-ds-red-050 text-ds-red-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
@@ -1213,7 +1214,7 @@ export function SecretariaMovementEditForm({
                     "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
                       ? isIngreso
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-success/30 bg-success/10 text-success"
                         : "border-ds-red-200 bg-ds-red-050 text-ds-red-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
@@ -2195,7 +2196,7 @@ export function TreasuryRoleMovementForm({
                     "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
                       ? isIngreso
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-success/30 bg-success/10 text-success"
                         : "border-ds-red-200 bg-ds-red-050 text-ds-red-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
@@ -2546,7 +2547,7 @@ export function TreasuryRoleFxForm({
                   className={cn(
                     "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
-                      ? "border-blue-200 bg-blue-50 text-blue-700"
+                      ? "border-info/30 bg-info/10 text-info"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
                 >
@@ -2683,11 +2684,9 @@ export function TreasuryRoleFxForm({
         </div>
 
         {/* BANNER INFO */}
-        <div className="rounded-card border border-blue-200 bg-blue-50 px-3 py-2.5">
-          <p className="text-[12px] leading-[1.5] text-blue-800">
-            {texts.dashboard.treasury_role.fx_info_banner}
-          </p>
-        </div>
+        <FormBanner variant="info">
+          {texts.dashboard.treasury_role.fx_info_banner}
+        </FormBanner>
 
         <ModalFooter
           onCancel={onCancel}

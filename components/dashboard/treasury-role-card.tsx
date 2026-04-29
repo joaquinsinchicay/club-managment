@@ -399,7 +399,7 @@ function KpiGrid({
                 key={b.currencyCode}
                 className={cn(
                   "flex items-center justify-between gap-2 py-1.5",
-                  i < totalBalances.length - 1 && "border-b border-slate-200"
+                  i < totalBalances.length - 1 && "border-b border-border"
                 )}
               >
                 <CurrencyChip code={b.currencyCode} />
@@ -430,7 +430,7 @@ function KpiGrid({
                 key={s.currencyCode}
                 className={cn(
                   "flex items-center justify-between gap-2 py-1.5",
-                  i < monthlyStats.length - 1 && "border-b border-slate-200"
+                  i < monthlyStats.length - 1 && "border-b border-border"
                 )}
               >
                 <span className={cn(
@@ -461,7 +461,7 @@ function KpiGrid({
                 key={s.currencyCode}
                 className={cn(
                   "flex items-center justify-between gap-2 py-1.5",
-                  i < monthlyStats.length - 1 && "border-b border-slate-200"
+                  i < monthlyStats.length - 1 && "border-b border-border"
                 )}
               >
                 <span className={cn(
@@ -734,13 +734,15 @@ function CuentasTab({
           </p>
         </div>
         {isAdmin && (
-          <button
-            type="button"
+          <Button
+            variant="dark"
+            size="sm"
+            radius="btn"
             onClick={onCreateAccount}
-            className="shrink-0 rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black"
+            className="shrink-0"
           >
             {texts.dashboard.treasury_role.accounts_tab_create_cta}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -907,10 +909,13 @@ function MovimientosTab({
               className="min-h-9 rounded-btn border border-border bg-card px-2.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </label>
-          <button
+          <Button
             type="submit"
+            variant="dark"
+            size="sm"
+            radius="btn"
             disabled={!isDirty || isDateRangePending}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+            className="gap-1.5"
           >
             {isDateRangePending && (
               <span
@@ -921,7 +926,7 @@ function MovimientosTab({
             {isDateRangePending
               ? texts.dashboard.treasury_role.movements_filter_apply_pending_cta
               : texts.dashboard.treasury_role.movements_filter_apply_cta}
-          </button>
+          </Button>
           {isCustomRange && (
             <button
               type="button"
@@ -955,13 +960,9 @@ function MovimientosTab({
           </button>
         )}
         {canCreateFxOperation && (
-          <button
-            type="button"
-            onClick={onCreateFx}
-            className="rounded-btn bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-black"
-          >
+          <Button variant="dark" size="sm" radius="btn" onClick={onCreateFx}>
             {texts.dashboard.treasury_role.movements_cta_fx}
-          </button>
+          </Button>
         )}
       </div>
 
