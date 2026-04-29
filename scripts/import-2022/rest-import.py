@@ -144,6 +144,7 @@ def main():
             "amount": r["amount"],
             "movement_date": r["movement_date"],
             "concept": r.get("concept") or "",
+            "receipt_number": r.get("receipt_csv") or None,
             "status": "posted",
             "display_id": r["external_id"],
             "external_id": r["external_id"],
