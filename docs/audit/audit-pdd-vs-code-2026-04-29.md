@@ -482,33 +482,51 @@ Para cada US se muestra una tabla con columnas:
 
 ## Apéndice — totales y top blockers
 
-### Conteo de hallazgos por bounded context (post-alineación PDDs + fix RLS 2026-04-29)
+### Conteo de hallazgos por bounded context (segunda pasada 2026-04-29)
 
 | Bounded context | blocker | major | minor | Total | Δ vs inicial |
 |---|---:|---:|---:|---:|---:|
-| A · Auth & Identidad | 0 | 0 | 0 | 0 | -7 (PDDs + 1 fix código) |
-| B1 · Tesorería: operaciones | 0 | 2 | 4 | 6 | — |
-| B2 · Tesorería: configuración | 0 | 16 | 1 | 17 | -10 (3 fix RLS + 7 falsos positivos) |
-| C1 · RRHH: masters & colaboradores | 0 | 0 | 2 | 2 | -6 (PDDs + falsos positivos) |
-| C2 · RRHH: liquidaciones & pagos | 0 | 3 | 0 | 3 | — |
-| **Total** | **0** | **21** | **7** | **28** | **-23** |
+| A · Auth & Identidad | 0 | 0 | 0 | 0 | -7 |
+| B1 · Tesorería: operaciones | 0 | 0 | 0 | 0 | -6 |
+| B2 · Tesorería: configuración | 0 | 0 | 1 | 1 | -26 |
+| C1 · RRHH: masters & colaboradores | 0 | 0 | 0 | 0 | -8 |
+| C2 · RRHH: liquidaciones & pagos | 0 | 0 | 0 | 0 | -3 |
+| **Total** | **0** | **0** | **1** | **1** | **-50** |
 
-> **Cambios 2026-04-29 — alineación de PDDs + fixes de código + correcciones del audit inicial:**
+> **Único hallazgo abierto post-2da pasada**: US-18 #2 marcado **AMBIGUO** — `normalizeAccountVisibility()` filtra roles inválidos pero no valida explícitamente que al menos un rol quede seleccionado tras la normalización. Decisión de producto requerida: ¿el receipt format puede guardarse sin roles (queda invisible) o debe rechazarse? Ref: `lib/services/treasury-settings-service.ts:214-232, 1103-1104`.
+
+> **Cambios 2026-04-29 — primera pasada (alineación PDDs + fixes RLS + último admin):**
 >
-> **PDDs actualizadas (cerrados 11 hallazgos):**
-> - US-54, US-55, US-56: banners "MODELO REFACTORIZADO 2026-04-24" + "PERMISO REVISADO 2026-04-28"; todas las menciones de `admin | rrhh` reescritas a `rrhh` exclusivo.
-> - US-03, US-07: banner "Rediseño unificado 2026-04-28" — modal de crear/invitar/aprobar fusionado; invitaciones inline en la tabla.
-> - US-06: banner "Scope reducido 2026-04-29" — mensaje de bienvenida personalizado descartado; keys `welcome_message_*` deprecadas.
+> **PDDs actualizadas (11 hallazgos):**
+> - US-54, US-55, US-56: banners "MODELO REFACTORIZADO 2026-04-24" + "PERMISO REVISADO 2026-04-28"; menciones de `admin | rrhh` reescritas a `rrhh` exclusivo.
+> - US-03, US-07: banner "Rediseño unificado 2026-04-28".
+> - US-06: banner "Scope reducido" — mensaje bienvenida personalizado descartado.
 >
-> **Fix de código + PDD (cerrados 4 hallazgos):**
-> - US-09 #2: agregado enforcement client-side de "último admin" en `components/settings/tabs/members-tab.tsx`. Banner + disabled en botón remover, submit del modal de remoción y checkbox `admin` del modal de roles.
-> - US-15 #4 / US-19 #1 / US-20 #1 #2 (4 hallazgos consolidados en 1 fix): migración `supabase/migrations/20260429143400_fix_treasury_settings_rls_admin_mutate.sql` — RLS de `treasury_categories` y `club_activities` cambiada de `tesoreria` a `admin`. Pendiente de aplicar a la DB para cerrar definitivamente.
-> - US-20 #3: misma migración agrega `create unique index club_activities_active_name_unique`.
+> **Fix de código + PDD (4 hallazgos):**
+> - US-09 #2: enforcement client-side "último admin" en `members-tab.tsx`.
+> - US-15 #4 / US-19 #1 / US-20 #1 #2 #3: migraciones `20260429143400` y `20260429144100` — RLS admin-only para categorías/actividades + unique index en `club_activities`.
 >
-> **Falsos positivos del audit inicial (cerrados 9 hallazgos):**
-> - US-15 #1 #2 #3 + US-28 #1 #2 #3: las cuentas se gestionan desde `/treasury` por rol `tesoreria` (no desde `/settings` por admin). La action `createTreasuryAccountFromTreasuryAction` existe en `app/(dashboard)/dashboard/treasury-actions.ts:312` y la RLS `tesoreria` sobre `treasury_accounts` es correcta. El audit inicial miró sólo `settings/actions.ts` y asumió erróneamente la ubicación.
-> - US-59 #1 (TZ Buenos_Aires): PDD §8 ya documentaba el TZ hardcoded.
-> - US-60 #1 (vista materializada): PDD §13 ya decía "MVP: subquery EXISTS".
+> **Falsos positivos 1ra pasada (9 hallazgos):**
+> - US-15 #1 #2 #3 + US-28 #1 #2 #3: cuentas se gestionan desde `/treasury`, no `/settings`.
+> - US-59 #1, US-60 #1: PDDs ya alineadas con código.
+>
+> **Cambios 2026-04-29 — segunda pasada (validación profunda + backlinks):**
+>
+> **Fix de código (3 hallazgos):**
+> - US-67 #1, US-68 #1, US-71 #2: backlinks rotos `/treasury/payroll` corregidos a `/treasury?tab=payroll` en `app/(dashboard)/treasury/staff/[id]/page.tsx:45` y `app/(dashboard)/rrhh/page.tsx:264`.
+>
+> **PDDs actualizadas (3 hallazgos):**
+> - US-13: banner "Scope reducido" — vista de detalle por cuenta no se implementó como ruta separada; el detalle vive en `TreasuryRoleCard` del dashboard.
+> - US-24: banner "Scope reducido" — los tipos son constantes de sistema, no hay sección read-only de settings.
+> - US-60 #3: banner "Scope reducido" — acción "Ignorar" con sessionStorage no se implementó.
+>
+> **Validación pasiva (17 hallazgos cerrados o reclasificados como falsos positivos):**
+> - **B1 cerrados (4)**: US-11 #4 patrón A confirmado; US-29 #2 textos en `texts.json:542-547`; US-32 #5 `console.warn('[daily-session-guard-failed]')` en `treasury-service.ts:640-646`; US-12 #4 maneja null sin crash.
+> - **B2 cerrados (12)**: US-17 #1 #2 (recibo en `secretaria-movement-list.tsx:69` + validación `treasury-service.ts:1529`); US-19 #2 #3 (actividad en detalle + visibilidad por booleans); US-21 #1 #2 (calendar event en meta); US-22 #2 (`getEnabledCalendarEventsForTesoreria` filtra `isEnabledForTreasury`); US-23 #3 (filtro de monedas por cuenta en formulario); US-24 #2 (consumo en formulario); US-29 #3 (`BlockingStatusOverlay` cuando jornada open); US-30 #1 #2 #3 (saldos + form inline + 30 días con filtros).
+> - **B1+C1 falsos positivos (2)**: US-13 #2 (vista de detalle no existe como ruta separada — alineado con scope actual); US-55 #2 (modelo refactorizado movió historial al contrato).
+>
+> **AMBIGUO pendiente de decisión de producto (1):**
+> - US-18 #2: ¿el receipt format / category / activity puede guardarse con array de roles vacío (queda invisible) o debe rechazarse server-side?
 
 ### ~~Top 10 blockers~~ → 3 blockers reales, todos cerrados con la misma migración
 

@@ -2,6 +2,8 @@
 
 > PDD del módulo **E04 · RRHH**. Fuente Notion: `E04 👥 RRHH` · alias `US-37`. En el repo: **US-60**. (Pre-refactor 2026-04-27 el alias era `US-36`.)
 
+> ⚠️ **SCOPE REDUCIDO — 2026-04-29**: la acción "Ignorar" con persistencia en `sessionStorage` y los CTAs gemelos `Dar de baja` / `Ignorar` en la ficha **no se implementaron**. La detección de colaboradores sin contrato vigente sí está activa (badge "Sin contrato vigente" en `staff-members-tab.tsx`); el dismiss queda fuera de scope MVP. Si en el futuro se requiere reducir el ruido visual sin descartar el recordatorio, abrir como nueva US.
+
 ---
 
 ## 1. Identificación

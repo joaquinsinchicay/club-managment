@@ -42,7 +42,7 @@ export default async function TreasuryStaffProfilePage({
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
       <nav className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-        <LinkButton href="/treasury/payroll" variant="secondary" size="sm">
+        <LinkButton href="/treasury?tab=payroll" variant="secondary" size="sm">
           {texts.dashboard.treasury.payroll.page_title}
         </LinkButton>
       </nav>

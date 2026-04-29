@@ -1,5 +1,7 @@
 # PDD — US-13 · Consulta detallada de movimientos y saldos por cuenta
 
+> ⚠️ **SCOPE REDUCIDO — 2026-04-29**: la vista de "detalle por cuenta" como pantalla separada con paginación de 10 movs/página no se implementó como ruta independiente. El detalle vive embebido en el dashboard de Tesorería (`/treasury`) vía `TreasuryRoleCard`, mostrando el listado completo de los últimos 30 días filtrable por `movements_from`/`movements_to` (ver `lib/services/treasury-service.ts:1209-1212`). La ruta `/treasury/accounts/[accountId]` redirige al dashboard. La paginación explícita de 10/página queda como ítem futuro si el volumen de movimientos lo justifica.
+
 ---
 
 ## 1. Identificación
