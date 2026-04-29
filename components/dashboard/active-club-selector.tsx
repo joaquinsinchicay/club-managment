@@ -30,7 +30,7 @@ export function ActiveClubSelector({
           <span
             className={cn(
               "font-medium",
-              inline ? "sr-only" : "text-xs uppercase tracking-[0.18em] text-muted-foreground"
+              inline ? "sr-only" : "text-xs uppercase tracking-card-eyebrow text-muted-foreground"
             )}
           >
             {texts.dashboard.club_selector.label}
@@ -41,7 +41,7 @@ export function ActiveClubSelector({
             onChange={() => formRef.current?.requestSubmit()}
             className={
               inline
-                ? "min-h-0 border-0 bg-transparent px-0 py-0 text-[15px] font-semibold tracking-tight focus:ring-0"
+                ? "min-h-0 border-0 bg-transparent px-0 py-0 text-card-title font-semibold tracking-tight focus:ring-0"
                 : undefined
             }
           >

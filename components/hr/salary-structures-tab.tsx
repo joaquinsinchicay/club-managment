@@ -537,7 +537,7 @@ function DivisionsMultiSelect({ value, onChange, placeholder }: DivisionsMultiSe
                 key={d}
                 role="option"
                 aria-selected={checked}
-                className="flex min-h-10 cursor-pointer items-center gap-2 rounded-btn px-3 py-2 text-sm text-foreground transition hover:bg-secondary/60"
+                className="flex min-h-10 cursor-pointer items-center gap-2 rounded-btn px-3 py-2 text-sm text-foreground transition hover:bg-secondary-pressed"
               >
                 <input
                   type="checkbox"

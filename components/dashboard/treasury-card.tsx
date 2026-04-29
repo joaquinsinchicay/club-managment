@@ -215,7 +215,7 @@ function SessionCard({
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <div
           className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold",
+            "flex size-8 shrink-0 items-center justify-center rounded-card text-sm font-bold",
             isUnresolved ? "bg-ds-slate-100 text-ds-slate-500" : cn(cfg.iconBg, cfg.iconColor)
           )}
           aria-hidden="true"
@@ -223,7 +223,7 @@ function SessionCard({
           {isUnresolved ? "?" : cfg.iconText}
         </div>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <span className="text-eyebrow font-semibold uppercase tracking-eyebrow text-muted-foreground">
             {texts.dashboard.treasury.session_card_label}
           </span>
           <span className="text-card-title font-semibold leading-tight tracking-tight text-foreground">
@@ -235,7 +235,7 @@ function SessionCard({
         {!isUnresolved ? (
           <span
             className={cn(
-              "ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-meta font-semibold",
+              "ml-auto inline-flex items-center gap-1.5 rounded-btn px-2 py-1 text-meta font-semibold",
               cfg.badgeClass
             )}
           >
@@ -250,7 +250,7 @@ function SessionCard({
         <div className="mx-4 mb-3 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-dashed border-border pt-3">
           {metaItems.map((item) => (
             <div key={item.label} className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <span className="text-eyebrow font-semibold uppercase tracking-eyebrow text-muted-foreground">
                 {item.label}
               </span>
               <span className="truncate text-label tabular-nums text-foreground">{item.value}</span>
@@ -314,7 +314,7 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
         title={texts.dashboard.treasury.balances_visible_title}
         description={texts.dashboard.treasury.balances_visible_description}
         action={
-          <span className="mt-0.5 shrink-0 rounded-md bg-secondary px-2 py-1 text-eyebrow font-semibold text-muted-foreground">
+          <span className="mt-0.5 shrink-0 rounded-btn bg-secondary px-2 py-1 text-eyebrow font-semibold text-muted-foreground">
             ARS
           </span>
         }
@@ -334,7 +334,7 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-label font-medium text-foreground">{account.name}</span>
-                      <span className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      <span className="text-eyebrow font-semibold uppercase tracking-eyebrow text-muted-foreground">
                         {texts.dashboard.treasury_role.cash_account_label}
                       </span>
                     </div>

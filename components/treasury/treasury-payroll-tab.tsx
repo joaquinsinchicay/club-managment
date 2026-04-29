@@ -531,7 +531,7 @@ export function TreasuryPayrollTab({
                               : tTexts.detail_expand_label
                           }
                           aria-expanded={isExpanded}
-                          className="inline-flex size-8 items-center justify-center rounded-card border border-border bg-card text-foreground hover:bg-secondary/40"
+                          className="inline-flex size-8 items-center justify-center rounded-card border border-border bg-card text-foreground hover:bg-secondary-readonly"
                         >
                           <span aria-hidden="true">{isExpanded ? "˄" : "˅"}</span>
                         </button>
@@ -539,7 +539,7 @@ export function TreasuryPayrollTab({
                     </div>
 
                     {isExpanded ? (
-                      <div className="ml-12 rounded-card border border-border bg-secondary/30 px-4 py-3">
+                      <div className="ml-12 rounded-card border border-border bg-secondary-subtle px-4 py-3">
                         <p className="text-eyebrow uppercase tracking-wide text-muted-foreground">
                           {tTexts.detail_adjustments_title}
                         </p>

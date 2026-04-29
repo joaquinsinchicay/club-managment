@@ -13,7 +13,7 @@ export function ClubMark({ clubName, className }: ClubMarkProps) {
     <span
       aria-hidden="true"
       className={cn(
-        "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-meta font-bold tracking-[0.08em] text-primary-foreground",
+        "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-meta font-bold tracking-eyebrow text-primary-foreground",
         className
       )}
     >

@@ -11,7 +11,7 @@ type LinkButtonVariant =
   | "dark"
   | "accent-rrhh";
 type LinkButtonSize = "sm" | "md";
-type LinkButtonRadius = "btn" | "xl";
+type LinkButtonRadius = "btn" | "card";
 
 type LinkButtonProps = Omit<LinkProps, "href"> &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkProps | "children"> & {
@@ -29,7 +29,7 @@ export const LinkButton = forwardRef<HTMLAnchorElement, LinkButtonProps>(functio
     href,
     variant = "secondary",
     size = "md",
-    radius = "xl",
+    radius = "card",
     fullWidth = false,
     external = false,
     className,

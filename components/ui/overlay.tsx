@@ -92,7 +92,7 @@ export function BlockingOverlay({
 
   return (
     <div
-      className={cn("fixed inset-0 z-50 bg-slate-950/45", className)}
+      className={cn("fixed inset-0 z-50 bg-foreground/45", className)}
       onClick={onBackdropClick}
       {...props}
     >

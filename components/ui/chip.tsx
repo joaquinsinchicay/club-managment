@@ -13,7 +13,7 @@ export type ChipTone = "neutral" | "income" | "expense" | "warning" | "info" | "
 export type ChipSize = "sm" | "md";
 
 const toneClasses: Record<ChipTone, string> = {
-  neutral: "bg-secondary/60 text-foreground",
+  neutral: "bg-secondary-pressed text-foreground",
   income: "bg-ds-green-050 text-ds-green-700",
   expense: "bg-ds-red-050 text-ds-red-700",
   warning: "bg-ds-amber-050 text-ds-amber-700",

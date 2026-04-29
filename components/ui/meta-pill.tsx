@@ -14,7 +14,7 @@ export function MetaPill({ label, value, className }: MetaPillProps) {
         className,
       )}
     >
-      <span className="font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <span className="font-semibold uppercase tracking-section text-muted-foreground">
         {label}
       </span>
       <span className="font-medium">{value}</span>

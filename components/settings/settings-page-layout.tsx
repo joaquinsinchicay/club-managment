@@ -52,10 +52,10 @@ export function SettingsPageLayout({ tabs, defaultTabId }: SettingsPageLayoutPro
               onClick={() => handleTabChange(tab.id)}
               aria-pressed={isActive}
               className={cn(
-                "flex-grow basis-auto rounded-[7px] px-3 py-2 text-xs font-semibold tracking-tight transition whitespace-nowrap",
+                "flex-grow basis-auto rounded-btn px-3 py-2 text-xs font-semibold tracking-tight transition whitespace-nowrap",
                 isActive
-                  ? "bg-white text-foreground shadow-sm"
-                  : "text-ds-slate-600 hover:text-foreground"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {tab.label}

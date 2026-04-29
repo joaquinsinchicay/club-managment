@@ -16,6 +16,7 @@ import {
   FIELD_LABEL_CLASSNAME,
   FORM_GRID_CLASSNAME,
   FULL_WIDTH_FIELD_CLASSNAME,
+  FormBanner,
   FormInput,
   FormSelect,
   FormTextarea,
@@ -115,7 +116,7 @@ type OperationalFormCopy = {
 // Variante de CONTROL_CLASSNAME para inputs/selects deshabilitados.
 // No coincide con FORM_READONLY_CLASSNAME (que es inline-flex para <div>),
 // porque acá se aplica directamente a controles de form.
-const DISABLED_CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground";
+const DISABLED_CONTROL_CLASSNAME = "min-h-11 w-full rounded-card border border-border bg-secondary-readonly px-4 py-3 text-sm text-muted-foreground";
 
 type MovementFormState = {
   movementDate?: string;
@@ -711,7 +712,7 @@ function CostCenterMultiSelect({
                 title={lockNew ? "CC inactivo — no se puede agregar" : undefined}
                 className={cn(
                   "flex min-h-10 items-center gap-3 rounded-btn px-3 py-2 text-sm text-foreground transition",
-                  lockNew ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-secondary/60"
+                  lockNew ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-secondary-pressed"
                 )}
               >
                 <input
@@ -723,19 +724,19 @@ function CostCenterMultiSelect({
                 />
                 <span className="flex-1 truncate font-medium">{cc.name}</span>
                 {isInactive ? (
-                  <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
                     Inactivo
                   </span>
                 ) : null}
-                <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-slate-700">
+                <span className="rounded-xs bg-ds-slate-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-eyebrow text-ds-slate-700">
                   {cc.type}
                 </span>
-                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                <span className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
                   {cc.currencyCode}
                 </span>
                 {currencyMismatch ? (
                   <span
-                    className="rounded-xs bg-ds-amber-050 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-ds-amber-700"
+                    className="rounded-xs bg-ds-amber-050 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-eyebrow text-ds-amber-700"
                     title={currencyMismatchTitle}
                   >
                     ⚠
@@ -844,7 +845,7 @@ export function SecretariaMovementForm({
                     "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
                       ? isIngreso
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-success/30 bg-success/10 text-success"
                         : "border-ds-red-200 bg-ds-red-050 text-ds-red-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
@@ -1213,7 +1214,7 @@ export function SecretariaMovementEditForm({
                     "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
                       ? isIngreso
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-success/30 bg-success/10 text-success"
                         : "border-ds-red-200 bg-ds-red-050 text-ds-red-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
@@ -2195,7 +2196,7 @@ export function TreasuryRoleMovementForm({
                     "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
                       ? isIngreso
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-success/30 bg-success/10 text-success"
                         : "border-ds-red-200 bg-ds-red-050 text-ds-red-700"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
@@ -2546,7 +2547,7 @@ export function TreasuryRoleFxForm({
                   className={cn(
                     "flex flex-col items-center gap-0.5 rounded-card border px-3 py-3 transition",
                     isSelected
-                      ? "border-blue-200 bg-blue-50 text-blue-700"
+                      ? "border-info/30 bg-info/10 text-info"
                       : "border-border bg-card text-muted-foreground hover:bg-secondary"
                   )}
                 >
@@ -2590,7 +2591,7 @@ export function TreasuryRoleFxForm({
               <span className="text-destructive" aria-hidden="true"> *</span>
             </p>
             <div className="flex overflow-hidden rounded-card border border-border bg-card focus-within:ring-2 focus-within:ring-foreground/10">
-              <span className="flex shrink-0 items-center border-r border-border bg-secondary/50 px-3 text-sm font-semibold text-muted-foreground">
+              <span className="flex shrink-0 items-center border-r border-border bg-secondary-hover px-3 text-sm font-semibold text-muted-foreground">
                 {sourceCurrencyCode}
               </span>
               {/* eslint-disable-next-line no-restricted-syntax -- Compound input (badge + input transparente): <FormInput> no soporta el layout inline con badge pegado. */}
@@ -2617,7 +2618,7 @@ export function TreasuryRoleFxForm({
             <span className="text-destructive" aria-hidden="true"> *</span>
           </p>
           <div className="flex overflow-hidden rounded-card border border-border bg-card focus-within:ring-2 focus-within:ring-foreground/10">
-            <span className="flex shrink-0 items-center border-r border-border bg-secondary/50 px-3 text-sm font-semibold text-muted-foreground">
+            <span className="flex shrink-0 items-center border-r border-border bg-secondary-hover px-3 text-sm font-semibold text-muted-foreground">
               1 USD =
             </span>
             {/* eslint-disable-next-line no-restricted-syntax -- Compound input (badge + input transparente): <FormInput> no soporta el layout inline con badge pegado. */}
@@ -2656,8 +2657,8 @@ export function TreasuryRoleFxForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <p className={FIELD_LABEL_CLASSNAME}>{texts.dashboard.treasury_role.fx_target_amount_label}</p>
-            <div className="flex overflow-hidden rounded-card border border-border bg-secondary/40">
-              <span className="flex shrink-0 items-center border-r border-border bg-secondary/60 px-3 text-sm font-semibold text-muted-foreground">
+            <div className="flex overflow-hidden rounded-card border border-border bg-secondary-readonly">
+              <span className="flex shrink-0 items-center border-r border-border bg-secondary-pressed px-3 text-sm font-semibold text-muted-foreground">
                 {targetCurrencyCode}
               </span>
               <span className="flex min-h-11 flex-1 items-center justify-end px-3 text-sm tabular-nums text-muted-foreground">
@@ -2683,11 +2684,9 @@ export function TreasuryRoleFxForm({
         </div>
 
         {/* BANNER INFO */}
-        <div className="rounded-card border border-blue-200 bg-blue-50 px-3 py-2.5">
-          <p className="text-[12px] leading-[1.5] text-blue-800">
-            {texts.dashboard.treasury_role.fx_info_banner}
-          </p>
-        </div>
+        <FormBanner variant="info">
+          {texts.dashboard.treasury_role.fx_info_banner}
+        </FormBanner>
 
         <ModalFooter
           onCancel={onCancel}

@@ -300,15 +300,11 @@ export function MembersTab({
                       </div>
 
                       <div className="flex shrink-0 items-center gap-3">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold uppercase tracking-[0.18em]",
-                            "border-success/20 bg-success/10 text-success",
-                          )}
-                        >
-                          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-success" />
-                          {texts.settings.club.members.active_status_label}
-                        </span>
+                        <StatusBadge
+                          label={texts.settings.club.members.active_status_label}
+                          tone="success"
+                          withDot
+                        />
 
                         {member.source === "member" && member.membershipId ? (
                           <DataTableActions>
@@ -488,7 +484,7 @@ export function MembersTab({
               </FormBanner>
             ) : null}
 
-            <div className="rounded-card border border-border bg-secondary/40 px-4 py-3">
+            <div className="rounded-card border border-border bg-secondary-readonly px-4 py-3">
               <FormSection>{texts.settings.club.members.remove_dialog_member_label}</FormSection>
               <p className="mt-1 font-semibold text-foreground">{removingMember.fullName}</p>
               <p className="text-sm text-muted-foreground">{removingMember.email}</p>

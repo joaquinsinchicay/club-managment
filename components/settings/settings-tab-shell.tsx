@@ -46,7 +46,7 @@ export function SettingsTabShell({
                 placeholder={searchPlaceholder}
                 value={searchValue ?? ""}
                 onChange={(e) => onSearch(e.target.value)}
-                className="min-h-11 w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="min-h-11 w-full rounded-card border border-border bg-card py-3 pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
           ) : null}
@@ -55,7 +55,7 @@ export function SettingsTabShell({
             <button
               type="button"
               onClick={onCta}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:shrink-0"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-card bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95 sm:shrink-0"
             >
               <span aria-hidden="true">+</span>
               {ctaLabel}

@@ -136,7 +136,7 @@ export function ToastItem({ entry, paused, onDismiss }: ToastItemProps) {
       aria-live={variant.ariaLive}
       className={cn(
         "relative w-full overflow-hidden rounded-card bg-ds-slate-900 text-white shadow-pop",
-        "ring-1 ring-white/10"
+        "ring-1 ring-toast-bg-overlay"
       )}
     >
       <div className="flex items-start gap-3 p-4 pr-10">
@@ -152,7 +152,7 @@ export function ToastItem({ entry, paused, onDismiss }: ToastItemProps) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-[14px] font-semibold leading-5 text-white">{title}</p>
+            <p className="text-body font-semibold leading-5 text-white">{title}</p>
             {action ? (
               <button
                 type="button"
@@ -160,15 +160,15 @@ export function ToastItem({ entry, paused, onDismiss }: ToastItemProps) {
                   action.onClick();
                   onDismiss();
                 }}
-                className="shrink-0 text-[13px] font-semibold text-white/90 hover:text-white"
+                className="shrink-0 text-label text-toast-fg hover:text-white"
               >
                 {action.label}
               </button>
             ) : null}
           </div>
-          {desc ? <p className="mt-0.5 text-[13px] leading-5 text-white/70">{desc}</p> : null}
+          {desc ? <p className="mt-0.5 text-label font-normal leading-5 text-toast-fg-default">{desc}</p> : null}
           {meta ? (
-            <p className="mt-1 font-mono text-[12px] leading-4 text-white/50">{meta}</p>
+            <p className="mt-1 text-small font-mono leading-4 text-toast-fg-faint">{meta}</p>
           ) : null}
         </div>
       </div>
@@ -176,7 +176,7 @@ export function ToastItem({ entry, paused, onDismiss }: ToastItemProps) {
         type="button"
         onClick={onDismiss}
         aria-label={texts.common.actions.close}
-        className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-btn text-white/60 hover:bg-white/10 hover:text-white"
+        className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-btn text-toast-fg-mute hover:bg-toast-bg-overlay hover:text-white"
       >
         <svg viewBox="0 0 20 20" className="size-4" aria-hidden fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
           <path d="m5 5 10 10" />
@@ -184,7 +184,7 @@ export function ToastItem({ entry, paused, onDismiss }: ToastItemProps) {
         </svg>
       </button>
       {hasAutoDismiss ? (
-        <div className="h-[2px] w-full bg-white/10" aria-hidden>
+        <div className="h-[2px] w-full bg-toast-bg-overlay" aria-hidden>
           <div
             className={cn("h-full transition-[width] duration-75 ease-linear", variant.progress)}
             style={{ width: `${Math.max(0, (1 - progress) * 100)}%` }}

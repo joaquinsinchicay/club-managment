@@ -341,7 +341,7 @@ export default async function RrhhPage() {
                       ? "text-sm text-muted-foreground"
                       : (summary.monthlyCost.deltaPct ?? 0) >= 0
                         ? "text-sm font-medium text-ds-amber-700"
-                        : "text-sm font-medium text-emerald-700"
+                        : "text-sm font-medium text-success"
                   }
                 >
                   {monthlyDeltaLabel}

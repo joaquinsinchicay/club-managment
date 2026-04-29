@@ -35,11 +35,11 @@ type SegmentedNavProps = {
   className?: string;
 };
 
-const CONTAINER_CLASS = "flex gap-0.5 rounded-card bg-slate-100 p-0.75";
+const CONTAINER_CLASS = "flex gap-0.5 rounded-card bg-secondary p-0.75";
 const ITEM_BASE_CLASS =
-  "flex-1 rounded-[7px] px-2.5 py-2 text-center text-xs font-semibold tracking-tight transition whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20";
-const ITEM_ACTIVE_CLASS = "bg-white text-foreground shadow-sm";
-const ITEM_INACTIVE_CLASS = "text-slate-600 hover:text-foreground disabled:opacity-50";
+  "flex-1 rounded-btn px-2.5 py-2 text-center text-xs font-semibold tracking-tight transition whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20";
+const ITEM_ACTIVE_CLASS = "bg-card text-foreground shadow-sm";
+const ITEM_INACTIVE_CLASS = "text-muted-foreground hover:text-foreground disabled:opacity-50";
 
 export function SegmentedNav({ items, activeId, ariaLabel, className }: SegmentedNavProps) {
   return (

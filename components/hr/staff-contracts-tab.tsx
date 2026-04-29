@@ -424,7 +424,7 @@ function FinalizeIconButton({ label, className, ...props }: FinalizeIconButtonPr
       aria-label={label}
       title={label}
       className={[
-        "inline-flex size-8 items-center justify-center rounded-btn border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100",
+        "inline-flex size-8 items-center justify-center rounded-btn border border-destructive/30 bg-destructive/10 text-destructive transition hover:bg-destructive/20",
         className ?? "",
       ].join(" ")}
       {...props}

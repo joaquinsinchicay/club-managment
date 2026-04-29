@@ -122,6 +122,76 @@ const RULES = [
     message: "Shell de card hardcoded en <section|article>. Usá <Card tone=default|muted>/<CardHeader>/<CardBody> de @/components/ui/card.",
     allowFiles: ["components/ui/"],
   },
+  {
+    // Fase 3.2 · B3 — Paleta Tailwind cruda en lugar de tokens semánticos.
+    // El DS define tokens HSL `success`, `warning`, `destructive`, `info` (próximo PR-2),
+    // y la paleta brand `ds-{color}-{050|700}` (que NO matchea aquí por el `ds-`).
+    // Excluido: `bg-white`, `bg-black`, `bg-gray-*` (variantes neutrales del tema base),
+    // `*-foreground` y `*-background` (ya son tokens). Los matches siempre tienen sufijo numérico.
+    //
+    // Mensaje sugerido por tono:
+    //   amber  → text-warning / bg-warning/10 / border-warning/20
+    //   red    → text-destructive / bg-destructive/10 / border-destructive/20
+    //   blue   → text-info / bg-info/10 / border-info/20  (token --info se introduce en PR-2)
+    //   green  / emerald → text-success / bg-success/10 / border-success/20
+    //   slate  → text-muted-foreground / bg-secondary / bg-muted
+    //   rose / pink / indigo → usar bg-ds-{color} brand token, no la paleta cruda Tailwind
+    id: "tailwind-raw-color",
+    pattern: /(?<!ds-)\b(bg|text|border|ring|hover:bg|hover:text|hover:border|focus:ring|focus:bg)-(amber|red|blue|emerald|green|slate|rose|indigo|pink|orange|yellow|teal|cyan)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
+    message: "Color Tailwind crudo. Migrar a token semántico (warning/destructive/info/success) o brand (ds-{color}-{050|700}).",
+    allowFiles: [
+      // Bloque B1 (PR-2) — ✅ cerrado.
+      // Bloque B2 (PR-3) — ✅ cerrado.
+      // Bloque B6 (PR-6) — ✅ cerrado.
+      // Bloque B7 (PR-4) — ✅ cerrado.
+    ],
+  },
+  {
+    // Fase 3.2 · B3 — Radio fuera de la taxonomía oficial (lib/tokens/radii.ts).
+    // Permitidos: rounded-{xs,chip,btn,card,shell,dialog,toast,full,none}.
+    // Bloqueados: rounded-{2xl,xl,lg,md,sm} y rounded-[Npx] arbitrarios.
+    // Excepción matcheable: rounded-[18px] y rounded-[26px] tienen sus propias reglas
+    // específicas más arriba; este pattern las repite pero con mensaje genérico.
+    id: "radius-out-of-taxonomy",
+    pattern: /\brounded-(2xl|xl|lg|md|sm)\b|\brounded-\[\d+px\]/,
+    message: "Radio fuera de la taxonomía. Usar rounded-{xs|chip|btn|card|shell|dialog|toast} de lib/tokens/radii.ts.",
+    allowFiles: [
+      // Bloque B1 (PR-2) — ✅ cerrado.
+      // Bloque B6 (PR-6) — ✅ cerrado.
+    ],
+  },
+  {
+    // Fase 3.2 · B5 — Opacidades ad-hoc del secondary. Usar tokens semánticos.
+    //   bg-secondary/20 → bg-secondary-faint
+    //   bg-secondary/30 → bg-secondary-subtle
+    //   bg-secondary/40 → bg-secondary-readonly
+    //   bg-secondary/50 → bg-secondary-hover
+    //   bg-secondary/60 → bg-secondary-pressed
+    // Definidos en tailwind.config.ts. Si necesitás una opacidad nueva,
+    // amplía el set discreto ahí en vez de introducir /N ad-hoc acá.
+    id: "secondary-opacity-ad-hoc",
+    pattern: /\bbg-secondary\/\d+\b|\bhover:bg-secondary\/\d+\b/,
+    message: "Opacidad ad-hoc de bg-secondary. Usar tokens secondary-{faint|subtle|readonly|hover|pressed}.",
+  },
+  {
+    // Fase 3.2 · B3 — Tipografía hardcoded vía text-[Npx] o tracking-[Nem].
+    // Tokens disponibles (lib/tokens/typography.ts):
+    //   10px → text-eyebrow,  11px → text-meta,    12px → text-small,
+    //   13px → text-label,    14px → text-body,    15px → text-card-title,
+    //   16px → text-h3,       17px → text-h4,      20px → text-h2,
+    //   24px → text-h1,       28px → text-display, mono → text-mono.
+    // tracking-[0.14em] está permitido SOLO dentro de FormSection (regla form-section-hardcoded
+    // ya cubre eso); el resto debe usar tokens tracking-eyebrow / tracking-card-eyebrow.
+    id: "typography-hardcoded",
+    pattern: /\btext-\[\d+(\.\d+)?px\]|\btracking-\[0\.\d+em\]/,
+    message: "Tipografía hardcoded. Usar tokens text-{eyebrow|meta|small|label|body|card-title|h3|h4|h2|h1|display|mono} y tracking-{eyebrow|card-eyebrow|section}.",
+    allowFiles: [
+      // Bloque B1 (PR-2) — ✅ cerrado (modal.tsx).
+      // Bloque B4 (PR-5) — ✅ cerrado.
+      // Bloque B6 (PR-6) — ✅ cerrado.
+      // Fase 3.3 — toast.tsx ✅ cerrado (typography migrada a text-body/label/small).
+    ],
+  },
 ];
 
 /**

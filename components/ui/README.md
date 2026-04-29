@@ -62,13 +62,13 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 | `<FormFieldLabel required>` | Label de campo individual. **Sentence case**, NO uppercase. |
 | `<FormSection required>` | Section header uppercase con `tracking-[0.14em]` (único estilo en toda la app). |
 | `<FormInput>` / `<FormSelect>` / `<FormTextarea>` | Reemplazan `<input/select/textarea className={CONTROL_CLASSNAME}>`. |
-| `<FormReadonly>` | Campo no editable. `<div>` con `bg-secondary/40` + `inline-flex items-center`. |
+| `<FormReadonly>` | Campo no editable. `<div>` con `bg-secondary-readonly` + `inline-flex items-center`. |
 | `<FormCheckboxCard>` | Checkbox estilo pill. |
 | `<FormBanner variant="warning"\|"destructive"\|"info">` | Callout. |
 | `<FormHelpText>` / `<FormError>` | Hints y errores inline. |
 | Constantes `CONTROL_CLASSNAME`, `FIELD_LABEL_CLASSNAME`, `FORM_GRID_CLASSNAME`, etc. | **Importar desde acá**. Nunca redeclarar localmente. |
 
-**No hacer**: `<input className="rounded-2xl …">`, `<input className="bg-secondary/40 …">` en inputs editables, labels uppercase con `tracking-[0.06em]`, section headers con tracking distinto de `0.14em`, `focus:ring-foreground/20`.
+**No hacer**: `<input className="rounded-2xl …">`, `<input className="bg-secondary-readonly …">` en inputs editables, labels uppercase con `tracking-[0.06em]`, section headers con tracking distinto de `0.14em`, `focus:ring-foreground/20`.
 
 **Referencia**: `components/dashboard/open-session-modal-form.tsx`, `components/settings/tabs/category-form.tsx`.
 
@@ -133,7 +133,7 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 |---|---|
 | **API mínima** | `<EmptyState title description icon action variant="dashed"\|"card"\|"inline" />` |
 | **Cuándo** | Empty state **standalone**. Si el empty está **dentro de un `DataTable`**, usar `<DataTableEmpty>`. |
-| **No hacer** | `<div className="rounded-xl border border-dashed border-border bg-secondary/30 …">` a mano. |
+| **No hacer** | `<div className="rounded-xl border border-dashed border-border bg-secondary-subtle …">` a mano. |
 
 ---
 
@@ -190,6 +190,6 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
    - **Grid alineado con header** → `<DataTable gridColumns="…">` + `<DataTableHeader>` + filas con `<DataTableCell>`.
    - **Flex libre** → `<DataTable>` (sin `gridColumns`) + filas con `useGrid={false}` y composición flex propia.
 3. Chips/montos/acciones → siempre los subcomponentes. Cero estilos inline.
-4. Empty → `<DataTableEmpty>`, nunca `border-dashed bg-secondary/30 p-6`.
+4. Empty → `<DataTableEmpty>`, nunca `border-dashed bg-secondary-subtle p-6`.
 
 Ver `MovementList` (grid) y `SecretariaMovementList` (flex) como referencia.

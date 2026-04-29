@@ -24,19 +24,19 @@ export const CONTROL_CLASSNAME =
 export const CONTROL_DISABLED_CLASSNAME = "disabled:opacity-60";
 export const FIELD_LABEL_CLASSNAME = "text-xs font-semibold text-foreground";
 export const FORM_SECTION_LABEL_CLASSNAME =
-  "text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground";
+  "text-xs font-semibold uppercase tracking-section text-muted-foreground";
 export const FORM_HELP_TEXT_CLASSNAME = "text-xs text-muted-foreground";
 export const FORM_ERROR_CLASSNAME = "text-xs font-medium text-destructive";
 export const FORM_READONLY_CLASSNAME =
-  "inline-flex h-11 w-full items-center rounded-card border border-border bg-secondary/40 px-4 text-sm text-muted-foreground";
+  "inline-flex h-11 w-full items-center rounded-card border border-border bg-secondary-readonly px-4 text-sm text-muted-foreground";
 export const FORM_CHECKBOX_CARD_CLASSNAME =
-  "flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary/50 has-[:checked]:border-foreground has-[:checked]:bg-secondary/50";
+  "flex min-h-11 cursor-pointer items-center gap-3 rounded-card border border-border bg-card px-4 py-3 text-sm text-foreground transition hover:bg-secondary-hover has-[:checked]:border-foreground has-[:checked]:bg-secondary-hover";
 export const FORM_BANNER_WARNING_CLASSNAME =
-  "rounded-card border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-slate-700";
+  "rounded-card border border-warning/20 bg-warning/10 px-4 py-3 text-xs leading-5 text-foreground";
 export const FORM_BANNER_DESTRUCTIVE_CLASSNAME =
-  "rounded-card border border-red-200 bg-red-50 px-4 py-3 text-xs leading-5 text-slate-700";
+  "rounded-card border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs leading-5 text-foreground";
 export const FORM_BANNER_INFO_CLASSNAME =
-  "rounded-card border border-blue-200 bg-blue-50 px-4 py-3 text-xs leading-5 text-slate-700";
+  "rounded-card border border-info/20 bg-info/10 px-4 py-3 text-xs leading-5 text-foreground";
 export const REQUIRED_SUFFIX = " *";
 
 type FormFieldProps = {
@@ -193,9 +193,9 @@ const BANNER_CLASS_BY_VARIANT: Record<FormBannerVariant, string> = {
 };
 
 const BANNER_ACCENT_BY_VARIANT: Record<FormBannerVariant, string> = {
-  warning: "font-bold text-amber-700",
-  destructive: "font-bold text-red-700",
-  info: "font-bold text-blue-700",
+  warning: "font-bold text-warning",
+  destructive: "font-bold text-destructive",
+  info: "font-bold text-info",
 };
 
 type FormBannerProps = HTMLAttributes<HTMLDivElement> & {

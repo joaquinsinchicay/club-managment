@@ -92,7 +92,7 @@ export function DataTableHeader({ className, children, ...rest }: DataTableHeade
     <div
       {...rest}
       className={cn(
-        "hidden border-b border-border/60 bg-secondary/20 px-4 py-3 md:grid md:items-center md:gap-4 md:px-5",
+        "hidden border-b border-border/60 bg-secondary-faint px-4 py-3 md:grid md:items-center md:gap-4 md:px-5",
         className,
       )}
       style={{ gridTemplateColumns: "var(--data-table-grid)" }}
@@ -173,8 +173,8 @@ function resolveRowClassName({
     "block w-full text-left transition-colors",
     rowPaddingClasses[density],
     rowTextClasses[density],
-    interactive && "cursor-pointer hover:bg-secondary/40 focus-visible:bg-secondary/40 focus:outline-none",
-    !interactive && "hover:bg-secondary/30",
+    interactive && "cursor-pointer hover:bg-secondary-readonly focus-visible:bg-secondary-readonly focus:outline-none",
+    !interactive && "hover:bg-secondary-subtle",
     hoverReveal && "group",
     useGrid &&
       "md:grid md:items-center md:gap-4 md:[grid-template-columns:var(--data-table-grid)]",
@@ -285,7 +285,7 @@ export function DataTableEmpty({ title, description, icon, action, className }: 
 type ChipTone = "neutral" | "income" | "expense" | "warning" | "info";
 
 const chipToneClasses: Record<ChipTone, string> = {
-  neutral: "bg-secondary/60 text-foreground",
+  neutral: "bg-secondary-pressed text-foreground",
   income: "bg-ds-green-050 text-ds-green-700",
   expense: "bg-ds-red-050 text-ds-red-700",
   warning: "bg-ds-amber-050 text-ds-amber-700",

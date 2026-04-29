@@ -487,7 +487,7 @@ export function SettlementsList({
                   <DataTableCell align="right">
                     {formatAmount(s.baseAmount, clubCurrencyCode)}
                     {s.requiresHoursInput ? (
-                      <span className="ml-2 text-[10px] font-semibold uppercase text-ds-amber-700">
+                      <span className="ml-2 text-eyebrow font-semibold uppercase text-ds-amber-700">
                         {sTexts.requires_hours_badge}
                       </span>
                     ) : null}
@@ -504,7 +504,7 @@ export function SettlementsList({
                         label={sTexts.status_options[s.status]}
                       />
                       {s.status === "generada" && s.returnedByRole ? (
-                        <span className="text-[10px] font-medium text-ds-amber-700">
+                        <span className="text-eyebrow font-medium text-ds-amber-700">
                           {sTexts.returned_by_template.replace(
                             "{role}",
                             sTexts.returned_role_options[s.returnedByRole],

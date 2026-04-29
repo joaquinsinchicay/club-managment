@@ -106,7 +106,7 @@ export default async function DashboardPage() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                   {texts.dashboard.overview.visible_accounts_label}
                 </p>
                 <p className="text-4xl font-semibold tracking-tight text-foreground">
@@ -114,8 +114,8 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              <div className="rounded-card border border-border bg-secondary/50 p-4">
-                <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <div className="rounded-card border border-border bg-secondary-hover p-4">
+                <p className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                   {texts.dashboard.overview.total_balance_label}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
@@ -143,8 +143,8 @@ export default async function DashboardPage() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-card border border-border bg-secondary/50 p-4">
-                  <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <div className="rounded-card border border-border bg-secondary-hover p-4">
+                  <p className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                     {texts.dashboard.overview.visible_accounts_label}
                   </p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
@@ -152,8 +152,8 @@ export default async function DashboardPage() {
                   </p>
                 </div>
 
-                <div className="rounded-card border border-border bg-secondary/50 p-4">
-                  <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <div className="rounded-card border border-border bg-secondary-hover p-4">
+                  <p className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                     {texts.dashboard.overview.recent_movements_label}
                   </p>
                   <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
@@ -166,8 +166,8 @@ export default async function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-card border border-border bg-secondary/50 p-4">
-                <p className="text-meta font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <div className="rounded-card border border-border bg-secondary-hover p-4">
+                <p className="text-meta font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
                   {texts.dashboard.overview.total_balance_label}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
