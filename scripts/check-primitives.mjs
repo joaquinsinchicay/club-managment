@@ -122,6 +122,104 @@ const RULES = [
     message: "Shell de card hardcoded en <section|article>. Usá <Card tone=default|muted>/<CardHeader>/<CardBody> de @/components/ui/card.",
     allowFiles: ["components/ui/"],
   },
+  {
+    // Fase 3.2 · B3 — Paleta Tailwind cruda en lugar de tokens semánticos.
+    // El DS define tokens HSL `success`, `warning`, `destructive`, `info` (próximo PR-2),
+    // y la paleta brand `ds-{color}-{050|700}` (que NO matchea aquí por el `ds-`).
+    // Excluido: `bg-white`, `bg-black`, `bg-gray-*` (variantes neutrales del tema base),
+    // `*-foreground` y `*-background` (ya son tokens). Los matches siempre tienen sufijo numérico.
+    //
+    // Mensaje sugerido por tono:
+    //   amber  → text-warning / bg-warning/10 / border-warning/20
+    //   red    → text-destructive / bg-destructive/10 / border-destructive/20
+    //   blue   → text-info / bg-info/10 / border-info/20  (token --info se introduce en PR-2)
+    //   green  / emerald → text-success / bg-success/10 / border-success/20
+    //   slate  → text-muted-foreground / bg-secondary / bg-muted
+    //   rose / pink / indigo → usar bg-ds-{color} brand token, no la paleta cruda Tailwind
+    id: "tailwind-raw-color",
+    pattern: /(?<!ds-)\b(bg|text|border|ring|hover:bg|hover:text|hover:border|focus:ring|focus:bg)-(amber|red|blue|emerald|green|slate|rose|indigo|pink|orange|yellow|teal|cyan)-(50|100|200|300|400|500|600|700|800|900|950)\b/,
+    message: "Color Tailwind crudo. Migrar a token semántico (warning/destructive/info/success) o brand (ds-{color}-{050|700}).",
+    allowFiles: [
+      // Bloque B1 (PR-2) — tokenizar primitivos UI.
+      "components/ui/modal-form.tsx",
+      "components/ui/status-badge.tsx",
+      "components/ui/button.tsx",
+      // Bloque B2 (PR-3) — header de Secretaría.
+      "app/(dashboard)/secretary/page.tsx",
+      // Bloque B6 (PR-6) — primitivos hand-rolled.
+      "components/ui/segmented-nav.tsx",
+      "components/ui/overlay.tsx",
+      "components/dashboard/active-club-selector.tsx",
+      "components/dashboard/close-session-modal-form.tsx",
+      "components/treasury/cost-centers-tab.tsx",
+      "components/hr/staff-contracts-tab.tsx",
+      // Bloque B7 (PR-4) — limpiar treasury-operation-forms.
+      "components/dashboard/treasury-operation-forms.tsx",
+      "components/dashboard/treasury-role-card.tsx",
+      "app/(dashboard)/rrhh/page.tsx",
+    ],
+  },
+  {
+    // Fase 3.2 · B3 — Radio fuera de la taxonomía oficial (lib/tokens/radii.ts).
+    // Permitidos: rounded-{xs,chip,btn,card,shell,dialog,toast,full,none}.
+    // Bloqueados: rounded-{2xl,xl,lg,md,sm} y rounded-[Npx] arbitrarios.
+    // Excepción matcheable: rounded-[18px] y rounded-[26px] tienen sus propias reglas
+    // específicas más arriba; este pattern las repite pero con mensaje genérico.
+    id: "radius-out-of-taxonomy",
+    pattern: /\brounded-(2xl|xl|lg|md|sm)\b|\brounded-\[\d+px\]/,
+    message: "Radio fuera de la taxonomía. Usar rounded-{xs|chip|btn|card|shell|dialog|toast} de lib/tokens/radii.ts.",
+    allowFiles: [
+      // Bloque B1 (PR-2) — Button radius="xl" pasa a "card".
+      "components/ui/button.tsx",
+      // Bloque B6 (PR-6) — primitivos y consumers hand-rolled.
+      "components/ui/avatar.tsx",
+      "components/ui/segmented-nav.tsx",
+      "components/ui/status-message.tsx",
+      "components/settings/settings-tab-shell.tsx",
+      "components/settings/settings-page-layout.tsx",
+      "components/settings/club-treasury-settings-manager.tsx",
+      "components/dashboard/treasury-card.tsx",
+    ],
+  },
+  {
+    // Fase 3.2 · B3 — Tipografía hardcoded vía text-[Npx] o tracking-[Nem].
+    // Tokens disponibles (lib/tokens/typography.ts):
+    //   10px → text-eyebrow,  11px → text-meta,    12px → text-small,
+    //   13px → text-label,    14px → text-body,    15px → text-card-title,
+    //   16px → text-h3,       17px → text-h4,      20px → text-h2,
+    //   24px → text-h1,       28px → text-display, mono → text-mono.
+    // tracking-[0.14em] está permitido SOLO dentro de FormSection (regla form-section-hardcoded
+    // ya cubre eso); el resto debe usar tokens tracking-eyebrow / tracking-card-eyebrow.
+    id: "typography-hardcoded",
+    pattern: /\btext-\[\d+(\.\d+)?px\]|\btracking-\[0\.\d+em\]/,
+    message: "Tipografía hardcoded. Usar tokens text-{eyebrow|meta|small|label|body|card-title|h3|h4|h2|h1|display|mono} y tracking-{eyebrow|card-eyebrow|section}.",
+    allowFiles: [
+      // Bloque B1 (PR-2) — Modal title/description tokenizados.
+      "components/ui/modal.tsx",
+      // Bloque B4 (PR-5) — find/replace global de tracking-[0.18em] / tracking-[0.08em].
+      // Mientras tanto, allowlist masivo. Migrar todos juntos en PR-5.
+      "components/ui/avatar.tsx",
+      "components/ui/card.tsx",
+      "components/ui/card-shell.tsx",
+      "components/ui/club-mark.tsx",
+      "components/ui/status-badge.tsx",
+      "components/ui/toast/toast.tsx",
+      "components/settings/club-treasury-settings-manager.tsx",
+      "components/settings/tabs/members-tab.tsx",
+      "components/dashboard/active-club-selector.tsx",
+      "components/dashboard/close-session-modal-form.tsx",
+      "components/dashboard/treasury-card.tsx",
+      "components/dashboard/treasury-conciliacion-tab.tsx",
+      "components/dashboard/treasury-role-card.tsx",
+      "components/dashboard/treasury-operation-forms.tsx",
+      "components/hr/contract-detail-view.tsx",
+      "components/hr/settlements-list.tsx",
+      "app/(dashboard)/dashboard/page.tsx",
+      "app/(dashboard)/treasury/staff/[id]/page.tsx",
+      // Bloque B6 (PR-6) — span con tracking-[0.14em] que debería ser <FormSection>.
+      "components/treasury/account-form.tsx",
+    ],
+  },
 ];
 
 /**
