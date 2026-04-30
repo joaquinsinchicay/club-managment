@@ -1,7 +1,9 @@
 "use client";
 
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useMemo } from "react";
 
+import { ConfirmDifferencesSection } from "@/components/dashboard/confirm-differences-section";
+import { SessionBalanceInput } from "@/components/dashboard/session-balance-input";
 import {
   DataTable,
   DataTableBody,
@@ -16,20 +18,17 @@ import {
   FormBanner,
   FormFieldLabel,
   FormHelpText,
-  FormInput,
   FormReadonly,
   FormSection,
   FormTextarea,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
-import {
-  formatLocalizedAmount,
-  formatLocalizedAmountInputOnBlur,
-  formatLocalizedAmountInputOnFocus,
-  parseLocalizedAmount,
-  sanitizeLocalizedAmountInput
-} from "@/lib/amounts";
+import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
 import type { DailyCashSessionValidation, DashboardTreasuryCard } from "@/lib/domain/access";
+import {
+  type SessionBalanceDraftBase,
+  useSessionBalanceDraft,
+} from "@/lib/hooks/use-session-balance-draft";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -41,13 +40,8 @@ type CloseSessionModalFormProps = {
   onCancel: () => void;
 };
 
-type DraftState = {
-  accountId: string;
-  accountName: string;
-  currencyCode: string;
+type CloseDraft = SessionBalanceDraftBase & {
   openingBalance: number;
-  expectedBalance: number;
-  declaredBalance: string;
 };
 
 function computeDaySummary(movements: DashboardTreasuryCard["movements"]) {
@@ -78,40 +72,25 @@ export function CloseSessionModalForm({
   const now = new Date();
   const timeString = now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 
-  const [drafts, setDrafts] = useState<DraftState[]>(
-    validation.accounts.map((account) => ({
-      accountId: account.accountId,
-      accountName: account.accountName,
-      currencyCode: account.currencyCode,
-      openingBalance: account.openingDeclaredBalance ?? 0,
-      expectedBalance: account.expectedBalance,
-      declaredBalance: formatLocalizedAmount(account.expectedBalance)
-    }))
-  );
+  const initial: CloseDraft[] = validation.accounts.map((account) => ({
+    accountId: account.accountId,
+    accountName: account.accountName,
+    currencyCode: account.currencyCode,
+    referenceBalance: account.expectedBalance,
+    openingBalance: account.openingDeclaredBalance ?? 0,
+    declaredBalance: formatLocalizedAmount(account.expectedBalance),
+  }));
 
-  const diffs = useMemo(() => {
-    return drafts.map((draft) => {
-      const parsed = parseLocalizedAmount(draft.declaredBalance);
-      const diff = parsed !== null ? parsed - draft.expectedBalance : 0;
-      return { accountId: draft.accountId, diff };
-    });
-  }, [drafts]);
+  const { drafts, updateDraft, hasDifferences, hasNegativeBalances } =
+    useSessionBalanceDraft<CloseDraft>(initial);
 
-  const hasDifferences = diffs.some((d) => Math.abs(d.diff) >= 0.01);
-  const hasNegativeBalances = useMemo(
-    () => drafts.some((d) => { const p = parseLocalizedAmount(d.declaredBalance); return p !== null && p < 0; }),
-    [drafts]
-  );
   const summary = useMemo(() => computeDaySummary(movements), [movements]);
 
-  function updateDraft(accountId: string, value: string) {
-    setDrafts((current) =>
-      current.map((d) => (d.accountId === accountId ? { ...d, declaredBalance: value } : d))
-    );
-  }
-
-  function getDiff(accountId: string) {
-    return diffs.find((d) => d.accountId === accountId)?.diff ?? 0;
+  function getDiff(accountId: string): number {
+    const draft = drafts.find((d) => d.accountId === accountId);
+    if (!draft) return 0;
+    const parsed = parseLocalizedAmount(draft.declaredBalance);
+    return parsed !== null ? parsed - draft.referenceBalance : 0;
   }
 
   function formatDiffLabel(diff: number): { label: string; positive: boolean } | null {
@@ -196,7 +175,7 @@ export function CloseSessionModalForm({
             </DataTableHeader>
             <DataTableBody>
               {drafts.map((draft) => {
-                const netMovements = draft.expectedBalance - draft.openingBalance;
+                const netMovements = draft.referenceBalance - draft.openingBalance;
                 const diff = getDiff(draft.accountId);
                 const diffLabel = formatDiffLabel(diff);
                 const parsedDeclared = parseLocalizedAmount(draft.declaredBalance);
@@ -211,7 +190,7 @@ export function CloseSessionModalForm({
                       <p className="text-xs text-muted-foreground">
                         {texts.dashboard.treasury.expected_balance_label}:{" "}
                         <span className="font-medium text-foreground">
-                          $ {formatLocalizedAmount(draft.expectedBalance)}
+                          $ {formatLocalizedAmount(draft.referenceBalance)}
                         </span>
                       </p>
                     </DataTableCell>
@@ -237,26 +216,15 @@ export function CloseSessionModalForm({
                       </p>
                     </DataTableCell>
                     <DataTableCell align="right">
-                      <div className="flex flex-col gap-1">
-                        <FormInput
-                          type="text"
-                          name="declared_balance"
-                          inputMode="decimal"
-                          value={draft.declaredBalance}
-                          onChange={(e) => updateDraft(draft.accountId, sanitizeLocalizedAmountInput(e.target.value))}
-                          onBlur={(e) => updateDraft(draft.accountId, formatLocalizedAmountInputOnBlur(e.target.value))}
-                          onFocus={(e) => updateDraft(draft.accountId, formatLocalizedAmountInputOnFocus(e.target.value))}
-                          className={cn(
-                            "text-right tabular-nums",
-                            isNegative && "border-destructive focus:ring-destructive/20"
-                          )}
-                        />
-                        {isNegative ? (
-                          <p className="text-right text-xs font-medium text-destructive">
-                            {texts.dashboard.treasury.close_session_negative_balance_error}
-                          </p>
-                        ) : null}
-                      </div>
+                      <SessionBalanceInput
+                        value={draft.declaredBalance}
+                        onChange={(next) => updateDraft(draft.accountId, next)}
+                        errorText={
+                          isNegative
+                            ? texts.dashboard.treasury.close_session_negative_balance_error
+                            : undefined
+                        }
+                      />
                     </DataTableCell>
                     <DataTableCell align="right">
                       <p
@@ -280,21 +248,12 @@ export function CloseSessionModalForm({
           <FormHelpText>{texts.dashboard.treasury.close_session_table_helper}</FormHelpText>
         </div>
 
-        {/* Motivo de la diferencia (solo si hay diferencias) */}
-        {hasDifferences ? (
-          <div className="flex flex-col gap-2">
-            <FormFieldLabel required>
-              {texts.dashboard.treasury.close_session_diff_notes_label}
-            </FormFieldLabel>
-            <FormTextarea
-              id="cl-diff-notes"
-              name="diff_notes"
-              placeholder={texts.dashboard.treasury.close_session_diff_notes_placeholder}
-              rows={3}
-              required
-            />
-          </div>
-        ) : null}
+        <ConfirmDifferencesSection
+          visible={hasDifferences}
+          id="cl-diff-notes"
+          label={texts.dashboard.treasury.close_session_diff_notes_label}
+          placeholder={texts.dashboard.treasury.close_session_diff_notes_placeholder}
+        />
 
         {/* Observaciones generales */}
         <div className="flex flex-col gap-2">
