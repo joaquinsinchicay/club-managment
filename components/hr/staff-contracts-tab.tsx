@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import type { RrhhActionResult } from "@/app/(dashboard)/settings/rrhh/actions";
 import { CreateContractForm } from "@/components/hr/create-contract-form";
@@ -36,7 +35,7 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/modal-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import type { SalaryStructure } from "@/lib/domain/salary-structure";
 import {
   formatContractCode,
@@ -44,7 +43,8 @@ import {
   type StaffContractStatus,
 } from "@/lib/domain/staff-contract";
 import type { StaffMember } from "@/lib/domain/staff-member";
-import { triggerClientFeedback } from "@/lib/client-feedback";
+import { useFilteredList } from "@/lib/hooks/use-filtered-list";
+import { useFormModal } from "@/lib/hooks/use-form-modal";
 import { texts } from "@/lib/texts";
 
 type StaffContractsTabProps = {
@@ -93,16 +93,18 @@ export function StaffContractsTab({
   createAction,
   finalizeAction,
 }: StaffContractsTabProps) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
-  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("vigente");
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [finalizing, setFinalizing] = useState<StaffContract | null>(null);
-
-  const [createPending, setCreatePending] = useState(false);
-  const [finalizePending, setFinalizePending] = useState(false);
+  // Hooks canonicos: useFormModal encapsula isOpen/target + isPending +
+  // handleSubmit que cierra el modal antes del await.
+  const create = useFormModal<void, RrhhActionResult>({
+    feedbackDomain: "settings",
+    action: createAction,
+  });
+  const finalize = useFormModal<StaffContract, RrhhActionResult>({
+    feedbackDomain: "settings",
+    action: finalizeAction,
+  });
 
   // Para el create flow: todos los colaboradores (no hay concepto de
   // activo/inactivo) + estructuras activas sin contrato vigente.
@@ -123,37 +125,23 @@ export function StaffContractsTab({
   const vigenteCount = countsByStatus.get("vigente") ?? 0;
   const finalizadoCount = countsByStatus.get("finalizado") ?? 0;
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return contracts.filter((c) => {
-      if (statusFilter !== "all" && c.status !== statusFilter) return false;
-      if (!q) return true;
-      return (
-        (c.staffMemberName ?? "").toLowerCase().includes(q) ||
-        (c.salaryStructureName ?? "").toLowerCase().includes(q) ||
-        (c.salaryStructureRole ?? "").toLowerCase().includes(q)
-      );
-    });
-  }, [contracts, search, statusFilter]);
-
-  async function runAction(
-    action: (fd: FormData) => Promise<RrhhActionResult>,
-    formData: FormData,
-    onSuccess: () => void,
-    setPending: (v: boolean) => void,
-  ) {
-    setPending(true);
-    try {
-      const result = await action(formData);
-      triggerClientFeedback("settings", result.code);
-      if (result.ok) {
-        onSuccess();
-        startTransition(() => router.refresh());
-      }
-    } finally {
-      setPending(false);
-    }
-  }
+  const filterPredicate = useCallback(
+    (c: StaffContract) =>
+      statusFilter === "all" ? true : c.status === statusFilter,
+    [statusFilter],
+  );
+  const searchPredicate = useCallback(
+    (c: StaffContract, q: string) =>
+      (c.staffMemberName ?? "").toLowerCase().includes(q) ||
+      (c.salaryStructureName ?? "").toLowerCase().includes(q) ||
+      (c.salaryStructureRole ?? "").toLowerCase().includes(q),
+    [],
+  );
+  const { search, setSearch, filtered } = useFilteredList({
+    items: contracts,
+    searchPredicate,
+    filterPredicate,
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -178,7 +166,7 @@ export function StaffContractsTab({
             </Link>
             <button
               type="button"
-              onClick={() => setCreateOpen(true)}
+              onClick={() => create.open()}
               className={buttonClass({ variant: "primary", size: "sm" })}
             >
               {scTexts.create_cta}
@@ -224,7 +212,7 @@ export function StaffContractsTab({
             canMutate && contracts.length === 0 ? (
               <button
                 type="button"
-                onClick={() => setCreateOpen(true)}
+                onClick={() => create.open()}
                 className={buttonClass({ variant: "primary", size: "sm" })}
               >
                 {scTexts.create_full_cta}
@@ -275,7 +263,7 @@ export function StaffContractsTab({
                   </span>
                 </DataTableCell>
                 <DataTableCell>
-                  <StatusBadge
+                  <Badge
                     tone={c.status === "vigente" ? "success" : "neutral"}
                     label={scTexts.status_options[c.status]}
                   />
@@ -289,7 +277,7 @@ export function StaffContractsTab({
                     {canMutate && c.status === "vigente" ? (
                       <FinalizeIconButton
                         label={scTexts.action_finalize}
-                        onClick={() => setFinalizing(c)}
+                        onClick={() => finalize.openWith(c)}
                       />
                     ) : null}
                   </DataTableActions>
@@ -302,45 +290,38 @@ export function StaffContractsTab({
 
       {/* Create */}
       <Modal
-        open={createOpen}
-        onClose={() => !createPending && setCreateOpen(false)}
+        open={create.isOpen}
+        onClose={create.close}
         title={scTexts.create_modal_title}
         description={scTexts.create_modal_description}
         size="md"
-        closeDisabled={createPending}
+        closeDisabled={create.isPending}
       >
         <CreateContractForm
           members={activeMembers}
           structures={availableStructures}
           clubCurrencyCode={clubCurrencyCode}
-          onCancel={() => setCreateOpen(false)}
-          onSubmit={(fd) =>
-            runAction(createAction, fd, () => setCreateOpen(false), setCreatePending)
-          }
+          onCancel={create.close}
+          onSubmit={create.handleSubmit}
         />
       </Modal>
 
       {/* Finalize */}
       <Modal
-        open={finalizing !== null}
-        onClose={() => !finalizePending && setFinalizing(null)}
+        open={finalize.isOpen}
+        onClose={finalize.close}
         title={scTexts.finalize_modal_title}
         description={scTexts.finalize_modal_description}
         size="sm"
-        closeDisabled={finalizePending}
+        closeDisabled={finalize.isPending}
       >
-        {finalizing ? (
-          <form
-            action={(fd) =>
-              runAction(finalizeAction, fd, () => setFinalizing(null), setFinalizePending)
-            }
-            className="grid gap-4"
-          >
-            <input type="hidden" name="staff_contract_id" value={finalizing.id} />
+        {finalize.target ? (
+          <form action={finalize.handleSubmit} className="grid gap-4">
+            <input type="hidden" name="staff_contract_id" value={finalize.target.id} />
             <FormBanner variant="destructive">{scTexts.finalize_warning}</FormBanner>
             <FormField>
               <FormFieldLabel>{scTexts.form_member_label}</FormFieldLabel>
-              <FormReadonly>{finalizing.staffMemberName ?? "—"}</FormReadonly>
+              <FormReadonly>{finalize.target.staffMemberName ?? "—"}</FormReadonly>
             </FormField>
             <FormField>
               <FormFieldLabel required>{scTexts.form_end_date_label}</FormFieldLabel>
@@ -357,7 +338,7 @@ export function StaffContractsTab({
               />
             </FormField>
             <ModalFooter
-              onCancel={() => setFinalizing(null)}
+              onCancel={finalize.close}
               cancelLabel={scTexts.cancel_cta}
               submitLabel={scTexts.finalize_submit_cta}
               pendingLabel={scTexts.submit_pending}

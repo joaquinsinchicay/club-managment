@@ -1,5 +1,7 @@
 import type { TreasuryAccount, TreasuryAccountDetail } from "@/lib/domain/access";
 import { formatLocalizedAmount } from "@/lib/amounts";
+import { formatMovementDateTime, formatMovementGroupDate } from "@/lib/dates";
+import { getMovementTypeBulletClass } from "@/lib/treasury-ui-helpers";
 import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChipLink } from "@/components/ui/chip";
@@ -34,35 +36,8 @@ function formatPaginationText(template: string, values: Record<string, number>) 
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ""));
 }
 
-function getBulletClassName(type: TreasuryMovementType | string): string {
-  if (type === "ingreso") return "bg-ds-green";
-  if (type === "egreso") return "bg-ds-red";
-  return "bg-ds-slate-400";
-}
-
-function formatMovementDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(date);
-}
-
-function formatMovementGroupDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "long"
-  }).format(date);
-}
+// getBulletClassName movido a lib/treasury-ui-helpers.ts → getMovementTypeBulletClass (Fase 4 · T1.3).
+// formatMovementDateTime y formatMovementGroupDate movidos a lib/dates.ts (Fase 4 · T1.1).
 
 function getTransferReferenceSuffix(value: string) {
   return value.slice(-6);
@@ -116,7 +91,7 @@ export function AccountDetailCard({
         backLabel={secondaryActionLabel}
       />
 
-      <Card as="section" className="w-full max-w-5xl p-6 sm:p-8" padding="none">
+      <Card as="section" maxWidth="5xl" padding="spacious">
         <div className="space-y-5">
           {accounts.length > 0 ? (
             <div className="grid gap-2">
@@ -197,7 +172,7 @@ export function AccountDetailCard({
                             >
                               <div className="flex items-start gap-3">
                                 <span
-                                  className={`mt-1.5 size-2 shrink-0 rounded-full ${getBulletClassName(movement.movementType)}`}
+                                  className={`mt-1.5 size-2 shrink-0 rounded-full ${getMovementTypeBulletClass(movement.movementType)}`}
                                   aria-hidden="true"
                                 />
                                 <div className="min-w-0 flex-1">
@@ -263,7 +238,7 @@ export function AccountDetailCard({
 
                       <div className="flex gap-3">
                         {activePage > 1 ? (
-                          <LinkButton href={previousPageHref}>
+                          <LinkButton href={previousPageHref} variant="secondary">
                             {texts.dashboard.treasury.detail_pagination_previous_cta}
                           </LinkButton>
                         ) : (
@@ -273,7 +248,7 @@ export function AccountDetailCard({
                         )}
 
                         {activePage < totalPages ? (
-                          <LinkButton href={nextPageHref}>
+                          <LinkButton href={nextPageHref} variant="secondary">
                             {texts.dashboard.treasury.detail_pagination_next_cta}
                           </LinkButton>
                         ) : (

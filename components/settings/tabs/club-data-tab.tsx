@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/modal-form";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
 import type { Club, ClubType, TreasuryCurrencyCode } from "@/lib/domain/access";
+import { useFieldValidation } from "@/lib/hooks/use-field-validation";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 import { isValidEmail, validatePhone } from "@/lib/validators/contact";
@@ -41,36 +42,42 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
   const [colorSecondary, setColorSecondary] = useState<string>(club.colorSecondary ?? "#e2e8f0");
   const [cuit, setCuit] = useState<string>(club.cuit ?? "");
   const [email, setEmail] = useState<string>(club.email ?? "");
-  const [emailError, setEmailError] = useState<string | null>(null);
   const [telefono, setTelefono] = useState<string>(club.telefono ?? "");
-  const [telefonoError, setTelefonoError] = useState<string | null>(null);
+
+  // Hooks de validación inline (Fase 4 · T2.5).
+  // El validator recibe el value ya trimmed; devuelve null cuando es
+  // válido (incluido el caso "vacío" — el campo es opcional).
+  const emailValidation = useFieldValidation((value) => {
+    if (!value) return null;
+    return isValidEmail(value) ? null : identityTexts.feedback.invalid_email;
+  });
+  const telefonoValidation = useFieldValidation((value) => {
+    if (!value) return null;
+    const result = validatePhone(value);
+    if (result.ok) return null;
+    return result.reason === "missing_prefix"
+      ? identityTexts.feedback.invalid_telefono_missing_prefix
+      : identityTexts.feedback.invalid_telefono;
+  });
+
+  const emailError = emailValidation.error;
+  const telefonoError = telefonoValidation.error;
 
   function handleEmailBlur(event: React.FocusEvent<HTMLInputElement>) {
-    const value = event.target.value.trim();
-    if (!value) {
-      setEmailError(null);
-      return;
-    }
-    setEmailError(isValidEmail(value) ? null : identityTexts.feedback.invalid_email);
+    emailValidation.validate(event.target.value);
   }
 
   function handleTelefonoBlur(event: React.FocusEvent<HTMLInputElement>) {
     const value = event.target.value.trim();
-    if (!value) {
-      setTelefonoError(null);
-      return;
+    if (value) {
+      // Side effect: si el teléfono valida, normalizamos el state local
+      // a la forma canónica (ej. agregar prefijo). Esto NO vive en el
+      // hook (es lógica específica de teléfono). El hook solo gestiona
+      // el error.
+      const result = validatePhone(value);
+      if (result.ok) setTelefono(result.normalized);
     }
-    const result = validatePhone(value);
-    if (result.ok) {
-      setTelefono(result.normalized);
-      setTelefonoError(null);
-      return;
-    }
-    setTelefonoError(
-      result.reason === "missing_prefix"
-        ? identityTexts.feedback.invalid_telefono_missing_prefix
-        : identityTexts.feedback.invalid_telefono,
-    );
+    telefonoValidation.validate(event.target.value);
   }
 
   function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -123,9 +130,9 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
     setColorSecondary(club.colorSecondary ?? "#e2e8f0");
     setCuit(club.cuit ?? "");
     setEmail(club.email ?? "");
-    setEmailError(null);
+    emailValidation.clear();
     setTelefono(club.telefono ?? "");
-    setTelefonoError(null);
+    telefonoValidation.clear();
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -290,7 +297,7 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
                 value={email}
                 onChange={(event) => {
                   setEmail(event.target.value);
-                  if (emailError) setEmailError(null);
+                  if (emailError) emailValidation.clear();
                 }}
                 onBlur={handleEmailBlur}
                 placeholder={identityTexts.email_placeholder}
@@ -309,7 +316,7 @@ export function ClubDataTab({ club, canEdit, updateClubIdentityAction }: ClubDat
                 value={telefono}
                 onChange={(event) => {
                   setTelefono(event.target.value);
-                  if (telefonoError) setTelefonoError(null);
+                  if (telefonoError) telefonoValidation.clear();
                 }}
                 onBlur={handleTelefonoBlur}
                 placeholder={identityTexts.telefono_placeholder}

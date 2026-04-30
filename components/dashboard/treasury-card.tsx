@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { startTransition, type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { triggerClientFeedback } from "@/lib/client-feedback";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
 
 import { CloseSessionModalForm } from "@/components/dashboard/close-session-modal-form";
 import { OpenSessionModalForm } from "@/components/dashboard/open-session-modal-form";
@@ -28,16 +29,12 @@ import { Modal } from "@/components/ui/modal";
 import { NavigationLinkWithLoader } from "@/components/ui/navigation-link-with-loader";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { formatLocalizedAmount, parseLocalizedAmount } from "@/lib/amounts";
+import { formatSessionTime } from "@/lib/dates";
 import type { TreasuryActionResponse } from "@/app/(dashboard)/dashboard/treasury-actions";
 import type {
-  ClubActivity,
   ClubCalendarEvent,
   DailyCashSessionValidation,
   DashboardTreasuryCard as DashboardTreasuryCardData,
-  ReceiptFormat,
-  TreasuryAccount,
-  TreasuryCategory,
-  TreasuryCurrencyConfig,
   TreasuryMovementType
 } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
@@ -45,15 +42,7 @@ import { cn } from "@/lib/utils";
 
 type TreasuryCardProps = {
   treasuryCard: DashboardTreasuryCardData;
-  movementAccounts: TreasuryAccount[];
-  transferSourceAccounts: TreasuryAccount[];
-  transferTargetAccounts: TreasuryAccount[];
-  categories: TreasuryCategory[];
-  activities: ClubActivity[];
   calendarEvents: ClubCalendarEvent[];
-  currencies: TreasuryCurrencyConfig[];
-  movementTypes: TreasuryMovementType[];
-  receiptFormats: ReceiptFormat[];
   closeSessionValidation: DailyCashSessionValidation | null;
   openSessionValidation: DailyCashSessionValidation | null;
   currentUserDisplayName: string;
@@ -63,20 +52,9 @@ type TreasuryCardProps = {
   createAccountTransferAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   closeDailyCashSessionModalAction: (formData: FormData) => Promise<TreasuryActionResponse>;
   openDailyCashSessionModalAction: (formData: FormData) => Promise<TreasuryActionResponse>;
-  /** Contratos RRHH para el selector "Contrato" en los modales de movimiento. */
-  staffContracts?: Array<{
-    contractId: string;
-    staffMemberId: string;
-    label: string;
-  }>;
 };
 
-function formatSessionTime(isoString: string | null): string | null {
-  if (!isoString) return null;
-  const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit" }).format(date);
-}
+// formatSessionTime importado de lib/dates.ts (Fase 4 · T1.1).
 
 type SessionConfig = {
   borderColor: string;
@@ -479,15 +457,7 @@ function MovementsCard({
 
 export function TreasuryCard({
   treasuryCard,
-  movementAccounts,
-  transferSourceAccounts,
-  transferTargetAccounts,
-  categories,
-  activities,
   calendarEvents,
-  currencies,
-  movementTypes,
-  receiptFormats,
   closeSessionValidation,
   openSessionValidation,
   currentUserDisplayName,
@@ -496,9 +466,19 @@ export function TreasuryCard({
   updateSecretariaTransferAction,
   createAccountTransferAction,
   closeDailyCashSessionModalAction,
-  openDailyCashSessionModalAction,
-  staffContracts
+  openDailyCashSessionModalAction
 }: TreasuryCardProps) {
+  // Datos de dominio del context (Fase 4 · T3.2 — extension a TreasuryCard
+  // y a sus 7 forms internos). Antes eran 9 props (movementAccounts,
+  // transferSourceAccounts, transferTargetAccounts, categories, activities,
+  // currencies, movementTypes, receiptFormats, staffContracts). Ahora cada
+  // form los consume directamente via useTreasuryData(). Este componente
+  // solo necesita transferSourceAccounts/transferTargetAccounts para
+  // pasarlos a AccountTransferForm/EditForm — las cuentas de transfer
+  // siguen como prop porque varían según el rol del consumer (secretaria
+  // vs tesoreria); ver doc en account-transfer-form.tsx.
+  const { transferSourceAccounts, transferTargetAccounts } = useTreasuryData();
+
   const router = useRouter();
   const [localTreasuryCard, setLocalTreasuryCard] = useState(treasuryCard);
   const canCreateMovement = localTreasuryCard.availableActions.includes("create_movement");
@@ -755,18 +735,11 @@ export function TreasuryCard({
         size="md"
       >
         <SecretariaMovementForm
-          accounts={movementAccounts}
-          categories={categories}
-          activities={activities}
-          currencies={currencies}
-          movementTypes={movementTypes}
-          receiptFormats={receiptFormats}
           submitAction={handleCreateTreasuryMovement}
           submitLabel={texts.dashboard.treasury.create_cta}
           pendingLabel={texts.dashboard.treasury.create_loading}
           sessionDate={localTreasuryCard.sessionDate}
           onCancel={() => setActiveModal(null)}
-          staffContracts={staffContracts}
         />
       </Modal>
 
@@ -783,18 +756,11 @@ export function TreasuryCard({
       >
         {selectedMovement ? (
           <SecretariaMovementEditForm
-            accounts={movementAccounts}
-            categories={categories}
-            activities={activities}
-            currencies={currencies}
-            movementTypes={movementTypes}
-            receiptFormats={receiptFormats}
             submitAction={handleUpdateSecretariaMovement}
             submitLabel={texts.dashboard.treasury.update_cta}
             pendingLabel={texts.dashboard.treasury.update_loading}
             movement={selectedMovement}
             initialCostCenterIds={selectedMovement.costCenterIds ?? []}
-            staffContracts={staffContracts}
             onCancel={() => {
               setActiveModal(null);
               setSelectedMovement(null);
@@ -837,7 +803,6 @@ export function TreasuryCard({
               initialValues={initialValues}
               sourceAccounts={transferSourceAccounts}
               targetAccounts={transferTargetAccounts}
-              currencies={currencies}
               submitAction={handleUpdateSecretariaTransfer}
               sessionDate={localTreasuryCard.sessionDate}
               onCancel={() => {
@@ -860,7 +825,6 @@ export function TreasuryCard({
         <AccountTransferForm
           sourceAccounts={transferSourceAccounts}
           targetAccounts={transferTargetAccounts}
-          currencies={currencies}
           submitAction={handleCreateAccountTransfer}
           sessionDate={localTreasuryCard.sessionDate}
           onCancel={() => setActiveModal(null)}

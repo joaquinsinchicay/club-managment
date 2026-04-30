@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import type { ClubActivity, TreasuryCategory, TreasuryCategoryMovementType } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import {
@@ -40,14 +40,14 @@ function getMovementTypeBadge(movementType: TreasuryCategoryMovementType) {
   const label = treasuryTexts.category_movement_types[movementType].toUpperCase();
 
   if (movementType === "ingreso") {
-    return <StatusBadge label={label} tone="success" />;
+    return <Badge label={label} tone="success" />;
   }
 
   if (movementType === "egreso") {
-    return <StatusBadge label={label} tone="danger" />;
+    return <Badge label={label} tone="danger" />;
   }
 
-  return <StatusBadge label={label} tone="neutral" />;
+  return <Badge label={label} tone="neutral" />;
 }
 
 function formatSubcategoriesCount(count: number) {
@@ -264,7 +264,7 @@ export function CategoriesActivitiesTab({
           action={createTreasuryCategoryAction}
           submitLabel={treasuryTexts.save_category_cta}
           pendingLabel={treasuryTexts.save_category_loading}
-          onClose={() => setIsCreatingCategory(false)}
+          onCancel={() => setIsCreatingCategory(false)}
           onSuccess={() => setIsCreatingCategory(false)}
         />
       </Modal>
@@ -282,7 +282,7 @@ export function CategoriesActivitiesTab({
             submitLabel={treasuryTexts.update_category_cta}
             pendingLabel={treasuryTexts.update_category_loading}
             defaultCategory={editingCategory}
-            onClose={() => setEditingCategory(null)}
+            onCancel={() => setEditingCategory(null)}
             onSuccess={() => setEditingCategory(null)}
           />
         ) : null}
@@ -298,7 +298,7 @@ export function CategoriesActivitiesTab({
           action={createClubActivityAction}
           submitLabel={treasuryTexts.save_activity_cta}
           pendingLabel={treasuryTexts.save_activity_loading}
-          onClose={() => setIsCreatingActivity(false)}
+          onCancel={() => setIsCreatingActivity(false)}
           onSuccess={() => setIsCreatingActivity(false)}
         />
       </Modal>
@@ -316,7 +316,7 @@ export function CategoriesActivitiesTab({
             submitLabel={treasuryTexts.update_activity_cta}
             pendingLabel={treasuryTexts.update_activity_loading}
             defaultActivity={editingActivity}
-            onClose={() => setEditingActivity(null)}
+            onCancel={() => setEditingActivity(null)}
             onSuccess={() => setEditingActivity(null)}
           />
         ) : null}

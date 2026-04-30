@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { FormSection } from "@/components/ui/modal-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { texts } from "@/lib/texts";
 
 type PlaceholderTabProps = {
@@ -11,11 +11,11 @@ type PlaceholderTabProps = {
 
 export function PlaceholderTab({ eyebrow, title, description }: PlaceholderTabProps) {
   return (
-    <Card tone="muted" className="border-dashed p-6 sm:p-8">
+    <Card tone="muted" padding="spacious" dashed>
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <FormSection>{eyebrow}</FormSection>
-          <StatusBadge
+          <Badge
             label={texts.settings.club.placeholders.coming_soon_badge}
             tone="warning"
           />

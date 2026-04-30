@@ -1,6 +1,6 @@
 import { AppHeader } from "@/components/navigation/app-header";
 import { Card, CardBody } from "@/components/ui/card";
-import { CardShell } from "@/components/ui/card-shell";
+import { Badge } from "@/components/ui/badge";
 import type { SessionContext } from "@/lib/auth/service";
 import { texts } from "@/lib/texts";
 
@@ -14,11 +14,18 @@ export function PendingApprovalCard({ context }: PendingApprovalCardProps) {
       <AppHeader context={context} />
 
       <main className="mx-auto w-full max-w-5xl px-4 py-10">
-        <CardShell
-          eyebrow={texts.auth.pending_approval.eyebrow}
-          title={texts.auth.pending_approval.title}
-          description={texts.auth.pending_approval.description}
-        >
+        <Card maxWidth="md" padding="spacious" className="rounded-dialog">
+          <header className="mb-6 space-y-3">
+            <Badge label={texts.auth.pending_approval.eyebrow} tone="neutral" />
+            <div className="space-y-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-card-foreground">
+                {texts.auth.pending_approval.title}
+              </h1>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {texts.auth.pending_approval.description}
+              </p>
+            </div>
+          </header>
           <div className="space-y-4 text-sm text-muted-foreground">
             <Card tone="muted" padding="compact">
               <CardBody>
@@ -28,7 +35,7 @@ export function PendingApprovalCard({ context }: PendingApprovalCardProps) {
             </Card>
             <p>{texts.auth.pending_approval.next_step}</p>
           </div>
-        </CardShell>
+        </Card>
       </main>
     </div>
   );

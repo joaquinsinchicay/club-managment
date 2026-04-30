@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 
 import Link from "next/link";
 
@@ -25,12 +24,13 @@ import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import { FormBanner } from "@/components/ui/modal-form";
 import { StaffMemberFormFields } from "@/components/hr/staff-member-form-fields";
-import { triggerClientFeedback } from "@/lib/client-feedback";
 import {
   STAFF_VINCULO_TYPES,
   type StaffMember,
   type StaffVinculoType,
 } from "@/lib/domain/staff-member";
+import { useFilteredList } from "@/lib/hooks/use-filtered-list";
+import { useFormModal } from "@/lib/hooks/use-form-modal";
 import { texts } from "@/lib/texts";
 
 type ContractFilter = "with_active" | "all" | "without_active";
@@ -71,14 +71,14 @@ export function StaffMembersTab({
   createAction,
   initialContractFilter = "with_active",
 }: StaffMembersTabProps) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
-  const [search, setSearch] = useState("");
   const [vinculoFilter, setVinculoFilter] = useState<VinculoFilter>("all");
   const [contractFilter, setContractFilter] = useState<ContractFilter>(initialContractFilter);
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createPending, setCreatePending] = useState(false);
+  // Hook canonico: state machine del modal + useServerAction interno.
+  const create = useFormModal<void, RrhhActionResult>({
+    feedbackDomain: "settings",
+    action: createAction,
+  });
 
   const alertsCount = useMemo(
     () => members.filter(isMemberInAlert).length,
@@ -86,40 +86,28 @@ export function StaffMembersTab({
   );
   const withActiveCount = members.length - alertsCount;
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return members.filter((m) => {
+  const filterPredicate = useCallback(
+    (m: StaffMember) => {
       if (vinculoFilter !== "all" && m.vinculoType !== vinculoFilter) return false;
       if (contractFilter === "with_active" && !m.hasActiveContract) return false;
       if (contractFilter === "without_active" && m.hasActiveContract) return false;
-      if (!q) return true;
-      return (
-        m.firstName.toLowerCase().includes(q) ||
-        m.lastName.toLowerCase().includes(q) ||
-        m.dni.includes(q) ||
-        (m.cuitCuil?.includes(q) ?? false)
-      );
-    });
-  }, [members, search, vinculoFilter, contractFilter]);
-
-  async function runAction(
-    action: (fd: FormData) => Promise<RrhhActionResult>,
-    formData: FormData,
-    onSuccess: () => void,
-    setPending: (v: boolean) => void,
-  ) {
-    setPending(true);
-    try {
-      const result = await action(formData);
-      triggerClientFeedback("settings", result.code);
-      if (result.ok) {
-        onSuccess();
-        startTransition(() => router.refresh());
-      }
-    } finally {
-      setPending(false);
-    }
-  }
+      return true;
+    },
+    [vinculoFilter, contractFilter],
+  );
+  const searchPredicate = useCallback(
+    (m: StaffMember, q: string) =>
+      m.firstName.toLowerCase().includes(q) ||
+      m.lastName.toLowerCase().includes(q) ||
+      m.dni.includes(q) ||
+      (m.cuitCuil?.includes(q) ?? false),
+    [],
+  );
+  const { search, setSearch, filtered } = useFilteredList({
+    items: members,
+    searchPredicate,
+    filterPredicate,
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -135,7 +123,7 @@ export function StaffMembersTab({
         {canMutate ? (
           <button
             type="button"
-            onClick={() => setCreateOpen(true)}
+            onClick={() => create.open()}
             className={buttonClass({ variant: "primary", size: "sm" })}
           >
             {smTexts.create_cta}
@@ -242,7 +230,7 @@ export function StaffMembersTab({
             canMutate && members.length === 0 ? (
               <button
                 type="button"
-                onClick={() => setCreateOpen(true)}
+                onClick={() => create.open()}
                 className={buttonClass({ variant: "primary", size: "sm" })}
               >
                 {smTexts.empty_cta}
@@ -323,22 +311,17 @@ export function StaffMembersTab({
 
       {/* Create */}
       <Modal
-        open={createOpen}
-        onClose={() => !createPending && setCreateOpen(false)}
+        open={create.isOpen}
+        onClose={create.close}
         title={smTexts.create_modal_title}
         description={smTexts.create_modal_description}
         size="md"
-        closeDisabled={createPending}
+        closeDisabled={create.isPending}
       >
-        <form
-          action={(fd) =>
-            runAction(createAction, fd, () => setCreateOpen(false), setCreatePending)
-          }
-          className="grid gap-4"
-        >
+        <form action={create.handleSubmit} className="grid gap-4">
           <StaffMemberFormFields />
           <ModalFooter
-            onCancel={() => setCreateOpen(false)}
+            onCancel={create.close}
             cancelLabel={smTexts.cancel_cta}
             submitLabel={smTexts.create_submit_cta}
             pendingLabel={smTexts.submit_pending}

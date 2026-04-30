@@ -25,50 +25,27 @@ import { FormInput } from "@/components/ui/modal-form";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { formatLocalizedAmount } from "@/lib/amounts";
+import { formatMovementDateTime } from "@/lib/dates";
 import type {
-  ClubActivity,
   ClubCalendarEvent,
   ConsolidationMovement,
   ConsolidationTransferEdit,
-  ReceiptFormat,
-  TreasuryAccount,
-  TreasuryCategory,
   TreasuryConsolidationDashboard,
-  TreasuryCurrencyConfig,
-  TreasuryMovementType
 } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 type TreasuryConciliacionTabProps = {
   dashboard: TreasuryConsolidationDashboard;
-  accounts: TreasuryAccount[];
-  transferSourceAccounts: TreasuryAccount[];
-  transferTargetAccounts: TreasuryAccount[];
-  categories: TreasuryCategory[];
-  activities: ClubActivity[];
   calendarEvents: ClubCalendarEvent[];
-  currencies: TreasuryCurrencyConfig[];
-  movementTypes: TreasuryMovementType[];
-  receiptFormats: ReceiptFormat[];
   updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   updateTransferBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
 };
 
-function formatMovementDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(date);
-}
+// formatMovementDateTime importado de lib/dates.ts (Fase 4 · T1.1).
 
 function buildEditableTransfer(
   movement: ConsolidationMovement,
@@ -124,18 +101,15 @@ function KpiTile({
 
 export function TreasuryConciliacionTab({
   dashboard,
-  accounts,
-  transferSourceAccounts,
-  transferTargetAccounts,
-  categories,
-  activities,
-  currencies,
-  movementTypes,
-  receiptFormats,
   updateMovementBeforeConsolidationAction,
   updateTransferBeforeConsolidationAction,
   executeDailyConsolidationAction
 }: TreasuryConciliacionTabProps) {
+  // Fase 4 · T3.2 — `accounts/categories/activities/currencies/movementTypes/
+  // receiptFormats/transferSourceAccounts/transferTargetAccounts` ahora se
+  // consumen via context dentro de cada form (SecretariaMovementEditForm y
+  // ConsolidationTransferEditForm). Este componente ya no necesita
+  // recibirlos por prop ni reenviarlos.
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -292,7 +266,7 @@ export function TreasuryConciliacionTab({
             </p>
             {isSessionAutoClosed ? (
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <StatusBadge
+                <Badge
                   tone="warning"
                   label={texts.dashboard.treasury_role.conciliacion_auto_closed_badge}
                 />
@@ -458,7 +432,7 @@ export function TreasuryConciliacionTab({
                                 : texts.dashboard.treasury_role.conciliacion_status_pending}
                             </DataTableChip>
                             {!movement.isValid ? (
-                              <StatusBadge
+                              <Badge
                                 label={texts.dashboard.treasury_role.conciliacion_status_invalid}
                                 tone="danger"
                               />
@@ -518,9 +492,6 @@ export function TreasuryConciliacionTab({
       >
         {editingTransfer ? (
           <ConsolidationTransferEditForm
-            sourceAccounts={transferSourceAccounts}
-            targetAccounts={transferTargetAccounts}
-            currencies={currencies}
             submitAction={handleUpdateTransferBeforeConsolidation}
             submitLabel={texts.dashboard.consolidation.save_changes_cta}
             pendingLabel={texts.dashboard.consolidation.save_changes_loading}
@@ -531,12 +502,6 @@ export function TreasuryConciliacionTab({
           />
         ) : editingMovement ? (
           <SecretariaMovementEditForm
-            accounts={accounts}
-            categories={categories}
-            activities={activities}
-            currencies={currencies}
-            movementTypes={movementTypes}
-            receiptFormats={receiptFormats}
             submitAction={handleUpdateMovementBeforeConsolidation}
             submitLabel={texts.dashboard.consolidation.save_changes_cta}
             pendingLabel={texts.dashboard.consolidation.save_changes_loading}

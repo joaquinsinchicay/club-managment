@@ -340,28 +340,68 @@ Regla de `tone`: `neutral` → usuarios; `bancaria/virtual/efectivo` → cuentas
 
 ---
 
-## 🏷️ Regla crítica: chips, badges y pills
+## 🏷️ Regla crítica: badges y status chips
 
-### Primitivos obligatorios
-- **Chip estático** (metadata, rol, etiqueta) → **`<Chip tone size>`**.
+### Taxonomía (DS sección 07)
+
+El DS distingue 3 componentes para el patrón "pill-like" que aplican hoy en la app. Cada uno tiene un primitivo dedicado y **no son intercambiables**:
+
+| Componente | Cuándo usar | Primitivo |
+|---|---|---|
+| **Badge** | Estado semántico ("Pendiente", "Aprobado", "Activo", "Conciliado", "FX"). Dot opcional + texto, bg tintado leve. | `<Badge>` desde `@/components/ui/badge` |
+| **Filter Chip** | Filtro toggleable ("Todos", "Ingresos"). Interactivo, `aria-pressed` o `aria-current`. | `<ChipButton>` / `<ChipLink>` desde `@/components/ui/chip` |
+| **Status Chip** | Date/session chip de header ("Vie · 17/04/2026", "Jornada abierta · 14 movs"). Padding más generoso, contenido compuesto children-based. | `<StatusChip>` desde `@/components/ui/status-chip` |
+
+> **Nota**: el DS sección 07 también define un cuarto componente "**Pill**" (tier/plan: "Plan Pro", "Add-on") que en la app no tiene casos de uso reales. Cuando aparezca, se crea el primitivo con la spec del callsite real.
+
+### Primitivos obligatorios — guía rápida
+- **Estado semántico uppercase** (Aprobado, Pendiente, Vencido, Current user, eyebrow de auth cards) → **`<Badge tone>`**.
+- **Date/session chip** de header → **`<StatusChip dot tone>`** con tone semántico (success/warning/danger según estado de la jornada/día).
+- **Chip estático** (metadata, rol, etiqueta dentro de listas) → **`<Chip tone size>`**.
 - **Chip clickable** (filtros, toggle) → **`<ChipButton active onClick>`** (incluye `aria-pressed`).
 - **Chip link** (filtro navegable) → **`<ChipLink href active>`** (incluye `aria-current`).
-- **Status semántico uppercase** (Aprobado, Pendiente, Vencido, Current user) → **`<StatusBadge tone>`**.
 - **Chip dentro de fila de `DataTable`** → `<DataTableChip>` por coherencia tipográfica.
 - **Pair label-value** (visibilidad, rol, moneda) → **`<MetaPill label value>`** desde `@/components/ui/meta-pill`.
+
+### Tones canónicos para Badge / DataTableChip / Chip
+
+Todos comparten el mismo set de colores brand (matching exact con DS sección 07):
+
+| Tone | bg | text | dot |
+|---|---|---|---|
+| success / income | `bg-ds-green-050` | `text-ds-green-700` | `bg-ds-green` |
+| danger / expense | `bg-ds-red-050` | `text-ds-red-700` | `bg-ds-red` |
+| warning | `bg-ds-amber-050` | `text-ds-amber-700` | `bg-ds-amber` |
+| info | `bg-ds-blue-050` | `text-ds-blue-700` | `bg-ds-blue` |
+| neutral | `bg-secondary` | `text-foreground` | `bg-muted-foreground` |
+| accent | `bg-foreground/10` | `text-foreground` | `bg-foreground` |
+
+`accent` es **faint dark** (no filled negro). Replicates DS "Admin" badge pattern. Excepción: `<ChipButton>` active state mantiene `bg-foreground text-background` filled, porque el DS Filter Chip "Todos" active sí muestra fill.
+
+### Cuándo NO usar cuál
+- ❌ NO usar `<Badge>` con contenido compuesto multi-line / children (usar `<StatusChip>` que es children-based).
+- ❌ NO hand-roll un date chip con `<div className="rounded-full border bg-card px-3 py-1.5 ...">` — usar `<StatusChip>`.
+- ❌ NO pasar brand colors al dot de `<StatusChip>` para indicar identidad de módulo. El dot debe reflejar **estado de la jornada/día** (success/warning/danger), no qué módulo está activo. La identidad de módulo se conveys por header eyebrow + URL.
 
 ### Prohibiciones
 ```tsx
 // ❌ pill a mano
 <span className="rounded-full border px-3 py-1 ..." />
 <button className={`rounded-full ... ${active ? "bg-foreground ..." : "bg-card ..."}`} />
+// ❌ date chip a mano (migrado a StatusChip 2026-04-30)
+<div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-small ...">
+  <span className="size-1.5 rounded-full bg-ds-blue" />
+  {label}
+</div>
 // ❌ MemberMetaPill o variantes locales (usar MetaPill)
 ```
 
 ### Referencia canónica
-- Filter pills: `TreasuryConciliacionTab` y `CategoriesActivitiesTab`.
+- Badge accent: `MembersTab` (`current_user_badge`).
+- Badge tone="success" + dot: `MembersTab` (`active_status_label`).
+- StatusChip dot tone="success": `app/(dashboard)/treasury/page.tsx`, `app/(dashboard)/secretary/page.tsx`, `app/(dashboard)/rrhh/layout.tsx`.
+- Filter chips: `TreasuryConciliacionTab` y `CategoriesActivitiesTab`.
 - MetaPill: `MembersTab`, `MembershipSystemsTab`.
-- StatusBadge accent: `MembersTab` (`current_user_badge`).
 
 ---
 
@@ -399,7 +439,7 @@ Regla de `tone`: `neutral` → usuarios; `bancaria/virtual/efectivo` → cuentas
 ### Primitivos obligatorios
 - Todo contenedor con radio + borde + fondo propio (fuera de tablas y modales) usa **`<Card>`** desde `@/components/ui/card`.
 - Headers de card con título + descripción + acción opcional usan **`<CardHeader>`**.
-- `<CardShell>` queda reservado para auth pages.
+- Para "auth-style hero card" (login, pending-approval, forbidden) componer `<Card maxWidth="md" padding="spacious" className="rounded-dialog">` + header inline con `<Badge tone="neutral">` + `<h1 className="text-2xl ...">`. El primitivo legacy `<CardShell>` fue eliminado en Fase 4 · T3.3 — no reintroducir.
 
 ### API canónica
 ```tsx
@@ -568,7 +608,9 @@ No se acepta el atajo "lo arreglo en otro PR": el script está para prevenir exa
 | Textarea | `<FormTextarea>` | idem |
 | Checkbox estilo pill | `<FormCheckboxCard>` | idem |
 | Banner amarillo/rojo dentro de form | `<FormBanner variant>` | idem |
-| Pill de filtro clickable | `<ChipButton>` / `<ChipLink>` | `components/ui/chip.tsx` |
+| Badge de estado uppercase | `<Badge tone dot>` | `components/ui/badge.tsx` |
+| Date/session chip de header | `<StatusChip dot tone>` | `components/ui/status-chip.tsx` |
+| Filter chip clickable | `<ChipButton>` / `<ChipLink>` | `components/ui/chip.tsx` |
 | Tab-bar tipo segmented control | Ver `SubTabNav` en `components/dashboard/treasury-role-card.tsx` + `RrhhModuleNav` | — |
 | Tabla | `<DataTable>` + `<DataTableRow>` + `<DataTableCell>` | `components/ui/data-table.tsx` |
 | Botón | `<Button>` / `<LinkButton>` | `components/ui/button.tsx`, `link-button.tsx` |

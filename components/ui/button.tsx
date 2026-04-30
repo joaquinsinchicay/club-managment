@@ -2,15 +2,15 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-type ButtonVariant =
+export type ButtonVariant =
   | "primary"
   | "secondary"
   | "destructive"
   | "destructive-outline"
   | "dark"
   | "accent-rrhh";
-type ButtonSize = "sm" | "md";
-type ButtonRadius = "btn" | "card";
+export type ButtonSize = "sm" | "md";
+export type ButtonRadius = "btn" | "card";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;

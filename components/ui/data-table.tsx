@@ -24,8 +24,8 @@ import { cn } from "@/lib/utils";
  *  - Sin escape-hatch implícito: className opcional en cada nivel.
  * ────────────────────────────────────────────────────────────────────────── */
 
-type Density = "compact" | "comfortable";
-type CellAlign = "left" | "right" | "center";
+export type Density = "compact" | "comfortable";
+export type CellAlign = "left" | "right" | "center";
 
 const rowPaddingClasses: Record<Density, string> = {
   compact: "px-4 py-3",
@@ -282,7 +282,16 @@ export function DataTableEmpty({ title, description, icon, action, className }: 
 
 /* ── Chip ───────────────────────────────────────────────────────────────── */
 
-type ChipTone = "neutral" | "income" | "expense" | "warning" | "info";
+// Tone set alineado con `<Chip>` (components/ui/chip.tsx) para que un mismo
+// chip pueda renderizarse dentro o fuera de tabla con el mismo `tone`.
+export type DataTableChipTone =
+  | "neutral"
+  | "income"
+  | "expense"
+  | "warning"
+  | "info"
+  | "accent";
+type ChipTone = DataTableChipTone;
 
 const chipToneClasses: Record<ChipTone, string> = {
   neutral: "bg-secondary-pressed text-foreground",
@@ -290,6 +299,9 @@ const chipToneClasses: Record<ChipTone, string> = {
   expense: "bg-ds-red-050 text-ds-red-700",
   warning: "bg-ds-amber-050 text-ds-amber-700",
   info: "bg-ds-blue-050 text-ds-blue-700",
+  // Faint dark — alineado con Badge accent (DS sección 07 muestra "Admin"
+  // con dot+texto colored sobre bg tintado leve, no filled).
+  accent: "bg-foreground/10 text-foreground",
 };
 
 type DataTableChipProps = HTMLAttributes<HTMLSpanElement> & {
@@ -318,7 +330,8 @@ export function DataTableChip({
 
 /* ── Amount ─────────────────────────────────────────────────────────────── */
 
-type AmountType = "ingreso" | "egreso" | "neutral";
+export type DataTableAmountType = "ingreso" | "egreso" | "neutral";
+type AmountType = DataTableAmountType;
 
 const amountToneClasses: Record<AmountType, string> = {
   ingreso: "text-ds-green-700",

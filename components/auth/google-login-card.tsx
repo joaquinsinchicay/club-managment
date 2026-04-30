@@ -3,9 +3,10 @@
 import { useState } from "react";
 
 import { buttonClass } from "@/components/ui/button";
-import { CardShell } from "@/components/ui/card-shell";
+import { Card } from "@/components/ui/card";
 import { GoogleLogo } from "@/components/ui/google-logo";
 import { Spinner } from "@/components/ui/pending-form";
+import { Badge } from "@/components/ui/badge";
 import { texts } from "@/lib/texts";
 
 export function GoogleLoginCard() {
@@ -13,11 +14,18 @@ export function GoogleLoginCard() {
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
-      <CardShell
-        eyebrow={texts.app.badge}
-        title={texts.auth.login.title}
-        description={texts.auth.login.description}
-      >
+      <Card maxWidth="md" padding="spacious" className="rounded-dialog">
+        <header className="mb-6 space-y-3">
+          <Badge label={texts.app.badge} tone="neutral" />
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-card-foreground">
+              {texts.auth.login.title}
+            </h1>
+            <p className="text-sm leading-6 text-muted-foreground">
+              {texts.auth.login.description}
+            </p>
+          </div>
+        </header>
         <div className="space-y-4">
           <a
             aria-disabled={isRedirecting}
@@ -46,7 +54,7 @@ export function GoogleLoginCard() {
             {texts.auth.login.helper}
           </p>
         </div>
-      </CardShell>
+      </Card>
     </main>
   );
 }

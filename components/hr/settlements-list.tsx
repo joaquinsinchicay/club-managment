@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 
 import type { SettlementActionResult } from "@/app/(dashboard)/rrhh/settlements/actions";
 import { Button, buttonClass } from "@/components/ui/button";
@@ -33,8 +32,9 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/modal-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { triggerClientFeedback } from "@/lib/client-feedback";
+import { useServerAction } from "@/lib/hooks/use-server-action";
 import type { TreasuryAccount } from "@/lib/domain/access";
 import {
   PAYROLL_ADJUSTMENT_TYPES,
@@ -45,6 +45,7 @@ import {
   type PayrollSettlementAdjustment,
   type PayrollSettlementStatus,
 } from "@/lib/domain/payroll-settlement";
+import { getSettlementStatusTone } from "@/lib/labels";
 import { texts } from "@/lib/texts";
 
 type SettlementsListProps = {
@@ -133,12 +134,7 @@ function formatAmount(amount: number | null | undefined, currencyCode: string): 
   }
 }
 
-function settlementStatusTone(status: PayrollSettlementStatus) {
-  if (status === "generada") return "warning" as const;
-  if (status === "aprobada_rrhh") return "accent" as const;
-  if (status === "pagada") return "success" as const;
-  return "neutral" as const;
-}
+// settlementStatusTone movido a lib/labels.ts → getSettlementStatusTone (Fase 4 · T1.2).
 
 export function SettlementsList({
   settlements,
@@ -157,9 +153,6 @@ export function SettlementsList({
   payAction,
   payBatchAction,
 }: SettlementsListProps) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
-
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [periodFilter, setPeriodFilter] = useState<PeriodValue>(
@@ -176,13 +169,24 @@ export function SettlementsList({
   const [paying, setPaying] = useState<PayrollSettlement | null>(null);
   const [payingBulk, setPayingBulk] = useState(false);
 
-  const [genPending, setGenPending] = useState(false);
-  const [approvePending, setApprovePending] = useState(false);
-  const [bulkPending, setBulkPending] = useState(false);
-  const [returnPending, setReturnPending] = useState(false);
-  const [annulPending, setAnnulPending] = useState(false);
-  const [payPending, setPayPending] = useState(false);
-  const [payBulkPending, setPayBulkPending] = useState(false);
+  // Fase 4 · T3.3 — Antes 7 `useState` de pending + helper `runAction`
+  // local. Ahora cada flow usa una instancia de useServerAction (encapsula
+  // pending + triggerClientFeedback + router.refresh).
+  const generate = useServerAction<SettlementActionResult>("dashboard");
+  const approve = useServerAction<SettlementActionResult>("dashboard");
+  const approveBulk = useServerAction<SettlementActionResult>("dashboard");
+  const returnFlow = useServerAction<SettlementActionResult>("dashboard");
+  const annul = useServerAction<SettlementActionResult>("dashboard");
+  const pay = useServerAction<SettlementActionResult>("dashboard");
+  const payBulk = useServerAction<SettlementActionResult>("dashboard");
+
+  const genPending = generate.isPending;
+  const approvePending = approve.isPending;
+  const bulkPending = approveBulk.isPending;
+  const returnPending = returnFlow.isPending;
+  const annulPending = annul.isPending;
+  const payPending = pay.isPending;
+  const payBulkPending = payBulk.isPending;
 
   const settlementsForPeriod = useMemo(
     () =>
@@ -243,25 +247,6 @@ export function SettlementsList({
     if (allAprobadaRrhh) return "pay";
     return "mixed";
   })();
-
-  async function runAction(
-    action: (fd: FormData) => Promise<SettlementActionResult>,
-    formData: FormData,
-    onSuccess: (data?: unknown) => void,
-    setPending: (v: boolean) => void,
-  ) {
-    setPending(true);
-    try {
-      const result = await action(formData);
-      triggerClientFeedback("dashboard", result.code);
-      if (result.ok) {
-        onSuccess(result.data);
-        startTransition(() => router.refresh());
-      }
-    } finally {
-      setPending(false);
-    }
-  }
 
   function toggleSelection(id: string) {
     setSelectedIds((prev) =>
@@ -499,8 +484,8 @@ export function SettlementsList({
                   </DataTableCell>
                   <DataTableCell>
                     <div className="flex flex-col items-start gap-0.5">
-                      <StatusBadge
-                        tone={settlementStatusTone(s.status)}
+                      <Badge
+                        tone={getSettlementStatusTone(s.status)}
                         label={sTexts.status_options[s.status]}
                       />
                       {s.status === "generada" && s.returnedByRole ? (
@@ -591,32 +576,27 @@ export function SettlementsList({
         closeDisabled={genPending}
       >
         <form
-          action={(fd) =>
-            runAction(
-              generateAction,
-              fd,
-              (data) => {
-                setGenerateOpen(false);
-                const d = data as
-                  | {
-                      generatedCount: number;
-                      skippedCount: number;
-                      errorCount: number;
-                    }
-                  | undefined;
-                if (d) {
-                  // Leave a second informative toast when skipped/errors is non-zero
-                  if (d.skippedCount > 0 || d.errorCount > 0) {
-                    triggerClientFeedback(
-                      "dashboard",
-                      d.errorCount > 0 ? "settlement_partial" : "settlement_generated",
-                    );
+          action={async (fd) => {
+            await generate.runAction(generateAction, fd, (result) => {
+              setGenerateOpen(false);
+              const d = result.data as
+                | {
+                    generatedCount: number;
+                    skippedCount: number;
+                    errorCount: number;
                   }
+                | undefined;
+              if (d) {
+                // Leave a second informative toast when skipped/errors is non-zero
+                if (d.skippedCount > 0 || d.errorCount > 0) {
+                  triggerClientFeedback(
+                    "dashboard",
+                    d.errorCount > 0 ? "settlement_partial" : "settlement_generated",
+                  );
                 }
-              },
-              setGenPending,
-            )
-          }
+              }
+            });
+          }}
           className="grid gap-4"
         >
           <div className="grid gap-4 sm:grid-cols-2">
@@ -686,14 +666,9 @@ export function SettlementsList({
       >
         {approvingOne ? (
           <form
-            action={(fd) =>
-              runAction(
-                approveAction,
-                fd,
-                () => setApprovingOne(null),
-                setApprovePending,
-              )
-            }
+            action={async (fd) => {
+              await approve.runAction(approveAction, fd, () => setApprovingOne(null));
+            }}
             className="grid gap-4"
           >
             <input type="hidden" name="settlement_id" value={approvingOne.id} />
@@ -736,17 +711,12 @@ export function SettlementsList({
         closeDisabled={bulkPending}
       >
         <form
-          action={(fd) =>
-            runAction(
-              approveBulkAction,
-              fd,
-              () => {
-                setApprovingBulk(false);
-                setSelectedIds([]);
-              },
-              setBulkPending,
-            )
-          }
+          action={async (fd) => {
+            await approveBulk.runAction(approveBulkAction, fd, () => {
+              setApprovingBulk(false);
+              setSelectedIds([]);
+            });
+          }}
           className="grid gap-4"
         >
           {selectedSettlements.map((s) => (
@@ -798,14 +768,9 @@ export function SettlementsList({
       >
         {returning ? (
           <form
-            action={(fd) =>
-              runAction(
-                returnAction,
-                fd,
-                () => setReturning(null),
-                setReturnPending,
-              )
-            }
+            action={async (fd) => {
+              await returnFlow.runAction(returnAction, fd, () => setReturning(null));
+            }}
             className="grid gap-4"
           >
             <input type="hidden" name="settlement_id" value={returning.id} />
@@ -847,9 +812,9 @@ export function SettlementsList({
       >
         {paying ? (
           <form
-            action={(fd) =>
-              runAction(payAction, fd, () => setPaying(null), setPayPending)
-            }
+            action={async (fd) => {
+              await pay.runAction(payAction, fd, () => setPaying(null));
+            }}
             className="grid gap-4"
           >
             <input type="hidden" name="settlement_id" value={paying.id} />
@@ -925,17 +890,12 @@ export function SettlementsList({
         closeDisabled={payBulkPending}
       >
         <form
-          action={(fd) =>
-            runAction(
-              payBatchAction,
-              fd,
-              () => {
-                setPayingBulk(false);
-                setSelectedIds([]);
-              },
-              setPayBulkPending,
-            )
-          }
+          action={async (fd) => {
+            await payBulk.runAction(payBatchAction, fd, () => {
+              setPayingBulk(false);
+              setSelectedIds([]);
+            });
+          }}
           className="grid gap-4"
         >
           {selectedSettlements.map((s) => (
@@ -1002,9 +962,9 @@ export function SettlementsList({
       >
         {annulling ? (
           <form
-            action={(fd) =>
-              runAction(annulAction, fd, () => setAnnulling(null), setAnnulPending)
-            }
+            action={async (fd) => {
+              await annul.runAction(annulAction, fd, () => setAnnulling(null));
+            }}
             className="grid gap-4"
           >
             <input type="hidden" name="settlement_id" value={annulling.id} />
@@ -1057,23 +1017,8 @@ function SettlementDetailBody({
   deleteAdjustmentAction,
   updateHoursOrNotesAction,
 }: SettlementDetailBodyProps) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
-  const [pending, setPending] = useState(false);
-
-  async function runAction(
-    action: (fd: FormData) => Promise<SettlementActionResult>,
-    formData: FormData,
-  ) {
-    setPending(true);
-    try {
-      const result = await action(formData);
-      triggerClientFeedback("dashboard", result.code);
-      if (result.ok) startTransition(() => router.refresh());
-    } finally {
-      setPending(false);
-    }
-  }
+  // Fase 4 · T3.3 — antes runAction local + setPending. Ahora useServerAction.
+  const { isPending: pending, runAction } = useServerAction<SettlementActionResult>("dashboard");
 
   const isHourly =
     settlement.remunerationType === "por_hora" ||
@@ -1110,7 +1055,9 @@ function SettlementDetailBody({
 
       {isHourly ? (
         <form
-          action={(fd) => runAction(updateHoursOrNotesAction, fd)}
+          action={async (fd) => {
+            await runAction(updateHoursOrNotesAction, fd);
+          }}
           className="grid gap-3"
         >
           <input type="hidden" name="settlement_id" value={settlement.id} />
@@ -1189,7 +1136,9 @@ function SettlementDetailBody({
                   <DataTableCell align="right">
                     <DataTableActions>
                       <form
-                        action={(fd) => runAction(deleteAdjustmentAction, fd)}
+                        action={async (fd) => {
+                          await runAction(deleteAdjustmentAction, fd);
+                        }}
                         className="inline"
                       >
                         <input type="hidden" name="settlement_id" value={settlement.id} />
@@ -1213,13 +1162,17 @@ function SettlementDetailBody({
 
         <AddAdjustmentForm
           settlementId={settlement.id}
-          onSubmit={(fd) => runAction(addAdjustmentAction, fd)}
+          onSubmit={(fd) => {
+            void runAction(addAdjustmentAction, fd);
+          }}
         />
       </section>
 
       {/* Notes */}
       <form
-        action={(fd) => runAction(updateHoursOrNotesAction, fd)}
+        action={async (fd) => {
+          await runAction(updateHoursOrNotesAction, fd);
+        }}
         className="grid gap-3"
       >
         <input type="hidden" name="settlement_id" value={settlement.id} />

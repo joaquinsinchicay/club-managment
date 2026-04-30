@@ -1,17 +1,19 @@
 import Link, { type LinkProps } from "next/link";
 import { forwardRef, type AnchorHTMLAttributes, type ReactNode } from "react";
 
-import { buttonClass } from "@/components/ui/button";
+import {
+  buttonClass,
+  type ButtonRadius,
+  type ButtonSize,
+  type ButtonVariant,
+} from "@/components/ui/button";
 
-type LinkButtonVariant =
-  | "primary"
-  | "secondary"
-  | "destructive"
-  | "destructive-outline"
-  | "dark"
-  | "accent-rrhh";
-type LinkButtonSize = "sm" | "md";
-type LinkButtonRadius = "btn" | "card";
+// Re-exportados como alias para que los consumers puedan importar
+// `LinkButtonVariant` y obtener semantica de "link estilo boton" sin
+// duplicar el set de variantes.
+export type LinkButtonVariant = ButtonVariant;
+export type LinkButtonSize = ButtonSize;
+export type LinkButtonRadius = ButtonRadius;
 
 type LinkButtonProps = Omit<LinkProps, "href"> &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkProps | "children"> & {
@@ -27,7 +29,7 @@ type LinkButtonProps = Omit<LinkProps, "href"> &
 export const LinkButton = forwardRef<HTMLAnchorElement, LinkButtonProps>(function LinkButton(
   {
     href,
-    variant = "secondary",
+    variant = "primary",
     size = "md",
     radius = "card",
     fullWidth = false,

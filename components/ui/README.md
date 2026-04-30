@@ -111,10 +111,21 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 | **Tone** | `neutral`, `income`, `expense`, `warning`, `info`, `accent`. |
 | **No hacer** | `<span className="rounded-full border px-3 py-1 …">`, `<button className={ \`rounded-full \${active ? "bg-foreground …" : "…"}\`}>`. |
 
-### `<StatusBadge>` — `status-badge.tsx`
+### `<Badge>` — `badge.tsx`
 | | |
 |---|---|
-| **Cuándo** | Estado semántico uppercase: Aprobado, Pendiente, Vencido, Current user. Tones `accent`, `warning`, etc. |
+| **API mínima** | `<Badge label tone="success" dot />` |
+| **Cuándo** | Estado semántico uppercase: Aprobado, Pendiente, Vencido, Current user, Conciliado, Activo. Antes se llamaba `<StatusBadge>` con prop `withDot` (renombrado 2026-04-30). |
+| **Tones** | `success`, `danger`, `warning`, `info`, `neutral`, `accent`. Cada tone usa colores brand (`ds-{color}-050` bg + `ds-{color}-700` text) para replicar exactamente el visual del DS sección 07. `accent` es faint dark (`bg-foreground/10 text-foreground`), no filled. |
+| **No hacer** | Usar `<Badge>` con children compuesto multi-line (eso es `<StatusChip>`). |
+
+### `<StatusChip>` — `status-chip.tsx`
+| | |
+|---|---|
+| **API mínima** | `<StatusChip dot tone="success">{children}</StatusChip>` |
+| **Cuándo** | Date/session chip de header con dot opcional + contenido compuesto. Ejemplos: "Vie · 17/04/2026" (dot success), "Jornada abierta · 14 movs" (dot success), "Jornada pendiente" (dot warning), "Jornada cerrada" (dot danger). "Respiran más que badges": `py-1.5` y `text-small` (no uppercase). |
+| **Tones** | `success`, `danger`, `warning`, `neutral`. Sólo afectan al dot — el container es siempre neutro (`bg-card` + `border-border` + `text-muted-foreground`). |
+| **No hacer** | Usar `<Badge>` con children compuesto. Hand-roll un date chip con `<div className="rounded-full border bg-card px-3 py-1.5 …">` (bloqueado por convención). Pasar brand colors al dot (eliminado el escape-hatch `dotClassName` en alineación DS — el dot debe reflejar estado de la jornada/día, no identidad de módulo). |
 
 ### `<MetaPill>` — `meta-pill.tsx`
 | | |
@@ -137,11 +148,22 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 
 ---
 
+## Progreso
+
+### `<ProgressBar>` — `progress-bar.tsx`
+| | |
+|---|---|
+| **API mínima** | `<ProgressBar value={pct} size="sm"\|"md" trackClassName fillClassName ariaLabel />` |
+| **Cuándo** | Track + fill horizontal para mostrar avance (settlements pagados, ejecución de cost center, share del total RRHH). Clampea `value` a [0,100] internamente y emite ARIA `progressbar`. |
+| **No hacer** | `<div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary"><div style={{ width: '${pct}%' }} /></div>` a mano. Usar `fillClassName` para tones brand (`bg-ds-pink-600`, `bg-ds-green`), `trackClassName` para track alternativo (`bg-secondary-pressed`). |
+| **Referencia** | `app/(dashboard)/rrhh/page.tsx`, `components/treasury/cost-centers-tab.tsx`, `components/hr/activity-detail-view.tsx` (`ShareBar`). |
+
+---
+
 ## Otros
 
 | Primitivo | Para qué |
 |---|---|
-| `card-shell.tsx` (`<CardShell>`) | Reservado para auth pages. No usar en app interna — preferir `<Card>`. |
 | `club-mark.tsx` | Branding del club. Usa `getInitials` internamente. |
 | `edit-icon-button.tsx` | Botón icon-only de "editar" (lápiz). |
 | `google-logo.tsx` | SVG del logo de Google para login. |
@@ -150,7 +172,8 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 | `page-content-header.tsx` | Header de página con back button + título. |
 | `pending-form.tsx` (`PendingFieldset`, `PendingSubmitButton`, `Spinner`, `PendingStatusText`) | Estado pending de forms con server actions. `PendingSubmitButton` espera className desde `buttonClass({…})`. |
 | `status-message.tsx` | Mensaje informativo standalone (auth, forbidden). |
-| `status-badge.tsx` | Ver arriba. |
+| `badge.tsx` | Ver arriba (sección Identidad y estado). |
+| `status-chip.tsx` | Ver arriba (sección Identidad y estado). |
 | `toast/` (`<ToastProvider>`, `<ToastViewport>`) | Renderizadas en `app/layout.tsx`. La API imperativa vive en `lib/toast.ts`. |
 
 ---

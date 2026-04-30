@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { PageContentHeader } from "@/components/ui/page-content-header";
+import { StatusChip } from "@/components/ui/status-chip";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canAccessHrModule } from "@/lib/domain/authorization";
 import { texts } from "@/lib/texts";
@@ -35,10 +36,9 @@ export default async function RrhhLayout({
         title={home.title}
         description={home.description}
         actions={
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-small font-semibold text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-ds-pink" aria-hidden="true" />
+          <StatusChip dot tone="success">
             {dateChipLabel}
-          </div>
+          </StatusChip>
         }
       />
       {children}

@@ -15,7 +15,7 @@ import {
   DataTableRow,
 } from "@/components/ui/data-table";
 import { Modal } from "@/components/ui/modal";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FormBanner,
@@ -278,7 +278,7 @@ export function MembersTab({
                             {member.fullName ?? member.email}
                           </p>
                           {member.isCurrentUser ? (
-                            <StatusBadge
+                            <Badge
                               label={texts.settings.club.members.current_user_badge}
                               tone="accent"
                             />
@@ -300,10 +300,10 @@ export function MembersTab({
                       </div>
 
                       <div className="flex shrink-0 items-center gap-3">
-                        <StatusBadge
+                        <Badge
                           label={texts.settings.club.members.active_status_label}
                           tone="success"
-                          withDot
+                          dot
                         />
 
                         {member.source === "member" && member.membershipId ? (

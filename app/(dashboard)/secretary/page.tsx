@@ -9,7 +9,9 @@ import {
   updateSecretariaTransferAction
 } from "@/app/(dashboard)/dashboard/treasury-actions";
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
+import { TreasuryDataProvider } from "@/lib/contexts/treasury-data-context";
 import { PageContentHeader } from "@/components/ui/page-content-header";
+import { StatusChip } from "@/components/ui/status-chip";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateSecretaria } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
@@ -96,35 +98,51 @@ export default async function SecretariaDashboardPage() {
         title={texts.dashboard.treasury.title}
         description={texts.dashboard.treasury.description}
         actions={
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-meta font-semibold text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-ds-green" aria-hidden="true" />
+          <StatusChip dot tone="success">
             {formatSessionDateChip(treasuryCard.sessionDate)}
-          </span>
+          </StatusChip>
         }
       />
 
-      <TreasuryCard
-        treasuryCard={treasuryCard}
-        movementAccounts={treasuryMovementAccounts}
-        transferSourceAccounts={treasuryMovementAccounts}
-        transferTargetAccounts={treasuryTransferTargetAccounts}
-        categories={treasuryCategories}
-        activities={treasuryActivities}
-        calendarEvents={treasuryCalendarEvents}
-        currencies={treasuryCurrencies}
-        movementTypes={movementTypes}
-        receiptFormats={receiptFormats}
-        closeSessionValidation={closeSessionValidation}
-        openSessionValidation={openSessionValidation}
-        currentUserDisplayName={context.user.fullName}
-        createTreasuryMovementAction={createTreasuryMovementAction}
-        updateSecretariaMovementAction={updateSecretariaMovementAction}
-        updateSecretariaTransferAction={updateSecretariaTransferAction}
-        createAccountTransferAction={createAccountTransferAction}
-        closeDailyCashSessionModalAction={closeDailyCashSessionModalAction}
-        openDailyCashSessionModalAction={openDailyCashSessionModalAction}
-        staffContracts={staffContractsForMovements}
-      />
+      {/*
+        Fase 4 · T3.2 — TreasuryDataProvider centraliza los datos de
+        dominio (accounts, categories, activities, currencies, etc.) que
+        antes se pasaban como props drilling al TreasuryCard y a sus 7
+        forms internos. El page server hidrata el provider una sola vez;
+        TreasuryCard y los forms los consumen via useTreasuryData().
+        Notas: secretary no maneja `allAccounts` separadamente — se usa
+        `treasuryMovementAccounts` como best-effort (no se renderiza el
+        accountsTab desde TreasuryCard). `activeCostCenters` se omite (es
+        opcional en el context y secretaria no opera CCs).
+      */}
+      <TreasuryDataProvider
+        value={{
+          accounts: treasuryMovementAccounts,
+          allAccounts: treasuryMovementAccounts,
+          categories: treasuryCategories,
+          activities: treasuryActivities,
+          currencies: treasuryCurrencies,
+          movementTypes,
+          receiptFormats,
+          transferSourceAccounts: treasuryMovementAccounts,
+          transferTargetAccounts: treasuryTransferTargetAccounts,
+          staffContracts: staffContractsForMovements,
+        }}
+      >
+        <TreasuryCard
+          treasuryCard={treasuryCard}
+          calendarEvents={treasuryCalendarEvents}
+          closeSessionValidation={closeSessionValidation}
+          openSessionValidation={openSessionValidation}
+          currentUserDisplayName={context.user.fullName}
+          createTreasuryMovementAction={createTreasuryMovementAction}
+          updateSecretariaMovementAction={updateSecretariaMovementAction}
+          updateSecretariaTransferAction={updateSecretariaTransferAction}
+          createAccountTransferAction={createAccountTransferAction}
+          closeDailyCashSessionModalAction={closeDailyCashSessionModalAction}
+          openDailyCashSessionModalAction={openDailyCashSessionModalAction}
+        />
+      </TreasuryDataProvider>
     </main>
   );
 }

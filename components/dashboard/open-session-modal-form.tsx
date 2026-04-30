@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
+import { ConfirmDifferencesSection } from "@/components/dashboard/confirm-differences-section";
+import { SessionBalanceInput } from "@/components/dashboard/session-balance-input";
 import {
   DataTable,
   DataTableBody,
@@ -10,25 +10,22 @@ import {
   DataTableHeadCell,
   DataTableRow,
 } from "@/components/ui/data-table";
+import { InlineBold } from "@/components/ui/inline-bold";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FormBanner,
   FormFieldLabel,
   FormHelpText,
-  FormInput,
   FormReadonly,
   FormSection,
-  FormTextarea,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
-import {
-  formatLocalizedAmount,
-  formatLocalizedAmountInputOnBlur,
-  formatLocalizedAmountInputOnFocus,
-  parseLocalizedAmount,
-  sanitizeLocalizedAmountInput
-} from "@/lib/amounts";
+import { formatLocalizedAmount } from "@/lib/amounts";
 import type { DailyCashSessionValidation } from "@/lib/domain/access";
+import {
+  type SessionBalanceDraftBase,
+  useSessionBalanceDraft,
+} from "@/lib/hooks/use-session-balance-draft";
 import { texts } from "@/lib/texts";
 
 type OpenSessionModalFormProps = {
@@ -37,40 +34,21 @@ type OpenSessionModalFormProps = {
   onCancel: () => void;
 };
 
-type DraftState = {
-  accountId: string;
-  accountName: string;
-  currencyCode: string;
-  previousBalance: number;
-  declaredBalance: string;
-};
+type OpenDraft = SessionBalanceDraftBase;
 
 export function OpenSessionModalForm({ validation, submitAction, onCancel }: OpenSessionModalFormProps) {
   const now = new Date();
   const timeString = now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 
-  const [drafts, setDrafts] = useState<DraftState[]>(
-    validation.accounts.map((account) => ({
-      accountId: account.accountId,
-      accountName: account.accountName,
-      currencyCode: account.currencyCode,
-      previousBalance: account.declaredBalance,
-      declaredBalance: formatLocalizedAmount(account.declaredBalance)
-    }))
-  );
+  const initial: OpenDraft[] = validation.accounts.map((account) => ({
+    accountId: account.accountId,
+    accountName: account.accountName,
+    currencyCode: account.currencyCode,
+    referenceBalance: account.declaredBalance,
+    declaredBalance: formatLocalizedAmount(account.declaredBalance),
+  }));
 
-  const hasDifferences = useMemo(() => {
-    return drafts.some((draft) => {
-      const declared = parseLocalizedAmount(draft.declaredBalance);
-      return declared !== null && Math.abs(declared - draft.previousBalance) >= 0.01;
-    });
-  }, [drafts]);
-
-  function updateDraft(index: number, value: string) {
-    setDrafts((current) =>
-      current.map((d, i) => (i === index ? { ...d, declaredBalance: value } : d))
-    );
-  }
+  const { drafts, updateDraft, hasDifferences } = useSessionBalanceDraft<OpenDraft>(initial);
 
   const warningText = texts.dashboard.treasury.open_session_warning;
 
@@ -106,7 +84,7 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
               <DataTableHeadCell align="right">{texts.dashboard.treasury.open_session_table_opening}</DataTableHeadCell>
             </DataTableHeader>
             <DataTableBody>
-              {drafts.map((draft, index) => (
+              {drafts.map((draft) => (
                 <DataTableRow key={`${draft.accountId}-${draft.currencyCode}`} density="compact">
                   <input type="hidden" name="account_id" value={draft.accountId} />
                   <input type="hidden" name="currency_code" value={draft.currencyCode} />
@@ -116,19 +94,13 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
                   </DataTableCell>
                   <DataTableCell align="right">
                     <p className="text-sm tabular-nums text-muted-foreground">
-                      $ {formatLocalizedAmount(draft.previousBalance)}
+                      $ {formatLocalizedAmount(draft.referenceBalance)}
                     </p>
                   </DataTableCell>
                   <DataTableCell align="right">
-                    <FormInput
-                      type="text"
-                      name="declared_balance"
-                      inputMode="decimal"
+                    <SessionBalanceInput
                       value={draft.declaredBalance}
-                      onChange={(e) => updateDraft(index, sanitizeLocalizedAmountInput(e.target.value))}
-                      onBlur={(e) => updateDraft(index, formatLocalizedAmountInputOnBlur(e.target.value))}
-                      onFocus={(e) => updateDraft(index, formatLocalizedAmountInputOnFocus(e.target.value))}
-                      className="text-right tabular-nums"
+                      onChange={(next) => updateDraft(draft.accountId, next)}
                     />
                   </DataTableCell>
                 </DataTableRow>
@@ -138,26 +110,15 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
           <FormHelpText>{texts.dashboard.treasury.open_session_table_helper}</FormHelpText>
         </div>
 
-        {/* Motivo de la diferencia (condicional) */}
-        {hasDifferences ? (
-          <div className="flex flex-col gap-2">
-            <FormFieldLabel required>
-              {texts.dashboard.treasury.open_session_diff_notes_label}
-            </FormFieldLabel>
-            <FormTextarea
-              id="op-diff-notes"
-              name="diff_notes"
-              placeholder={texts.dashboard.treasury.open_session_diff_notes_placeholder}
-              rows={3}
-              required
-            />
-          </div>
-        ) : null}
+        <ConfirmDifferencesSection
+          visible={hasDifferences}
+          id="op-diff-notes"
+          label={texts.dashboard.treasury.open_session_diff_notes_label}
+          placeholder={texts.dashboard.treasury.open_session_diff_notes_placeholder}
+        />
 
         <FormBanner variant="warning">
-          {warningText.split("**").map((part, i) =>
-            i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-          )}
+          <InlineBold text={warningText} />
         </FormBanner>
 
         <ModalFooter

@@ -29,7 +29,7 @@ import {
   FormReadonly,
   FormSelect,
 } from "@/components/ui/modal-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { ViewIconLink } from "@/components/ui/view-icon-link";
 import type { ClubActivity } from "@/lib/domain/access";
 import {
@@ -277,7 +277,7 @@ export function SalaryStructuresTab({
                   </DataTableChip>
                 </DataTableCell>
                 <DataTableCell>
-                  <StatusBadge
+                  <Badge
                     tone={s.status === "activa" ? "success" : "neutral"}
                     label={ssTexts.status_options[s.status]}
                   />
