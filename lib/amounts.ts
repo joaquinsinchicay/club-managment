@@ -37,9 +37,9 @@ export function parseLocalizedAmount(rawValue: string) {
   return null;
 }
 
-export function sanitizeLocalizedAmountInput(value: string) {
+export function sanitizeLocalizedAmountInput(value: string): string {
   const normalizedValue = value.replace(/[^\d,]/g, "");
-  const [integerPart, ...decimalParts] = normalizedValue.split(",");
+  const [integerPart = "", ...decimalParts] = normalizedValue.split(",");
 
   if (decimalParts.length === 0) {
     return integerPart;
@@ -52,13 +52,13 @@ function trimTrailingZeros(decimalPart: string) {
   return decimalPart.replace(/0+$/, "");
 }
 
-function toEditableLocalizedAmount(value: number) {
+function toEditableLocalizedAmount(value: number): string {
   if (!Number.isFinite(value)) {
     return "";
   }
 
   const fixedValue = value.toFixed(2);
-  const [integerPart, decimalPart = ""] = fixedValue.split(".");
+  const [integerPart = "", decimalPart = ""] = fixedValue.split(".");
   const trimmedDecimalPart = trimTrailingZeros(decimalPart);
 
   if (!trimmedDecimalPart) {

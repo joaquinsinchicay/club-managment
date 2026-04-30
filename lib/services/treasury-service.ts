@@ -1919,6 +1919,9 @@ export async function createAccountTransfer(input: {
     getTodayDate(),
     2
   );
+  if (!sourceMovementDisplayId || !targetMovementDisplayId) {
+    return { ok: false, code: "unknown_error" };
+  }
   const transfer = await accessRepository.createAccountTransfer({
     clubId: context.activeClub.id,
     dailyCashSessionId: sessionId,

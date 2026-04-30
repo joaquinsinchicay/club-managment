@@ -2523,11 +2523,12 @@ async function findRealDailyCashSessionByDate(clubId: string, sessionDate: strin
     close_type: DailyCashSession["closeType"] | null;
   }>;
 
-  if (rows.length === 0) {
+  const row = rows[0];
+  if (!row) {
     return null;
   }
 
-  return mapDailyCashSessionRow(rows[0]);
+  return mapDailyCashSessionRow(row);
 }
 
 async function findRealLastOpenDailyCashSessionBeforeDate(
@@ -2573,11 +2574,12 @@ async function findRealLastOpenDailyCashSessionBeforeDate(
     close_type: DailyCashSession["closeType"] | null;
   }>;
 
-  if (rows.length === 0) {
+  const row = rows[0];
+  if (!row) {
     return null;
   }
 
-  return mapDailyCashSessionRow(rows[0]);
+  return mapDailyCashSessionRow(row);
 }
 
 async function createRealDailyCashSession(
@@ -4731,6 +4733,9 @@ export const accessRepository: AccessRepository = {
     }
 
     const current = store.clubs[index];
+    if (!current) {
+      return null;
+    }
     const updated: Club = {
       ...current,
       name: fields.name ?? current.name,
@@ -5842,14 +5847,15 @@ export const accessRepository: AccessRepository = {
 
     const store = getStore();
     const membershipIndex = store.memberships.findIndex((membership) => membership.id === membershipId);
+    const existingMembership = membershipIndex !== -1 ? store.memberships[membershipIndex] : null;
 
-    if (membershipIndex === -1) {
+    if (!existingMembership) {
       return null;
     }
 
     const timestamp = now();
     const updatedMembership: Membership = {
-      ...store.memberships[membershipIndex],
+      ...existingMembership,
       roles: [role],
       status: "activo",
       joinedAt: timestamp
@@ -5865,13 +5871,14 @@ export const accessRepository: AccessRepository = {
 
     const store = getStore();
     const membershipIndex = store.memberships.findIndex((membership) => membership.id === membershipId);
+    const existingMembership = membershipIndex !== -1 ? store.memberships[membershipIndex] : null;
 
-    if (membershipIndex === -1) {
+    if (!existingMembership) {
       return null;
     }
 
     const updatedMembership: Membership = {
-      ...store.memberships[membershipIndex],
+      ...existingMembership,
       roles: sortMembershipRoles(roles)
     };
 

@@ -148,13 +148,14 @@ export async function processPendingInvitationsForUser(userId: string, email: st
 
   for (const [clubId, group] of groupedByClub) {
     const sortedRoles = sortMembershipRoles(group.roles);
+    const primaryRole = sortedRoles[0];
     let membership = membershipByClubId.get(clubId) ?? null;
 
-    if (!membership) {
+    if (!membership && primaryRole) {
       const created = await accessRepository.createMembership(
         userId,
         clubId,
-        sortedRoles[0],
+        primaryRole,
         "activo",
         null
       );

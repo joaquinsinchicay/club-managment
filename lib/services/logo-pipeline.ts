@@ -39,22 +39,29 @@ export function readPngDimensions(buffer: Buffer): LogoDimensions {
 
 export function readSvgDimensions(svg: string): LogoDimensions {
   const viewBox = svg.match(/viewBox\s*=\s*"([^"]+)"/i);
-  if (viewBox) {
-    const parts = viewBox[1].trim().split(/[\s,]+/).map(Number);
+  const viewBoxValue = viewBox?.[1];
+  if (viewBoxValue) {
+    const parts = viewBoxValue.trim().split(/[\s,]+/).map(Number);
     if (parts.length === 4 && parts.every((value) => Number.isFinite(value))) {
-      const width = Math.abs(parts[2]);
-      const height = Math.abs(parts[3]);
-      if (width && height) {
-        return { width, height };
+      const rawWidth = parts[2];
+      const rawHeight = parts[3];
+      if (rawWidth !== undefined && rawHeight !== undefined) {
+        const width = Math.abs(rawWidth);
+        const height = Math.abs(rawHeight);
+        if (width && height) {
+          return { width, height };
+        }
       }
     }
   }
 
   const widthMatch = svg.match(/\swidth\s*=\s*"(\d+(?:\.\d+)?)(?:px)?"/i);
   const heightMatch = svg.match(/\sheight\s*=\s*"(\d+(?:\.\d+)?)(?:px)?"/i);
-  if (widthMatch && heightMatch) {
-    const width = Number.parseFloat(widthMatch[1]);
-    const height = Number.parseFloat(heightMatch[1]);
+  const widthValue = widthMatch?.[1];
+  const heightValue = heightMatch?.[1];
+  if (widthValue && heightValue) {
+    const width = Number.parseFloat(widthValue);
+    const height = Number.parseFloat(heightValue);
     if (width && height) {
       return { width, height };
     }

@@ -258,9 +258,9 @@ export async function getActivityDetail(activityId: string): Promise<ActivityDet
       ...m,
       total: 0,
     }));
-    if (contractIds.length > 0) {
+    if (contractIds.length > 0 && months[0] && months[months.length - 1]) {
       const earliest = months[0];
-      const latest = months[months.length - 1];
+      const latest = months[months.length - 1]!;
       const { data: settlements, error: settlementsErr } = await admin
         .from("payroll_settlements")
         .select("period_year,period_month,total_amount,status")

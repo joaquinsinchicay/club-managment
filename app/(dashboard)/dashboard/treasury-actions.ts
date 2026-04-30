@@ -302,8 +302,9 @@ function extractInitialBalancesFromFormData(formData: FormData): Record<string, 
   const result: Record<string, string> = {};
   for (const [key, value] of formData.entries()) {
     const match = key.match(/^initial_balance\[(.+)\]$/);
-    if (match) {
-      result[match[1]] = String(value);
+    const captured = match?.[1];
+    if (captured) {
+      result[captured] = String(value);
     }
   }
   return result;

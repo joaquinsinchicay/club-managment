@@ -117,8 +117,9 @@ export function ActivityDetailView({
 
   function handleEditClick() {
     if (structures.length === 0) return;
-    if (structures.length === 1) {
-      setEditingStructure(structures[0]);
+    const onlyStructure = structures[0];
+    if (structures.length === 1 && onlyStructure) {
+      setEditingStructure(onlyStructure);
       return;
     }
     setEditPickerOpen(true);
@@ -434,6 +435,9 @@ function CostEvolutionChart({ points, currencyCode }: CostEvolutionChartProps) {
   const max = Math.max(...points.map((p) => p.total), 1);
   const last = points[points.length - 1];
   const prev = points[points.length - 2];
+  if (!last) {
+    return null;
+  }
   const variation = prev && prev.total > 0 ? ((last.total - prev.total) / prev.total) * 100 : null;
 
   return (

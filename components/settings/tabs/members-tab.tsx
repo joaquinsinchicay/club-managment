@@ -136,12 +136,14 @@ export function MembersTab({
       for (const inv of invitations) {
         if (!sortedRoles.includes(inv.role)) sortedRoles.push(inv.role);
       }
+      const firstInvitation = invitations[0];
+      if (!firstInvitation) continue;
       invitationRows.push({
         key: `invitation-${email}`,
         membershipId: null,
-        invitationId: invitations[0].invitationId,
+        invitationId: firstInvitation.invitationId,
         fullName: null,
-        email: invitations[0].email,
+        email: firstInvitation.email,
         roles: sortedRoles,
         avatarUrl: null,
         isCurrentUser: false,
