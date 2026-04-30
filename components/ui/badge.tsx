@@ -2,16 +2,35 @@ import { forwardRef, type HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-export type StatusBadgeTone = "success" | "danger" | "warning" | "neutral" | "accent";
+/**
+ * Badge — primitivo del Design System (sección 07).
+ *
+ * Componente de **estado semántico** uppercase: dot opcional + texto, con bg
+ * tintado leve según tone. Ejemplos canónicos: "Conciliado" (success),
+ * "Pendiente" (warning), "Rechazado" (danger), "Archivado" (neutral),
+ * "Admin" (accent).
+ *
+ * Diferencia con primos cercanos del DS:
+ *  - **`<Pill>`**: tier/plan ("Plan Pro", "Add-on"). Sin dot, más tipográfico.
+ *  - **`<ChipButton>`**: filtro toggleable. Interactivo (`aria-pressed`).
+ *  - **`<StatusChip>`**: date/session chip de header ("Vie · 17/04/2026").
+ *    Más padding ("respiran más"), contenido compuesto children-based.
+ *
+ * Antes se llamaba `<StatusBadge>` con prop `withDot`. Renombrado en la
+ * alineación del DS sección 07 (2026-04-30) para reflejar la taxonomía
+ * canónica del design system.
+ */
 
-type StatusBadgeProps = HTMLAttributes<HTMLSpanElement> & {
+export type BadgeTone = "success" | "danger" | "warning" | "neutral" | "accent";
+
+type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   label: string;
-  tone?: StatusBadgeTone;
+  tone?: BadgeTone;
   /** Cuando true, prefija un bullet decorativo del color del tone. */
-  withDot?: boolean;
+  dot?: boolean;
 };
 
-const TONE_CLASSNAME: Record<StatusBadgeTone, string> = {
+const TONE_CLASSNAME: Record<BadgeTone, string> = {
   success: "border-success/20 bg-success/10 text-success",
   danger: "border-destructive/20 bg-destructive/10 text-destructive",
   warning: "border-warning/20 bg-warning/10 text-warning",
@@ -19,7 +38,7 @@ const TONE_CLASSNAME: Record<StatusBadgeTone, string> = {
   accent: "border-foreground bg-foreground text-background"
 };
 
-const DOT_CLASSNAME: Record<StatusBadgeTone, string> = {
+const DOT_CLASSNAME: Record<BadgeTone, string> = {
   success: "bg-success",
   danger: "bg-destructive",
   warning: "bg-warning",
@@ -27,8 +46,8 @@ const DOT_CLASSNAME: Record<StatusBadgeTone, string> = {
   accent: "bg-background"
 };
 
-export const StatusBadge = forwardRef<HTMLSpanElement, StatusBadgeProps>(function StatusBadge(
-  { label, tone = "neutral", withDot = false, className, ...rest },
+export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
+  { label, tone = "neutral", dot = false, className, ...rest },
   ref,
 ) {
   return (
@@ -50,7 +69,7 @@ export const StatusBadge = forwardRef<HTMLSpanElement, StatusBadgeProps>(functio
         className
       )}
     >
-      {withDot ? (
+      {dot ? (
         <span aria-hidden="true" className={cn("size-1.5 rounded-full", DOT_CLASSNAME[tone])} />
       ) : null}
       {label}

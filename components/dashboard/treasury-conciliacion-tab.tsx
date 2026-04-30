@@ -25,7 +25,7 @@ import { FormInput } from "@/components/ui/modal-form";
 import { Modal } from "@/components/ui/modal";
 import { BlockingStatusOverlay } from "@/components/ui/overlay";
 import { PendingFieldset, PendingSubmitButton, Spinner } from "@/components/ui/pending-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import { formatMovementDateTime } from "@/lib/dates";
 import type {
@@ -266,7 +266,7 @@ export function TreasuryConciliacionTab({
             </p>
             {isSessionAutoClosed ? (
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <StatusBadge
+                <Badge
                   tone="warning"
                   label={texts.dashboard.treasury_role.conciliacion_auto_closed_badge}
                 />
@@ -432,7 +432,7 @@ export function TreasuryConciliacionTab({
                                 : texts.dashboard.treasury_role.conciliacion_status_pending}
                             </DataTableChip>
                             {!movement.isValid ? (
-                              <StatusBadge
+                              <Badge
                                 label={texts.dashboard.treasury_role.conciliacion_status_invalid}
                                 tone="danger"
                               />

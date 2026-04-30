@@ -12,7 +12,7 @@
 
 import type { CostCenterBadge, CostCenterPeriodicity, CostCenterStatus, CostCenterType } from "@/lib/domain/cost-center";
 import type { PayrollSettlementStatus } from "@/lib/domain/payroll-settlement";
-import type { StatusBadgeTone } from "@/components/ui/status-badge";
+import type { BadgeTone } from "@/components/ui/badge";
 import type { DataTableChipTone } from "@/components/ui/data-table";
 import { texts } from "@/lib/texts";
 
@@ -69,13 +69,13 @@ export const COST_CENTER_BADGE_TONES: Record<CostCenterBadge["kind"], DataTableC
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
- * Tone semántico para el `<StatusBadge>` de una liquidación según su status.
+ * Tone semántico para el `<Badge>` de una liquidación según su status.
  *  generada       → warning  (amarillo: pendiente)
  *  aprobada_rrhh  → accent   (énfasis: fuera de pipeline normal)
  *  pagada         → success  (verde: cerrada)
  *  cualquier otra → neutral
  */
-export function getSettlementStatusTone(status: PayrollSettlementStatus): StatusBadgeTone {
+export function getSettlementStatusTone(status: PayrollSettlementStatus): BadgeTone {
   if (status === "generada") return "warning";
   if (status === "aprobada_rrhh") return "accent";
   if (status === "pagada") return "success";

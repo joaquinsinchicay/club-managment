@@ -340,28 +340,54 @@ Regla de `tone`: `neutral` → usuarios; `bancaria/virtual/efectivo` → cuentas
 
 ---
 
-## 🏷️ Regla crítica: chips, badges y pills
+## 🏷️ Regla crítica: badges, pills y status chips
 
-### Primitivos obligatorios
-- **Chip estático** (metadata, rol, etiqueta) → **`<Chip tone size>`**.
+### Taxonomía (DS sección 07)
+
+El DS distingue 4 componentes para el patrón "pill-like". Cada uno tiene un primitivo dedicado y **no son intercambiables**:
+
+| Componente | Cuándo usar | Primitivo |
+|---|---|---|
+| **Badge** | Estado semántico ("Pendiente", "Aprobado", "Activo", "Conciliado", "FX"). Dot opcional + texto, bg tintado leve. | `<Badge>` desde `@/components/ui/badge` |
+| **Pill** | Tier/plan ("Plan Pro", "Add-on", "Módulo base"). Sin dot, más tipográfico, outlined → filled cuando active. | `<Pill>` desde `@/components/ui/pill` |
+| **Filter Chip** | Filtro toggleable ("Todos", "Ingresos"). Interactivo, `aria-pressed` o `aria-current`. | `<ChipButton>` / `<ChipLink>` desde `@/components/ui/chip` |
+| **Status Chip** | Date/session chip de header ("Vie · 17/04/2026", "Jornada abierta · 14 movs"). Padding más generoso, contenido compuesto children-based. | `<StatusChip>` desde `@/components/ui/status-chip` |
+
+### Primitivos obligatorios — guía rápida
+- **Estado semántico uppercase** (Aprobado, Pendiente, Vencido, Current user, eyebrow de auth cards) → **`<Badge tone>`**.
+- **Tier/plan** (Plan Pro, Add-on, Módulo base) → **`<Pill active tone>`**.
+- **Date/session chip** de header → **`<StatusChip dot tone>`** o `<StatusChip dot dotClassName="bg-ds-…">` para brand colors.
+- **Chip estático** (metadata, rol, etiqueta dentro de listas) → **`<Chip tone size>`**.
 - **Chip clickable** (filtros, toggle) → **`<ChipButton active onClick>`** (incluye `aria-pressed`).
 - **Chip link** (filtro navegable) → **`<ChipLink href active>`** (incluye `aria-current`).
-- **Status semántico uppercase** (Aprobado, Pendiente, Vencido, Current user) → **`<StatusBadge tone>`**.
 - **Chip dentro de fila de `DataTable`** → `<DataTableChip>` por coherencia tipográfica.
 - **Pair label-value** (visibilidad, rol, moneda) → **`<MetaPill label value>`** desde `@/components/ui/meta-pill`.
+
+### Cuándo NO usar cuál
+- ❌ NO usar `<Badge>` para tier/plan (usar `<Pill>`).
+- ❌ NO usar `<Pill>` para estado (usar `<Badge>`).
+- ❌ NO usar `<Badge>` con contenido compuesto multi-line / children (usar `<StatusChip>` que es children-based).
+- ❌ NO hand-roll un date chip con `<div className="rounded-full border bg-card px-3 py-1.5 ...">` — usar `<StatusChip>`.
 
 ### Prohibiciones
 ```tsx
 // ❌ pill a mano
 <span className="rounded-full border px-3 py-1 ..." />
 <button className={`rounded-full ... ${active ? "bg-foreground ..." : "bg-card ..."}`} />
+// ❌ date chip a mano (migrado a StatusChip 2026-04-30)
+<div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-small ...">
+  <span className="size-1.5 rounded-full bg-ds-blue" />
+  {label}
+</div>
 // ❌ MemberMetaPill o variantes locales (usar MetaPill)
 ```
 
 ### Referencia canónica
-- Filter pills: `TreasuryConciliacionTab` y `CategoriesActivitiesTab`.
+- Badge accent: `MembersTab` (`current_user_badge`).
+- Badge tone="success" + dot: `MembersTab` (`active_status_label`).
+- StatusChip con brand dot: `app/(dashboard)/treasury/page.tsx`, `app/(dashboard)/secretary/page.tsx`, `app/(dashboard)/rrhh/layout.tsx`.
+- Filter chips: `TreasuryConciliacionTab` y `CategoriesActivitiesTab`.
 - MetaPill: `MembersTab`, `MembershipSystemsTab`.
-- StatusBadge accent: `MembersTab` (`current_user_badge`).
 
 ---
 
@@ -399,7 +425,7 @@ Regla de `tone`: `neutral` → usuarios; `bancaria/virtual/efectivo` → cuentas
 ### Primitivos obligatorios
 - Todo contenedor con radio + borde + fondo propio (fuera de tablas y modales) usa **`<Card>`** desde `@/components/ui/card`.
 - Headers de card con título + descripción + acción opcional usan **`<CardHeader>`**.
-- Para "auth-style hero card" (login, pending-approval, forbidden) componer `<Card maxWidth="md" padding="spacious" className="rounded-dialog">` + header inline con `<StatusBadge tone="neutral">` + `<h1 className="text-2xl ...">`. El primitivo legacy `<CardShell>` fue eliminado en Fase 4 · T3.3 — no reintroducir.
+- Para "auth-style hero card" (login, pending-approval, forbidden) componer `<Card maxWidth="md" padding="spacious" className="rounded-dialog">` + header inline con `<Badge tone="neutral">` + `<h1 className="text-2xl ...">`. El primitivo legacy `<CardShell>` fue eliminado en Fase 4 · T3.3 — no reintroducir.
 
 ### API canónica
 ```tsx
@@ -568,7 +594,10 @@ No se acepta el atajo "lo arreglo en otro PR": el script está para prevenir exa
 | Textarea | `<FormTextarea>` | idem |
 | Checkbox estilo pill | `<FormCheckboxCard>` | idem |
 | Banner amarillo/rojo dentro de form | `<FormBanner variant>` | idem |
-| Pill de filtro clickable | `<ChipButton>` / `<ChipLink>` | `components/ui/chip.tsx` |
+| Badge de estado uppercase | `<Badge tone dot>` | `components/ui/badge.tsx` |
+| Pill de tier/plan | `<Pill active tone>` | `components/ui/pill.tsx` |
+| Date/session chip de header | `<StatusChip dot>` | `components/ui/status-chip.tsx` |
+| Filter chip clickable | `<ChipButton>` / `<ChipLink>` | `components/ui/chip.tsx` |
 | Tab-bar tipo segmented control | Ver `SubTabNav` en `components/dashboard/treasury-role-card.tsx` + `RrhhModuleNav` | — |
 | Tabla | `<DataTable>` + `<DataTableRow>` + `<DataTableCell>` | `components/ui/data-table.tsx` |
 | Botón | `<Button>` / `<LinkButton>` | `components/ui/button.tsx`, `link-button.tsx` |

@@ -32,7 +32,7 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/modal-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import { useServerAction } from "@/lib/hooks/use-server-action";
 import type { TreasuryAccount } from "@/lib/domain/access";
@@ -484,7 +484,7 @@ export function SettlementsList({
                   </DataTableCell>
                   <DataTableCell>
                     <div className="flex flex-col items-start gap-0.5">
-                      <StatusBadge
+                      <Badge
                         tone={getSettlementStatusTone(s.status)}
                         label={sTexts.status_options[s.status]}
                       />

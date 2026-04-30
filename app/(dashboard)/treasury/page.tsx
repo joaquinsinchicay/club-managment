@@ -28,6 +28,7 @@ import { TreasuryPayrollTab } from "@/components/treasury/treasury-payroll-tab";
 import { TreasuryRoleCard } from "@/components/dashboard/treasury-role-card";
 import { TreasuryDataProvider } from "@/lib/contexts/treasury-data-context";
 import { PageContentHeader } from "@/components/ui/page-content-header";
+import { StatusChip } from "@/components/ui/status-chip";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import {
   canAccessCostCenters,
@@ -232,10 +233,9 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
         title={texts.dashboard.treasury_role.title}
         description={texts.dashboard.treasury_role.description}
         actions={
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-small font-semibold text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-ds-blue" aria-hidden="true" />
+          <StatusChip dot dotClassName="bg-ds-blue">
             {formatSessionDateLabel(dashboard.sessionDate)}
-          </div>
+          </StatusChip>
         }
       />
 

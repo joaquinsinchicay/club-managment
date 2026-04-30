@@ -15,7 +15,7 @@ import {
   FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset, PendingSubmitButton } from "@/components/ui/pending-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import type {
   ClubActivity,
   TreasuryAccount,
@@ -373,7 +373,7 @@ function SettingsSectionShell({
     <Card className="border-border/70 shadow-soft">
       <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          {eyebrow ? <StatusBadge label={eyebrow} tone="neutral" /> : null}
+          {eyebrow ? <Badge label={eyebrow} tone="neutral" /> : null}
           <div className="space-y-1">
             <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>

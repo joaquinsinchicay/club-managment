@@ -1,6 +1,6 @@
 import { AppHeader } from "@/components/navigation/app-header";
 import { Card, CardBody } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import type { SessionContext } from "@/lib/auth/service";
 import { texts } from "@/lib/texts";
 
@@ -16,7 +16,7 @@ export function PendingApprovalCard({ context }: PendingApprovalCardProps) {
       <main className="mx-auto w-full max-w-5xl px-4 py-10">
         <Card maxWidth="md" padding="spacious" className="rounded-dialog">
           <header className="mb-6 space-y-3">
-            <StatusBadge label={texts.auth.pending_approval.eyebrow} tone="neutral" />
+            <Badge label={texts.auth.pending_approval.eyebrow} tone="neutral" />
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold tracking-tight text-card-foreground">
                 {texts.auth.pending_approval.title}

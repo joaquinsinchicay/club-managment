@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { PageContentHeader } from "@/components/ui/page-content-header";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { StatusMessage } from "@/components/ui/status-message";
 import { texts } from "@/lib/texts";
 
@@ -17,7 +17,7 @@ export function ClubSettingsForbiddenCard() {
 
       <Card maxWidth="2xl" padding="spacious" className="rounded-dialog">
         <header className="mb-6 space-y-3">
-          <StatusBadge label={texts.settings.club.eyebrow} tone="neutral" />
+          <Badge label={texts.settings.club.eyebrow} tone="neutral" />
           <div className="space-y-2">
             <h1 className="text-2xl font-semibold tracking-tight text-card-foreground">
               {texts.settings.club.forbidden_title}

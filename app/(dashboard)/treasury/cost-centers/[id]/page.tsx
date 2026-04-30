@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/data-table";
 import { LinkButton } from "@/components/ui/link-button";
 import { PageContentHeader } from "@/components/ui/page-content-header";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import type {
   CostCenterBadge,
@@ -139,7 +139,7 @@ export default async function CostCenterDetailPage({ params }: PageProps) {
         backHref="/treasury?tab=cost_centers"
         backLabel={tCC.detail_back_cta}
         actions={
-          <StatusBadge
+          <Badge
             tone={costCenter.status === "activo" ? "success" : "neutral"}
             label={STATUS_LABEL[costCenter.status]}
           />

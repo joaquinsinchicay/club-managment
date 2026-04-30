@@ -23,7 +23,7 @@ import { ModalFooter } from "@/components/ui/modal-footer";
 import { FormBanner } from "@/components/ui/modal-form";
 import { CreateContractForm } from "@/components/hr/create-contract-form";
 import { StaffMemberFormFields } from "@/components/hr/staff-member-form-fields";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import {
   formatPeriodLabel,
@@ -235,7 +235,7 @@ export function StaffProfileView({
                 ) : null}
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                <StatusBadge
+                <Badge
                   tone={profile.hasActiveContract ? "success" : "neutral"}
                   label={
                     profile.hasActiveContract
@@ -377,7 +377,7 @@ export function StaffProfileView({
                             <span>{rangeLabel}</span>
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                            <StatusBadge
+                            <Badge
                               tone={c.status === "vigente" ? "success" : "neutral"}
                               label={scTexts.status_options[c.status]}
                             />
@@ -447,7 +447,7 @@ export function StaffProfileView({
                           </span>
                         </DataTableCell>
                         <DataTableCell>
-                          <StatusBadge
+                          <Badge
                             tone={settlementStatusTone(s.status)}
                             label={settlementTexts.status_options[s.status]}
                           />

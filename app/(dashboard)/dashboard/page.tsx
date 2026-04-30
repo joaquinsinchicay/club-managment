@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
 import { PageContentHeader } from "@/components/ui/page-content-header";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import {
@@ -98,7 +98,7 @@ export default async function DashboardPage() {
                   </h2>
                 </div>
                 {treasuryCard.sessionStatus === "unresolved" ? null : (
-                  <StatusBadge
+                  <Badge
                     label={getSessionLabel(treasuryCard.sessionStatus)}
                     tone={getSessionTone(treasuryCard.sessionStatus)}
                   />

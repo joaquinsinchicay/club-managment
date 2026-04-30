@@ -35,7 +35,7 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/modal-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import type { SalaryStructure } from "@/lib/domain/salary-structure";
 import {
   formatContractCode,
@@ -263,7 +263,7 @@ export function StaffContractsTab({
                   </span>
                 </DataTableCell>
                 <DataTableCell>
-                  <StatusBadge
+                  <Badge
                     tone={c.status === "vigente" ? "success" : "neutral"}
                     label={scTexts.status_options[c.status]}
                   />

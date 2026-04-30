@@ -30,7 +30,7 @@ import {
   FormSelect,
   FormTextarea,
 } from "@/components/ui/modal-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import type { PayrollSettlement } from "@/lib/domain/payroll-settlement";
 import {
@@ -391,7 +391,7 @@ export function ContractDetailView({
                 ) : null}
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                <StatusBadge
+                <Badge
                   tone={isVigente ? "success" : "neutral"}
                   label={scTexts.status_options[contract.status]}
                 />

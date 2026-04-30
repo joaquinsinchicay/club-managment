@@ -111,10 +111,29 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 | **Tone** | `neutral`, `income`, `expense`, `warning`, `info`, `accent`. |
 | **No hacer** | `<span className="rounded-full border px-3 py-1 …">`, `<button className={ \`rounded-full \${active ? "bg-foreground …" : "…"}\`}>`. |
 
-### `<StatusBadge>` — `status-badge.tsx`
+### `<Badge>` — `badge.tsx`
 | | |
 |---|---|
-| **Cuándo** | Estado semántico uppercase: Aprobado, Pendiente, Vencido, Current user. Tones `accent`, `warning`, etc. |
+| **API mínima** | `<Badge label tone="success" dot />` |
+| **Cuándo** | Estado semántico uppercase: Aprobado, Pendiente, Vencido, Current user, Conciliado, Activo. Antes se llamaba `<StatusBadge>` con prop `withDot` (renombrado 2026-04-30). |
+| **Tones** | `success`, `danger`, `warning`, `neutral`, `accent`. |
+| **No hacer** | Usar `<Badge>` para tier/plan (eso es `<Pill>`). Usar para contenido compuesto multi-line (eso es `<StatusChip>`). |
+
+### `<Pill>` — `pill.tsx`
+| | |
+|---|---|
+| **API mínima** | `<Pill active tone="accent">{label}</Pill>` |
+| **Cuándo** | Tier/plan: "Plan Pro", "Add-on", "Módulo base", "Plan Enterprise". Outlined por default; filled cuando `active=true`. Sin dot. |
+| **Tones** (active only) | `accent` (filled foreground), `info`, `neutral`. |
+| **No hacer** | Usar `<Pill>` para estado (eso es `<Badge>`). Esperar dot — no tiene. |
+
+### `<StatusChip>` — `status-chip.tsx`
+| | |
+|---|---|
+| **API mínima** | `<StatusChip dot tone="success">{children}</StatusChip>` |
+| **Cuándo** | Date/session chip de header con dot opcional + contenido compuesto. Ejemplos: "Vie · 17/04/2026", "Jornada abierta · 14 movs". "Respiran más que badges": `py-1.5` y `text-small` (no uppercase). |
+| **Escape-hatch** | Para brand colors de módulo (`bg-ds-blue` en treasury, `bg-ds-green` en secretary, `bg-ds-pink` en RRHH) usar `dotClassName="bg-ds-blue"` en lugar de `tone`. Reservado a casos brand-specific. |
+| **No hacer** | Usar `<Badge>` con children compuesto. Hand-roll un date chip con `<div className="rounded-full border bg-card px-3 py-1.5 …">` (bloqueado por convención). |
 
 ### `<MetaPill>` — `meta-pill.tsx`
 | | |
@@ -149,7 +168,9 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 | `page-content-header.tsx` | Header de página con back button + título. |
 | `pending-form.tsx` (`PendingFieldset`, `PendingSubmitButton`, `Spinner`, `PendingStatusText`) | Estado pending de forms con server actions. `PendingSubmitButton` espera className desde `buttonClass({…})`. |
 | `status-message.tsx` | Mensaje informativo standalone (auth, forbidden). |
-| `status-badge.tsx` | Ver arriba. |
+| `badge.tsx` | Ver arriba (sección Identidad y estado). |
+| `pill.tsx` | Ver arriba (sección Identidad y estado). |
+| `status-chip.tsx` | Ver arriba (sección Identidad y estado). |
 | `toast/` (`<ToastProvider>`, `<ToastViewport>`) | Renderizadas en `app/layout.tsx`. La API imperativa vive en `lib/toast.ts`. |
 
 ---

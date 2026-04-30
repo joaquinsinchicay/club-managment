@@ -11,6 +11,7 @@ import {
 import { TreasuryCard } from "@/components/dashboard/treasury-card";
 import { TreasuryDataProvider } from "@/lib/contexts/treasury-data-context";
 import { PageContentHeader } from "@/components/ui/page-content-header";
+import { StatusChip } from "@/components/ui/status-chip";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateSecretaria } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
@@ -97,10 +98,9 @@ export default async function SecretariaDashboardPage() {
         title={texts.dashboard.treasury.title}
         description={texts.dashboard.treasury.description}
         actions={
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-meta font-semibold text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-ds-green" aria-hidden="true" />
+          <StatusChip dot dotClassName="bg-ds-green">
             {formatSessionDateChip(treasuryCard.sessionDate)}
-          </span>
+          </StatusChip>
         }
       />
 

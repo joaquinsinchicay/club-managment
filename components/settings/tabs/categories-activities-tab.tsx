@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import type { ClubActivity, TreasuryCategory, TreasuryCategoryMovementType } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import {
@@ -40,14 +40,14 @@ function getMovementTypeBadge(movementType: TreasuryCategoryMovementType) {
   const label = treasuryTexts.category_movement_types[movementType].toUpperCase();
 
   if (movementType === "ingreso") {
-    return <StatusBadge label={label} tone="success" />;
+    return <Badge label={label} tone="success" />;
   }
 
   if (movementType === "egreso") {
-    return <StatusBadge label={label} tone="danger" />;
+    return <Badge label={label} tone="danger" />;
   }
 
-  return <StatusBadge label={label} tone="neutral" />;
+  return <Badge label={label} tone="neutral" />;
 }
 
 function formatSubcategoriesCount(count: number) {

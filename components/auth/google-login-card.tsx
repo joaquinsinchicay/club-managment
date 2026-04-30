@@ -6,7 +6,7 @@ import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GoogleLogo } from "@/components/ui/google-logo";
 import { Spinner } from "@/components/ui/pending-form";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { texts } from "@/lib/texts";
 
 export function GoogleLoginCard() {
@@ -16,7 +16,7 @@ export function GoogleLoginCard() {
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <Card maxWidth="md" padding="spacious" className="rounded-dialog">
         <header className="mb-6 space-y-3">
-          <StatusBadge label={texts.app.badge} tone="neutral" />
+          <Badge label={texts.app.badge} tone="neutral" />
           <div className="space-y-2">
             <h1 className="text-2xl font-semibold tracking-tight text-card-foreground">
               {texts.auth.login.title}
