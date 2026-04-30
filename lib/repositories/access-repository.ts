@@ -45,6 +45,7 @@ import {
   getSystemTreasuryCategoryDefinition,
   sortTreasuryCategories
 } from "@/lib/treasury-system-categories";
+import { logger } from "@/lib/logger";
 
 type AccessRepositoryClient = ReturnType<typeof createServerSupabaseClient>;
 
@@ -184,7 +185,7 @@ function logClubScopedRpcFailure(
     return;
   }
 
-  console.error("[club-scoped-rpc-failure]", {
+  logger.error("[club-scoped-rpc-failure]", {
     operation,
     ...details,
     errorCode: getSupabaseErrorCode(error),
@@ -1855,7 +1856,7 @@ function logTreasurySettingsWriteFailure(
   details: Record<string, unknown>,
   error?: unknown
 ) {
-  console.error("[treasury-settings-write-failure]", {
+  logger.error("[treasury-settings-write-failure]", {
     operation,
     ...details,
     error
@@ -1867,7 +1868,7 @@ function logTreasurySettingsReadFailure(
   details: Record<string, unknown>,
   error?: unknown
 ) {
-  console.error("[treasury-settings-read-failure]", {
+  logger.error("[treasury-settings-read-failure]", {
     operation,
     ...details,
     error
@@ -2499,7 +2500,7 @@ async function findRealDailyCashSessionByDate(clubId: string, sessionDate: strin
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
+    logger.error("[club-scoped-rpc-failure]", {
       operation: "get_daily_cash_session_by_date",
       clubId,
       sessionDate,
@@ -2598,7 +2599,7 @@ async function createRealDailyCashSession(
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
+    logger.error("[club-scoped-rpc-failure]", {
       operation: "create_daily_cash_session",
       clubId,
       sessionDate,
@@ -2723,7 +2724,7 @@ async function openRealDailyCashSessionWithBalances(input: {
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
+    logger.error("[club-scoped-rpc-failure]", {
       operation: "open_daily_cash_session_with_balances",
       clubId: input.clubId,
       sessionDate: input.sessionDate,
@@ -2814,7 +2815,7 @@ async function closeRealDailyCashSessionWithBalances(input: {
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
+    logger.error("[club-scoped-rpc-failure]", {
       operation: "close_daily_cash_session_with_balances",
       clubId: input.clubId,
       sessionId: input.sessionId,
@@ -2951,7 +2952,7 @@ async function recordRealDailyCashSessionBalances(
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
+    logger.error("[club-scoped-rpc-failure]", {
       operation: "record_daily_cash_session_balances",
       clubId,
       sessionIds: [...new Set(input.map((entry) => entry.sessionId))],
@@ -2990,7 +2991,7 @@ async function recordRealBalanceAdjustment(
   });
 
   if (error) {
-    console.error("[club-scoped-rpc-failure]", {
+    logger.error("[club-scoped-rpc-failure]", {
       operation: "record_balance_adjustment",
       clubId: input.clubId,
       sessionId: input.sessionId,
@@ -3214,7 +3215,7 @@ async function updateRealTreasuryMovement(
   });
 
   if (error && isLegacyUpdateTreasuryMovementRpcCause(error)) {
-    console.warn("[club-scoped-rpc-fallback]", {
+    logger.warn("[club-scoped-rpc-fallback]", {
       operation,
       clubId: input.clubId,
       ...details,
@@ -3323,7 +3324,7 @@ async function updateRealDailyConsolidationBatch(
   const clubId = input.clubId?.trim();
 
   if (!clubId) {
-    console.error("[daily-consolidation-batch-write-failure]", {
+    logger.error("[daily-consolidation-batch-write-failure]", {
       operation: "update_daily_consolidation_batch",
       batchId: input.batchId,
       status: input.status,
@@ -3625,7 +3626,7 @@ async function runClubScopedReadRpc<T>(
 
     if (error || !data) {
       if (!options?.suppressLog) {
-        console.error("[club-scoped-rpc-read-failure]", {
+        logger.error("[club-scoped-rpc-read-failure]", {
           operation: options?.operation ?? rpcName,
           rpcName,
           clubId,
@@ -3652,7 +3653,7 @@ async function runClubScopedReadRpc<T>(
     offset += PAGE_SIZE;
 
     if (offset >= SAFETY_CAP) {
-      console.warn("[club-scoped-rpc-read] reached safety cap of 100k rows", {
+      logger.warn("[club-scoped-rpc-read] reached safety cap of 100k rows", {
         operation: options?.operation ?? rpcName,
         rpcName,
         clubId

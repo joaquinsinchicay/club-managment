@@ -42,6 +42,7 @@ import {
   salaryStructureRepository,
   type ListSalaryStructuresFilters,
 } from "@/lib/repositories/salary-structure-repository";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Result codes
@@ -336,7 +337,7 @@ export async function listSalaryStructuresForActiveClub(
     return { ok: true, structures };
   } catch (error) {
     if (isSalaryStructureRepositoryInfraError(error)) {
-      console.error("[salary-structure-service.list]", error);
+      logger.error("[salary-structure-service.list]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -360,7 +361,7 @@ export async function listSalaryStructuresWithVersionsForActiveClub(
     return { ok: true, structures };
   } catch (error) {
     if (isSalaryStructureRepositoryInfraError(error)) {
-      console.error("[salary-structure-service.list-with-versions]", error);
+      logger.error("[salary-structure-service.list-with-versions]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -383,7 +384,7 @@ export async function getSalaryStructureDetail(
     return ok<SalaryStructureDetail>("updated", { structure });
   } catch (error) {
     if (isSalaryStructureRepositoryInfraError(error)) {
-      console.error("[salary-structure-service.detail]", error);
+      logger.error("[salary-structure-service.detail]", error);
     }
     return err<SalaryStructureDetail>("unknown_error");
   }
@@ -462,7 +463,7 @@ export async function createSalaryStructure(
     return ok<{ structure: SalaryStructure }>("created", { structure: created });
   } catch (error) {
     if (isSalaryStructureRepositoryInfraError(error)) {
-      console.error("[salary-structure-service.create]", error);
+      logger.error("[salary-structure-service.create]", error);
     }
     return err<{ structure: SalaryStructure }>("unknown_error");
   }
@@ -541,7 +542,7 @@ export async function updateSalaryStructure(
     );
   } catch (error) {
     if (isSalaryStructureRepositoryInfraError(error)) {
-      console.error("[salary-structure-service.update]", error);
+      logger.error("[salary-structure-service.update]", error);
     }
     return err<{ structure: SalaryStructure }>("unknown_error");
   }

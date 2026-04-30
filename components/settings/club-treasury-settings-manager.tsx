@@ -27,6 +27,7 @@ import type {
 import { DEFAULT_RECEIPT_EXAMPLE, DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
 import { texts } from "@/lib/texts";
 import { isSystemTreasuryCategoryName } from "@/lib/treasury-system-categories";
+import { getEmojiOptions } from "@/lib/treasury-system-options";
 
 type ClubTreasurySettingsManagerProps = {
   treasurySettings: TreasurySettings;
@@ -66,14 +67,6 @@ function getCurrencyLabel(currencyCode: TreasuryCurrencyCode) {
 
 function getMovementTypeLabel(movementType: TreasuryMovementType) {
   return texts.dashboard.treasury.movement_types[movementType];
-}
-
-function getEmojiOptions(options: string[], currentEmoji?: string | null) {
-  if (currentEmoji && !options.includes(currentEmoji)) {
-    return [currentEmoji, ...options];
-  }
-
-  return options;
 }
 
 const TREASURY_CURRENCY_OPTIONS: TreasuryCurrencyCode[] = ["ARS", "USD"];

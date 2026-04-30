@@ -21,6 +21,7 @@ import { payrollSettlementRepository } from "@/lib/repositories/payroll-settleme
 import { salaryStructureRepository } from "@/lib/repositories/salary-structure-repository";
 import { staffContractRepository } from "@/lib/repositories/staff-contract-repository";
 import { staffMemberRepository } from "@/lib/repositories/staff-member-repository";
+import { logger } from "@/lib/logger";
 
 const REVISION_STALE_MONTHS = 12;
 const ENDING_SOON_DAYS = 60;
@@ -333,7 +334,7 @@ export async function getHrDashboardSummary(): Promise<HrDashboardResult> {
       },
     };
   } catch (error) {
-    console.error("[hr-dashboard-service.summary]", error);
+    logger.error("[hr-dashboard-service.summary]", error);
     return { ok: false, code: "unknown_error" };
   }
 }

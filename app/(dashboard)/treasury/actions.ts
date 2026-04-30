@@ -3,12 +3,20 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
+import { logger } from "@/lib/logger";
 import {
   executeDailyConsolidation,
   integrateMatchingMovement,
   updateMovementBeforeConsolidation,
-  updateTransferBeforeConsolidation
+  updateTransferBeforeConsolidation,
 } from "@/lib/services/treasury-service";
+import { parseFormData } from "@/lib/validators/server-action";
+import {
+  executeDailyConsolidationSchema,
+  integrateMatchingMovementSchema,
+  updateMovementBeforeConsolidationSchema,
+  updateTransferBeforeConsolidationSchema,
+} from "@/lib/validators/treasury";
 
 function redirectToTreasury(code: string, consolidationDate: string, selectedMovementId?: string) {
   const params = new URLSearchParams();
@@ -31,56 +39,86 @@ function redirectToTreasury(code: string, consolidationDate: string, selectedMov
 }
 
 export async function updateMovementBeforeConsolidationAction(formData: FormData) {
-  const consolidationDate = String(formData.get("consolidation_date") ?? "");
-  const movementId = String(formData.get("movement_id") ?? "");
+  const parsed = parseFormData(formData, updateMovementBeforeConsolidationSchema);
+  if (!parsed.ok) {
+    logger.warn("[treasury-actions.update-movement] validation failed", {
+      error: parsed.firstError,
+    });
+    redirectToTreasury("validation_error", String(formData.get("consolidation_date") ?? ""));
+    return;
+  }
 
   const result = await updateMovementBeforeConsolidation({
-    movementId,
-    movementDate: String(formData.get("movement_date") ?? ""),
-    accountId: String(formData.get("account_id") ?? ""),
-    movementType: String(formData.get("movement_type") ?? ""),
-    categoryId: String(formData.get("category_id") ?? ""),
-    activityId: String(formData.get("activity_id") ?? ""),
-    receiptNumber: String(formData.get("receipt_number") ?? ""),
+    movementId: parsed.data.movement_id,
+    movementDate: parsed.data.movement_date,
+    accountId: parsed.data.account_id,
+    movementType: parsed.data.movement_type,
+    categoryId: parsed.data.category_id,
+    activityId: parsed.data.activity_id,
+    receiptNumber: parsed.data.receipt_number,
     calendarEventId: "",
-    concept: String(formData.get("concept") ?? ""),
-    currencyCode: String(formData.get("currency_code") ?? ""),
-    amount: String(formData.get("amount") ?? "")
+    concept: parsed.data.concept,
+    currencyCode: parsed.data.currency_code,
+    amount: parsed.data.amount,
   });
 
-  redirectToTreasury(result.code, consolidationDate, movementId);
+  redirectToTreasury(result.code, parsed.data.consolidation_date, parsed.data.movement_id);
 }
 
 export async function integrateMatchingMovementAction(formData: FormData) {
-  const consolidationDate = String(formData.get("consolidation_date") ?? "");
-  const secretariaMovementId = String(formData.get("secretaria_movement_id") ?? "");
+  const parsed = parseFormData(formData, integrateMatchingMovementSchema);
+  if (!parsed.ok) {
+    logger.warn("[treasury-actions.integrate-matching] validation failed", {
+      error: parsed.firstError,
+    });
+    redirectToTreasury("validation_error", String(formData.get("consolidation_date") ?? ""));
+    return;
+  }
 
   const result = await integrateMatchingMovement({
-    secretariaMovementId,
-    tesoreriaMovementId: String(formData.get("tesoreria_movement_id") ?? "")
+    secretariaMovementId: parsed.data.secretaria_movement_id,
+    tesoreriaMovementId: parsed.data.tesoreria_movement_id,
   });
 
-  redirectToTreasury(result.code, consolidationDate, secretariaMovementId);
+  redirectToTreasury(
+    result.code,
+    parsed.data.consolidation_date,
+    parsed.data.secretaria_movement_id,
+  );
 }
 
 export async function updateTransferBeforeConsolidationAction(formData: FormData) {
-  const consolidationDate = String(formData.get("consolidation_date") ?? "");
-  const movementId = String(formData.get("movement_id") ?? "");
+  const parsed = parseFormData(formData, updateTransferBeforeConsolidationSchema);
+  if (!parsed.ok) {
+    logger.warn("[treasury-actions.update-transfer] validation failed", {
+      error: parsed.firstError,
+    });
+    redirectToTreasury("validation_error", String(formData.get("consolidation_date") ?? ""));
+    return;
+  }
 
   const result = await updateTransferBeforeConsolidation({
-    movementId,
-    sourceAccountId: String(formData.get("source_account_id") ?? ""),
-    targetAccountId: String(formData.get("target_account_id") ?? ""),
-    currencyCode: String(formData.get("currency_code") ?? ""),
-    concept: String(formData.get("concept") ?? ""),
-    amount: String(formData.get("amount") ?? "")
+    movementId: parsed.data.movement_id,
+    sourceAccountId: parsed.data.source_account_id,
+    targetAccountId: parsed.data.target_account_id,
+    currencyCode: parsed.data.currency_code,
+    concept: parsed.data.concept,
+    amount: parsed.data.amount,
   });
 
-  redirectToTreasury(result.code, consolidationDate, movementId);
+  redirectToTreasury(result.code, parsed.data.consolidation_date, parsed.data.movement_id);
 }
 
 export async function executeDailyConsolidationAction(formData: FormData) {
-  const consolidationDate = String(formData.get("consolidation_date") ?? "");
-  const result = await executeDailyConsolidation(consolidationDate);
-  redirectToTreasury(result.code, consolidationDate);
+  const parsed = parseFormData(formData, executeDailyConsolidationSchema);
+  if (!parsed.ok) {
+    logger.warn("[treasury-actions.execute-consolidation] validation failed", {
+      error: parsed.firstError,
+    });
+    redirectToTreasury("validation_error", "");
+    return;
+  }
+
+  const result = await executeDailyConsolidation(parsed.data.consolidation_date);
+  redirectToTreasury(result.code, parsed.data.consolidation_date);
 }

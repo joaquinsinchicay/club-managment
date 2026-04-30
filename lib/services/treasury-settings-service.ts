@@ -16,6 +16,7 @@ import {
   getMovementTypeForParentCategory,
   getSystemTreasuryCategoryDefinition
 } from "@/lib/treasury-system-categories";
+import { logger } from "@/lib/logger";
 
 type TreasurySettingsActionCode =
   | "forbidden"
@@ -263,7 +264,7 @@ function resolveTreasurySettingsMutationError(
   clubId: string
 ): TreasurySettingsActionResult {
   if (isAccessRepositoryInfraError(error)) {
-    console.error("[treasury-settings-service-error]", {
+    logger.error("[treasury-settings-service-error]", {
       operation,
       clubId,
       repositoryOperation: error.operation,
@@ -278,7 +279,7 @@ function resolveTreasurySettingsMutationError(
     return { ok: false, code: "unknown_error" };
   }
 
-  console.error("[treasury-settings-service-error]", {
+  logger.error("[treasury-settings-service-error]", {
     operation,
     clubId,
     error

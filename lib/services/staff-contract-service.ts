@@ -28,6 +28,7 @@ import {
 } from "@/lib/repositories/staff-contract-repository";
 import { staffMemberRepository } from "@/lib/repositories/staff-member-repository";
 import { salaryStructureRepository } from "@/lib/repositories/salary-structure-repository";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Result codes
@@ -166,7 +167,7 @@ export async function listStaffContractsForActiveClub(
     return { ok: true, contracts };
   } catch (error) {
     if (isStaffContractRepositoryInfraError(error)) {
-      console.error("[staff-contract-service.list]", error);
+      logger.error("[staff-contract-service.list]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -207,7 +208,7 @@ export async function listStaffContractsForMovementSelector(): Promise<{
     return { ok: true, options };
   } catch (error) {
     if (isStaffContractRepositoryInfraError(error)) {
-      console.error("[staff-contract-service.list-for-movement]", error);
+      logger.error("[staff-contract-service.list-for-movement]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -228,7 +229,7 @@ export async function getStaffContractById(
     return { ok: true, contract };
   } catch (error) {
     if (isStaffContractRepositoryInfraError(error)) {
-      console.error("[staff-contract-service.get]", error);
+      logger.error("[staff-contract-service.get]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -318,7 +319,7 @@ export async function createStaffContract(
     return ok<{ contract: StaffContract }>("created", { contract: result.contract });
   } catch (error) {
     if (isStaffContractRepositoryInfraError(error)) {
-      console.error("[staff-contract-service.create]", error);
+      logger.error("[staff-contract-service.create]", error);
     }
     return err<{ contract: StaffContract }>("unknown_error");
   }
@@ -379,7 +380,7 @@ export async function finalizeStaffContract(
     return ok("finalized");
   } catch (error) {
     if (isStaffContractRepositoryInfraError(error)) {
-      console.error("[staff-contract-service.finalize]", error);
+      logger.error("[staff-contract-service.finalize]", error);
     }
     return err("unknown_error");
   }

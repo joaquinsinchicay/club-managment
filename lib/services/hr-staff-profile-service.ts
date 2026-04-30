@@ -23,6 +23,7 @@ import type { StaffMember } from "@/lib/domain/staff-member";
 import { payrollSettlementRepository } from "@/lib/repositories/payroll-settlement-repository";
 import { staffContractRepository } from "@/lib/repositories/staff-contract-repository";
 import { staffMemberRepository } from "@/lib/repositories/staff-member-repository";
+import { logger } from "@/lib/logger";
 
 export type StaffProfilePayment = {
   movementId: string;
@@ -81,7 +82,7 @@ async function fetchPaymentsForContracts(
     .eq("club_id", clubId)
     .not("paid_movement_id", "is", null);
   if (settlementErr) {
-    console.error("[hr-staff-profile-service.payments.settlements]", settlementErr);
+    logger.error("[hr-staff-profile-service.payments.settlements]", settlementErr);
     return [];
   }
   const movementIds = (settlementRows ?? [])
@@ -104,7 +105,7 @@ async function fetchPaymentsForContracts(
     .in("id", movementIds)
     .eq("club_id", clubId);
   if (movementErr) {
-    console.error("[hr-staff-profile-service.payments.movements]", movementErr);
+    logger.error("[hr-staff-profile-service.payments.movements]", movementErr);
     return [];
   }
 
@@ -161,7 +162,7 @@ async function fetchRecentActivity(
     .order("performed_at", { ascending: false })
     .limit(8);
   if (error) {
-    console.error("[hr-staff-profile-service.recentActivity]", error);
+    logger.error("[hr-staff-profile-service.recentActivity]", error);
     return [];
   }
   type Row = {
@@ -229,9 +230,9 @@ export async function getStaffProfile(memberId: string): Promise<StaffProfileRes
     };
   } catch (error) {
     if (error instanceof MissingSupabaseAdminConfigError) {
-      console.error("[hr-staff-profile-service.getStaffProfile.config]", error);
+      logger.error("[hr-staff-profile-service.getStaffProfile.config]", error);
     } else {
-      console.error("[hr-staff-profile-service.getStaffProfile]", error);
+      logger.error("[hr-staff-profile-service.getStaffProfile]", error);
     }
     return { ok: false, code: "unknown_error" };
   }

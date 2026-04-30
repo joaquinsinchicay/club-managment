@@ -16,6 +16,7 @@ import {
   readPngDimensions,
   readSvgDimensions
 } from "@/lib/services/logo-pipeline";
+import { logger } from "@/lib/logger";
 
 export type ClubIdentityActionCode =
   | "club_identity_updated"
@@ -144,7 +145,7 @@ async function processLogoFile(file: File): Promise<LogoProcessingResult> {
       const optimized = await optimizePngBuffer(inputBuffer);
       return { ok: true, buffer: optimized, contentType: "image/png", extension: "png" };
     } catch (error) {
-      console.error("[club-identity-service] png optimization failed", error);
+      logger.error("[club-identity-service] png optimization failed", error);
       return { ok: false, code: "logo_optimization_failed" };
     }
   }
@@ -159,7 +160,7 @@ async function processLogoFile(file: File): Promise<LogoProcessingResult> {
     const optimized = optimizeSvgBuffer(inputBuffer);
     return { ok: true, buffer: optimized, contentType: "image/svg+xml", extension: "svg" };
   } catch (error) {
-    console.error("[club-identity-service] svg optimization failed", error);
+    logger.error("[club-identity-service] svg optimization failed", error);
     return { ok: false, code: "logo_optimization_failed" };
   }
 }
@@ -189,7 +190,7 @@ async function uploadProcessedLogo(
     });
 
   if (uploadError) {
-    console.error("[club-identity-service] upload failed", uploadError);
+    logger.error("[club-identity-service] upload failed", uploadError);
     return { ok: false, code: "logo_upload_failed" };
   }
 
@@ -207,7 +208,7 @@ async function removeBucketObject(path: string | null): Promise<void> {
   if (!admin) return;
   const { error } = await admin.storage.from(LOGO_BUCKET).remove([path]);
   if (error) {
-    console.error("[club-identity-service] remove previous logo failed", error);
+    logger.error("[club-identity-service] remove previous logo failed", error);
   }
 }
 
@@ -345,7 +346,7 @@ export async function updateClubIdentityForActiveClub(
 
     return { ok: true, code: "club_identity_updated", club: updated };
   } catch (error) {
-    console.error("[club-identity-service] update failed", error);
+    logger.error("[club-identity-service] update failed", error);
     if (newLogoObjectName) {
       await removeBucketObject(newLogoObjectName);
     }

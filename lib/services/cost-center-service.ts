@@ -42,6 +42,7 @@ import {
   isCostCenterRepositoryInfraError,
   type ListCostCentersFilters
 } from "@/lib/repositories/cost-center-repository";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Result codes
@@ -333,7 +334,7 @@ export async function listCostCentersForActiveClub(
     return { ok: true, costCenters, aggregates, badges };
   } catch (error) {
     if (isCostCenterRepositoryInfraError(error)) {
-      console.error("[cost-center-service.list]", error);
+      logger.error("[cost-center-service.list]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -400,7 +401,7 @@ export async function getCostCenterDetail(
     });
   } catch (error) {
     if (isCostCenterRepositoryInfraError(error)) {
-      console.error("[cost-center-service.detail]", error);
+      logger.error("[cost-center-service.detail]", error);
     }
     return err<CostCenterDetail>("unknown_error");
   }
@@ -454,7 +455,7 @@ export async function createCostCenter(
     return ok<{ costCenter: CostCenter }>("created", { costCenter: created });
   } catch (error) {
     if (isCostCenterRepositoryInfraError(error)) {
-      console.error("[cost-center-service.create]", error);
+      logger.error("[cost-center-service.create]", error);
     }
     return err<{ costCenter: CostCenter }>("unknown_error");
   }
@@ -563,7 +564,7 @@ export async function updateCostCenter(
     });
   } catch (error) {
     if (isCostCenterRepositoryInfraError(error)) {
-      console.error("[cost-center-service.update]", error);
+      logger.error("[cost-center-service.update]", error);
     }
     return err<{ costCenter: CostCenter }>("unknown_error");
   }
@@ -610,7 +611,7 @@ export async function syncMovementCostCenterLinks(input: {
     return ok<Data>("movement_links_synced", { added, removed });
   } catch (error) {
     if (isCostCenterRepositoryInfraError(error)) {
-      console.error("[cost-center-service.sync_links]", error);
+      logger.error("[cost-center-service.sync_links]", error);
     }
     return err<Data>("unknown_error");
   }
@@ -635,7 +636,7 @@ export async function unlinkMovementFromCostCenter(input: {
     return ok("movement_unlinked");
   } catch (error) {
     if (isCostCenterRepositoryInfraError(error)) {
-      console.error("[cost-center-service.unlink]", error);
+      logger.error("[cost-center-service.unlink]", error);
     }
     return err("unknown_error");
   }

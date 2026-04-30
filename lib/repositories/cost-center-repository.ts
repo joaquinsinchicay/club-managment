@@ -19,6 +19,7 @@ import {
   MissingSupabaseAdminConfigError,
   createRequiredAdminSupabaseClient
 } from "@/lib/supabase/admin";
+import { logger } from "@/lib/logger";
 import type {
   CostCenter,
   CostCenterAggregates,
@@ -66,11 +67,11 @@ export function isCostCenterRepositoryInfraError(
 }
 
 function logWriteFailure(operation: string, details: Record<string, unknown>, error?: unknown) {
-  console.error("[cost-center-write-failure]", { operation, ...details, error });
+  logger.error("[cost-center-write-failure]", { operation, ...details, error });
 }
 
 function logReadFailure(operation: string, details: Record<string, unknown>, error?: unknown) {
-  console.error("[cost-center-read-failure]", { operation, ...details, error });
+  logger.error("[cost-center-read-failure]", { operation, ...details, error });
 }
 
 function requireAdminClient(operation: string, details: Record<string, unknown>) {

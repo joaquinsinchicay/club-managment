@@ -20,6 +20,7 @@ import {
   payrollSettlementRepository,
 } from "@/lib/repositories/payroll-settlement-repository";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Result codes
@@ -104,14 +105,14 @@ export async function listApprovedSettlementsForTreasury(): Promise<TreasuryPayr
           }
         }
       } catch (lookupError) {
-        console.warn("[treasury-payroll-service.list.approver_lookup]", lookupError);
+        logger.warn("[treasury-payroll-service.list.approver_lookup]", lookupError);
       }
     }
 
     return { ok: true, settlements, adjustmentsBySettlementId, approverNamesByUserId };
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[treasury-payroll-service.list]", error);
+      logger.error("[treasury-payroll-service.list]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -149,7 +150,7 @@ export async function getTreasuryPayrollSummary(): Promise<TreasuryPayrollSummar
     return { ok: true, summary: { count, totalAmount } };
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[treasury-payroll-service.summary]", error);
+      logger.error("[treasury-payroll-service.summary]", error);
     }
     return { ok: false, code: "unknown_error" };
   }

@@ -20,6 +20,7 @@ import {
   isStaffContractRevisionRepositoryInfraError,
   staffContractRevisionRepository,
 } from "@/lib/repositories/staff-contract-revision-repository";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Result codes
@@ -155,7 +156,7 @@ export async function listRevisionsForContract(
     return ok<{ revisions: StaffContractRevision[] }>("revision_created", { revisions });
   } catch (error) {
     if (isStaffContractRevisionRepositoryInfraError(error)) {
-      console.error("[salary-revision-service.list]", error);
+      logger.error("[salary-revision-service.list]", error);
     }
     return err<{ revisions: StaffContractRevision[] }>("unknown_error");
   }
@@ -204,7 +205,7 @@ export async function createSalaryRevision(
     });
   } catch (error) {
     if (isStaffContractRevisionRepositoryInfraError(error)) {
-      console.error("[salary-revision-service.create]", error);
+      logger.error("[salary-revision-service.create]", error);
     }
     return err<{ revisionId: string | null }>("unknown_error");
   }
@@ -287,7 +288,7 @@ export async function createBulkSalaryRevision(
     });
   } catch (error) {
     if (isStaffContractRevisionRepositoryInfraError(error)) {
-      console.error("[salary-revision-service.bulk]", error);
+      logger.error("[salary-revision-service.bulk]", error);
     }
     return err("unknown_error");
   }

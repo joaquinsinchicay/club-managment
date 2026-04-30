@@ -14,6 +14,7 @@ import {
   MissingSupabaseAdminConfigError,
   createRequiredAdminSupabaseClient,
 } from "@/lib/supabase/admin";
+import { logger } from "@/lib/logger";
 import type {
   StaffMember,
   StaffVinculoType,
@@ -57,10 +58,10 @@ export function isStaffMemberRepositoryInfraError(
 }
 
 function logWriteFailure(op: string, details: Record<string, unknown>, error?: unknown) {
-  console.error("[staff-member-write-failure]", { operation: op, ...details, error });
+  logger.error("[staff-member-write-failure]", { operation: op, ...details, error });
 }
 function logReadFailure(op: string, details: Record<string, unknown>, error?: unknown) {
-  console.error("[staff-member-read-failure]", { operation: op, ...details, error });
+  logger.error("[staff-member-read-failure]", { operation: op, ...details, error });
 }
 
 function requireAdminClient(op: string, details: Record<string, unknown>) {
@@ -366,7 +367,7 @@ export const staffMemberRepository = {
       payload_after: input.payloadAfter ?? null,
     });
     if (error) {
-      console.error("[staff-member-repo] audit insert failed", error);
+      logger.error("[staff-member-repo] audit insert failed", error);
     }
   },
 };

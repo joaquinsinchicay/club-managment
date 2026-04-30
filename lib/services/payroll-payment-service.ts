@@ -13,6 +13,7 @@ import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import type { Membership } from "@/lib/domain/access";
 import { canOperateHrPayments } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Result codes
@@ -194,7 +195,7 @@ export async function payStaffSettlement(
       p_club_id: ctx.clubId,
     });
     if (setErr && setErr.code !== "42883") {
-      console.warn("[payroll-payment-service] set_current_club failed", setErr);
+      logger.warn("[payroll-payment-service] set_current_club failed", setErr);
     }
 
     const { data, error } = await supabase.rpc("hr_pay_settlement", {
@@ -208,7 +209,7 @@ export async function payStaffSettlement(
     });
 
     if (error) {
-      console.error("[payroll-payment-service.pay]", error);
+      logger.error("[payroll-payment-service.pay]", error);
       return err<{ movementId: string; settlementId: string }>("rpc_failed");
     }
 
@@ -229,7 +230,7 @@ export async function payStaffSettlement(
       settlementId: String(payload.settlement_id ?? settlementId),
     });
   } catch (error) {
-    console.error("[payroll-payment-service.pay.exception]", error);
+    logger.error("[payroll-payment-service.pay.exception]", error);
     return err<{ movementId: string; settlementId: string }>("unknown_error");
   }
 }
@@ -279,7 +280,7 @@ export async function payStaffSettlementsBatch(
       p_club_id: ctx.clubId,
     });
     if (setErr && setErr.code !== "42883") {
-      console.warn("[payroll-payment-service] set_current_club failed", setErr);
+      logger.warn("[payroll-payment-service] set_current_club failed", setErr);
     }
 
     const { data, error } = await supabase.rpc("hr_pay_settlements_batch", {
@@ -291,7 +292,7 @@ export async function payStaffSettlementsBatch(
     });
 
     if (error) {
-      console.error("[payroll-payment-service.pay-batch]", error);
+      logger.error("[payroll-payment-service.pay-batch]", error);
       return err<{ batchId: string; count: number; totalAmount: number }>("rpc_failed");
     }
 
@@ -317,7 +318,7 @@ export async function payStaffSettlementsBatch(
       totalAmount: Number(payload.total_amount ?? 0),
     });
   } catch (error) {
-    console.error("[payroll-payment-service.pay-batch.exception]", error);
+    logger.error("[payroll-payment-service.pay-batch.exception]", error);
     return err<{ batchId: string; count: number; totalAmount: number }>("unknown_error");
   }
 }

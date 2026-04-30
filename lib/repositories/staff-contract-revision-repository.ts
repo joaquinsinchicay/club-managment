@@ -16,6 +16,7 @@ import {
   MissingSupabaseAdminConfigError,
   createRequiredAdminSupabaseClient,
 } from "@/lib/supabase/admin";
+import { logger } from "@/lib/logger";
 import type {
   SalaryRevisionAdjustmentType,
   StaffContractRevision,
@@ -102,7 +103,7 @@ async function seedClubId(
 ) {
   const { error } = await supabase.rpc("set_current_club", { p_club_id: clubId });
   if (error && error.code !== "42883") {
-    console.warn("[staff-contract-revision-repo] set_current_club failed", error);
+    logger.warn("[staff-contract-revision-repo] set_current_club failed", error);
   }
 }
 
@@ -168,7 +169,7 @@ export const staffContractRevisionRepository = {
     });
 
     if (error) {
-      console.error("[staff-contract-revision-repo] rpc error", error);
+      logger.error("[staff-contract-revision-repo] rpc error", error);
       throw new StaffContractRevisionRepositoryInfraError(
         "rpc_failed",
         "hr_create_salary_revision",
@@ -218,7 +219,7 @@ export const staffContractRevisionRepository = {
     });
 
     if (error) {
-      console.error("[staff-contract-revision-repo] bulk rpc error", error);
+      logger.error("[staff-contract-revision-repo] bulk rpc error", error);
       throw new StaffContractRevisionRepositoryInfraError(
         "rpc_failed",
         "hr_create_salary_revisions_bulk",

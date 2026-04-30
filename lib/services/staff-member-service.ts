@@ -28,6 +28,7 @@ import {
   normalizeCuit,
 } from "@/lib/validators/cuit";
 import { isValidEmail, validatePhone } from "@/lib/validators/contact";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Result codes
@@ -247,7 +248,7 @@ export async function listStaffMembersForActiveClub(
     return { ok: true, members };
   } catch (error) {
     if (isStaffMemberRepositoryInfraError(error)) {
-      console.error("[staff-member-service.list]", error);
+      logger.error("[staff-member-service.list]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -308,7 +309,7 @@ export async function createStaffMember(
     return ok<{ member: StaffMember }>("created", { member: created });
   } catch (error) {
     if (isStaffMemberRepositoryInfraError(error)) {
-      console.error("[staff-member-service.create]", error);
+      logger.error("[staff-member-service.create]", error);
     }
     return err<{ member: StaffMember }>("unknown_error");
   }
@@ -381,7 +382,7 @@ export async function updateStaffMember(
     return ok<{ member: StaffMember }>("updated", { member: updated });
   } catch (error) {
     if (isStaffMemberRepositoryInfraError(error)) {
-      console.error("[staff-member-service.update]", error);
+      logger.error("[staff-member-service.update]", error);
     }
     return err<{ member: StaffMember }>("unknown_error");
   }

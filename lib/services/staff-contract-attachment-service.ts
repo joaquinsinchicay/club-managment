@@ -12,6 +12,7 @@ import { randomUUID } from "node:crypto";
 import { createRequiredAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canAccessHrMasters, canMutateHrMasters } from "@/lib/domain/authorization";
+import { logger } from "@/lib/logger";
 
 const BUCKET = "staff-contracts";
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -131,7 +132,7 @@ export async function listContractAttachments(
     .eq("contract_id", contractId)
     .order("uploaded_at", { ascending: false });
   if (error) {
-    console.error("[contract-attachment-service.list]", error);
+    logger.error("[contract-attachment-service.list]", error);
     return { ok: false, code: "unknown_error" };
   }
   return {
@@ -180,7 +181,7 @@ export async function uploadContractAttachment(params: {
     .from(BUCKET)
     .upload(filePath, body, { contentType: mime, upsert: false });
   if (uploadErr) {
-    console.error("[contract-attachment-service.upload]", uploadErr);
+    logger.error("[contract-attachment-service.upload]", uploadErr);
     return { ok: false, code: "unknown_error" };
   }
 
@@ -202,7 +203,7 @@ export async function uploadContractAttachment(params: {
   if (error || !data) {
     // Cleanup del archivo si la fila falla.
     await supabase.storage.from(BUCKET).remove([filePath]);
-    console.error("[contract-attachment-service.insert]", error);
+    logger.error("[contract-attachment-service.insert]", error);
     return { ok: false, code: "unknown_error" };
   }
 
@@ -228,7 +229,7 @@ export async function deleteContractAttachment(
     .eq("club_id", ctx.clubId)
     .maybeSingle();
   if (readErr) {
-    console.error("[contract-attachment-service.delete.read]", readErr);
+    logger.error("[contract-attachment-service.delete.read]", readErr);
     return { ok: false, code: "unknown_error" };
   }
   if (!existing) return { ok: false, code: "attachment_not_found" };
@@ -241,7 +242,7 @@ export async function deleteContractAttachment(
     .eq("id", attachmentId)
     .eq("club_id", ctx.clubId);
   if (error) {
-    console.error("[contract-attachment-service.delete]", error);
+    logger.error("[contract-attachment-service.delete]", error);
     return { ok: false, code: "unknown_error" };
   }
   return { ok: true, code: "deleted" };
@@ -267,7 +268,7 @@ export async function getSignedUrlForAttachment(
     .from(BUCKET)
     .createSignedUrl(existing.file_path, 60 * 5); // 5 minutos.
   if (error || !data) {
-    console.error("[contract-attachment-service.signed]", error);
+    logger.error("[contract-attachment-service.signed]", error);
     return { ok: false, code: "unknown_error" };
   }
   return { ok: true, code: "uploaded", data: { url: data.signedUrl } };

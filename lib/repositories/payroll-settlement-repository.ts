@@ -12,6 +12,7 @@ import {
   MissingSupabaseAdminConfigError,
   createRequiredAdminSupabaseClient,
 } from "@/lib/supabase/admin";
+import { logger } from "@/lib/logger";
 import type {
   PayrollAdjustmentType,
   PayrollSettlement,
@@ -55,7 +56,7 @@ export function isPayrollSettlementRepositoryInfraError(
 }
 
 function log(op: string, kind: "r" | "w", details: Record<string, unknown>, error?: unknown) {
-  console.error(`[payroll-settlement-${kind === "r" ? "read" : "write"}-failure]`, {
+  logger.error(`[payroll-settlement-${kind === "r" ? "read" : "write"}-failure]`, {
     operation: op,
     ...details,
     error,
@@ -600,7 +601,7 @@ export const payrollSettlementRepository = {
       p_club_id: params.clubId,
     });
     if (setErr && setErr.code !== "42883") {
-      console.warn("[payroll-settlement-repo] set_current_club failed", setErr);
+      logger.warn("[payroll-settlement-repo] set_current_club failed", setErr);
     }
     const { data, error } = await supabase.rpc("hr_approve_settlement", {
       p_settlement_id: params.settlementId,
@@ -634,7 +635,7 @@ export const payrollSettlementRepository = {
       p_club_id: params.clubId,
     });
     if (setErr && setErr.code !== "42883") {
-      console.warn("[payroll-settlement-repo] set_current_club failed", setErr);
+      logger.warn("[payroll-settlement-repo] set_current_club failed", setErr);
     }
     const { data, error } = await supabase.rpc("hr_approve_settlements_bulk", {
       p_ids: params.ids,
@@ -673,7 +674,7 @@ export const payrollSettlementRepository = {
       p_club_id: params.clubId,
     });
     if (setErr && setErr.code !== "42883") {
-      console.warn("[payroll-settlement-repo] set_current_club failed", setErr);
+      logger.warn("[payroll-settlement-repo] set_current_club failed", setErr);
     }
     const { data, error } = await supabase.rpc("hr_return_settlement_to_generated", {
       p_settlement_id: params.settlementId,
@@ -708,7 +709,7 @@ export const payrollSettlementRepository = {
       p_club_id: params.clubId,
     });
     if (setErr && setErr.code !== "42883") {
-      console.warn("[payroll-settlement-repo] set_current_club failed", setErr);
+      logger.warn("[payroll-settlement-repo] set_current_club failed", setErr);
     }
     const { data, error } = await supabase.rpc("hr_annul_settlement", {
       p_settlement_id: params.settlementId,
@@ -741,6 +742,6 @@ export const payrollSettlementRepository = {
       payload_before: input.payloadBefore ?? null,
       payload_after: input.payloadAfter ?? null,
     });
-    if (error) console.error("[payroll-settlement-repo] audit insert failed", error);
+    if (error) logger.error("[payroll-settlement-repo] audit insert failed", error);
   },
 };

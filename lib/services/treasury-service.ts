@@ -26,6 +26,7 @@ import type {
 import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositories/access-repository";
 import { costCenterRepository } from "@/lib/repositories/cost-center-repository";
 import { texts } from "@/lib/texts";
+import { logger } from "@/lib/logger";
 
 type TreasuryVisibilityRole = "secretaria" | "tesoreria";
 
@@ -265,7 +266,7 @@ function resolveConsolidationInfrastructureFailure(
     return null;
   }
 
-  console.error("[treasury-consolidation-infrastructure-failure]", {
+  logger.error("[treasury-consolidation-infrastructure-failure]", {
     operation,
     ...details,
     repositoryOperation: isAccessRepositoryInfraError(error) ? error.operation : null,
@@ -337,7 +338,7 @@ function logTreasuryServiceFailure(
   details: Record<string, unknown>,
   error?: unknown
 ) {
-  console.error("[treasury-service-failure]", {
+  logger.error("[treasury-service-failure]", {
     operation,
     ...details,
     ...(error === undefined ? {} : { error })
@@ -641,7 +642,7 @@ export async function ensureStaleDailyCashSessionAutoClosedForActiveClub(context
     if (isMissingStaleSessionAutoCloseRpcError(error)) {
       if (!warnedMissingStaleSessionAutoCloseRpcClubIds.has(context.activeClub.id)) {
         warnedMissingStaleSessionAutoCloseRpcClubIds.add(context.activeClub.id);
-        console.warn("[stale-session-autoclose-rpc-missing]", {
+        logger.warn("[stale-session-autoclose-rpc-missing]", {
           clubId: context.activeClub.id
         });
       }
@@ -690,7 +691,7 @@ async function getSessionValidationBase(
       accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
     ]);
   } catch (error) {
-    console.error("[session-state-resolution-failed]", {
+    logger.error("[session-state-resolution-failed]", {
       operation: "get_session_validation_base",
       mode,
       clubId: context.activeClub.id,
@@ -741,7 +742,7 @@ async function getSessionValidationBase(
       accounts: drafts
     };
   } catch (error) {
-    console.error("[session-balance-data-resolution-failed]", {
+    logger.error("[session-balance-data-resolution-failed]", {
       operation: "get_session_validation_base",
       mode,
       clubId: context.activeClub.id,
@@ -944,7 +945,7 @@ export async function openDailyCashSessionWithDeclaredBalances(input: Array<{
       drafts: validation.drafts
     });
   } catch (error) {
-    console.error("[open-session-adjustment-preparation-failed]", {
+    logger.error("[open-session-adjustment-preparation-failed]", {
       clubId: validation.clubId,
       sessionDate: validation.sessionDate,
       userId: validation.userId,
@@ -976,7 +977,7 @@ export async function openDailyCashSessionWithDeclaredBalances(input: Array<{
       return { ok: false, code: "session_already_exists" };
     }
 
-    console.error("[open-session-atomic-write-failed]", {
+    logger.error("[open-session-atomic-write-failed]", {
       clubId: validation.clubId,
       sessionDate: validation.sessionDate,
       userId: validation.userId,
@@ -1010,7 +1011,7 @@ export async function closeDailyCashSessionWithDeclaredBalances(
       diffNotes: options?.diffNotes
     });
   } catch (error) {
-    console.error("[close-session-adjustment-preparation-failed]", {
+    logger.error("[close-session-adjustment-preparation-failed]", {
       clubId: validation.clubId,
       sessionDate: validation.sessionDate,
       sessionId: validation.sessionId,
@@ -1040,7 +1041,7 @@ export async function closeDailyCashSessionWithDeclaredBalances(
 
     return { ok: true, code: "session_closed" };
   } catch (error) {
-    console.error("[close-session-atomic-write-failed]", {
+    logger.error("[close-session-atomic-write-failed]", {
       clubId: validation.clubId,
       sessionDate: validation.sessionDate,
       sessionId: validation.sessionId,
@@ -1073,7 +1074,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
     session = await accessRepository.getDailyCashSessionByDate(clubId, sessionDate);
   } catch (error) {
     sessionStateResolved = false;
-    console.error("[dashboard-session-state-resolution-failed]", {
+    logger.error("[dashboard-session-state-resolution-failed]", {
       clubId,
       sessionDate,
       error
@@ -1105,7 +1106,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
       shouldUseLegacyMovementFallback = true;
     } else {
       movementDataResolved = false;
-      console.error("[dashboard-balance-data-resolution-failed]", {
+      logger.error("[dashboard-balance-data-resolution-failed]", {
         clubId,
         error
       });
@@ -1139,7 +1140,7 @@ export async function getDashboardTreasuryCardForActiveClub(): Promise<Dashboard
       visibleMovements = sameDayMovements.filter((movement) => visibleAccountIds.has(movement.accountId));
     } catch (error) {
       movementDataResolved = false;
-      console.error("[dashboard-movement-fallback-resolution-failed]", {
+      logger.error("[dashboard-movement-fallback-resolution-failed]", {
         clubId,
         sessionDate,
         error
@@ -1240,7 +1241,7 @@ export async function getTreasuryRoleDashboardForActiveClub(options?: {
     if (isMissingBulkMovementHistoryRpcError(error)) {
       shouldUseLegacyMovementFallback = true;
     } else {
-      console.error("[treasury-role-dashboard-movement-resolution-failed]", {
+      logger.error("[treasury-role-dashboard-movement-resolution-failed]", {
         clubId,
         error
       });
@@ -1256,7 +1257,7 @@ export async function getTreasuryRoleDashboardForActiveClub(options?: {
         )
       ).flat();
     } catch (error) {
-      console.error("[treasury-role-dashboard-movement-fallback-resolution-failed]", {
+      logger.error("[treasury-role-dashboard-movement-fallback-resolution-failed]", {
         clubId,
         error
       });
@@ -1287,7 +1288,7 @@ export async function getTreasuryRoleDashboardForActiveClub(options?: {
       visibleRoleMovements.map((m) => m.id)
     );
   } catch (error) {
-    console.error("[treasury-role-dashboard.cost_center_links_failed]", { clubId, error });
+    logger.error("[treasury-role-dashboard.cost_center_links_failed]", { clubId, error });
   }
   const dashboardMovements = visibleRoleMovements
     .map((movement) =>
@@ -1409,7 +1410,7 @@ export async function createTreasuryMovement(input: {
   try {
 session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
   } catch (error) {
-    console.error("[create-treasury-movement-session-resolution-failed]", {
+    logger.error("[create-treasury-movement-session-resolution-failed]", {
       clubId: context.activeClub.id,
       sessionDate: getTodayDate(),
       error
@@ -1621,7 +1622,7 @@ export async function updateSecretariaMovementInOpenSession(input: {
   try {
 session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
   } catch (error) {
-    console.error("[update-secretaria-movement-session-resolution-failed]", {
+    logger.error("[update-secretaria-movement-session-resolution-failed]", {
       clubId: context.activeClub.id,
       sessionDate: getTodayDate(),
       error
@@ -1828,7 +1829,7 @@ export async function createAccountTransfer(input: {
     try {
       session = await accessRepository.getDailyCashSessionByDate(context.activeClub.id, getTodayDate());
     } catch (error) {
-      console.error("[create-account-transfer-session-resolution-failed]", {
+      logger.error("[create-account-transfer-session-resolution-failed]", {
         clubId: context.activeClub.id,
         sessionDate: getTodayDate(),
         error
@@ -1961,7 +1962,7 @@ export async function updateSecretariaTransferInOpenSession(input: {
   try {
 session = await accessRepository.getDailyCashSessionByDate(clubId, getTodayDate());
   } catch (error) {
-    console.error("[update-secretaria-transfer-session-resolution-failed]", { clubId, error });
+    logger.error("[update-secretaria-transfer-session-resolution-failed]", { clubId, error });
     return { ok: false, code: "forbidden" };
   }
 
@@ -2753,7 +2754,7 @@ export async function getTreasuryConsolidationDashboard(
       user: { id: context.user.id }
     });
   } catch (error) {
-    console.warn("[daily-session-guard-failed]", {
+    logger.warn("[daily-session-guard-failed]", {
       clubId,
       userId: context.user.id,
       source: "treasury_consolidation_dashboard",

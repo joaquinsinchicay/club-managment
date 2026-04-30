@@ -15,6 +15,7 @@ import {
   createRequiredAdminSupabaseClient,
 } from "@/lib/supabase/admin";
 import type { StaffContract, StaffContractStatus } from "@/lib/domain/staff-contract";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Errors
@@ -54,7 +55,7 @@ export function isStaffContractRepositoryInfraError(
 }
 
 function log(op: string, kind: "r" | "w", details: Record<string, unknown>, error?: unknown) {
-  console.error(`[staff-contract-${kind === "r" ? "read" : "write"}-failure]`, {
+  logger.error(`[staff-contract-${kind === "r" ? "read" : "write"}-failure]`, {
     operation: op,
     ...details,
     error,
@@ -379,7 +380,7 @@ export const staffContractRepository = {
       p_club_id: input.clubId,
     });
     if (setErr && setErr.code !== "42883") {
-      console.warn("[staff-contract-repo] set_current_club failed", setErr);
+      logger.warn("[staff-contract-repo] set_current_club failed", setErr);
     }
 
     const { data, error } = await supabase.rpc("hr_create_contract_with_initial_revision", {
@@ -392,7 +393,7 @@ export const staffContractRepository = {
     });
 
     if (error) {
-      console.error("[staff-contract-repo] create rpc error", error);
+      logger.error("[staff-contract-repo] create rpc error", error);
       throw new StaffContractRepositoryInfraError(
         "rpc_failed",
         "hr_create_contract_with_initial_revision",
@@ -451,7 +452,7 @@ export const staffContractRepository = {
       p_club_id: params.clubId,
     });
     if (setErr && setErr.code !== "42883") {
-      console.warn("[staff-contract-repo] set_current_club failed", setErr);
+      logger.warn("[staff-contract-repo] set_current_club failed", setErr);
     }
 
     const { data, error } = await supabase.rpc("hr_finalize_contract", {
@@ -460,7 +461,7 @@ export const staffContractRepository = {
       p_reason: params.reason,
     });
     if (error) {
-      console.error("[staff-contract-repo] rpc error", error);
+      logger.error("[staff-contract-repo] rpc error", error);
       throw new StaffContractRepositoryInfraError(
         "rpc_failed",
         "hr_finalize_contract",
@@ -488,6 +489,6 @@ export const staffContractRepository = {
       payload_before: input.payloadBefore ?? null,
       payload_after: input.payloadAfter ?? null,
     });
-    if (error) console.error("[staff-contract-repo] audit insert failed", error);
+    if (error) logger.error("[staff-contract-repo] audit insert failed", error);
   },
 };

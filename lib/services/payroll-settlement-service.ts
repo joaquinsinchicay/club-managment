@@ -23,6 +23,7 @@ import {
   payrollSettlementRepository,
   type ListSettlementsFilters,
 } from "@/lib/repositories/payroll-settlement-repository";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Result codes
@@ -158,7 +159,7 @@ export async function listSettlementsForActiveClub(
     return { ok: true, settlements };
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.list]", error);
+      logger.error("[payroll-settlement-service.list]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -179,7 +180,7 @@ export async function listSettlementsForContract(
     return { ok: true, settlements };
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.listForContract]", error);
+      logger.error("[payroll-settlement-service.listForContract]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -208,7 +209,7 @@ export async function getSettlementDetail(
     return ok<SettlementDetail>("generated", { settlement, adjustments });
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.detail]", error);
+      logger.error("[payroll-settlement-service.detail]", error);
     }
     return err<SettlementDetail>("unknown_error");
   }
@@ -249,7 +250,7 @@ export async function listSettlementsWithAdjustments(
     return { ok: true, settlements, adjustmentsBySettlementId };
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.list-with-adjustments]", error);
+      logger.error("[payroll-settlement-service.list-with-adjustments]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
@@ -323,7 +324,7 @@ export async function generateMonthlySettlements(
     });
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.generate]", error);
+      logger.error("[payroll-settlement-service.generate]", error);
     }
     return err("unknown_error");
   }
@@ -403,7 +404,7 @@ export async function addAdjustment(
     return ok<{ adjustment: PayrollSettlementAdjustment }>("adjustment_added", { adjustment });
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.add-adjustment]", error);
+      logger.error("[payroll-settlement-service.add-adjustment]", error);
     }
     return err<{ adjustment: PayrollSettlementAdjustment }>("unknown_error");
   }
@@ -436,7 +437,7 @@ export async function deleteAdjustment(params: {
     return ok("adjustment_removed");
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.delete-adjustment]", error);
+      logger.error("[payroll-settlement-service.delete-adjustment]", error);
     }
     return err("unknown_error");
   }
@@ -557,7 +558,7 @@ export async function updateHoursOrNotes(params: {
     );
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.update-hours-or-notes]", error);
+      logger.error("[payroll-settlement-service.update-hours-or-notes]", error);
     }
     return err<{ settlement: PayrollSettlement }>("unknown_error");
   }
@@ -609,7 +610,7 @@ export async function approveSettlement(
     return ok("approved");
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.approve]", error);
+      logger.error("[payroll-settlement-service.approve]", error);
     }
     return err("unknown_error");
   }
@@ -651,7 +652,7 @@ export async function approveSettlementsBulk(params: {
     return ok(res.errors.length > 0 ? "partial" : "approved_bulk", data);
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.approve-bulk]", error);
+      logger.error("[payroll-settlement-service.approve-bulk]", error);
     }
     return err("unknown_error");
   }
@@ -700,7 +701,7 @@ export async function returnSettlementToGenerated(
     return ok("returned_to_generated");
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.return-to-generated]", error);
+      logger.error("[payroll-settlement-service.return-to-generated]", error);
     }
     return err("unknown_error");
   }
@@ -748,7 +749,7 @@ export async function annulSettlement(
     return ok("annulled");
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {
-      console.error("[payroll-settlement-service.annul]", error);
+      logger.error("[payroll-settlement-service.annul]", error);
     }
     return err("unknown_error");
   }

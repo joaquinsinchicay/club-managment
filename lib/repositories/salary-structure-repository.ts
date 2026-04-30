@@ -23,6 +23,7 @@ import {
   type SalaryStructure,
   type SalaryStructureStatus,
 } from "@/lib/domain/salary-structure";
+import { logger } from "@/lib/logger";
 
 // -------------------------------------------------------------------------
 // Errors
@@ -62,11 +63,11 @@ export function isSalaryStructureRepositoryInfraError(
 }
 
 function logWriteFailure(operation: string, details: Record<string, unknown>, error?: unknown) {
-  console.error("[salary-structure-write-failure]", { operation, ...details, error });
+  logger.error("[salary-structure-write-failure]", { operation, ...details, error });
 }
 
 function logReadFailure(operation: string, details: Record<string, unknown>, error?: unknown) {
-  console.error("[salary-structure-read-failure]", { operation, ...details, error });
+  logger.error("[salary-structure-read-failure]", { operation, ...details, error });
 }
 
 function requireAdminClient(operation: string, details: Record<string, unknown>) {
@@ -437,7 +438,7 @@ export const salaryStructureRepository = {
     });
     if (error) {
       // Audit failure must not block the operation; log and continue.
-      console.error("[salary-structure-repo] audit insert failed", error);
+      logger.error("[salary-structure-repo] audit insert failed", error);
     }
   },
 };

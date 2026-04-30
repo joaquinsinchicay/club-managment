@@ -22,6 +22,7 @@ import { canAccessHrMasters } from "@/lib/domain/authorization";
 import type { SalaryRemunerationType } from "@/lib/domain/salary-structure";
 import type { SalaryStructure } from "@/lib/domain/salary-structure";
 import { salaryStructureRepository } from "@/lib/repositories/salary-structure-repository";
+import { logger } from "@/lib/logger";
 
 export type ActivityCollaborator = {
   contractId: string;
@@ -122,7 +123,7 @@ export async function getActivityDetail(activityId: string): Promise<ActivityDet
       .eq("club_id", clubId)
       .maybeSingle();
     if (activityErr) {
-      console.error("[hr-activity-detail-service.activity]", activityErr);
+      logger.error("[hr-activity-detail-service.activity]", activityErr);
       return { ok: false, code: "unknown_error" };
     }
     if (!activityRow) return { ok: false, code: "activity_not_found" };
@@ -156,7 +157,7 @@ export async function getActivityDetail(activityId: string): Promise<ActivityDet
         .eq("status", "vigente")
         .in("salary_structure_id", structureIds);
       if (error) {
-        console.error("[hr-activity-detail-service.contracts]", error);
+        logger.error("[hr-activity-detail-service.contracts]", error);
         return { ok: false, code: "unknown_error" };
       }
       contractRows = data ?? [];
@@ -173,7 +174,7 @@ export async function getActivityDetail(activityId: string): Promise<ActivityDet
         .is("end_date", null)
         .in("contract_id", contractIds);
       if (error) {
-        console.error("[hr-activity-detail-service.revisions]", error);
+        logger.error("[hr-activity-detail-service.revisions]", error);
         return { ok: false, code: "unknown_error" };
       }
       for (const r of (data ?? []) as Array<{ contract_id: string; amount: number | string }>) {
@@ -225,7 +226,7 @@ export async function getActivityDetail(activityId: string): Promise<ActivityDet
         .eq("club_id", clubId)
         .eq("status", "vigente");
       if (clubErr) {
-        console.error("[hr-activity-detail-service.club_contracts]", clubErr);
+        logger.error("[hr-activity-detail-service.club_contracts]", clubErr);
       } else if ((allActiveContracts ?? []).length > 0) {
         const allIds = (allActiveContracts ?? []).map((r: { id: string }) => r.id);
         const { data: allRevisions, error: revErr } = await admin
@@ -235,7 +236,7 @@ export async function getActivityDetail(activityId: string): Promise<ActivityDet
           .is("end_date", null)
           .in("contract_id", allIds);
         if (revErr) {
-          console.error("[hr-activity-detail-service.club_revisions]", revErr);
+          logger.error("[hr-activity-detail-service.club_revisions]", revErr);
         } else {
           for (const r of (allRevisions ?? []) as Array<{ amount: number | string }>) {
             clubMonthlyCost += Number(r.amount);
@@ -269,7 +270,7 @@ export async function getActivityDetail(activityId: string): Promise<ActivityDet
         .gte("period_year", earliest.year)
         .lte("period_year", latest.year);
       if (settlementsErr) {
-        console.error("[hr-activity-detail-service.settlements]", settlementsErr);
+        logger.error("[hr-activity-detail-service.settlements]", settlementsErr);
       } else {
         for (const s of (settlements ?? []) as Array<{
           period_year: number;
@@ -308,9 +309,9 @@ export async function getActivityDetail(activityId: string): Promise<ActivityDet
     };
   } catch (error) {
     if (error instanceof MissingSupabaseAdminConfigError) {
-      console.error("[hr-activity-detail-service.config]", error);
+      logger.error("[hr-activity-detail-service.config]", error);
     } else {
-      console.error("[hr-activity-detail-service]", error);
+      logger.error("[hr-activity-detail-service]", error);
     }
     return { ok: false, code: "unknown_error" };
   }
