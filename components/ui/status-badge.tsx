@@ -36,7 +36,11 @@ export const StatusBadge = forwardRef<HTMLSpanElement, StatusBadgeProps>(functio
       ref={ref}
       {...rest}
       className={cn(
-        "inline-flex min-h-7 items-center gap-1.5 rounded-full border px-3 py-1 text-meta font-semibold uppercase tracking-card-eyebrow",
+        // text-eyebrow ya incluye font-weight 600 + letter-spacing 0.08em
+        // (tokens en lib/tokens/typography.ts). No agregar font-semibold ni
+        // tracking-card-eyebrow extra — quedaba 28px de alto + 0.18em
+        // de tracking, demasiado pesado para un chip de estado.
+        "inline-flex min-h-6 items-center gap-1 rounded-full border px-2.5 py-0.5 text-eyebrow uppercase",
         TONE_CLASSNAME[tone],
         className
       )}
