@@ -10,6 +10,7 @@ import {
   FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -31,12 +32,6 @@ import { CostCenterMultiSelect } from "./cost-center-multiselect";
 import { StaffContractField } from "./staff-contract-field";
 
 export function SecretariaMovementEditForm({
-  accounts,
-  categories,
-  activities,
-  currencies,
-  movementTypes,
-  receiptFormats,
   submitLabel,
   pendingLabel,
   submitAction,
@@ -47,7 +42,6 @@ export function SecretariaMovementEditForm({
   onCancel,
   costCenters,
   initialCostCenterIds,
-  staffContracts
 }: BaseMovementFormProps & {
   movement: EditableMovement;
   copy?: OperationalFormCopy;
@@ -55,6 +49,9 @@ export function SecretariaMovementEditForm({
   editableMovementDate?: boolean;
   onCancel: () => void;
 }) {
+  // Fase 4 · T3.2 — datos de dominio desde context (antes 7 props).
+  const { accounts, categories, activities, currencies, movementTypes, receiptFormats, staffContracts } =
+    useTreasuryData();
   const ccCopy = texts.dashboard.treasury_role.cost_centers;
   const [formState, setFormState] = useState<MovementFormState>(() => buildEditMovementFormState(movement));
   // US-53 / edit: cost center multiselect (solo se renderiza cuando el caller

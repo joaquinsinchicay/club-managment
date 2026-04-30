@@ -10,10 +10,8 @@ import {
   FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
-import type {
-  TreasuryAccount,
-  TreasuryCurrencyConfig,
-} from "@/lib/domain/access";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
+import type { TreasuryAccount } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -32,18 +30,27 @@ import {
 export function AccountTransferForm({
   sourceAccounts,
   targetAccounts,
-  currencies,
   submitAction,
   sessionDate,
   onCancel
 }: {
+  /**
+   * `sourceAccounts` y `targetAccounts` se siguen recibiendo por prop porque
+   * el filtrado depende del rol del consumer: TreasuryRoleCard usa
+   * `accounts` (visible para tesoreria) + `allAccounts` (todas), mientras
+   * que TreasuryCard secretaria usa `transferSourceAccounts` /
+   * `transferTargetAccounts` del context (filtros de secretaria). El form
+   * no puede asumir cuál set viene del context.
+   */
   sourceAccounts: TreasuryAccount[];
   targetAccounts: TreasuryAccount[];
-  currencies: TreasuryCurrencyConfig[];
   submitAction: (formData: FormData) => Promise<void>;
   sessionDate: string;
   onCancel: () => void;
 }) {
+  // Fase 4 · T3.2 — `currencies` desde context. `sourceAccounts` /
+  // `targetAccounts` continúan como props (ver doc arriba).
+  const { currencies } = useTreasuryData();
   const [formState, setFormState] = useState<TransferFormState>(buildEmptyTransferFormState);
 
   const selectedSourceAccount = useMemo(

@@ -1080,20 +1080,12 @@ export function TreasuryRoleCard({
   payrollTab,
   payrollPendingCount = 0
 }: TreasuryRoleCardProps) {
-  // Datos de dominio del context (Fase 4 · T3.2). Antes eran 10 props.
-  const {
-    accounts,
-    allAccounts,
-    categories,
-    activities,
-    currencies,
-    movementTypes,
-    receiptFormats,
-    transferSourceAccounts,
-    transferTargetAccounts,
-    activeCostCenters,
-    staffContracts,
-  } = useTreasuryData();
+  // Datos de dominio del context (Fase 4 · T3.2). Antes eran 10 props;
+  // tras la migración de los 7 forms (categorias/activities/currencies/
+  // movementTypes/receiptFormats/staffContracts/transferSourceAccounts/
+  // transferTargetAccounts) los consumen vía useTreasuryData() y este
+  // componente solo necesita `accounts`, `allAccounts` y `activeCostCenters`.
+  const { accounts, allAccounts, activeCostCenters } = useTreasuryData();
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1352,15 +1344,7 @@ export function TreasuryRoleCard({
         {activeTab === "conciliacion" && consolidationDashboard && (
           <TreasuryConciliacionTab
             dashboard={consolidationDashboard}
-            accounts={accounts}
-            transferSourceAccounts={transferSourceAccounts}
-            transferTargetAccounts={transferTargetAccounts}
-            categories={categories}
-            activities={activities}
             calendarEvents={calendarEvents}
-            currencies={currencies}
-            movementTypes={movementTypes}
-            receiptFormats={receiptFormats}
             updateMovementBeforeConsolidationAction={updateMovementBeforeConsolidationAction}
             updateTransferBeforeConsolidationAction={updateTransferBeforeConsolidationAction}
             executeDailyConsolidationAction={executeDailyConsolidationAction}
@@ -1380,19 +1364,12 @@ export function TreasuryRoleCard({
         size="md"
       >
         <TreasuryRoleMovementForm
-          accounts={accounts}
-          categories={categories}
-          activities={activities}
-          currencies={currencies}
-          movementTypes={movementTypes}
-          receiptFormats={receiptFormats}
           submitAction={handleCreateTreasuryRoleMovement}
           submitLabel={texts.dashboard.treasury_role.create_cta}
           pendingLabel={texts.dashboard.treasury_role.create_loading}
           sessionDate={dashboard.sessionDate}
           onCancel={() => setActiveModal(null)}
           costCenters={activeCostCenters}
-          staffContracts={staffContracts}
         />
       </Modal>
 
@@ -1409,12 +1386,6 @@ export function TreasuryRoleCard({
       >
         {selectedMovement?.canEdit ? (
           <SecretariaMovementEditForm
-            accounts={accounts}
-            categories={categories}
-            activities={activities}
-            currencies={currencies}
-            movementTypes={movementTypes}
-            receiptFormats={receiptFormats}
             submitAction={handleUpdateTreasuryRoleMovement}
             submitLabel={texts.dashboard.treasury_role.update_cta}
             pendingLabel={texts.dashboard.treasury_role.update_loading}
@@ -1422,7 +1393,6 @@ export function TreasuryRoleCard({
             copy={texts.dashboard.treasury_role}
             costCenters={activeCostCenters}
             initialCostCenterIds={selectedMovement.costCenterIds ?? []}
-            staffContracts={staffContracts}
             onCancel={() => {
               setActiveModal(null);
               setSelectedMovement(null);
@@ -1440,7 +1410,6 @@ export function TreasuryRoleCard({
         size="md"
       >
         <TreasuryRoleFxForm
-          accounts={accounts}
           submitAction={handleCreateFxOperation}
           sessionDate={dashboard.sessionDate}
           onCancel={() => setActiveModal(null)}
@@ -1463,7 +1432,6 @@ export function TreasuryRoleCard({
         <AccountTransferForm
           sourceAccounts={accounts}
           targetAccounts={allAccounts}
-          currencies={currencies}
           submitAction={handleCreateAccountTransfer}
           sessionDate={dashboard.sessionDate}
           onCancel={() => setActiveModal(null)}

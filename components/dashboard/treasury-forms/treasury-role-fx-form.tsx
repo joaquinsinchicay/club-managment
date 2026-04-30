@@ -15,7 +15,7 @@ import {
   FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
-import type { TreasuryAccount } from "@/lib/domain/access";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -68,16 +68,16 @@ function isFxFormValid(formState: FxFormState) {
 }
 
 export function TreasuryRoleFxForm({
-  accounts,
   submitAction,
   sessionDate,
   onCancel
 }: {
-  accounts: TreasuryAccount[];
   submitAction: (formData: FormData) => Promise<unknown>;
   sessionDate: string;
   onCancel: () => void;
 }) {
+  // Fase 4 · T3.2 — `accounts` desde context (antes prop).
+  const { accounts } = useTreasuryData();
   const [formState, setFormState] = useState<FxFormState>(buildEmptyFxFormState);
 
   const sourceCurrencyCode = formState.operationType === "compra" ? "ARS" : "USD";

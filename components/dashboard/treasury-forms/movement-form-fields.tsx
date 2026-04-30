@@ -7,14 +7,7 @@ import {
   FormInput,
   FormSelect,
 } from "@/components/ui/modal-form";
-import type {
-  ClubActivity,
-  ReceiptFormat,
-  TreasuryAccount,
-  TreasuryCategory,
-  TreasuryCurrencyConfig,
-  TreasuryMovementType
-} from "@/lib/domain/access";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
 import { texts } from "@/lib/texts";
 
 import {
@@ -28,28 +21,18 @@ import {
 } from "./_shared";
 
 export function MovementFormFields({
-  accounts,
-  categories,
-  activities,
-  currencies,
-  movementTypes,
-  receiptFormats,
   formState,
   onChange,
   showMovementDateInput = false,
   copy = texts.dashboard.treasury
 }: {
-  accounts: TreasuryAccount[];
-  categories: TreasuryCategory[];
-  activities: ClubActivity[];
-  currencies: TreasuryCurrencyConfig[];
-  movementTypes: TreasuryMovementType[];
-  receiptFormats: ReceiptFormat[];
   formState: MovementFormState;
   onChange: (patch: Partial<MovementFormState>) => void;
   showMovementDateInput?: boolean;
   copy?: OperationalFormCopy;
 }) {
+  // Fase 4 · T3.2 — datos de dominio desde context (antes 6 props).
+  const { accounts, categories, activities, currencies, movementTypes, receiptFormats } = useTreasuryData();
   const availableCurrencies = useMemo(() => {
     const selectedAccount = accounts.find((account) => account.id === formState.accountId);
 

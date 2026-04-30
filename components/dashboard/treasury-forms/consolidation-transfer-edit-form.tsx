@@ -10,11 +10,8 @@ import {
   FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
-import type {
-  ConsolidationTransferEdit,
-  TreasuryAccount,
-  TreasuryCurrencyConfig,
-} from "@/lib/domain/access";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
+import type { ConsolidationTransferEdit } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -31,24 +28,24 @@ import {
 } from "./_shared";
 
 export function ConsolidationTransferEditForm({
-  sourceAccounts,
-  targetAccounts,
-  currencies,
   submitAction,
   submitLabel,
   pendingLabel,
   transfer,
   extraHiddenFields
 }: {
-  sourceAccounts: TreasuryAccount[];
-  targetAccounts: TreasuryAccount[];
-  currencies: TreasuryCurrencyConfig[];
   submitAction: (formData: FormData) => Promise<unknown>;
   submitLabel: string;
   pendingLabel: string;
   transfer: ConsolidationTransferEdit;
   extraHiddenFields?: ReactNode;
 }) {
+  // Fase 4 · T3.2 — datos de dominio desde context (antes 3 props:
+  // sourceAccounts, targetAccounts, currencies). Los sets de cuentas son
+  // los mismos que el TreasuryConciliacionTab usa (filtros tesoreria),
+  // por lo que se pueden tomar del context.
+  const { transferSourceAccounts: sourceAccounts, transferTargetAccounts: targetAccounts, currencies } =
+    useTreasuryData();
   const [formState, setFormState] = useState<TransferFormState>(() => buildEditTransferFormState(transfer));
 
   useEffect(() => {

@@ -29,31 +29,17 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { formatLocalizedAmount } from "@/lib/amounts";
 import { formatMovementDateTime } from "@/lib/dates";
 import type {
-  ClubActivity,
   ClubCalendarEvent,
   ConsolidationMovement,
   ConsolidationTransferEdit,
-  ReceiptFormat,
-  TreasuryAccount,
-  TreasuryCategory,
   TreasuryConsolidationDashboard,
-  TreasuryCurrencyConfig,
-  TreasuryMovementType
 } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 type TreasuryConciliacionTabProps = {
   dashboard: TreasuryConsolidationDashboard;
-  accounts: TreasuryAccount[];
-  transferSourceAccounts: TreasuryAccount[];
-  transferTargetAccounts: TreasuryAccount[];
-  categories: TreasuryCategory[];
-  activities: ClubActivity[];
   calendarEvents: ClubCalendarEvent[];
-  currencies: TreasuryCurrencyConfig[];
-  movementTypes: TreasuryMovementType[];
-  receiptFormats: ReceiptFormat[];
   updateMovementBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   updateTransferBeforeConsolidationAction: (formData: FormData) => Promise<void>;
   executeDailyConsolidationAction: (formData: FormData) => Promise<void>;
@@ -115,18 +101,15 @@ function KpiTile({
 
 export function TreasuryConciliacionTab({
   dashboard,
-  accounts,
-  transferSourceAccounts,
-  transferTargetAccounts,
-  categories,
-  activities,
-  currencies,
-  movementTypes,
-  receiptFormats,
   updateMovementBeforeConsolidationAction,
   updateTransferBeforeConsolidationAction,
   executeDailyConsolidationAction
 }: TreasuryConciliacionTabProps) {
+  // Fase 4 · T3.2 — `accounts/categories/activities/currencies/movementTypes/
+  // receiptFormats/transferSourceAccounts/transferTargetAccounts` ahora se
+  // consumen via context dentro de cada form (SecretariaMovementEditForm y
+  // ConsolidationTransferEditForm). Este componente ya no necesita
+  // recibirlos por prop ni reenviarlos.
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -509,9 +492,6 @@ export function TreasuryConciliacionTab({
       >
         {editingTransfer ? (
           <ConsolidationTransferEditForm
-            sourceAccounts={transferSourceAccounts}
-            targetAccounts={transferTargetAccounts}
-            currencies={currencies}
             submitAction={handleUpdateTransferBeforeConsolidation}
             submitLabel={texts.dashboard.consolidation.save_changes_cta}
             pendingLabel={texts.dashboard.consolidation.save_changes_loading}
@@ -522,12 +502,6 @@ export function TreasuryConciliacionTab({
           />
         ) : editingMovement ? (
           <SecretariaMovementEditForm
-            accounts={accounts}
-            categories={categories}
-            activities={activities}
-            currencies={currencies}
-            movementTypes={movementTypes}
-            receiptFormats={receiptFormats}
             submitAction={handleUpdateMovementBeforeConsolidation}
             submitLabel={texts.dashboard.consolidation.save_changes_cta}
             pendingLabel={texts.dashboard.consolidation.save_changes_loading}

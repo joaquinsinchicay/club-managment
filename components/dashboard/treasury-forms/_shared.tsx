@@ -13,23 +13,22 @@ import {
   FULL_WIDTH_FIELD_CLASSNAME,
 } from "@/components/ui/modal-form";
 import type {
-  ClubActivity,
   ConsolidationTransferEdit,
-  ReceiptFormat,
   TreasuryAccount,
-  TreasuryCategory,
   TreasuryCurrencyConfig,
-  TreasuryMovementType
+  TreasuryMovementType,
 } from "@/lib/domain/access";
 import { cn } from "@/lib/utils";
 
+/**
+ * Fase 4 · T3.2 — Los datos de dominio (accounts, categories, activities,
+ * currencies, movementTypes, receiptFormats, staffContracts) ahora se
+ * consumen via `useTreasuryData()` desde cada form. La prop "shape" base
+ * solo contiene las labels, el action y los datos no-de-dominio (cost
+ * centers todavia se pasan como prop porque son lazy / opcionales segun
+ * rol y se computan separadamente del context).
+ */
 export type BaseMovementFormProps = {
-  accounts: TreasuryAccount[];
-  categories: TreasuryCategory[];
-  activities: ClubActivity[];
-  currencies: TreasuryCurrencyConfig[];
-  movementTypes: TreasuryMovementType[];
-  receiptFormats: ReceiptFormat[];
   submitLabel: string;
   pendingLabel: string;
   submitAction: (formData: FormData) => Promise<unknown>;
@@ -45,16 +44,6 @@ export type BaseMovementFormProps = {
     status: "activo" | "inactivo";
   }>;
   initialCostCenterIds?: string[];
-  /**
-   * Lista de contratos RRHH para el selector "Contrato" del movimiento.
-   * Cuando se omite, el campo no se renderiza. Cuando se pasa array vacio,
-   * el field aparece deshabilitado con "No hay contratos".
-   */
-  staffContracts?: Array<{
-    contractId: string;
-    staffMemberId: string;
-    label: string;
-  }>;
 };
 
 export type OperationalFormCopy = {

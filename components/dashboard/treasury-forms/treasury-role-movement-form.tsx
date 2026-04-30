@@ -10,6 +10,7 @@ import {
   FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -28,12 +29,6 @@ import { CostCenterMultiSelect } from "./cost-center-multiselect";
 import { StaffContractField } from "./staff-contract-field";
 
 export function TreasuryRoleMovementForm({
-  accounts,
-  categories,
-  activities,
-  currencies,
-  movementTypes,
-  receiptFormats,
   submitLabel,
   pendingLabel,
   submitAction,
@@ -41,8 +36,10 @@ export function TreasuryRoleMovementForm({
   onCancel,
   costCenters,
   initialCostCenterIds,
-  staffContracts
 }: BaseMovementFormProps & { sessionDate: string; onCancel?: () => void }) {
+  // Fase 4 · T3.2 — datos de dominio desde context (antes 7 props).
+  const { accounts, categories, activities, currencies, movementTypes, receiptFormats, staffContracts } =
+    useTreasuryData();
   const copy = texts.dashboard.treasury_role;
   const ccCopy = texts.dashboard.treasury_role.cost_centers;
 

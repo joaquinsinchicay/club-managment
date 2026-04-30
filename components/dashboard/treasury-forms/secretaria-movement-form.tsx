@@ -10,6 +10,7 @@ import {
   FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -29,24 +30,20 @@ import {
 import { StaffContractField } from "./staff-contract-field";
 
 export function SecretariaMovementForm({
-  accounts,
-  categories,
-  activities,
-  currencies,
-  movementTypes,
-  receiptFormats,
   submitLabel,
   pendingLabel,
   submitAction,
   sessionDate,
   onCancel,
   copy = texts.dashboard.treasury,
-  staffContracts
 }: BaseMovementFormProps & {
   sessionDate: string;
   onCancel: () => void;
   copy?: OperationalFormCopy;
 }) {
+  // Fase 4 · T3.2 — datos de dominio desde context (antes 7 props).
+  const { accounts, categories, activities, currencies, movementTypes, receiptFormats, staffContracts } =
+    useTreasuryData();
   const [formState, setFormState] = useState<MovementFormState>(buildEmptySecretariaMovementFormState);
 
   const availableCurrencies = useMemo(() => {

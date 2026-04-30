@@ -10,10 +10,8 @@ import {
   FormSelect,
 } from "@/components/ui/modal-form";
 import { PendingFieldset } from "@/components/ui/pending-form";
-import type {
-  TreasuryAccount,
-  TreasuryCurrencyConfig,
-} from "@/lib/domain/access";
+import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
+import type { TreasuryAccount } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
@@ -33,20 +31,25 @@ export function AccountTransferEditForm({
   initialValues,
   sourceAccounts,
   targetAccounts,
-  currencies,
   submitAction,
   sessionDate,
   onCancel
 }: {
   movementId: string;
   initialValues: TransferFormState;
+  /**
+   * Igual que `AccountTransferForm`, los account sets dependen del rol y
+   * NO se toman del context (ver nota en account-transfer-form.tsx).
+   */
   sourceAccounts: TreasuryAccount[];
   targetAccounts: TreasuryAccount[];
-  currencies: TreasuryCurrencyConfig[];
   submitAction: (formData: FormData) => Promise<unknown>;
   sessionDate: string;
   onCancel: () => void;
 }) {
+  // Fase 4 · T3.2 — `currencies` desde context. `sourceAccounts` /
+  // `targetAccounts` continúan como props.
+  const { currencies } = useTreasuryData();
   const [formState, setFormState] = useState<TransferFormState>(() => initialValues);
 
   useEffect(() => {
