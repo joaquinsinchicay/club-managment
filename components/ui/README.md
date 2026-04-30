@@ -116,24 +116,16 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 |---|---|
 | **API mínima** | `<Badge label tone="success" dot />` |
 | **Cuándo** | Estado semántico uppercase: Aprobado, Pendiente, Vencido, Current user, Conciliado, Activo. Antes se llamaba `<StatusBadge>` con prop `withDot` (renombrado 2026-04-30). |
-| **Tones** | `success`, `danger`, `warning`, `neutral`, `accent`. |
-| **No hacer** | Usar `<Badge>` para tier/plan (eso es `<Pill>`). Usar para contenido compuesto multi-line (eso es `<StatusChip>`). |
-
-### `<Pill>` — `pill.tsx`
-| | |
-|---|---|
-| **API mínima** | `<Pill active tone="accent">{label}</Pill>` |
-| **Cuándo** | Tier/plan: "Plan Pro", "Add-on", "Módulo base", "Plan Enterprise". Outlined por default; filled cuando `active=true`. Sin dot. |
-| **Tones** (active only) | `accent` (filled foreground), `info`, `neutral`. |
-| **No hacer** | Usar `<Pill>` para estado (eso es `<Badge>`). Esperar dot — no tiene. |
+| **Tones** | `success`, `danger`, `warning`, `info`, `neutral`, `accent`. Cada tone usa colores brand (`ds-{color}-050` bg + `ds-{color}-700` text) para replicar exactamente el visual del DS sección 07. `accent` es faint dark (`bg-foreground/10 text-foreground`), no filled. |
+| **No hacer** | Usar `<Badge>` con children compuesto multi-line (eso es `<StatusChip>`). |
 
 ### `<StatusChip>` — `status-chip.tsx`
 | | |
 |---|---|
 | **API mínima** | `<StatusChip dot tone="success">{children}</StatusChip>` |
-| **Cuándo** | Date/session chip de header con dot opcional + contenido compuesto. Ejemplos: "Vie · 17/04/2026", "Jornada abierta · 14 movs". "Respiran más que badges": `py-1.5` y `text-small` (no uppercase). |
-| **Escape-hatch** | Para brand colors de módulo (`bg-ds-blue` en treasury, `bg-ds-green` en secretary, `bg-ds-pink` en RRHH) usar `dotClassName="bg-ds-blue"` en lugar de `tone`. Reservado a casos brand-specific. |
-| **No hacer** | Usar `<Badge>` con children compuesto. Hand-roll un date chip con `<div className="rounded-full border bg-card px-3 py-1.5 …">` (bloqueado por convención). |
+| **Cuándo** | Date/session chip de header con dot opcional + contenido compuesto. Ejemplos: "Vie · 17/04/2026" (dot success), "Jornada abierta · 14 movs" (dot success), "Jornada pendiente" (dot warning), "Jornada cerrada" (dot danger). "Respiran más que badges": `py-1.5` y `text-small` (no uppercase). |
+| **Tones** | `success`, `danger`, `warning`, `neutral`. Sólo afectan al dot — el container es siempre neutro (`bg-card` + `border-border` + `text-muted-foreground`). |
+| **No hacer** | Usar `<Badge>` con children compuesto. Hand-roll un date chip con `<div className="rounded-full border bg-card px-3 py-1.5 …">` (bloqueado por convención). Pasar brand colors al dot (eliminado el escape-hatch `dotClassName` en alineación DS — el dot debe reflejar estado de la jornada/día, no identidad de módulo). |
 
 ### `<MetaPill>` — `meta-pill.tsx`
 | | |
@@ -169,7 +161,6 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 | `pending-form.tsx` (`PendingFieldset`, `PendingSubmitButton`, `Spinner`, `PendingStatusText`) | Estado pending de forms con server actions. `PendingSubmitButton` espera className desde `buttonClass({…})`. |
 | `status-message.tsx` | Mensaje informativo standalone (auth, forbidden). |
 | `badge.tsx` | Ver arriba (sección Identidad y estado). |
-| `pill.tsx` | Ver arriba (sección Identidad y estado). |
 | `status-chip.tsx` | Ver arriba (sección Identidad y estado). |
 | `toast/` (`<ToastProvider>`, `<ToastViewport>`) | Renderizadas en `app/layout.tsx`. La API imperativa vive en `lib/toast.ts`. |
 

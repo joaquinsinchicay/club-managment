@@ -340,34 +340,48 @@ Regla de `tone`: `neutral` → usuarios; `bancaria/virtual/efectivo` → cuentas
 
 ---
 
-## 🏷️ Regla crítica: badges, pills y status chips
+## 🏷️ Regla crítica: badges y status chips
 
 ### Taxonomía (DS sección 07)
 
-El DS distingue 4 componentes para el patrón "pill-like". Cada uno tiene un primitivo dedicado y **no son intercambiables**:
+El DS distingue 3 componentes para el patrón "pill-like" que aplican hoy en la app. Cada uno tiene un primitivo dedicado y **no son intercambiables**:
 
 | Componente | Cuándo usar | Primitivo |
 |---|---|---|
 | **Badge** | Estado semántico ("Pendiente", "Aprobado", "Activo", "Conciliado", "FX"). Dot opcional + texto, bg tintado leve. | `<Badge>` desde `@/components/ui/badge` |
-| **Pill** | Tier/plan ("Plan Pro", "Add-on", "Módulo base"). Sin dot, más tipográfico, outlined → filled cuando active. | `<Pill>` desde `@/components/ui/pill` |
 | **Filter Chip** | Filtro toggleable ("Todos", "Ingresos"). Interactivo, `aria-pressed` o `aria-current`. | `<ChipButton>` / `<ChipLink>` desde `@/components/ui/chip` |
 | **Status Chip** | Date/session chip de header ("Vie · 17/04/2026", "Jornada abierta · 14 movs"). Padding más generoso, contenido compuesto children-based. | `<StatusChip>` desde `@/components/ui/status-chip` |
 
+> **Nota**: el DS sección 07 también define un cuarto componente "**Pill**" (tier/plan: "Plan Pro", "Add-on") que en la app no tiene casos de uso reales. Cuando aparezca, se crea el primitivo con la spec del callsite real.
+
 ### Primitivos obligatorios — guía rápida
 - **Estado semántico uppercase** (Aprobado, Pendiente, Vencido, Current user, eyebrow de auth cards) → **`<Badge tone>`**.
-- **Tier/plan** (Plan Pro, Add-on, Módulo base) → **`<Pill active tone>`**.
-- **Date/session chip** de header → **`<StatusChip dot tone>`** o `<StatusChip dot dotClassName="bg-ds-…">` para brand colors.
+- **Date/session chip** de header → **`<StatusChip dot tone>`** con tone semántico (success/warning/danger según estado de la jornada/día).
 - **Chip estático** (metadata, rol, etiqueta dentro de listas) → **`<Chip tone size>`**.
 - **Chip clickable** (filtros, toggle) → **`<ChipButton active onClick>`** (incluye `aria-pressed`).
 - **Chip link** (filtro navegable) → **`<ChipLink href active>`** (incluye `aria-current`).
 - **Chip dentro de fila de `DataTable`** → `<DataTableChip>` por coherencia tipográfica.
 - **Pair label-value** (visibilidad, rol, moneda) → **`<MetaPill label value>`** desde `@/components/ui/meta-pill`.
 
+### Tones canónicos para Badge / DataTableChip / Chip
+
+Todos comparten el mismo set de colores brand (matching exact con DS sección 07):
+
+| Tone | bg | text | dot |
+|---|---|---|---|
+| success / income | `bg-ds-green-050` | `text-ds-green-700` | `bg-ds-green` |
+| danger / expense | `bg-ds-red-050` | `text-ds-red-700` | `bg-ds-red` |
+| warning | `bg-ds-amber-050` | `text-ds-amber-700` | `bg-ds-amber` |
+| info | `bg-ds-blue-050` | `text-ds-blue-700` | `bg-ds-blue` |
+| neutral | `bg-secondary` | `text-foreground` | `bg-muted-foreground` |
+| accent | `bg-foreground/10` | `text-foreground` | `bg-foreground` |
+
+`accent` es **faint dark** (no filled negro). Replicates DS "Admin" badge pattern. Excepción: `<ChipButton>` active state mantiene `bg-foreground text-background` filled, porque el DS Filter Chip "Todos" active sí muestra fill.
+
 ### Cuándo NO usar cuál
-- ❌ NO usar `<Badge>` para tier/plan (usar `<Pill>`).
-- ❌ NO usar `<Pill>` para estado (usar `<Badge>`).
 - ❌ NO usar `<Badge>` con contenido compuesto multi-line / children (usar `<StatusChip>` que es children-based).
 - ❌ NO hand-roll un date chip con `<div className="rounded-full border bg-card px-3 py-1.5 ...">` — usar `<StatusChip>`.
+- ❌ NO pasar brand colors al dot de `<StatusChip>` para indicar identidad de módulo. El dot debe reflejar **estado de la jornada/día** (success/warning/danger), no qué módulo está activo. La identidad de módulo se conveys por header eyebrow + URL.
 
 ### Prohibiciones
 ```tsx
@@ -385,7 +399,7 @@ El DS distingue 4 componentes para el patrón "pill-like". Cada uno tiene un pri
 ### Referencia canónica
 - Badge accent: `MembersTab` (`current_user_badge`).
 - Badge tone="success" + dot: `MembersTab` (`active_status_label`).
-- StatusChip con brand dot: `app/(dashboard)/treasury/page.tsx`, `app/(dashboard)/secretary/page.tsx`, `app/(dashboard)/rrhh/layout.tsx`.
+- StatusChip dot tone="success": `app/(dashboard)/treasury/page.tsx`, `app/(dashboard)/secretary/page.tsx`, `app/(dashboard)/rrhh/layout.tsx`.
 - Filter chips: `TreasuryConciliacionTab` y `CategoriesActivitiesTab`.
 - MetaPill: `MembersTab`, `MembershipSystemsTab`.
 
@@ -595,8 +609,7 @@ No se acepta el atajo "lo arreglo en otro PR": el script está para prevenir exa
 | Checkbox estilo pill | `<FormCheckboxCard>` | idem |
 | Banner amarillo/rojo dentro de form | `<FormBanner variant>` | idem |
 | Badge de estado uppercase | `<Badge tone dot>` | `components/ui/badge.tsx` |
-| Pill de tier/plan | `<Pill active tone>` | `components/ui/pill.tsx` |
-| Date/session chip de header | `<StatusChip dot>` | `components/ui/status-chip.tsx` |
+| Date/session chip de header | `<StatusChip dot tone>` | `components/ui/status-chip.tsx` |
 | Filter chip clickable | `<ChipButton>` / `<ChipLink>` | `components/ui/chip.tsx` |
 | Tab-bar tipo segmented control | Ver `SubTabNav` en `components/dashboard/treasury-role-card.tsx` + `RrhhModuleNav` | — |
 | Tabla | `<DataTable>` + `<DataTableRow>` + `<DataTableCell>` | `components/ui/data-table.tsx` |

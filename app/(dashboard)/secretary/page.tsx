@@ -98,7 +98,7 @@ export default async function SecretariaDashboardPage() {
         title={texts.dashboard.treasury.title}
         description={texts.dashboard.treasury.description}
         actions={
-          <StatusChip dot dotClassName="bg-ds-green">
+          <StatusChip dot tone="success">
             {formatSessionDateChip(treasuryCard.sessionDate)}
           </StatusChip>
         }

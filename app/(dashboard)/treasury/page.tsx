@@ -233,7 +233,7 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
         title={texts.dashboard.treasury_role.title}
         description={texts.dashboard.treasury_role.description}
         actions={
-          <StatusChip dot dotClassName="bg-ds-blue">
+          <StatusChip dot tone="success">
             {formatSessionDateLabel(dashboard.sessionDate)}
           </StatusChip>
         }

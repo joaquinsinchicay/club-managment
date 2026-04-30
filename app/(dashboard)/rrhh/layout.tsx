@@ -36,7 +36,7 @@ export default async function RrhhLayout({
         title={home.title}
         description={home.description}
         actions={
-          <StatusChip dot dotClassName="bg-ds-pink">
+          <StatusChip dot tone="success">
             {dateChipLabel}
           </StatusChip>
         }

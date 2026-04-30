@@ -299,7 +299,9 @@ const chipToneClasses: Record<ChipTone, string> = {
   expense: "bg-ds-red-050 text-ds-red-700",
   warning: "bg-ds-amber-050 text-ds-amber-700",
   info: "bg-ds-blue-050 text-ds-blue-700",
-  accent: "bg-foreground text-background",
+  // Faint dark — alineado con Badge accent (DS sección 07 muestra "Admin"
+  // con dot+texto colored sobre bg tintado leve, no filled).
+  accent: "bg-foreground/10 text-foreground",
 };
 
 type DataTableChipProps = HTMLAttributes<HTMLSpanElement> & {

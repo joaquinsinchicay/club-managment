@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
  * "Admin" (accent).
  *
  * Diferencia con primos cercanos del DS:
- *  - **`<Pill>`**: tier/plan ("Plan Pro", "Add-on"). Sin dot, más tipográfico.
  *  - **`<ChipButton>`**: filtro toggleable. Interactivo (`aria-pressed`).
  *  - **`<StatusChip>`**: date/session chip de header ("Vie · 17/04/2026").
  *    Más padding ("respiran más"), contenido compuesto children-based.
@@ -21,7 +20,7 @@ import { cn } from "@/lib/utils";
  * canónica del design system.
  */
 
-export type BadgeTone = "success" | "danger" | "warning" | "neutral" | "accent";
+export type BadgeTone = "success" | "danger" | "warning" | "info" | "neutral" | "accent";
 
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   label: string;
@@ -30,20 +29,32 @@ type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   dot?: boolean;
 };
 
+// Tones alineados con DS sección 07 ("Badges (estado)"):
+// - bg `ds-{color}-050` + text `ds-{color}-700` — texto oscuro sobre fondo
+//   tintado leve, replicando exactamente el visual del DS (Conciliado /
+//   Pendiente / Rechazado / FX / Admin). Antes se usaba `bg-{tone}/10
+//   text-{tone}` con tokens semánticos HSL: el bg era equivalente pero el
+//   texto quedaba 1 nivel más claro de lo que el DS muestra (text-success
+//   = HSL medio ≈ #10B780 vs ds-green-700 = #047857).
+// - `accent`: era filled negro+texto blanco, divergencia del DS Admin que
+//   muestra dot+texto colored sobre bg leve. Ahora `bg-foreground/10
+//   text-foreground` (faint dark) replicando el patrón del DS.
 const TONE_CLASSNAME: Record<BadgeTone, string> = {
-  success: "border-success/20 bg-success/10 text-success",
-  danger: "border-destructive/20 bg-destructive/10 text-destructive",
-  warning: "border-warning/20 bg-warning/10 text-warning",
+  success: "border-ds-green-050 bg-ds-green-050 text-ds-green-700",
+  danger: "border-ds-red-050 bg-ds-red-050 text-ds-red-700",
+  warning: "border-ds-amber-050 bg-ds-amber-050 text-ds-amber-700",
+  info: "border-ds-blue-050 bg-ds-blue-050 text-ds-blue-700",
   neutral: "border-border bg-secondary text-foreground",
-  accent: "border-foreground bg-foreground text-background"
+  accent: "border-border bg-foreground/10 text-foreground"
 };
 
 const DOT_CLASSNAME: Record<BadgeTone, string> = {
-  success: "bg-success",
-  danger: "bg-destructive",
-  warning: "bg-warning",
+  success: "bg-ds-green",
+  danger: "bg-ds-red",
+  warning: "bg-ds-amber",
+  info: "bg-ds-blue",
   neutral: "bg-muted-foreground",
-  accent: "bg-background"
+  accent: "bg-foreground"
 };
 
 export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
