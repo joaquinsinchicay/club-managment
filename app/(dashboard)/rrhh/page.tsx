@@ -14,6 +14,7 @@ import Link from "next/link";
 
 import { LinkButton } from "@/components/ui/link-button";
 import { FormBanner } from "@/components/ui/modal-form";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canAccessHrModule, canOperateHrSettlements } from "@/lib/domain/authorization";
 import { hasMembershipRole } from "@/lib/domain/membership-roles";
@@ -212,18 +213,8 @@ export default async function RrhhPage() {
                   <span className="text-h2 font-semibold text-foreground">
                     {formatAmount(currentPeriod.totalAmount, clubCurrencyCode)}
                   </span>
-                  <div
-                    className="h-1.5 w-full overflow-hidden rounded-full bg-secondary"
-                    role="progressbar"
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={progressPct}
-                  >
-                    <div
-                      className="h-full bg-foreground transition-all"
-                      style={{ width: `${progressPct}%`, borderRadius: 9999 }}
-                    />
-                  </div>
+                  <ProgressBar value={progressPct} />
+
                   <span className="text-sm text-muted-foreground">
                     {templateFill(dashboard.card_current_period_progress_template, {
                       paid: currentPeriod.paidCount,

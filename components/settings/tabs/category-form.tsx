@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import { TreasuryVisibilityCheckboxGroup } from "@/components/settings/tabs/treasury-visibility-checkbox-group";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FORM_GRID_CLASSNAME,
-  FormCheckboxCard,
-  FormError,
   FormField,
   FormFieldLabel,
   FormInput,
@@ -20,17 +19,12 @@ import {
   getMovementTypeForParentCategory,
   getParentCategoryOptionsWithCurrentValue
 } from "@/lib/treasury-system-categories";
+import {
+  getEmojiOptions,
+  TREASURY_ACCOUNT_VISIBILITY_OPTIONS
+} from "@/lib/treasury-system-options";
 
-const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
-
-function getEmojiOptions(options: string[], currentEmoji?: string | null) {
-  if (currentEmoji && !options.includes(currentEmoji)) {
-    return [currentEmoji, ...options];
-  }
-
-  return options;
-}
 
 function getMovementTypeLabel(movementType: TreasuryCategory["movementType"]) {
   return texts.settings.club.treasury.category_movement_types[movementType];
@@ -45,7 +39,7 @@ type CategoryFormProps = {
   submitLabel: string;
   pendingLabel: string;
   defaultCategory?: TreasuryCategory;
-  onClose: () => void;
+  onCancel: () => void;
   onSuccess: () => void;
 };
 
@@ -54,7 +48,7 @@ export function CategoryForm({
   submitLabel,
   pendingLabel,
   defaultCategory,
-  onClose,
+  onCancel,
   onSuccess
 }: CategoryFormProps) {
   const isSystemCategory = defaultCategory?.isSystem ?? false;
@@ -180,29 +174,19 @@ export function CategoryForm({
           />
         </FormField>
 
-        <div className="grid gap-3 sm:col-span-2">
-          {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
-            <FormCheckboxCard
-              key={`category-visibility-${visibility}`}
-              name="visibility"
-              value={visibility}
-              label={
-                visibility === "secretaria"
-                  ? texts.settings.club.treasury.visibility_secretaria_checkbox
-                  : texts.settings.club.treasury.visibility_tesoreria_checkbox
-              }
-              checked={selectedVisibility.includes(visibility)}
-              onChange={(checked) => handleVisibilityToggle(visibility, checked)}
-            />
-          ))}
-          {visibilityTouched && selectedVisibility.length === 0 ? (
-            <FormError>{texts.settings.club.treasury.feedback.account_visibility_required}</FormError>
-          ) : null}
-        </div>
+        <TreasuryVisibilityCheckboxGroup
+          selected={selectedVisibility}
+          onChange={handleVisibilityToggle}
+          errorText={
+            visibilityTouched && selectedVisibility.length === 0
+              ? texts.settings.club.treasury.feedback.account_visibility_required
+              : undefined
+          }
+        />
       </PendingFieldset>
 
       <ModalFooter
-        onCancel={onClose}
+        onCancel={onCancel}
         cancelLabel={texts.settings.club.treasury.cancel_cta}
         submitLabel={submitLabel}
         pendingLabel={pendingLabel}

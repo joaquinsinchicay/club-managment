@@ -11,6 +11,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { DataTableChip } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { CreateContractForm } from "@/components/hr/create-contract-form";
 import { StructureEditModal } from "@/components/hr/structure-edit-modal";
 import { triggerClientFeedback } from "@/lib/client-feedback";
@@ -417,21 +418,7 @@ function CollaboratorGroup({ label, items, currencyCode }: CollaboratorGroupProp
 // ---------------------------------------------------------------------------
 
 function ShareBar({ percentage }: { percentage: number }) {
-  const clamped = Math.max(0, Math.min(100, percentage));
-  return (
-    <div
-      className="h-1.5 w-full overflow-hidden rounded-full bg-secondary"
-      role="progressbar"
-      aria-valuenow={clamped}
-      aria-valuemin={0}
-      aria-valuemax={100}
-    >
-      <div
-        className="h-full rounded-full bg-ds-pink-600 transition-all"
-        style={{ width: `${clamped}%` }}
-      />
-    </div>
-  );
+  return <ProgressBar value={percentage} fillClassName="bg-ds-pink-600" />;
 }
 
 // ---------------------------------------------------------------------------

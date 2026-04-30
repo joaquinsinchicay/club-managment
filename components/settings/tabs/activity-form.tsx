@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 
+import { TreasuryVisibilityCheckboxGroup } from "@/components/settings/tabs/treasury-visibility-checkbox-group";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FORM_GRID_CLASSNAME,
-  FormCheckboxCard,
   FormField,
   FormFieldLabel,
   FormInput,
@@ -14,23 +14,19 @@ import {
 import { PendingFieldset } from "@/components/ui/pending-form";
 import type { ClubActivity } from "@/lib/domain/access";
 import { texts } from "@/lib/texts";
+import {
+  getEmojiOptions,
+  TREASURY_ACCOUNT_VISIBILITY_OPTIONS
+} from "@/lib/treasury-system-options";
 
-const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
 const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
-
-function getEmojiOptions(options: string[], currentEmoji?: string | null) {
-  if (currentEmoji && !options.includes(currentEmoji)) {
-    return [currentEmoji, ...options];
-  }
-  return options;
-}
 
 type ActivityFormProps = {
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
   pendingLabel: string;
   defaultActivity?: ClubActivity;
-  onClose: () => void;
+  onCancel: () => void;
   onSuccess: () => void;
 };
 
@@ -39,7 +35,7 @@ export function ActivityForm({
   submitLabel,
   pendingLabel,
   defaultActivity,
-  onClose,
+  onCancel,
   onSuccess
 }: ActivityFormProps) {
   const [selectedVisibility, setSelectedVisibility] = useState<string[]>(
@@ -85,26 +81,14 @@ export function ActivityForm({
           <FormInput type="text" name="name" defaultValue={defaultActivity?.name ?? ""} />
         </FormField>
 
-        <div className="grid gap-3 sm:col-span-2">
-          {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
-            <FormCheckboxCard
-              key={`activity-visibility-${visibility}`}
-              name="visibility"
-              value={visibility}
-              label={
-                visibility === "secretaria"
-                  ? texts.settings.club.treasury.visibility_secretaria_checkbox
-                  : texts.settings.club.treasury.visibility_tesoreria_checkbox
-              }
-              checked={selectedVisibility.includes(visibility)}
-              onChange={(checked) => handleVisibilityToggle(visibility, checked)}
-            />
-          ))}
-        </div>
+        <TreasuryVisibilityCheckboxGroup
+          selected={selectedVisibility}
+          onChange={handleVisibilityToggle}
+        />
       </PendingFieldset>
 
       <ModalFooter
-        onCancel={onClose}
+        onCancel={onCancel}
         cancelLabel={texts.settings.club.treasury.cancel_cta}
         submitLabel={submitLabel}
         pendingLabel={pendingLabel}

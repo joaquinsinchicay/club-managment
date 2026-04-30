@@ -61,6 +61,7 @@ import {
   DataTableRow,
 } from "@/components/ui/data-table";
 import { ModalFooter } from "@/components/ui/modal-footer";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import {
   FORM_GRID_CLASSNAME,
   FormField,
@@ -311,10 +312,12 @@ function CostCenterCard({
         </div>
 
         {cc.amount ? (
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary-pressed">
-            <div
-              className={cn("h-full rounded-full", progressBarColor(cc, aggregate))}
-              style={{ width: `${Math.min(100, pct)}%` }}
+          <div className="mt-3">
+            <ProgressBar
+              value={pct}
+              size="md"
+              trackClassName="bg-secondary-pressed"
+              fillClassName={progressBarColor(cc, aggregate)}
             />
           </div>
         ) : null}

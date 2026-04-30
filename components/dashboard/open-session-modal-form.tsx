@@ -10,6 +10,7 @@ import {
   DataTableHeadCell,
   DataTableRow,
 } from "@/components/ui/data-table";
+import { InlineBold } from "@/components/ui/inline-bold";
 import { ModalFooter } from "@/components/ui/modal-footer";
 import {
   FormBanner,
@@ -155,9 +156,7 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
         ) : null}
 
         <FormBanner variant="warning">
-          {warningText.split("**").map((part, i) =>
-            i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-          )}
+          <InlineBold text={warningText} />
         </FormBanner>
 
         <ModalFooter

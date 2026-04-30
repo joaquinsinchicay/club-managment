@@ -264,7 +264,7 @@ export function CategoriesActivitiesTab({
           action={createTreasuryCategoryAction}
           submitLabel={treasuryTexts.save_category_cta}
           pendingLabel={treasuryTexts.save_category_loading}
-          onClose={() => setIsCreatingCategory(false)}
+          onCancel={() => setIsCreatingCategory(false)}
           onSuccess={() => setIsCreatingCategory(false)}
         />
       </Modal>
@@ -282,7 +282,7 @@ export function CategoriesActivitiesTab({
             submitLabel={treasuryTexts.update_category_cta}
             pendingLabel={treasuryTexts.update_category_loading}
             defaultCategory={editingCategory}
-            onClose={() => setEditingCategory(null)}
+            onCancel={() => setEditingCategory(null)}
             onSuccess={() => setEditingCategory(null)}
           />
         ) : null}
@@ -298,7 +298,7 @@ export function CategoriesActivitiesTab({
           action={createClubActivityAction}
           submitLabel={treasuryTexts.save_activity_cta}
           pendingLabel={treasuryTexts.save_activity_loading}
-          onClose={() => setIsCreatingActivity(false)}
+          onCancel={() => setIsCreatingActivity(false)}
           onSuccess={() => setIsCreatingActivity(false)}
         />
       </Modal>
@@ -316,7 +316,7 @@ export function CategoriesActivitiesTab({
             submitLabel={treasuryTexts.update_activity_cta}
             pendingLabel={treasuryTexts.update_activity_loading}
             defaultActivity={editingActivity}
-            onClose={() => setEditingActivity(null)}
+            onCancel={() => setEditingActivity(null)}
             onSuccess={() => setEditingActivity(null)}
           />
         ) : null}

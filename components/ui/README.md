@@ -148,6 +148,18 @@ Las reglas vinculantes (qué está prohibido, dónde) viven en [`/CLAUDE.md`](..
 
 ---
 
+## Progreso
+
+### `<ProgressBar>` — `progress-bar.tsx`
+| | |
+|---|---|
+| **API mínima** | `<ProgressBar value={pct} size="sm"\|"md" trackClassName fillClassName ariaLabel />` |
+| **Cuándo** | Track + fill horizontal para mostrar avance (settlements pagados, ejecución de cost center, share del total RRHH). Clampea `value` a [0,100] internamente y emite ARIA `progressbar`. |
+| **No hacer** | `<div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary"><div style={{ width: '${pct}%' }} /></div>` a mano. Usar `fillClassName` para tones brand (`bg-ds-pink-600`, `bg-ds-green`), `trackClassName` para track alternativo (`bg-secondary-pressed`). |
+| **Referencia** | `app/(dashboard)/rrhh/page.tsx`, `components/treasury/cost-centers-tab.tsx`, `components/hr/activity-detail-view.tsx` (`ShareBar`). |
+
+---
+
 ## Otros
 
 | Primitivo | Para qué |
