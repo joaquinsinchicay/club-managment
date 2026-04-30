@@ -1,5 +1,5 @@
-import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { parseLocalizedAmount } from "@/lib/amounts";
+import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateSecretaria, canOperateTesoreria } from "@/lib/domain/authorization";
 import type {
   ClubActivity,
@@ -8,16 +8,12 @@ import type {
   ConsolidationMovement,
   DailyCashSessionValidation,
   DashboardTreasuryCard,
-  MovementTypeConfig,
-  ReceiptFormat,
   SessionBalanceDraft,
   TreasuryAccount,
   TreasuryCategory,
   TreasuryDashboardMovement,
   TreasuryRoleDashboard,
-  TreasuryCurrencyConfig,
   TreasuryMovementType,
-  TreasuryAccountDetail,
   TreasuryConsolidationDashboard,
   TreasuryMovement,
   TreasuryMovementStatus,
@@ -27,109 +23,34 @@ import { accessRepository, isAccessRepositoryInfraError } from "@/lib/repositori
 import { costCenterRepository } from "@/lib/repositories/cost-center-repository";
 import { texts } from "@/lib/texts";
 import { logger } from "@/lib/logger";
+import {
+  buildAccountBalances,
+  buildMovementSignedAmount,
+  getAccountsVisibleForRole,
+  getActiveReceiptFormatsForRole,
+  getConfiguredMovementTypes,
+  getConfiguredTreasuryCurrencies,
+  getSecretariaSession,
+  getTesoreriaSession,
+  getTodayDate,
+  isReceiptNumberValidForFormats,
+  shouldIncludeMovementInRoleBalances,
+  validateReceiptNumberAgainstFormat,
+  type TreasuryVisibilityRole,
+} from "./treasury/_shared";
 
-type TreasuryVisibilityRole = "secretaria" | "tesoreria";
-
-async function getActiveReceiptFormatsForRole(clubId: string, role: TreasuryVisibilityRole) {
-  const receiptFormats = await accessRepository.listReceiptFormatsForClub(clubId);
-
-  return receiptFormats.filter(
-    (receiptFormat) =>
-      receiptFormat.status === "active" &&
-      (role === "secretaria" ? receiptFormat.visibleForSecretaria : receiptFormat.visibleForTesoreria)
-  );
-}
-
-function isReceiptNumberValidForFormats(receiptNumber: string, activeReceiptFormats: ReceiptFormat[]) {
-  if (receiptNumber.length === 0) {
-    return true;
-  }
-
-  if (activeReceiptFormats.length === 0) {
-    return false;
-  }
-
-  return activeReceiptFormats.some((format) => validateReceiptNumberAgainstFormat(receiptNumber, format));
-}
-
-type TreasuryActionCode =
-  | "session_opened"
-  | "session_closed"
-  | "session_open_failed"
-  | "session_close_failed"
-  | "movement_created"
-  | "movement_create_failed"
-  | "movement_updated"
-  | "movement_update_failed"
-  | "movement_integrated"
-  | "transfer_created"
-  | "fx_operation_created"
-  | "consolidation_completed"
-  | "forbidden"
-  | "session_already_exists"
-  | "session_not_open"
-  | "previous_session_still_open"
-  | "session_required"
-  | "account_required"
-  | "category_required"
-  | "movement_type_required"
-  | "concept_required"
-  | "currency_required"
-  | "amount_required"
-  | "amount_must_be_positive"
-  | "invalid_account"
-  | "invalid_category"
-  | "invalid_activity"
-  | "invalid_currency"
-  | "source_account_required"
-  | "target_account_required"
-  | "accounts_must_be_distinct"
-  | "invalid_transfer"
-  | "insufficient_funds"
-  | "source_currency_required"
-  | "target_currency_required"
-  | "currencies_must_be_distinct"
-  | "source_amount_required"
-  | "target_amount_required"
-  | "invalid_fx_operation"
-  | "movement_not_found"
-  | "movement_not_editable"
-  | "movement_date_required"
-  | "invalid_movement_date"
-  | "invalid_match"
-  | "consolidation_date_required"
-  | "consolidation_already_completed"
-  | "consolidation_has_invalid_movements"
-  | "invalid_receipt_format"
-  | "invalid_calendar_event"
-  | "no_accounts_available"
-  | "declared_balance_required"
-  | "declared_balance_invalid"
-  | "adjustment_category_missing"
-  | "infrastructure_incomplete"
-  | "unknown_error";
-
-export type TreasuryActionResult = {
-  ok: boolean;
-  code: TreasuryActionCode;
-  movementDisplayId?: string;
-  // US-53: exposed so the caller can link the fresh movement to cost centers
-  // right after creation/update without a separate lookup by displayId.
-  movementId?: string;
-};
-
-export type TreasuryMovementOptimisticUpdate = {
-  movement: DashboardTreasuryCard["movements"][number];
-  balanceDelta: {
-    accountId: string;
-    currencyCode: string;
-    amountDelta: number;
-  };
-};
-
-export type TreasuryActionResultWithOptimisticUpdate = TreasuryActionResult & {
-  optimisticUpdate?: TreasuryMovementOptimisticUpdate;
-};
+// Tipos públicos extraídos a ./treasury/types.ts (P2 audit · service split).
+import type {
+  TreasuryActionCode,
+  TreasuryActionResult,
+  TreasuryActionResultWithOptimisticUpdate,
+  TreasuryMovementOptimisticUpdate,
+} from "./treasury/types";
+export type {
+  TreasuryActionResult,
+  TreasuryMovementOptimisticUpdate,
+  TreasuryActionResultWithOptimisticUpdate,
+} from "./treasury/types";
 
 type SessionAdjustmentEntry = {
   displayId: string;
@@ -145,23 +66,6 @@ type SessionAdjustmentEntry = {
   differenceAmount: number;
   adjustmentMoment: "opening" | "closing";
 };
-
-const OPERATIONAL_TIME_ZONE = "America/Argentina/Buenos_Aires";
-
-function getTodayDate() {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: OPERATIONAL_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  });
-  const parts = formatter.formatToParts(new Date());
-  const year = parts.find((part) => part.type === "year")?.value ?? "";
-  const month = parts.find((part) => part.type === "month")?.value ?? "";
-  const day = parts.find((part) => part.type === "day")?.value ?? "";
-
-  return `${year}-${month}-${day}`;
-}
 
 function getRelativeDate(date: string, deltaDays: number) {
   const next = new Date(`${date}T00:00:00.000Z`);
@@ -372,38 +276,6 @@ function getDefaultConsolidationDate() {
   return getRelativeDate(getTodayDate(), -1);
 }
 
-async function getSecretariaSession() {
-  const context = await getAuthenticatedSessionContext();
-
-  if (!context || !context.activeClub || !context.activeMembership) {
-    return null;
-  }
-
-  if (!canOperateSecretaria(context.activeMembership)) {
-    return null;
-  }
-
-  return context;
-}
-
-async function getTesoreriaSession() {
-  const context = await getAuthenticatedSessionContext();
-
-  if (!context || !context.activeClub || !context.activeMembership) {
-    return null;
-  }
-
-  if (!canOperateTesoreria(context.activeMembership)) {
-    return null;
-  }
-
-  return context;
-}
-
-function buildMovementSignedAmount(movementType: "ingreso" | "egreso", amount: number) {
-  return movementType === "ingreso" ? amount : amount * -1;
-}
-
 async function getAvailableBalanceForAccountCurrency(input: {
   clubId: string;
   accountId: string;
@@ -420,17 +292,6 @@ async function getAvailableBalanceForAccountCurrency(input: {
     .filter((movement) => !input.effectiveDate || movement.movementDate <= input.effectiveDate)
     .filter((movement) => !input.excludeMovementId || movement.id !== input.excludeMovementId)
     .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0);
-}
-
-function shouldIncludeMovementInRoleBalances(
-  movement: Pick<TreasuryMovement, "status">,
-  role: TreasuryVisibilityRole
-) {
-  if (role === "secretaria") {
-    return true;
-  }
-
-  return movement.status === "posted" || movement.status === "consolidated";
 }
 
 function serializeMovementSnapshot(movement: TreasuryMovement) {
@@ -459,34 +320,8 @@ async function getTesoreriaAccounts(clubId: string) {
   return accounts.filter((account) => account.visibleForTesoreria);
 }
 
-function getAccountsVisibleForRole(
-  accounts: TreasuryAccount[],
-  role: TreasuryVisibilityRole
-) {
-  return accounts.filter((account) =>
-    role === "secretaria" ? account.visibleForSecretaria : account.visibleForTesoreria
-  );
-}
-
 function getTransferTargetAccountsForSecretaria(accounts: TreasuryAccount[]) {
   return accounts.filter((account) => !account.visibleForSecretaria && account.visibleForTesoreria);
-}
-
-function buildAccountBalances(
-  account: TreasuryAccount,
-  movements: Array<{
-    accountId: string;
-    currencyCode: string;
-    movementType: "ingreso" | "egreso";
-    amount: number;
-  }>
-) {
-  return account.currencies.map((currencyCode) => ({
-    currencyCode,
-    amount: movements
-      .filter((movement) => movement.accountId === account.id && movement.currencyCode === currencyCode)
-      .reduce((total, movement) => total + buildMovementSignedAmount(movement.movementType, movement.amount), 0)
-  }));
 }
 
 function buildDashboardMovementView(input: {
@@ -543,36 +378,6 @@ function isTreasuryRoleMovementEditable(movement: TreasuryMovement) {
 
 function isMovementWithinOperationalWindow(movementDate: string, startDate: string, endDate: string) {
   return movementDate >= startDate && movementDate <= endDate;
-}
-
-async function getConfiguredTreasuryCurrencies(clubId: string): Promise<TreasuryCurrencyConfig[]> {
-  return [
-    {
-      clubId,
-      currencyCode: "ARS",
-      isPrimary: true
-    },
-    {
-      clubId,
-      currencyCode: "USD",
-      isPrimary: false
-    }
-  ];
-}
-
-async function getConfiguredMovementTypes(clubId: string): Promise<MovementTypeConfig[]> {
-  return [
-    {
-      clubId,
-      movementType: "ingreso",
-      isEnabled: true
-    },
-    {
-      clubId,
-      movementType: "egreso",
-      isEnabled: true
-    }
-  ];
 }
 
 async function buildAccountBalanceDrafts(
@@ -3565,208 +3370,17 @@ export async function executeDailyConsolidation(
 
   return { ok: true, code: "consolidation_completed" };
 }
-
-export async function getActiveActivitiesForSecretaria(): Promise<ClubActivity[]> {
-  const context = await getSecretariaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
-  return activities.filter((activity) => activity.visibleForSecretaria);
-}
-
-export async function getEnabledCalendarEventsForSecretaria(): Promise<ClubCalendarEvent[]> {
-  const context = await getSecretariaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  const events = await accessRepository.listClubCalendarEventsForClub(context.activeClub.id);
-  return events.filter((event) => event.isEnabledForTreasury);
-}
-
-export async function getActiveActivitiesForTesoreria(): Promise<ClubActivity[]> {
-  const context = await getTesoreriaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  const activities = await accessRepository.listClubActivitiesForClub(context.activeClub.id);
-  return activities.filter((activity) => activity.visibleForTesoreria);
-}
-
-export async function getEnabledCalendarEventsForTesoreria(): Promise<ClubCalendarEvent[]> {
-  const context = await getTesoreriaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  const events = await accessRepository.listClubCalendarEventsForClub(context.activeClub.id);
-  return events.filter((event) => event.isEnabledForTreasury);
-}
-
-export async function getActiveTreasuryCurrenciesForSecretaria(): Promise<TreasuryCurrencyConfig[]> {
-  const context = await getSecretariaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  return getConfiguredTreasuryCurrencies(context.activeClub.id);
-}
-
-export async function getActiveTreasuryCurrenciesForTesoreria(): Promise<TreasuryCurrencyConfig[]> {
-  const context = await getTesoreriaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  return getConfiguredTreasuryCurrencies(context.activeClub.id);
-}
-
-export async function getEnabledMovementTypesForSecretaria(): Promise<TreasuryMovementType[]> {
-  const context = await getSecretariaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  const movementTypes = await getConfiguredMovementTypes(context.activeClub.id);
-
-  return movementTypes
-    .filter((movementType) => movementType.isEnabled)
-    .map((movementType) => movementType.movementType);
-}
-
-export async function getEnabledMovementTypesForTesoreria(): Promise<TreasuryMovementType[]> {
-  const context = await getTesoreriaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  const movementTypes = await getConfiguredMovementTypes(context.activeClub.id);
-
-  return movementTypes
-    .filter((movementType) => movementType.isEnabled)
-    .map((movementType) => movementType.movementType);
-}
-
-export async function getActiveReceiptFormatsForSecretaria(): Promise<ReceiptFormat[]> {
-  const context = await getSecretariaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  const formats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
-  return formats.filter((f) => f.status === "active" && f.visibleForSecretaria);
-}
-
-export async function getActiveReceiptFormatsForTesoreria(): Promise<ReceiptFormat[]> {
-  const context = await getTesoreriaSession();
-
-  if (!context?.activeClub) {
-    return [];
-  }
-
-  const formats = await accessRepository.listReceiptFormatsForClub(context.activeClub.id);
-  return formats.filter((f) => f.status === "active" && f.visibleForTesoreria);
-}
-
-function validateReceiptNumberAgainstFormat(
-  receiptNumber: string,
-  receiptFormat: ReceiptFormat
-) {
-  if (receiptFormat.validationType === "numeric") {
-    return /^[0-9]+$/.test(receiptNumber);
-  }
-
-  return /^[a-zA-Z0-9]+$/.test(receiptNumber);
-}
-
-export async function getTreasuryAccountDetailForActiveClub(
-  accountId: string,
-  role: TreasuryVisibilityRole = "secretaria"
-): Promise<{
-  accounts: Awaited<ReturnType<typeof accessRepository.listTreasuryAccountsForClub>>;
-  detail: TreasuryAccountDetail | null;
-} | null> {
-  const context = role === "secretaria" ? await getSecretariaSession() : await getTesoreriaSession();
-
-  if (!context?.activeClub) {
-    return null;
-  }
-
-  const sessionDate = getTodayDate();
-  const [accounts, categories, activities, calendarEvents, session] = await Promise.all([
-    accessRepository.listTreasuryAccountsForClub(context.activeClub.id),
-    accessRepository.listTreasuryCategoriesForClub(context.activeClub.id),
-    accessRepository.listClubActivitiesForClub(context.activeClub.id),
-    accessRepository.listClubCalendarEventsForClub(context.activeClub.id),
-    accessRepository.getDailyCashSessionByDate(context.activeClub.id, sessionDate)
-  ]);
-
-  const visibleAccounts = getAccountsVisibleForRole(accounts, role);
-  const selectedAccount = visibleAccounts.find((account) => account.id === accountId) ?? visibleAccounts[0] ?? null;
-
-  if (!selectedAccount) {
-    return {
-      accounts: [],
-      detail: null
-    };
-  }
-
-  const movements = await accessRepository.listTreasuryMovementsHistoryByAccount(context.activeClub.id, selectedAccount.id);
-
-  const visibleMovements = movements.filter((movement) => shouldIncludeMovementInRoleBalances(movement, role));
-  const balances = buildAccountBalances(selectedAccount, visibleMovements);
-
-  const detail: TreasuryAccountDetail = {
-    account: {
-      accountId: selectedAccount.id,
-      name: selectedAccount.name
-    },
-    sessionStatus: session?.status ?? "not_started",
-    balances,
-    movements: visibleMovements
-      .map((movement) => {
-        const category = categories.find((entry) => entry.id === movement.categoryId);
-        const activity = movement.activityId
-          ? activities.find((entry) => entry.id === movement.activityId) ?? null
-          : null;
-        const calendarEvent = movement.calendarEventId
-          ? calendarEvents.find((entry) => entry.id === movement.calendarEventId) ?? null
-          : null;
-        return {
-          movementId: movement.id,
-          movementDisplayId: movement.displayId,
-          movementDate: movement.movementDate,
-          movementType: movement.movementType,
-          categoryName: category?.name ?? "",
-          activityName: activity?.name ?? null,
-          calendarEventTitle: calendarEvent?.title ?? null,
-          transferReference: movement.transferGroupId ?? null,
-          fxOperationReference: movement.fxOperationGroupId ?? null,
-          concept: movement.concept,
-          receiptNumber: movement.receiptNumber ?? null,
-          currencyCode: movement.currencyCode,
-          amount: movement.amount,
-          createdByUserName: movement.createdByUserId === context.user.id ? context.user.fullName : movement.createdByUserId,
-          createdAt: movement.createdAt
-        };
-      })
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-  };
-
-  return {
-    accounts: visibleAccounts,
-    detail
-  };
-}
+// ─── Lookups (extracted to ./treasury/lookups.ts in P2 audit · service split) ───
+export {
+  getActiveActivitiesForSecretaria,
+  getActiveActivitiesForTesoreria,
+  getEnabledCalendarEventsForSecretaria,
+  getEnabledCalendarEventsForTesoreria,
+  getActiveTreasuryCurrenciesForSecretaria,
+  getActiveTreasuryCurrenciesForTesoreria,
+  getEnabledMovementTypesForSecretaria,
+  getEnabledMovementTypesForTesoreria,
+  getActiveReceiptFormatsForSecretaria,
+  getActiveReceiptFormatsForTesoreria,
+  getTreasuryAccountDetailForActiveClub,
+} from "./treasury/lookups";
