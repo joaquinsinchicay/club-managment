@@ -36,11 +36,16 @@ export const StatusBadge = forwardRef<HTMLSpanElement, StatusBadgeProps>(functio
       ref={ref}
       {...rest}
       className={cn(
-        // text-eyebrow ya incluye font-weight 600 + letter-spacing 0.08em
-        // (tokens en lib/tokens/typography.ts). No agregar font-semibold ni
-        // tracking-card-eyebrow extra — quedaba 28px de alto + 0.18em
-        // de tracking, demasiado pesado para un chip de estado.
-        "inline-flex min-h-6 items-center gap-1 rounded-full border px-2.5 py-0.5 text-eyebrow uppercase",
+        // Tipografía: text-eyebrow es el token canónico para micro-labels
+        // uppercase (10px / weight 600 / letter-spacing 0.08em — definido
+        // en lib/tokens/typography.ts:14). Antes usaba text-meta +
+        // font-semibold + tracking-card-eyebrow (0.18em); el token
+        // tracking-card-eyebrow está reservado para "Eyebrow uppercase
+        // de <CardHeader> y derivados" según typography.ts:39 — no aplica
+        // a chips. Las dimensiones (min-h, padding, gap) preservan el
+        // contrato visual previo del badge: si se quiere modificar, hay
+        // que codificar una taxonomía de tamaños en CLAUDE.md primero.
+        "inline-flex min-h-7 items-center gap-1.5 rounded-full border px-3 py-1 text-eyebrow uppercase",
         TONE_CLASSNAME[tone],
         className
       )}
