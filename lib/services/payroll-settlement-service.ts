@@ -236,17 +236,19 @@ export async function listSettlementsWithAdjustments(
       g.context.clubId,
       filters,
     );
-    const adjustmentsBySettlementId: Record<string, PayrollSettlementAdjustment[]> = {};
-    await Promise.all(
-      settlements.map(async (s) => {
-        if (s.status === "anulada") {
-          adjustmentsBySettlementId[s.id] = [];
-          return;
-        }
-        const list = await payrollSettlementRepository.listAdjustments(g.context.clubId, s.id);
-        adjustmentsBySettlementId[s.id] = list;
-      }),
+    const idsToFetch = settlements
+      .filter((s) => s.status !== "anulada")
+      .map((s) => s.id);
+    const fetchedAdjustments = await payrollSettlementRepository.listAdjustmentsBySettlementIds(
+      g.context.clubId,
+      idsToFetch,
     );
+    const adjustmentsBySettlementId: Record<string, PayrollSettlementAdjustment[]> = {};
+    for (const s of settlements) {
+      adjustmentsBySettlementId[s.id] = s.status === "anulada"
+        ? []
+        : fetchedAdjustments.get(s.id) ?? [];
+    }
     return { ok: true, settlements, adjustmentsBySettlementId };
   } catch (error) {
     if (isPayrollSettlementRepositoryInfraError(error)) {

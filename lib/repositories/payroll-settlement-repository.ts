@@ -439,24 +439,52 @@ export const payrollSettlementRepository = {
       clubId,
       settlementId,
     });
-    // Guard: settlement belongs to the club.
-    const { data: guard } = await supabase
-      .from("payroll_settlements")
-      .select("id")
-      .eq("id", settlementId)
-      .eq("club_id", clubId)
-      .maybeSingle();
-    if (!guard) return [];
-
+    // Tenant guard: filtramos por club_id en la propia query haciendo un
+    // join inner contra payroll_settlements. Antes había un SELECT id
+    // previo (1 RTT extra por llamada) — eliminado, el RLS + el filtro
+    // de club_id en el join ya cubren el control cross-tenant.
     const { data, error } = await supabase
       .from("payroll_settlement_adjustments")
-      .select(ADJUSTMENT_COLUMNS)
+      .select(`${ADJUSTMENT_COLUMNS},payroll_settlements!inner(club_id)`)
       .eq("settlement_id", settlementId)
+      .eq("payroll_settlements.club_id", clubId)
       .order("created_at", { ascending: true });
     if (error) {
       throwRead("list_payroll_settlement_adjustments", { clubId, settlementId }, error);
     }
     return (data ?? []).map((r) => mapAdjustment(r as AdjustmentRow));
+  },
+
+  async listAdjustmentsBySettlementIds(
+    clubId: string,
+    settlementIds: string[],
+  ): Promise<Map<string, PayrollSettlementAdjustment[]>> {
+    const result = new Map<string, PayrollSettlementAdjustment[]>();
+    if (settlementIds.length === 0) return result;
+
+    const supabase = requireAdminClient("list_payroll_settlement_adjustments_batch", {
+      clubId,
+      count: settlementIds.length,
+    });
+    const { data, error } = await supabase
+      .from("payroll_settlement_adjustments")
+      .select(`${ADJUSTMENT_COLUMNS},payroll_settlements!inner(club_id)`)
+      .in("settlement_id", settlementIds)
+      .eq("payroll_settlements.club_id", clubId)
+      .order("created_at", { ascending: true });
+    if (error) {
+      throwRead("list_payroll_settlement_adjustments_batch", { clubId }, error);
+    }
+
+    for (const id of settlementIds) {
+      result.set(id, []);
+    }
+    for (const row of (data ?? []) as AdjustmentRow[]) {
+      const adjustment = mapAdjustment(row);
+      const bucket = result.get(adjustment.settlementId);
+      if (bucket) bucket.push(adjustment);
+    }
+    return result;
   },
 
   async addAdjustment(input: AddAdjustmentInput): Promise<PayrollSettlementAdjustment> {
