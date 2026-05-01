@@ -9,3 +9,6 @@ supabase/.temp
 .env*.local
 tsconfig.tsbuildinfo
 .claude/
+__pycache__/
+*.pyc
+scripts/import-all/out/
