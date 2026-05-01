@@ -2134,16 +2134,15 @@ async function listRealClubMembers(clubId: string, client?: AccessRepositoryClie
     const memberships = data.map((membership) =>
       mapMembershipRow(membership, rolesByMembershipId.get(membership.id) ?? [])
     );
-    const users = await Promise.all(
-      memberships.map(async (membership) => ({
-        membership,
-        user: await findRealUserById(membership.userId, adminSupabase)
-      }))
-    );
 
-    return users
-      .filter((entry): entry is { membership: Membership; user: User } => Boolean(entry.user))
-      .map((entry) => mapClubMemberFromMembership(entry.membership, entry.user));
+    const userIds = memberships.map((m) => m.userId);
+    const users = await findRealUsersByIds(userIds, adminSupabase);
+    const usersById = new Map(users.map((user) => [user.id, user]));
+
+    return memberships.flatMap((membership) => {
+      const user = usersById.get(membership.userId);
+      return user ? [mapClubMemberFromMembership(membership, user)] : [];
+    });
   }
 
   const supabase = createAccessSupabaseClient(client);
