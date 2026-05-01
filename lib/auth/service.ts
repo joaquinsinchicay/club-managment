@@ -110,25 +110,28 @@ function buildAuthIdentityFromSupabaseUser(user: SupabaseUser): AuthIdentity {
 }
 
 async function buildAvailableClubs(activeMemberships: Membership[], client?: AuthServiceClient) {
-  const clubs = await Promise.all(
-    activeMemberships.map(async (membership) => {
-      const club = await accessRepository.findClubById(membership.clubId, client);
+  if (activeMemberships.length === 0) {
+    return [];
+  }
 
-      if (!club) {
-        return null;
-      }
+  const clubIds = activeMemberships.map((membership) => membership.clubId);
+  const clubs = await accessRepository.findClubsByIds(clubIds, client);
+  const clubsById = new Map(clubs.map((club) => [club.id, club]));
 
-      return {
-        id: club.id,
-        name: club.name,
-        slug: club.slug,
-        roles: sortMembershipRoles(membership.roles),
-        status: membership.status
-      } satisfies AvailableClub;
-    })
-  );
+  return activeMemberships.flatMap<AvailableClub>((membership) => {
+    const club = clubsById.get(membership.clubId);
+    if (!club) {
+      return [];
+    }
 
-  return clubs.filter((club): club is AvailableClub => Boolean(club));
+    return [{
+      id: club.id,
+      name: club.name,
+      slug: club.slug,
+      roles: sortMembershipRoles(membership.roles),
+      status: membership.status
+    }];
+  });
 }
 
 async function resolveDestinationForUser(

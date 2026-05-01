@@ -188,6 +188,7 @@ type AccessRepository = {
   listMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   listActiveMembershipsForUser(userId: string, client?: AccessRepositoryClient): Promise<Membership[]>;
   findClubById(clubId: string, client?: AccessRepositoryClient): Promise<Club | null>;
+  findClubsByIds(clubIds: string[], client?: AccessRepositoryClient): Promise<Club[]>;
   updateClubIdentity(
     clubId: string,
     fields: {
@@ -2009,6 +2010,34 @@ async function findRealClubById(clubId: string, client?: AccessRepositoryClient)
   }
 
   return mapClubRow(data);
+}
+
+async function findRealClubsByIds(clubIds: string[], client?: AccessRepositoryClient) {
+  if (clubIds.length === 0) {
+    return [];
+  }
+
+  const supabase = createAccessSupabaseClient(client);
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("id,name,slug,status,cuit,tipo,logo_url,color_primary,color_secondary,domicilio,email,telefono,currency_code")
+    .in("id", clubIds);
+
+  if (error || !data) {
+    return [];
+  }
+
+  const clubsById = new Map(data.map((row) => [row.id, mapClubRow(row)]));
+
+  return clubIds.flatMap((clubId) => {
+    const club = clubsById.get(clubId);
+    return club ? [club] : [];
+  });
 }
 
 type UpdateClubIdentityFields = {
@@ -4675,6 +4704,18 @@ export const accessRepository: AccessRepository = {
     }
 
     return getStore().clubs.find((club) => club.id === clubId) ?? null;
+  },
+  async findClubsByIds(clubIds, client) {
+    if (clubIds.length === 0) {
+      return [];
+    }
+
+    if (shouldUseSupabaseDatabase()) {
+      return findRealClubsByIds(clubIds, client);
+    }
+
+    const ids = new Set(clubIds);
+    return getStore().clubs.filter((club) => ids.has(club.id));
   },
   async updateClubIdentity(clubId, fields, client) {
     if (shouldUseSupabaseDatabase()) {
