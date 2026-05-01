@@ -143,22 +143,6 @@ function getMissingClubScopedRpcName(error: unknown, rpcName?: string) {
   );
 }
 
-function isLegacyUpdateTreasuryMovementRpcCause(error: unknown) {
-  const code = getSupabaseErrorCode(error);
-  const message = getSupabaseErrorMessage(error).toLowerCase();
-
-  if ((code === "42883" || code === "PGRST202") && message.includes("update_treasury_movement_for_current_club")) {
-    return true;
-  }
-
-  return (
-    message.includes("update_treasury_movement_for_current_club") &&
-    (message.includes("p_movement_date") ||
-      message.includes("function") && message.includes("does not exist") ||
-      message.includes("could not find the function"))
-  );
-}
-
 function isMissingStaleSessionAutoCloseRpcCause(error: unknown) {
   const code = getSupabaseErrorCode(error);
 
@@ -3215,34 +3199,6 @@ async function updateRealTreasuryMovement(
     ...baseParams,
     p_movement_date: input.movementDate ?? null
   });
-
-  if (error && isLegacyUpdateTreasuryMovementRpcCause(error)) {
-    logger.warn("[club-scoped-rpc-fallback]", {
-      operation,
-      clubId: input.clubId,
-      ...details,
-      fallback: "retry_without_movement_date",
-      error
-    });
-
-    const { data: legacyData, error: legacyError } = await supabase.rpc(
-      "update_treasury_movement_for_current_club",
-      baseParams
-    );
-
-    if (legacyError) {
-      logClubScopedRpcFailure(operation, { clubId: input.clubId, ...details, fallback: "legacy_signature" }, legacyError);
-      throw new AccessRepositoryInfraError("club_scoped_rpc_failed", operation, {
-        cause: legacyError
-      });
-    }
-
-    const legacyRow = Array.isArray(legacyData)
-      ? ((legacyData[0] as TreasuryMovementRow | undefined) ?? null)
-      : ((legacyData as TreasuryMovementRow | null) ?? null);
-
-    return legacyRow ? mapTreasuryMovementRow(legacyRow) : null;
-  }
 
   if (error) {
     logClubScopedRpcFailure(operation, { clubId: input.clubId, ...details }, error);
