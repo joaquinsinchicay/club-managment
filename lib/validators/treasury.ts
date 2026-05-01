@@ -52,3 +52,13 @@ export const updateTransferBeforeConsolidationSchema = z.object({
 export const executeDailyConsolidationSchema = z.object({
   consolidation_date: isoDate,
 });
+
+export const syncMovementCostCenterLinksSchema = z.object({
+  movement_id: z.string().uuid(),
+  cost_center_ids: z.union([z.string(), z.array(z.string())]).optional(),
+});
+
+export const unlinkMovementFromCostCenterSchema = z.object({
+  movement_id: z.string().uuid(),
+  cost_center_id: z.string().uuid(),
+});

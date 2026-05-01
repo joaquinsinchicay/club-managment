@@ -17,7 +17,6 @@
     "ci": "npm run validate:docs && npm run check:primitives && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
-    "@radix-ui/react-slot": "^1.1.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.4",
     "class-variance-authority": "^0.7.1",

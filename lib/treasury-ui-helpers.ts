@@ -15,11 +15,16 @@ import type { AvatarTone } from "@/components/ui/avatar";
 
 /**
  * Símbolo de moneda para prefijar montos. ARS → "$", USD → "US$".
- * Para nuevas divisas, agregar mapping explícito acá (NO interpolar inline).
+ * Para divisas no mapeadas, retorna el code crudo (e.g. "BRL", "UYU").
+ * Para nuevas divisas con símbolo definido, agregar mapping explícito acá.
  */
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  ARS: "$",
+  USD: "US$",
+};
+
 export function getCurrencySymbol(currencyCode: string): string {
-  if (currencyCode === "USD") return "US$";
-  return "$";
+  return CURRENCY_SYMBOLS[currencyCode] ?? currencyCode;
 }
 
 /**

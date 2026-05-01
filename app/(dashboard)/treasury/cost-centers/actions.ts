@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { resolveFeedback } from "@/lib/feedback-catalog";
+import { logger } from "@/lib/logger";
 import {
   createCostCenter,
   syncMovementCostCenterLinks,
@@ -12,6 +13,11 @@ import {
   type CostCenterActionCode
 } from "@/lib/services/cost-center-service";
 import { flashToast } from "@/lib/toast-server";
+import { parseFormData } from "@/lib/validators/server-action";
+import {
+  syncMovementCostCenterLinksSchema,
+  unlinkMovementFromCostCenterSchema,
+} from "@/lib/validators/treasury";
 
 export type CostCenterActionResult = { ok: boolean; code: string };
 
@@ -121,12 +127,22 @@ export async function updateCostCenterAction(
 }
 
 export async function syncMovementCostCenterLinksAction(formData: FormData) {
-  const movementId = String(formData.get("movement_id") ?? "");
+  const parsed = parseFormData(formData, syncMovementCostCenterLinksSchema);
+  if (!parsed.ok) {
+    logger.warn("[cost-center-actions.sync] validation failed", {
+      error: parsed.firstError,
+    });
+    const feedback = resolveFeedback("dashboard", "validation_error");
+    flashToast({ kind: feedback.kind, title: feedback.title });
+    return;
+  }
+
+  // formData.getAll devuelve siempre un array; el schema acepta string|array.
   const costCenterIds = formData.getAll("cost_center_ids").map(String).filter(Boolean);
 
   const result = await syncMovementCostCenterLinks({
-    movementId,
-    costCenterIds
+    movementId: parsed.data.movement_id,
+    costCenterIds,
   });
 
   const feedbackCode = toFeedbackCode(result.code);
@@ -138,15 +154,25 @@ export async function syncMovementCostCenterLinksAction(formData: FormData) {
 }
 
 export async function unlinkMovementFromCostCenterAction(formData: FormData) {
-  const movementId = String(formData.get("movement_id") ?? "");
-  const costCenterId = String(formData.get("cost_center_id") ?? "");
+  const parsed = parseFormData(formData, unlinkMovementFromCostCenterSchema);
+  if (!parsed.ok) {
+    logger.warn("[cost-center-actions.unlink] validation failed", {
+      error: parsed.firstError,
+    });
+    const feedback = resolveFeedback("dashboard", "validation_error");
+    flashToast({ kind: feedback.kind, title: feedback.title });
+    redirect("/treasury");
+  }
 
-  const result = await unlinkMovementFromCostCenter({ movementId, costCenterId });
+  const result = await unlinkMovementFromCostCenter({
+    movementId: parsed.data.movement_id,
+    costCenterId: parsed.data.cost_center_id,
+  });
 
   const feedbackCode = toFeedbackCode(result.code);
   const feedback = resolveFeedback("dashboard", feedbackCode);
   flashToast({ kind: feedback.kind, title: feedback.title });
 
   revalidatePath("/treasury");
-  redirect(`/treasury/cost-centers/${costCenterId}`);
+  redirect(`/treasury/cost-centers/${parsed.data.cost_center_id}`);
 }

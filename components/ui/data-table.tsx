@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { formatLocalizedAmount } from "@/lib/amounts";
+import { getCurrencySymbol } from "@/lib/treasury-ui-helpers";
 import { cn } from "@/lib/utils";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -361,7 +362,7 @@ export function DataTableAmount({
   className,
   ...rest
 }: DataTableAmountProps) {
-  const symbol = currencyCode === "ARS" ? "$" : currencyCode === "USD" ? "US$" : currencyCode;
+  const symbol = getCurrencySymbol(currencyCode);
   const sign = amountSignMap[type];
   const sizeClass =
     size === "display"
