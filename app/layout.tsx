@@ -1,11 +1,26 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { ToastProvider } from "@/components/ui/toast";
 import { FLASH_TOAST_COOKIE } from "@/lib/toast-server";
 import type { ToastPayload } from "@/lib/toast";
 import "./globals.css";
 import { texts } from "@/lib/texts";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: texts.app.title,
@@ -38,15 +53,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   const flashPayload = readFlashPayload();
 
   return (
-    <html lang="es">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="es" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body>
         <ToastProvider flashPayload={flashPayload} />
         {children}

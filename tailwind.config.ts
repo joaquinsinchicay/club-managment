@@ -108,6 +108,12 @@ const config: Config = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fontSize: { ...(dsFontSize as unknown as Record<string, any>) },
 
+      // ── Fuentes (next/font expone --font-sans / --font-mono en <html>) ──
+      fontFamily: {
+        sans: ["var(--font-sans)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
+
       // ── DS letter spacing ───────────────────────────────────────────────
       // tracking-eyebrow | tracking-badge | tracking-label | tracking-chip | ...
       letterSpacing: { ...dsLetterSpacing },
