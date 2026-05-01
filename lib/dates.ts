@@ -76,10 +76,12 @@ export function formatSessionTime(isoString: string | null): string | null {
   if (!isoString) return null;
   const date = new Date(isoString);
   if (Number.isNaN(date.getTime())) return null;
+  // Usar hourCycle "h23" en vez de hour12:false para que medianoche sea
+  // "00:00" (no "24:00", que es lo que devuelve ICU en Linux Node 20).
   return new Intl.DateTimeFormat("es-AR", {
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false,
+    hourCycle: "h23",
   }).format(date);
 }
 
