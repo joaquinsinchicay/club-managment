@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { appConfig } from "@/lib/config";
 import { MissingSupabaseAdminConfigError, createAdminSupabaseClient, createRequiredAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -4630,6 +4632,25 @@ async function syncRealUserProfileFromAuthIdentity(identity: AuthIdentity, clien
   return mapUserRow(data);
 }
 
+// Wrappers cached con React `cache()` para deduplicar lecturas
+// idempotentes dentro de UNA misma request server. Catálogos cuasi-
+// estáticos (cuentas, categorías, actividades, calendario, formatos,
+// monedas, tipos de movimiento) se solían pedir múltiples veces por
+// distintos services en una misma página: ej. en /secretary,
+// `getDashboardTreasuryCardForActiveClub` lee `listTreasuryAccounts`
+// y luego el Promise.all del page lo vuelve a leer. Con `cache()`
+// se ejecuta una vez por request y el resto reusa el resultado.
+//
+// El cache solo opera intra-request (React lo descarta al terminar).
+// Para caching entre requests existe `unstable_cache` (Phase 3 pendiente).
+const cachedListTreasuryAccountsForClub = cache(listRealTreasuryAccountsForClub);
+const cachedListTreasuryCategoriesForClub = cache(listRealTreasuryCategoriesForClub);
+const cachedListClubActivitiesForClub = cache(listRealClubActivitiesForClub);
+const cachedListClubCalendarEventsForClub = cache(listRealClubCalendarEventsForClub);
+const cachedListReceiptFormatsForClub = cache(listRealReceiptFormatsForClub);
+const cachedListTreasuryCurrenciesForClub = cache(listRealTreasuryCurrenciesForClub);
+const cachedListMovementTypeConfigForClub = cache(listRealMovementTypeConfigForClub);
+
 export const accessRepository: AccessRepository = {
   getGoogleProfile(profileKey) {
     return GOOGLE_PROFILES[profileKey];
@@ -4817,28 +4838,28 @@ export const accessRepository: AccessRepository = {
   },
   async listTreasuryAccountsForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
-      return listRealTreasuryAccountsForClub(clubId);
+      return cachedListTreasuryAccountsForClub(clubId);
     }
 
     return getStore().treasuryAccounts.filter((account) => account.clubId === clubId);
   },
   async listTreasuryCategoriesForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
-      return listRealTreasuryCategoriesForClub(clubId);
+      return cachedListTreasuryCategoriesForClub(clubId);
     }
 
     return reconcileMockSystemTreasuryCategories(clubId);
   },
   async listClubActivitiesForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
-      return listRealClubActivitiesForClub(clubId);
+      return cachedListClubActivitiesForClub(clubId);
     }
 
     return getStore().clubActivities.filter((activity) => activity.clubId === clubId);
   },
   async listClubCalendarEventsForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
-      return listRealClubCalendarEventsForClub(clubId);
+      return cachedListClubCalendarEventsForClub(clubId);
     }
 
     return getStore().clubCalendarEvents.filter((event) => event.clubId === clubId);
@@ -4861,21 +4882,21 @@ export const accessRepository: AccessRepository = {
   },
   async listReceiptFormatsForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
-      return listRealReceiptFormatsForClub(clubId);
+      return cachedListReceiptFormatsForClub(clubId);
     }
 
     return ensureMockReceiptFormatsForClub(clubId);
   },
   async listTreasuryCurrenciesForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
-      return listRealTreasuryCurrenciesForClub(clubId);
+      return cachedListTreasuryCurrenciesForClub(clubId);
     }
 
     return getStore().clubTreasuryCurrencies.filter((currency) => currency.clubId === clubId);
   },
   async listMovementTypeConfigForClub(clubId) {
     if (shouldUseSupabaseDatabase()) {
-      return listRealMovementTypeConfigForClub(clubId);
+      return cachedListMovementTypeConfigForClub(clubId);
     }
 
     return getStore().movementTypeConfig.filter((config) => config.clubId === clubId);
