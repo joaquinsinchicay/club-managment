@@ -16,6 +16,7 @@ import { getAuthenticatedSessionContext } from "@/lib/auth/service";
 import { canOperateSecretaria } from "@/lib/domain/authorization";
 import { accessRepository } from "@/lib/repositories/access-repository";
 import {
+  ensureDailyCashSessionGuardSafe,
   getActiveActivitiesForSecretaria,
   getActiveReceiptFormatsForSecretaria,
   getActiveTreasuryCurrenciesForSecretaria,
@@ -49,6 +50,13 @@ export default async function SecretariaDashboardPage() {
   if (!canOperateSecretaria(context.activeMembership)) {
     redirect("/dashboard");
   }
+
+  // Guard de jornada vencida (antes vivía en el layout root, hoy se invoca
+  // explícitamente solo en las pages que muestran info de jornada).
+  await ensureDailyCashSessionGuardSafe({
+    activeClub: { id: context.activeClub.id },
+    user: { id: context.user.id }
+  });
 
   const treasuryCard = await getDashboardTreasuryCardForActiveClub();
 

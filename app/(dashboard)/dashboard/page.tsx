@@ -13,6 +13,7 @@ import {
   canOperateTesoreria
 } from "@/lib/domain/authorization";
 import {
+  ensureDailyCashSessionGuardSafe,
   getDashboardTreasuryCardForActiveClub,
   getTreasuryRoleDashboardForActiveClub
 } from "@/lib/services/treasury-service";
@@ -60,6 +61,14 @@ export default async function DashboardPage() {
   const canOperateSecretariaRole = canOperateSecretaria(context.activeMembership);
   const canOperateTesoreriaRole = canOperateTesoreria(context.activeMembership);
   const canAccessSettings = canAccessClubSettingsNavigation(context.activeMembership);
+
+  // Guard de jornada vencida (antes vivía en el layout root, hoy se invoca
+  // explícitamente solo en las pages que muestran info de jornada).
+  await ensureDailyCashSessionGuardSafe({
+    activeClub: { id: context.activeClub.id },
+    user: { id: context.user.id }
+  });
+
   const treasuryCard = canOperateSecretariaRole ? await getDashboardTreasuryCardForActiveClub() : null;
   const treasuryRoleDashboard = canOperateTesoreriaRole ? await getTreasuryRoleDashboardForActiveClub() : null;
 

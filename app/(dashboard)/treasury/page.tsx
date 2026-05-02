@@ -41,6 +41,7 @@ import { listCostCentersForActiveClub } from "@/lib/services/cost-center-service
 import { listStaffContractsForMovementSelector } from "@/lib/services/staff-contract-service";
 import { getTreasuryPayrollData } from "@/lib/services/treasury-payroll-service";
 import {
+  ensureDailyCashSessionGuardSafe,
   getActiveActivitiesForTesoreria,
   getEnabledCalendarEventsForTesoreria,
   getActiveReceiptFormatsForTesoreria,
@@ -99,6 +100,13 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
   if (!canOperateTesoreria(context.activeMembership)) {
     redirect("/dashboard");
   }
+
+  // Guard de jornada vencida (antes vivía en el layout root, hoy se invoca
+  // explícitamente solo en las pages que muestran info de jornada).
+  await ensureDailyCashSessionGuardSafe({
+    activeClub: { id: context.activeClub.id },
+    user: { id: context.user.id }
+  });
 
   const movementsFromDate = sanitizeDateParam(searchParams?.movements_from);
   const movementsToDate = sanitizeDateParam(searchParams?.movements_to);

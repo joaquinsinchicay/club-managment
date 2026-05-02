@@ -108,6 +108,7 @@ export {
 import { ensureStaleDailyCashSessionAutoClosedForActiveClub } from "./treasury/sessions";
 export {
   ensureStaleDailyCashSessionAutoClosedForActiveClub,
+  ensureDailyCashSessionGuardSafe,
   getDailyCashSessionValidationForActiveClub,
   openDailyCashSessionWithDeclaredBalances,
   closeDailyCashSessionWithDeclaredBalances,

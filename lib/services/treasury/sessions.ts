@@ -44,6 +44,29 @@ type SessionAdjustmentEntry = {
   adjustmentMoment: "opening" | "closing";
 };
 
+/**
+ * Variante "safe" del guard: logea pero no propaga errores. Para uso
+ * desde page.tsx de las 3 routes que muestran info de jornada
+ * (/dashboard, /secretary, /treasury) — antes este guard vivía en el
+ * layout root, lo que lo ejecutaba en CADA navegación a /rrhh,
+ * /settings, /modules sin necesidad. Ahora cada page lo invoca
+ * explícitamente.
+ */
+export async function ensureDailyCashSessionGuardSafe(context: {
+  activeClub: { id: string };
+  user: { id: string };
+}): Promise<void> {
+  try {
+    await ensureStaleDailyCashSessionAutoClosedForActiveClub(context);
+  } catch (error) {
+    logger.warn("[daily-session-guard-failed]", {
+      clubId: context.activeClub.id,
+      userId: context.user.id,
+      error,
+    });
+  }
+}
+
 export async function ensureStaleDailyCashSessionAutoClosedForActiveClub(context: {
   activeClub: { id: string };
   user: { id: string };
