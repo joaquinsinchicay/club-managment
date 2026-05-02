@@ -39,10 +39,7 @@ import {
 import { accessRepository } from "@/lib/repositories/access-repository";
 import { listCostCentersForActiveClub } from "@/lib/services/cost-center-service";
 import { listStaffContractsForMovementSelector } from "@/lib/services/staff-contract-service";
-import {
-  getTreasuryPayrollSummary,
-  listApprovedSettlementsForTreasury
-} from "@/lib/services/treasury-payroll-service";
+import { getTreasuryPayrollData } from "@/lib/services/treasury-payroll-service";
 import {
   getActiveActivitiesForTesoreria,
   getEnabledCalendarEventsForTesoreria,
@@ -133,26 +130,16 @@ export default async function TreasuryDashboardPage({ searchParams }: TreasuryDa
     (account) => !account.visibleForSecretaria && account.visibleForTesoreria
   );
 
-  // US-45: Card "Pagos de nómina pendientes" — solo rol tesoreria.
-  // US-71: Sub-tab "Pagos pendientes" embebido en TreasuryRoleCard. Cargamos
-  // tanto el summary (para la card del Resumen) como la lista completa para
-  // el tab. Si el rol no aplica, ambos quedan en null y el tab no renderiza.
+  // US-45 + US-71: Card "Pagos de nómina pendientes" + sub-tab embebido en
+  // TreasuryRoleCard. Lectura unificada (1 query a payroll_settlements
+  // filtrada `aprobada_rrhh` en SQL + 1 batch de adjustments). Si el rol no
+  // aplica, todo queda en defaults y el tab no renderiza.
   const canSeePayroll = canAccessTreasuryPayrollTray(context.activeMembership);
-  const [payrollSummary, payrollListResult] = canSeePayroll
-    ? await Promise.all([getTreasuryPayrollSummary(), listApprovedSettlementsForTreasury()])
-    : [null, null];
-  const payrollPending =
-    payrollSummary && payrollSummary.ok ? payrollSummary.summary : null;
-  const payrollSettlements =
-    payrollListResult && payrollListResult.ok ? payrollListResult.settlements : [];
-  const payrollAdjustments =
-    payrollListResult && payrollListResult.ok
-      ? payrollListResult.adjustmentsBySettlementId
-      : {};
-  const payrollApproverNames =
-    payrollListResult && payrollListResult.ok
-      ? payrollListResult.approverNamesByUserId
-      : {};
+  const payrollData = canSeePayroll ? await getTreasuryPayrollData() : null;
+  const payrollPending = payrollData && payrollData.ok ? payrollData.summary : null;
+  const payrollSettlements = payrollData && payrollData.ok ? payrollData.settlements : [];
+  const payrollAdjustments = payrollData && payrollData.ok ? payrollData.adjustmentsBySettlementId : {};
+  const payrollApproverNames = payrollData && payrollData.ok ? payrollData.approverNamesByUserId : {};
   const payableAccounts = canSeePayroll
     ? allAccounts.filter(
         (a) => a.visibleForTesoreria && a.currencies.includes(context.activeClub!.currencyCode)
