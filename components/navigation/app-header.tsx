@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
@@ -98,8 +99,14 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
             style={clubPrimaryColor ? { backgroundColor: clubPrimaryColor } : undefined}
           >
             {clubLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={clubLogoUrl} alt={clubLabel} className="h-full w-full object-cover" />
+              <Image
+                src={clubLogoUrl}
+                alt={clubLabel}
+                width={32}
+                height={32}
+                className="h-full w-full object-cover"
+                sizes="32px"
+              />
             ) : (
               clubInitials
             )}

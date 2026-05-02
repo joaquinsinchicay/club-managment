@@ -29,6 +29,18 @@ const nextConfig = {
     // adelante con bundle-analyzer si justifica el riesgo.
     optimizePackageImports: ["clsx", "tailwind-merge", "class-variance-authority"],
   },
+  images: {
+    // Logos y assets del club viven en Supabase Storage. Whitelistear el
+    // host del proyecto para que `next/image` los pueda optimizar
+    // (resize, formato webp/avif, lazy loading, srcset).
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "qfiyxpaxbdhbeapksyjp.supabase.co",
+        pathname: "/storage/v1/object/**",
+      },
+    ],
+  },
   async headers() {
     return [
       {
