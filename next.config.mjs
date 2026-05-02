@@ -21,6 +21,14 @@ const securityHeaders = [
 
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    // Tree-shaking más agresivo de barrel files. Las utilidades (clsx,
+    // tailwind-merge, cva) son livianas pero gratis de optimizar.
+    // @supabase/* no se incluye porque la lib es parcialmente CJS y la
+    // optimización experimental puede romper imports — evaluar más
+    // adelante con bundle-analyzer si justifica el riesgo.
+    optimizePackageImports: ["clsx", "tailwind-merge", "class-variance-authority"],
+  },
   async headers() {
     return [
       {
