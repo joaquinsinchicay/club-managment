@@ -45,5 +45,21 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
+  matcher: [
+    /*
+     * Match all request paths except for the following:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico (favicon)
+     * - common static asset extensions (img/font/css/js)
+     *
+     * Cada request que matchea ejecuta `supabase.auth.getUser()`, que
+     * golpea el endpoint /auth/v1/user de Supabase = RTT real. Filtrar
+     * los assets ahorra esos round-trips para recursos que no necesitan
+     * sesión.
+     *
+     * Refs: audit perf top-7 · H2.
+     */
+    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|css|js|map)$).*)"
+  ]
 };
