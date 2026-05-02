@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cache } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 import { appConfig } from "@/lib/config";
@@ -252,43 +253,54 @@ export async function getSessionContext(
   };
 }
 
-export async function getAuthenticatedSessionContext(): Promise<SessionContext | null> {
-  const identity = await getAuthenticatedIdentity();
+/**
+ * Resuelve la sesión completa (user + memberships + active club + clubs
+ * disponibles). Es ~7 RTTs secuenciales a Supabase. Wrappeada con React
+ * `cache()` para deduplicar dentro de una misma request: cada navegación
+ * la invocaba 2-4 veces (root layout + rrhh layout + page + servicios
+ * internos), todas idénticas. Con `cache()` solo se ejecuta una vez por
+ * request server. La memoización NO persiste entre requests (React la
+ * descarta al final de cada uno) — para eso está unstable_cache.
+ */
+export const getAuthenticatedSessionContext = cache(
+  async (): Promise<SessionContext | null> => {
+    const identity = await getAuthenticatedIdentity();
 
-  if (!identity) {
-    return null;
+    if (!identity) {
+      return null;
+    }
+
+    const fallbackUser = mapAuthIdentityToUser(identity);
+    const persistedUser = identity.email
+      ? await accessRepository.findUserByEmail(identity.email)
+      : await accessRepository.findUserById(identity.id);
+    const user = persistedUser ?? fallbackUser;
+    const userId = persistedUser?.id ?? identity.id;
+    const memberships = await accessRepository.listMembershipsForUser(userId);
+    const activeMemberships = memberships.filter((membership) => membership.status === "activo");
+    const preferredClubId = await getCurrentActiveClubId();
+    const storedClubId = await accessRepository.getLastActiveClubId(userId);
+    const resolvedClubId =
+      preferredClubId && activeMemberships.some((membership) => membership.clubId === preferredClubId)
+        ? preferredClubId
+        : storedClubId && activeMemberships.some((membership) => membership.clubId === storedClubId)
+          ? storedClubId
+          : activeMemberships[0]?.clubId ?? null;
+    const activeMembership =
+      activeMemberships.find((membership) => membership.clubId === resolvedClubId) ?? null;
+    const activeClub = resolvedClubId ? await accessRepository.findClubById(resolvedClubId) : null;
+    const availableClubs = await buildAvailableClubs(activeMemberships);
+
+    return {
+      user,
+      memberships,
+      activeMemberships,
+      activeMembership,
+      activeClub,
+      availableClubs
+    };
   }
-
-  const fallbackUser = mapAuthIdentityToUser(identity);
-  const persistedUser = identity.email
-    ? await accessRepository.findUserByEmail(identity.email)
-    : await accessRepository.findUserById(identity.id);
-  const user = persistedUser ?? fallbackUser;
-  const userId = persistedUser?.id ?? identity.id;
-  const memberships = await accessRepository.listMembershipsForUser(userId);
-  const activeMemberships = memberships.filter((membership) => membership.status === "activo");
-  const preferredClubId = await getCurrentActiveClubId();
-  const storedClubId = await accessRepository.getLastActiveClubId(userId);
-  const resolvedClubId =
-    preferredClubId && activeMemberships.some((membership) => membership.clubId === preferredClubId)
-      ? preferredClubId
-      : storedClubId && activeMemberships.some((membership) => membership.clubId === storedClubId)
-        ? storedClubId
-        : activeMemberships[0]?.clubId ?? null;
-  const activeMembership =
-    activeMemberships.find((membership) => membership.clubId === resolvedClubId) ?? null;
-  const activeClub = resolvedClubId ? await accessRepository.findClubById(resolvedClubId) : null;
-  const availableClubs = await buildAvailableClubs(activeMemberships);
-
-  return {
-    user,
-    memberships,
-    activeMemberships,
-    activeMembership,
-    activeClub,
-    availableClubs
-  };
-}
+);
 
 export async function resolveCurrentUserDestination(): Promise<string> {
   const context = await getAuthenticatedSessionContext();
