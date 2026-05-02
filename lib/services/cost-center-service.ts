@@ -372,19 +372,12 @@ export async function getCostCenterDetail(
     const costCenter = await costCenterRepository.getById(ctx.clubId, costCenterId);
     if (!costCenter) return err<CostCenterDetail>("cost_center_not_found");
 
-    const [aggregatesMap, auditLog, movements, hasLinkedMovements] = await Promise.all([
-      costCenterRepository.getAggregatesForClub(ctx.clubId),
+    const [aggregates, auditLog, movements, hasLinkedMovements] = await Promise.all([
+      costCenterRepository.getAggregatesForCostCenter(ctx.clubId, costCenterId),
       costCenterRepository.listAuditForCostCenter(ctx.clubId, costCenterId),
       costCenterRepository.listMovementsForCostCenter(ctx.clubId, costCenterId),
       costCenterRepository.hasLinkedMovements(costCenterId)
     ]);
-
-    const aggregates = aggregatesMap.get(costCenterId) ?? {
-      costCenterId,
-      totalIngreso: 0,
-      totalEgreso: 0,
-      linkedMovementCount: 0
-    };
     const badges = computeBadges({
       costCenter,
       aggregates,

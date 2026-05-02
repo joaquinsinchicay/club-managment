@@ -419,6 +419,47 @@ export const costCenterRepository = {
   // Aggregates for badges (US-52 § 8)
   // -----------------------------------------------------------------------
 
+  async getAggregatesForCostCenter(
+    clubId: string,
+    costCenterId: string
+  ): Promise<CostCenterAggregates> {
+    const supabase = requireAdminClient("get_aggregates_for_cost_center", { clubId, costCenterId });
+
+    // Variante "single CC" para `getCostCenterDetail`: filtra por cost_center
+    // en SQL en lugar de traer toda la tabla del club y hacer .get() en JS.
+    const { data, error } = await supabase
+      .from("treasury_movement_cost_centers")
+      .select("treasury_movements!inner(amount, movement_type, club_id)")
+      .eq("cost_center_id", costCenterId)
+      .eq("treasury_movements.club_id", clubId);
+
+    if (error) {
+      logReadFailure("get_aggregates_for_cost_center", { clubId, costCenterId }, error);
+      throw new CostCenterRepositoryInfraError("read_failed", "get_aggregates_for_cost_center", {
+        cause: error
+      });
+    }
+
+    type MovementJoin = { amount: number | string; movement_type: "ingreso" | "egreso"; club_id: string };
+    type Row = { treasury_movements: MovementJoin | MovementJoin[] | null };
+
+    let totalIngreso = 0;
+    let totalEgreso = 0;
+    let linkedMovementCount = 0;
+
+    for (const row of (data ?? []) as unknown as Row[]) {
+      const joined = row.treasury_movements;
+      const mov = Array.isArray(joined) ? joined[0] : joined;
+      if (!mov) continue;
+      const amount = Number(mov.amount);
+      linkedMovementCount += 1;
+      if (mov.movement_type === "ingreso") totalIngreso += amount;
+      else totalEgreso += amount;
+    }
+
+    return { costCenterId, totalIngreso, totalEgreso, linkedMovementCount };
+  },
+
   async getAggregatesForClub(clubId: string): Promise<Map<string, CostCenterAggregates>> {
     const supabase = requireAdminClient("get_aggregates_for_club", { clubId });
 
