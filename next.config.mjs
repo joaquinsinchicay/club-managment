@@ -1,3 +1,5 @@
+import bundleAnalyzer from "@next/bundle-analyzer";
+
 /** @type {import('next').NextConfig} */
 const securityHeaders = [
   // Anti-clickjacking: la app no debería embedirse en otros sitios.
@@ -51,4 +53,8 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// `ANALYZE=true npm run build` genera reportes HTML del bundle en
+// `.next/analyze/`. No-op en builds normales.
+const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
+
+export default withBundleAnalyzer(nextConfig);
