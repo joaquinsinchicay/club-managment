@@ -105,9 +105,12 @@ function formatCurrency(amount: number | null, code: string): string {
 
 type PageProps = {
   params: { id: string };
+  searchParams?: { page?: string };
 };
 
-export default async function CostCenterDetailPage({ params }: PageProps) {
+const MOVEMENTS_PAGE_SIZE = 50;
+
+export default async function CostCenterDetailPage({ params, searchParams }: PageProps) {
   const context = await getAuthenticatedSessionContext();
   if (!context) redirect("/login");
   if (!context.activeClub || !context.activeMembership) redirect("/pending-approval");
@@ -120,7 +123,22 @@ export default async function CostCenterDetailPage({ params }: PageProps) {
     redirect("/treasury?tab=cost_centers");
   }
 
-  const { costCenter, aggregates, badges, movements, auditLog } = result.data!;
+  const { costCenter, aggregates, badges, movements: allMovements, auditLog } = result.data!;
+
+  // Paginación client-side de movements: el repo trae todo el set ordenado
+  // por fecha desc, y la page renderiza solo MOVEMENTS_PAGE_SIZE por vez
+  // para no inflar el DOM ni el RSC payload cuando un CC tiene cientos de
+  // movimientos. El refactor para LIMIT/OFFSET server-side requiere mover
+  // el sort de JS a SQL (no trivial por el join sobre treasury_movements).
+  const totalMovements = allMovements.length;
+  const requestedPage = Math.max(1, Number(searchParams?.page) || 1);
+  const totalPages = Math.max(1, Math.ceil(totalMovements / MOVEMENTS_PAGE_SIZE));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const movementsPageStart = (currentPage - 1) * MOVEMENTS_PAGE_SIZE;
+  const movements = allMovements.slice(
+    movementsPageStart,
+    movementsPageStart + MOVEMENTS_PAGE_SIZE
+  );
   const executed =
     costCenter.type === "sponsor" || costCenter.type === "publicidad"
       ? aggregates.totalIngreso
@@ -202,10 +220,14 @@ export default async function CostCenterDetailPage({ params }: PageProps) {
       <Card padding="none">
         <header className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold">{tCC.detail_movements_title}</h2>
-          <span className="text-xs text-muted-foreground">{movements.length}</span>
+          <span className="text-xs text-muted-foreground">
+            {totalMovements > MOVEMENTS_PAGE_SIZE
+              ? `${movementsPageStart + 1}–${movementsPageStart + movements.length} / ${totalMovements}`
+              : totalMovements}
+          </span>
         </header>
 
-        {movements.length === 0 ? (
+        {totalMovements === 0 ? (
           <DataTableEmpty title={tCC.detail_movements_empty} />
         ) : (
           <DataTable
@@ -267,6 +289,34 @@ export default async function CostCenterDetailPage({ params }: PageProps) {
             </DataTableBody>
           </DataTable>
         )}
+
+        {totalPages > 1 ? (
+          <footer className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+            <span>
+              Página {currentPage} de {totalPages}
+            </span>
+            <div className="flex gap-2">
+              {currentPage > 1 ? (
+                <LinkButton
+                  href={`/treasury/cost-centers/${costCenter.id}?page=${currentPage - 1}`}
+                  variant="secondary"
+                  size="sm"
+                >
+                  Anterior
+                </LinkButton>
+              ) : null}
+              {currentPage < totalPages ? (
+                <LinkButton
+                  href={`/treasury/cost-centers/${costCenter.id}?page=${currentPage + 1}`}
+                  variant="secondary"
+                  size="sm"
+                >
+                  Siguiente
+                </LinkButton>
+              ) : null}
+            </div>
+          </footer>
+        ) : null}
       </Card>
 
       {/* Audit log */}
