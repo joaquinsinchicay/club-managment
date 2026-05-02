@@ -24,13 +24,17 @@ export default async function ActivityDetailPage({
   const clubCurrencyCode = context.activeClub.currencyCode;
   const canMutate = canMutateHrMasters(context.activeMembership);
 
-  const result = await getActivityDetail(params.id);
+  // Paralelizar getActivityDetail y staffMember.listForClub: son
+  // independientes (staffMembers se necesita para el form de "asignar
+  // contrato" en el detail view). Antes eran 2 RTTs secuenciales.
+  const [result, staffMembers] = await Promise.all([
+    getActivityDetail(params.id),
+    staffMemberRepository.listForClub(context.activeClub.id, {}),
+  ]);
   if (!result.ok) {
     if (result.code === "activity_not_found") notFound();
     redirect("/rrhh/structures");
   }
-
-  const staffMembers = await staffMemberRepository.listForClub(context.activeClub.id, {});
 
   return (
     <>
