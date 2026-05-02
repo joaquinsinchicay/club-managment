@@ -1,19 +1,40 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { startTransition, type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import { useTreasuryData } from "@/lib/contexts/treasury-data-context";
 
-import { CloseSessionModalForm } from "@/components/dashboard/close-session-modal-form";
-import { OpenSessionModalForm } from "@/components/dashboard/open-session-modal-form";
-import {
-  AccountTransferEditForm,
-  AccountTransferForm,
-  SecretariaMovementEditForm,
-  SecretariaMovementForm
-} from "@/components/dashboard/treasury-operation-forms";
+// Modales lazy: <Modal> hace `if (!open) return null` → mientras estén
+// cerrados, los chunks no se descargan ni evalúan. ssr:false porque son
+// flujos puramente interactivos (sin render en server).
+const CloseSessionModalForm = dynamic(
+  () => import("@/components/dashboard/close-session-modal-form").then((m) => m.CloseSessionModalForm),
+  { ssr: false },
+);
+const OpenSessionModalForm = dynamic(
+  () => import("@/components/dashboard/open-session-modal-form").then((m) => m.OpenSessionModalForm),
+  { ssr: false },
+);
+const SecretariaMovementForm = dynamic(
+  () => import("@/components/dashboard/treasury-operation-forms").then((m) => m.SecretariaMovementForm),
+  { ssr: false },
+);
+const SecretariaMovementEditForm = dynamic(
+  () => import("@/components/dashboard/treasury-operation-forms").then((m) => m.SecretariaMovementEditForm),
+  { ssr: false },
+);
+const AccountTransferForm = dynamic(
+  () => import("@/components/dashboard/treasury-operation-forms").then((m) => m.AccountTransferForm),
+  { ssr: false },
+);
+const AccountTransferEditForm = dynamic(
+  () => import("@/components/dashboard/treasury-operation-forms").then((m) => m.AccountTransferEditForm),
+  { ssr: false },
+);
+
 import { SecretariaMovementList } from "@/components/dashboard/secretaria-movement-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
