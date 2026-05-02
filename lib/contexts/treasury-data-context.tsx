@@ -28,7 +28,7 @@
 
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 import type {
   ClubActivity,
@@ -91,7 +91,15 @@ type TreasuryDataProviderProps = {
 };
 
 export function TreasuryDataProvider({ value, children }: TreasuryDataProviderProps) {
-  return <TreasuryDataContext.Provider value={value}>{children}</TreasuryDataContext.Provider>;
+  // El page server fetcha los datos y serializa `value` como prop al
+  // boundary RSC→Client. Cada render del server crea una referencia
+  // nueva, lo que invalidaría todos los `useTreasuryData()` consumers
+  // aunque los datos sean equivalentes. Memoizamos por equivalencia
+  // estructural (JSON.stringify sobre datos serializables) para
+  // estabilizar la referencia entre renders y evitar re-renders
+  // en cascada de los 7+ forms internos del módulo Tesorería.
+  const memoizedValue = useMemo(() => value, [JSON.stringify(value)]);
+  return <TreasuryDataContext.Provider value={memoizedValue}>{children}</TreasuryDataContext.Provider>;
 }
 
 /**
