@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/data-table";
 import { formatMovementDateTime } from "@/lib/dates";
 import type { TreasuryMovementType } from "@/lib/domain/access";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard } from "@/lib/texts";
 import { getMovementTypeBulletClass } from "@/lib/treasury-ui-helpers";
 
 type SecretariaMovementListItem = {
@@ -53,12 +53,12 @@ export function SecretariaMovementList({ items }: SecretariaMovementListProps) {
           const meta = [
             item.movementDisplayId,
             item.createdByUserName,
-            item.receiptNumber ? `${texts.dashboard.treasury.detail_receipt_label} ${item.receiptNumber}` : null,
+            item.receiptNumber ? `${txtDashboard.treasury.detail_receipt_label} ${item.receiptNumber}` : null,
             item.transferReference
-              ? `${texts.dashboard.treasury.detail_transfer_label} ${getReferenceSuffix(item.transferReference)}`
+              ? `${txtDashboard.treasury.detail_transfer_label} ${getReferenceSuffix(item.transferReference)}`
               : null,
             item.fxOperationReference
-              ? `${texts.dashboard.treasury.detail_fx_label} ${getReferenceSuffix(item.fxOperationReference)}`
+              ? `${txtDashboard.treasury.detail_fx_label} ${getReferenceSuffix(item.fxOperationReference)}`
               : null,
             item.calendarEventTitle
           ]

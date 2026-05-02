@@ -17,9 +17,9 @@ import {
 } from "@/lib/amounts";
 import type { SalaryStructure } from "@/lib/domain/salary-structure";
 import type { StaffMember } from "@/lib/domain/staff-member";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 
-const scTexts = texts.rrhh.staff_contracts;
+const scTexts = txtRrhh.staff_contracts;
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);

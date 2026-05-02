@@ -31,7 +31,7 @@ import {
 } from "@/lib/domain/staff-member";
 import { useFilteredList } from "@/lib/hooks/use-filtered-list";
 import { useFormModal } from "@/lib/hooks/use-form-modal";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 
 type ContractFilter = "with_active" | "all" | "without_active";
 
@@ -49,7 +49,7 @@ type StaffMembersTabProps = {
 
 type VinculoFilter = "all" | StaffVinculoType;
 
-const smTexts = texts.rrhh.staff_members;
+const smTexts = txtRrhh.staff_members;
 
 const CONTRACT_FILTERS: { value: ContractFilter; label: string }[] = [
   { value: "with_active", label: smTexts.filter_with_active },

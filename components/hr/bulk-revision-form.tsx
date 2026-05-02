@@ -36,7 +36,7 @@ import {
   SALARY_REVISION_ADJUSTMENT_TYPES,
   type SalaryRevisionAdjustmentType,
 } from "@/lib/domain/staff-contract-revision";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 
 type BulkRevisionFormProps = {
   contracts: StaffContract[];
@@ -44,7 +44,7 @@ type BulkRevisionFormProps = {
   bulkAction: (formData: FormData) => Promise<RrhhActionResult>;
 };
 
-const brTexts = texts.rrhh.bulk_revision;
+const brTexts = txtRrhh.bulk_revision;
 
 function formatAmount(amount: number | null, currencyCode: string): string {
   if (amount === null) return "—";

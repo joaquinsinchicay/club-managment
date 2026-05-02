@@ -13,9 +13,9 @@ import type {
   PayrollSettlementAdjustment,
 } from "@/lib/domain/payroll-settlement";
 import type { TreasuryAccount } from "@/lib/domain/access";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 
-const sTexts = texts.rrhh.settlements;
+const sTexts = txtRrhh.settlements;
 
 type SettlementsListProps = {
   settlements: PayrollSettlement[];

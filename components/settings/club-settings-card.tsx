@@ -8,7 +8,7 @@ import { ClubDataTab } from "@/components/settings/tabs/club-data-tab";
 import { MembersTab } from "@/components/settings/tabs/members-tab";
 import { MembershipSystemsTab } from "@/components/settings/tabs/membership-systems-tab";
 import { PlaceholderTab } from "@/components/settings/tabs/placeholder-tab";
-import { texts } from "@/lib/texts";
+import { settings as txtSettings } from "@/lib/texts";
 import type { SessionContext } from "@/lib/auth/service";
 import type { ClubMember, PendingClubInvitation, TreasurySettings } from "@/lib/domain/access";
 import { getClubSettingsPermissions } from "@/lib/domain/authorization";
@@ -47,13 +47,13 @@ export function ClubSettingsCard({
   const activeClub = context.activeClub;
   const permissions = getClubSettingsPermissions(context.activeMembership);
 
-  const placeholders = texts.settings.club.placeholders;
+  const placeholders = txtSettings.club.placeholders;
 
   const tabs = [
     activeClub
       ? {
           id: "datos-del-club",
-          label: texts.settings.club.tabs.club_data,
+          label: txtSettings.club.tabs.club_data,
           content: (
             <ClubDataTab
               club={activeClub}
@@ -65,7 +65,7 @@ export function ClubSettingsCard({
       : null,
     {
       id: "jornada",
-      label: texts.settings.club.tabs.journey,
+      label: txtSettings.club.tabs.journey,
       content: (
         <PlaceholderTab
           eyebrow={placeholders.journey.eyebrow}
@@ -76,7 +76,7 @@ export function ClubSettingsCard({
     },
     {
       id: "categorias-actividades",
-      label: texts.settings.club.tabs.categories_activities,
+      label: txtSettings.club.tabs.categories_activities,
       content: (
         <CategoriesActivitiesTab
           categories={treasurySettings.categories}
@@ -90,7 +90,7 @@ export function ClubSettingsCard({
     },
     {
       id: "miembros",
-      label: texts.settings.club.tabs.members,
+      label: txtSettings.club.tabs.members,
       content: (
         <MembersTab
           members={members}
@@ -105,7 +105,7 @@ export function ClubSettingsCard({
     },
     {
       id: "numeracion-comprobantes",
-      label: texts.settings.club.tabs.receipt_numbering,
+      label: txtSettings.club.tabs.receipt_numbering,
       content: (
         <PlaceholderTab
           eyebrow={placeholders.receipt_numbering.eyebrow}
@@ -116,7 +116,7 @@ export function ClubSettingsCard({
     },
     {
       id: "notificaciones",
-      label: texts.settings.club.tabs.notifications,
+      label: txtSettings.club.tabs.notifications,
       content: (
         <PlaceholderTab
           eyebrow={placeholders.notifications.eyebrow}
@@ -127,7 +127,7 @@ export function ClubSettingsCard({
     },
     {
       id: "integraciones",
-      label: texts.settings.club.tabs.integrations,
+      label: txtSettings.club.tabs.integrations,
       content: (
         <PlaceholderTab
           eyebrow={placeholders.integrations.eyebrow}
@@ -138,7 +138,7 @@ export function ClubSettingsCard({
     },
     {
       id: "auditoria",
-      label: texts.settings.club.tabs.audit,
+      label: txtSettings.club.tabs.audit,
       content: (
         <PlaceholderTab
           eyebrow={placeholders.audit.eyebrow}
@@ -149,7 +149,7 @@ export function ClubSettingsCard({
     },
     {
       id: "sistema-de-socios",
-      label: texts.settings.club.tabs.membership_systems,
+      label: txtSettings.club.tabs.membership_systems,
       content: (
         <MembershipSystemsTab
           receiptFormats={treasurySettings.receiptFormats}
@@ -162,9 +162,9 @@ export function ClubSettingsCard({
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8">
       <PageContentHeader
-        eyebrow={texts.settings.club.eyebrow}
-        title={texts.settings.club.title}
-        description={texts.settings.club.description}
+        eyebrow={txtSettings.club.eyebrow}
+        title={txtSettings.club.title}
+        description={txtSettings.club.description}
       />
 
       <Card as="section" className="px-5 py-6 sm:px-8 sm:py-8" padding="none">

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getInitials } from "@/components/ui/avatar";
 import { Modal } from "@/components/ui/modal";
 import { ModalFooter } from "@/components/ui/modal-footer";
-import { texts } from "@/lib/texts";
+import { auth as txtAuth, header as txtHeader } from "@/lib/texts";
 
 type AvatarSessionMenuProps = {
   fullName: string;
@@ -55,7 +55,7 @@ export function AvatarSessionMenu({
     <div ref={menuRef} className="relative">
       <button
         type="button"
-        aria-label={texts.header.avatar_menu.trigger_aria_label}
+        aria-label={txtHeader.avatar_menu.trigger_aria_label}
         aria-describedby={avatarUrl ? undefined : fallbackDescriptionId}
         aria-haspopup="menu"
         aria-expanded={isOpen}
@@ -75,7 +75,7 @@ export function AvatarSessionMenu({
           <>
             <span aria-hidden="true">{initials}</span>
             <span id={fallbackDescriptionId} className="sr-only">
-              {texts.header.avatar_menu.fallback_initials_label}
+              {txtHeader.avatar_menu.fallback_initials_label}
             </span>
           </>
         )}
@@ -84,7 +84,7 @@ export function AvatarSessionMenu({
       {isOpen ? (
         <div
           role="menu"
-          aria-label={texts.header.avatar_menu.menu_aria_label}
+          aria-label={txtHeader.avatar_menu.menu_aria_label}
           className="absolute right-0 top-14 z-20 min-w-56 rounded-dialog border border-border bg-card p-2 shadow-soft"
         >
           <button
@@ -96,7 +96,7 @@ export function AvatarSessionMenu({
             }}
             className="w-full rounded-btn px-4 py-3 text-left text-sm font-medium text-destructive transition hover:bg-destructive/10"
           >
-            {texts.header.avatar_menu.sign_out}
+            {txtHeader.avatar_menu.sign_out}
           </button>
         </div>
       ) : null}
@@ -104,16 +104,16 @@ export function AvatarSessionMenu({
       <Modal
         open={isConfirmingSignOut}
         onClose={() => setIsConfirmingSignOut(false)}
-        title={texts.auth.sign_out.confirm_title}
-        description={texts.auth.sign_out.confirm_description}
+        title={txtAuth.sign_out.confirm_title}
+        description={txtAuth.sign_out.confirm_description}
         size="sm"
       >
         <form action="/auth/sign-out" method="get">
           <ModalFooter
             onCancel={() => setIsConfirmingSignOut(false)}
-            cancelLabel={texts.auth.sign_out.cancel_cta}
-            submitLabel={texts.auth.sign_out.confirm_cta}
-            pendingLabel={texts.auth.sign_out.loading}
+            cancelLabel={txtAuth.sign_out.cancel_cta}
+            submitLabel={txtAuth.sign_out.confirm_cta}
+            pendingLabel={txtAuth.sign_out.loading}
             submitVariant="destructive"
           />
         </form>

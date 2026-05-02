@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { FormSelect } from "@/components/ui/modal-form";
 import { PendingFieldset, PendingStatusText } from "@/components/ui/pending-form";
 import type { AvailableClub } from "@/lib/domain/access";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard } from "@/lib/texts";
 
 type ActiveClubSelectorProps = {
   clubs: AvailableClub[];
@@ -33,7 +33,7 @@ export function ActiveClubSelector({
               inline ? "sr-only" : "text-xs uppercase tracking-card-eyebrow text-muted-foreground"
             )}
           >
-            {texts.dashboard.club_selector.label}
+            {txtDashboard.club_selector.label}
           </span>
           <FormSelect
             name="club_id"
@@ -53,8 +53,8 @@ export function ActiveClubSelector({
           </FormSelect>
         </label>
         <PendingStatusText
-          idleLabel={texts.dashboard.club_selector.helper}
-          pendingLabel={texts.dashboard.club_selector.loading}
+          idleLabel={txtDashboard.club_selector.helper}
+          pendingLabel={txtDashboard.club_selector.loading}
           className={inline ? "sr-only" : "text-meta"}
         />
       </PendingFieldset>

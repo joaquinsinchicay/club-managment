@@ -2,7 +2,7 @@
 
 import { type ReactNode } from "react";
 
-import { texts } from "@/lib/texts";
+import { app as txtApp } from "@/lib/texts";
 import { BlockingOverlay } from "@/components/ui/overlay";
 
 export type ModalSize = "sm" | "md" | "lg";
@@ -82,7 +82,7 @@ export function Modal({
               }}
               disabled={closeDisabled}
               className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-              aria-label={texts.app.modal_close_aria}
+              aria-label={txtApp.modal_close_aria}
             >
               <svg
                 aria-hidden="true"

@@ -24,9 +24,9 @@ import type { StaffContractRevision } from "@/lib/domain/staff-contract-revision
 import type { PayrollSettlement } from "@/lib/domain/payroll-settlement";
 import type { StaffContractAttachment } from "@/lib/services/staff-contract-attachment-service";
 import { useContractDetail } from "@/lib/hooks/use-contract-detail";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 
-const cdTexts = texts.rrhh.contract_detail;
+const cdTexts = txtRrhh.contract_detail;
 
 type ContractDetailViewProps = {
   contract: StaffContract;

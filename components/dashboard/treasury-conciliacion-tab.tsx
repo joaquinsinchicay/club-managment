@@ -34,7 +34,7 @@ import type {
   ConsolidationTransferEdit,
   TreasuryConsolidationDashboard,
 } from "@/lib/domain/access";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 type TreasuryConciliacionTabProps = {
@@ -122,7 +122,7 @@ export function TreasuryConciliacionTab({
   const [isDateNavigationPending, startDateNavigationTransition] = useTransition();
 
   const pendingOverlayLabel = isEditSubmissionPending
-    ? texts.dashboard.consolidation.save_changes_loading
+    ? txtDashboard.consolidation.save_changes_loading
     : null;
 
   useEffect(() => {
@@ -235,21 +235,21 @@ export function TreasuryConciliacionTab({
       {/* KPI strip */}
       <div className="grid gap-3 sm:grid-cols-3">
         <KpiTile
-          label={texts.dashboard.treasury_role.conciliacion_kpi_pending_label}
+          label={txtDashboard.treasury_role.conciliacion_kpi_pending_label}
           value={String(pendingCount)}
-          suffix={texts.dashboard.treasury_role.conciliacion_kpi_pending_suffix}
+          suffix={txtDashboard.treasury_role.conciliacion_kpi_pending_suffix}
           tone="warning"
         />
         <KpiTile
-          label={texts.dashboard.treasury_role.conciliacion_kpi_amount_label}
+          label={txtDashboard.treasury_role.conciliacion_kpi_amount_label}
           value={`$ ${formatLocalizedAmount(Math.abs(pendingArsNet))}`}
-          suffix={texts.dashboard.treasury_role.conciliacion_kpi_amount_suffix}
+          suffix={txtDashboard.treasury_role.conciliacion_kpi_amount_suffix}
           tone="default"
         />
         <KpiTile
-          label={texts.dashboard.treasury_role.conciliacion_kpi_approved_label}
+          label={txtDashboard.treasury_role.conciliacion_kpi_approved_label}
           value={String(approvedToday)}
-          suffix={texts.dashboard.treasury_role.conciliacion_kpi_approved_suffix}
+          suffix={txtDashboard.treasury_role.conciliacion_kpi_approved_suffix}
           tone="success"
         />
       </div>
@@ -259,21 +259,21 @@ export function TreasuryConciliacionTab({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold tracking-tight text-foreground">
-              {texts.dashboard.treasury_role.conciliacion_movements_title}
+              {txtDashboard.treasury_role.conciliacion_movements_title}
             </h3>
             <p className="mt-0.5 text-meta text-muted-foreground">
-              {texts.dashboard.treasury_role.conciliacion_movements_subtitle}
+              {txtDashboard.treasury_role.conciliacion_movements_subtitle}
             </p>
             {isSessionAutoClosed ? (
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Badge
                   tone="warning"
-                  label={texts.dashboard.treasury_role.conciliacion_auto_closed_badge}
+                  label={txtDashboard.treasury_role.conciliacion_auto_closed_badge}
                 />
                 <span className="text-meta text-muted-foreground">
                   {autoClosedAtLabel
-                    ? `${texts.dashboard.treasury_role.conciliacion_auto_closed_description} (${autoClosedAtLabel})`
-                    : texts.dashboard.treasury_role.conciliacion_auto_closed_description}
+                    ? `${txtDashboard.treasury_role.conciliacion_auto_closed_description} (${autoClosedAtLabel})`
+                    : txtDashboard.treasury_role.conciliacion_auto_closed_description}
                 </span>
               </div>
             ) : null}
@@ -282,8 +282,8 @@ export function TreasuryConciliacionTab({
             <form action={executeDailyConsolidationAction}>
               <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
               <PendingSubmitButton
-                idleLabel={texts.dashboard.treasury_role.conciliacion_approve_all_cta}
-                pendingLabel={texts.dashboard.consolidation.execute_loading}
+                idleLabel={txtDashboard.treasury_role.conciliacion_approve_all_cta}
+                pendingLabel={txtDashboard.consolidation.execute_loading}
                 className={buttonClass({ variant: "secondary", radius: "btn" })}
               />
             </form>
@@ -298,7 +298,7 @@ export function TreasuryConciliacionTab({
           >
             <label className="flex-1 grid gap-1.5 text-sm text-foreground">
               <span className="text-eyebrow font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
-                {texts.dashboard.treasury_role.conciliacion_date_label}
+                {txtDashboard.treasury_role.conciliacion_date_label}
               </span>
               <FormInput
                 type="date"
@@ -317,10 +317,10 @@ export function TreasuryConciliacionTab({
               {isDateNavigationPending ? (
                 <>
                   <Spinner />
-                  <span>{texts.dashboard.consolidation.load_loading}</span>
+                  <span>{txtDashboard.consolidation.load_loading}</span>
                 </>
               ) : (
-                <span>{texts.dashboard.treasury_role.conciliacion_date_submit_cta}</span>
+                <span>{txtDashboard.treasury_role.conciliacion_date_submit_cta}</span>
               )}
             </button>
           </PendingFieldset>
@@ -333,7 +333,7 @@ export function TreasuryConciliacionTab({
               active={selectedAccountId === null}
               onClick={() => setSelectedAccountId(null)}
             >
-              {texts.dashboard.treasury_role.conciliacion_filter_all_accounts}
+              {txtDashboard.treasury_role.conciliacion_filter_all_accounts}
             </ChipButton>
             {accountChips.map((account) => (
               <ChipButton
@@ -351,11 +351,11 @@ export function TreasuryConciliacionTab({
         <div className="mt-4">
           {isSessionOpen ? (
             <EmptyState
-              title={texts.dashboard.treasury_role.conciliacion_session_open_title}
-              description={texts.dashboard.treasury_role.conciliacion_session_open_description}
+              title={txtDashboard.treasury_role.conciliacion_session_open_title}
+              description={txtDashboard.treasury_role.conciliacion_session_open_description}
             />
           ) : visibleMovements.length === 0 ? (
-            <DataTableEmpty title={texts.dashboard.treasury_role.conciliacion_empty_pending} />
+            <DataTableEmpty title={txtDashboard.treasury_role.conciliacion_empty_pending} />
           ) : (
             <DataTable density="compact">
               <DataTableBody>
@@ -399,13 +399,13 @@ export function TreasuryConciliacionTab({
                                 movement.movementDisplayId,
                                 movement.createdByUserName,
                                 movement.receiptNumber
-                                  ? `${texts.dashboard.treasury.detail_receipt_label} ${movement.receiptNumber}`
+                                  ? `${txtDashboard.treasury.detail_receipt_label} ${movement.receiptNumber}`
                                   : null,
                                 movement.transferReference
-                                  ? `${texts.dashboard.treasury.detail_transfer_label} ${movement.transferReference.slice(-6)}`
+                                  ? `${txtDashboard.treasury.detail_transfer_label} ${movement.transferReference.slice(-6)}`
                                   : null,
                                 movement.fxOperationReference
-                                  ? `${texts.dashboard.treasury.detail_fx_label} ${movement.fxOperationReference.slice(-6)}`
+                                  ? `${txtDashboard.treasury.detail_fx_label} ${movement.fxOperationReference.slice(-6)}`
                                   : null
                               ]
                                 .filter(Boolean)
@@ -428,12 +428,12 @@ export function TreasuryConciliacionTab({
                           <div className="flex flex-wrap items-center justify-end gap-1.5">
                             <DataTableChip tone={movement.status === "integrated" ? "neutral" : "warning"}>
                               {movement.status === "integrated"
-                                ? texts.dashboard.treasury_role.conciliacion_status_integrated
-                                : texts.dashboard.treasury_role.conciliacion_status_pending}
+                                ? txtDashboard.treasury_role.conciliacion_status_integrated
+                                : txtDashboard.treasury_role.conciliacion_status_pending}
                             </DataTableChip>
                             {!movement.isValid ? (
                               <Badge
-                                label={texts.dashboard.treasury_role.conciliacion_status_invalid}
+                                label={txtDashboard.treasury_role.conciliacion_status_invalid}
                                 tone="danger"
                               />
                             ) : null}
@@ -443,7 +443,7 @@ export function TreasuryConciliacionTab({
                         {isPending ? (
                           <DataTableActions>
                             <EditIconButton
-                              label={texts.dashboard.treasury_role.conciliacion_edit_cta}
+                              label={txtDashboard.treasury_role.conciliacion_edit_cta}
                               onClick={() => {
                                 const editableTransfer = buildEditableTransfer(movement, [
                                   ...dashboard.pendingMovements,
@@ -479,13 +479,13 @@ export function TreasuryConciliacionTab({
         }}
         title={
           editingTransfer
-            ? texts.dashboard.consolidation.edit_transfer_title
-            : texts.dashboard.consolidation.edit_title
+            ? txtDashboard.consolidation.edit_transfer_title
+            : txtDashboard.consolidation.edit_title
         }
         description={
           editingTransfer
-            ? texts.dashboard.consolidation.edit_transfer_description
-            : texts.dashboard.consolidation.edit_description
+            ? txtDashboard.consolidation.edit_transfer_description
+            : txtDashboard.consolidation.edit_description
         }
         closeDisabled={isEditSubmissionPending}
         size="md"
@@ -493,8 +493,8 @@ export function TreasuryConciliacionTab({
         {editingTransfer ? (
           <ConsolidationTransferEditForm
             submitAction={handleUpdateTransferBeforeConsolidation}
-            submitLabel={texts.dashboard.consolidation.save_changes_cta}
-            pendingLabel={texts.dashboard.consolidation.save_changes_loading}
+            submitLabel={txtDashboard.consolidation.save_changes_cta}
+            pendingLabel={txtDashboard.consolidation.save_changes_loading}
             transfer={editingTransfer}
             extraHiddenFields={
               <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />
@@ -503,10 +503,10 @@ export function TreasuryConciliacionTab({
         ) : editingMovement ? (
           <SecretariaMovementEditForm
             submitAction={handleUpdateMovementBeforeConsolidation}
-            submitLabel={texts.dashboard.consolidation.save_changes_cta}
-            pendingLabel={texts.dashboard.consolidation.save_changes_loading}
+            submitLabel={txtDashboard.consolidation.save_changes_cta}
+            pendingLabel={txtDashboard.consolidation.save_changes_loading}
             movement={editingMovement}
-            copy={texts.dashboard.consolidation.edit_form}
+            copy={txtDashboard.consolidation.edit_form}
             editableMovementDate
             extraHiddenFields={
               <input type="hidden" name="consolidation_date" value={dashboard.consolidationDate} />

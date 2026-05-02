@@ -47,7 +47,7 @@ import {
   COST_CENTER_TYPE_LABELS as TYPE_LABEL,
 } from "@/lib/labels";
 import { triggerClientFeedback } from "@/lib/client-feedback";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 import { Avatar } from "@/components/ui/avatar";
@@ -99,7 +99,7 @@ type CostCentersTabProps = {
 // (Fase 4 · T1.2). Acá solo conservamos los filtros de UI que dependen
 // del orden visual (no son traducciones, son listas ordenadas).
 
-const tCC = texts.dashboard.treasury_role.cost_centers;
+const tCC = txtDashboard.treasury_role.cost_centers;
 
 const TYPE_FILTER_ORDER: Array<{ value: TypeFilter; label: string }> = [
   { value: "all", label: tCC.filter_all },

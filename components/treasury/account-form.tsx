@@ -19,7 +19,7 @@ import type {
   TreasuryBankAccountSubtype,
   TreasuryCurrencyCode
 } from "@/lib/domain/access";
-import { texts } from "@/lib/texts";
+import { settings as txtSettings } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 const CURRENCY_OPTIONS: TreasuryCurrencyCode[] = ["ARS", "USD"];
@@ -70,7 +70,7 @@ function InitialBalanceField({
         inputMode="decimal"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        aria-label={`${texts.settings.club.treasury.initial_balance_label} ${code}`}
+        aria-label={`${txtSettings.club.treasury.initial_balance_label} ${code}`}
         className="min-h-10 w-full rounded-card border border-transparent bg-transparent px-2 py-2 text-right text-sm tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10"
       />
     </label>
@@ -150,7 +150,7 @@ export function TreasuryAccountForm({
   const composedBankName = useMemo(() => {
     if (!showBankFields) return "";
     if (!bankEntity || !bankSubtype) return "";
-    const subtypeLabel = texts.settings.club.treasury.bank_account_subtypes[bankSubtype];
+    const subtypeLabel = txtSettings.club.treasury.bank_account_subtypes[bankSubtype];
     return `${bankEntity} - ${subtypeLabel}`;
   }, [showBankFields, bankEntity, bankSubtype]);
 
@@ -162,20 +162,20 @@ export function TreasuryAccountForm({
 
   function validateAndSubmit(event: React.FormEvent<HTMLFormElement>) {
     const errors: typeof formErrors = {};
-    if (!effectiveName.trim()) errors.name = texts.settings.club.treasury.feedback.account_name_required;
-    if (!accountType) errors.accountType = texts.settings.club.treasury.feedback.account_type_required;
+    if (!effectiveName.trim()) errors.name = txtSettings.club.treasury.feedback.account_name_required;
+    if (!accountType) errors.accountType = txtSettings.club.treasury.feedback.account_type_required;
     if (!selectedCurrency) {
-      errors.currencies = texts.settings.club.treasury.feedback.account_currencies_required;
+      errors.currencies = txtSettings.club.treasury.feedback.account_currencies_required;
     }
     if (showBankFields) {
-      if (!bankEntity) errors.bankEntity = texts.settings.club.treasury.feedback.bank_entity_required;
-      if (!bankSubtype) errors.bankSubtype = texts.settings.club.treasury.feedback.bank_account_subtype_required;
+      if (!bankEntity) errors.bankEntity = txtSettings.club.treasury.feedback.bank_entity_required;
+      if (!bankSubtype) errors.bankSubtype = txtSettings.club.treasury.feedback.bank_account_subtype_required;
       if (cbuValue.trim() && !CBU_REGEX.test(cbuValue.trim())) {
-        errors.cbu = texts.settings.club.treasury.feedback.invalid_cbu;
+        errors.cbu = txtSettings.club.treasury.feedback.invalid_cbu;
       }
     }
     if (showWalletFields && aliasValue.trim() && !ALIAS_REGEX.test(aliasValue.trim())) {
-      errors.alias = texts.settings.club.treasury.feedback.invalid_alias;
+      errors.alias = txtSettings.club.treasury.feedback.invalid_alias;
     }
     if (Object.keys(errors).length > 0) {
       event.preventDefault();
@@ -198,7 +198,7 @@ export function TreasuryAccountForm({
         {/* Tipo de cuenta */}
         <div className="grid gap-2">
           <FormFieldLabel required>
-            {texts.settings.club.treasury.account_type_label}
+            {txtSettings.club.treasury.account_type_label}
           </FormFieldLabel>
           <div className="grid grid-cols-3 gap-2">
             {ACCOUNT_TYPE_OPTIONS.map((type) => {
@@ -223,9 +223,9 @@ export function TreasuryAccountForm({
                   )}
                 >
                   <span aria-hidden="true" className="text-2xl leading-none">
-                    {texts.settings.club.treasury.account_type_emojis[type]}
+                    {txtSettings.club.treasury.account_type_emojis[type]}
                   </span>
-                  <span>{texts.settings.club.treasury.account_type_cards[type]}</span>
+                  <span>{txtSettings.club.treasury.account_type_cards[type]}</span>
                 </button>
               );
             })}
@@ -236,13 +236,13 @@ export function TreasuryAccountForm({
         {/* Nombre */}
         <FormField>
           <FormFieldLabel required>
-            {texts.settings.club.treasury.account_name_label}
+            {txtSettings.club.treasury.account_name_label}
           </FormFieldLabel>
           {showBankFields ? (
             <FormInput
               type="text"
               value={composedBankName}
-              placeholder={texts.settings.club.treasury.account_name_banco_auto_placeholder}
+              placeholder={txtSettings.club.treasury.account_name_banco_auto_placeholder}
               readOnly
               aria-readonly
               tabIndex={-1}
@@ -256,13 +256,13 @@ export function TreasuryAccountForm({
                 setNameValue(event.target.value);
                 setFormErrors((prev) => ({ ...prev, name: undefined }));
               }}
-              placeholder={texts.settings.club.treasury.account_name_placeholder}
+              placeholder={txtSettings.club.treasury.account_name_placeholder}
             />
           )}
           <FormHelpText>
             {showBankFields
-              ? texts.settings.club.treasury.account_name_banco_helper
-              : texts.settings.club.treasury.account_name_helper}
+              ? txtSettings.club.treasury.account_name_banco_helper
+              : txtSettings.club.treasury.account_name_helper}
           </FormHelpText>
           {formErrors.name ? <FormError>{formErrors.name}</FormError> : null}
         </FormField>
@@ -270,7 +270,7 @@ export function TreasuryAccountForm({
         {/* Moneda — selector excluyente */}
         <div className="grid gap-2">
           <FormFieldLabel required>
-            {texts.settings.club.treasury.account_currencies_label}
+            {txtSettings.club.treasury.account_currencies_label}
           </FormFieldLabel>
           <div className="flex flex-wrap gap-2">
             {CURRENCY_OPTIONS.map((code) => {
@@ -309,7 +309,7 @@ export function TreasuryAccountForm({
             <input type="hidden" name="currencies" value={selectedCurrency} />
           ) : null}
           <FormHelpText>
-            {texts.settings.club.treasury.account_currencies_helper}
+            {txtSettings.club.treasury.account_currencies_helper}
           </FormHelpText>
           {formErrors.currencies ? <FormError>{formErrors.currencies}</FormError> : null}
         </div>
@@ -320,7 +320,7 @@ export function TreasuryAccountForm({
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField>
                 <FormFieldLabel required>
-                  {texts.settings.club.treasury.bank_entity_label}
+                  {txtSettings.club.treasury.bank_entity_label}
                 </FormFieldLabel>
                 <FormSelect
                   name={isEditMode ? undefined : "bank_entity"}
@@ -331,8 +331,8 @@ export function TreasuryAccountForm({
                     setFormErrors((prev) => ({ ...prev, bankEntity: undefined, name: undefined }));
                   }}
                 >
-                  <option value="">{texts.settings.club.treasury.bank_entity_placeholder}</option>
-                  {texts.settings.club.treasury.bank_entities.map((entity) => (
+                  <option value="">{txtSettings.club.treasury.bank_entity_placeholder}</option>
+                  {txtSettings.club.treasury.bank_entities.map((entity) => (
                     <option key={entity} value={entity}>{entity}</option>
                   ))}
                 </FormSelect>
@@ -344,7 +344,7 @@ export function TreasuryAccountForm({
 
               <FormField>
                 <FormFieldLabel required>
-                  {texts.settings.club.treasury.bank_account_subtype_label}
+                  {txtSettings.club.treasury.bank_account_subtype_label}
                 </FormFieldLabel>
                 <FormSelect
                   name={isEditMode ? undefined : "bank_account_subtype"}
@@ -355,10 +355,10 @@ export function TreasuryAccountForm({
                     setFormErrors((prev) => ({ ...prev, bankSubtype: undefined, name: undefined }));
                   }}
                 >
-                  <option value="">{texts.settings.club.treasury.bank_account_subtype_placeholder}</option>
+                  <option value="">{txtSettings.club.treasury.bank_account_subtype_placeholder}</option>
                   {SUBTYPE_OPTIONS.map((subtype) => (
                     <option key={subtype} value={subtype}>
-                      {texts.settings.club.treasury.bank_account_subtypes[subtype]}
+                      {txtSettings.club.treasury.bank_account_subtypes[subtype]}
                     </option>
                   ))}
                 </FormSelect>
@@ -371,17 +371,17 @@ export function TreasuryAccountForm({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField>
-                <FormFieldLabel>{texts.settings.club.treasury.account_number_label}</FormFieldLabel>
+                <FormFieldLabel>{txtSettings.club.treasury.account_number_label}</FormFieldLabel>
                 <FormInput
                   type="text"
                   name="account_number"
                   defaultValue={defaultAccount?.accountNumber ?? ""}
-                  placeholder={texts.settings.club.treasury.account_number_placeholder}
+                  placeholder={txtSettings.club.treasury.account_number_placeholder}
                 />
               </FormField>
 
               <FormField>
-                <FormFieldLabel>{texts.settings.club.treasury.cbu_cvu_label}</FormFieldLabel>
+                <FormFieldLabel>{txtSettings.club.treasury.cbu_cvu_label}</FormFieldLabel>
                 <FormInput
                   type="text"
                   name="cbu_cvu"
@@ -392,7 +392,7 @@ export function TreasuryAccountForm({
                     setCbuValue(event.target.value.replace(/\D/g, "").slice(0, 22));
                     setFormErrors((prev) => ({ ...prev, cbu: undefined }));
                   }}
-                  placeholder={texts.settings.club.treasury.cbu_cvu_placeholder}
+                  placeholder={txtSettings.club.treasury.cbu_cvu_placeholder}
                 />
                 {formErrors.cbu ? <FormError>{formErrors.cbu}</FormError> : null}
               </FormField>
@@ -404,22 +404,22 @@ export function TreasuryAccountForm({
         {showWalletFields ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField>
-              <FormFieldLabel>{texts.settings.club.treasury.wallet_provider_label}</FormFieldLabel>
+              <FormFieldLabel>{txtSettings.club.treasury.wallet_provider_label}</FormFieldLabel>
               <FormSelect
                 name="wallet_provider"
                 defaultValue={
                   defaultAccount?.accountType === "billetera_virtual" ? (defaultAccount?.bankEntity ?? "") : ""
                 }
               >
-                <option value="">{texts.settings.club.treasury.wallet_provider_placeholder}</option>
-                {texts.settings.club.treasury.wallet_providers.map((provider) => (
+                <option value="">{txtSettings.club.treasury.wallet_provider_placeholder}</option>
+                {txtSettings.club.treasury.wallet_providers.map((provider) => (
                   <option key={provider} value={provider}>{provider}</option>
                 ))}
               </FormSelect>
             </FormField>
 
             <FormField>
-              <FormFieldLabel>{texts.settings.club.treasury.alias_label}</FormFieldLabel>
+              <FormFieldLabel>{txtSettings.club.treasury.alias_label}</FormFieldLabel>
               <FormInput
                 type="text"
                 name="alias"
@@ -430,7 +430,7 @@ export function TreasuryAccountForm({
                   setAliasValue(sanitized);
                   setFormErrors((prev) => ({ ...prev, alias: undefined }));
                 }}
-                placeholder={texts.settings.club.treasury.alias_placeholder}
+                placeholder={txtSettings.club.treasury.alias_placeholder}
               />
               {formErrors.alias ? <FormError>{formErrors.alias}</FormError> : null}
             </FormField>
@@ -440,7 +440,7 @@ export function TreasuryAccountForm({
         {/* Saldo inicial de la moneda operativa */}
         {selectedCurrency ? (
           <div className="grid gap-2">
-            <FormFieldLabel>{texts.settings.club.treasury.initial_balance_label}</FormFieldLabel>
+            <FormFieldLabel>{txtSettings.club.treasury.initial_balance_label}</FormFieldLabel>
             <div className="grid gap-3 sm:grid-cols-2">
               <InitialBalanceField
                 code={selectedCurrency}
@@ -448,7 +448,7 @@ export function TreasuryAccountForm({
                 onChange={(value) => handleBalanceChange(selectedCurrency, value)}
               />
             </div>
-            <FormHelpText>{texts.settings.club.treasury.initial_balance_helper}</FormHelpText>
+            <FormHelpText>{txtSettings.club.treasury.initial_balance_helper}</FormHelpText>
           </div>
         ) : null}
 
@@ -456,14 +456,14 @@ export function TreasuryAccountForm({
         <FormCheckboxCard
           name="__available_for_secretaria_display"
           value="on"
-          label={texts.settings.club.treasury.visibility_secretaria_checkbox}
+          label={txtSettings.club.treasury.visibility_secretaria_checkbox}
           checked={availableForSecretaria}
           onChange={setAvailableForSecretaria}
         />
 
         <ModalFooter
           onCancel={onCancel}
-          cancelLabel={cancelLabel ?? texts.settings.club.treasury.cancel_cta}
+          cancelLabel={cancelLabel ?? txtSettings.club.treasury.cancel_cta}
           submitLabel={submitLabel}
           pendingLabel={pendingLabel}
         />

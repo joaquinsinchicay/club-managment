@@ -17,7 +17,7 @@ import {
   parseLocalizedAmount,
   sanitizeLocalizedAmountInput
 } from "@/lib/amounts";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard } from "@/lib/texts";
 import type { DailyCashSessionValidation } from "@/lib/domain/access";
 
 type DailySessionBalanceCardProps = {
@@ -36,18 +36,18 @@ type DraftState = {
 function getPageCopy(mode: DailyCashSessionValidation["mode"]) {
   if (mode === "open") {
     return {
-      eyebrow: texts.dashboard.treasury.opening_eyebrow,
-      title: texts.dashboard.treasury.opening_title,
-      description: texts.dashboard.treasury.opening_description,
-      submitLabel: texts.dashboard.treasury.confirm_open_session_cta
+      eyebrow: txtDashboard.treasury.opening_eyebrow,
+      title: txtDashboard.treasury.opening_title,
+      description: txtDashboard.treasury.opening_description,
+      submitLabel: txtDashboard.treasury.confirm_open_session_cta
     };
   }
 
   return {
-    eyebrow: texts.dashboard.treasury.closing_eyebrow,
-    title: texts.dashboard.treasury.closing_title,
-    description: texts.dashboard.treasury.closing_description,
-    submitLabel: texts.dashboard.treasury.confirm_close_session_cta
+    eyebrow: txtDashboard.treasury.closing_eyebrow,
+    title: txtDashboard.treasury.closing_title,
+    description: txtDashboard.treasury.closing_description,
+    submitLabel: txtDashboard.treasury.confirm_close_session_cta
   };
 }
 
@@ -75,7 +75,7 @@ function buildDifference(expectedBalance: number, declaredBalance: string) {
 }
 
 function getMovementTypeLabel(type: "ingreso" | "egreso") {
-  return texts.dashboard.treasury.movement_types[type];
+  return txtDashboard.treasury.movement_types[type];
 }
 
 export function DailySessionBalanceCard({
@@ -119,24 +119,24 @@ export function DailySessionBalanceCard({
         title={pageCopy.title}
         description={pageCopy.description}
         backHref="/secretary"
-        backLabel={texts.dashboard.treasury.back_to_secretaria_cta}
+        backLabel={txtDashboard.treasury.back_to_secretaria_cta}
       />
 
       <Card as="section" maxWidth="5xl" padding="spacious">
         <div className="space-y-5">
           <p className="text-sm leading-6 text-muted-foreground">
-            {texts.dashboard.treasury.session_validation_description}
+            {txtDashboard.treasury.session_validation_description}
           </p>
 
           {drafts.length === 0 ? (
             <EmptyState
-              title={texts.dashboard.treasury.session_validation_empty}
+              title={txtDashboard.treasury.session_validation_empty}
               action={
                 <NavigationLinkWithLoader
                   href="/secretary"
                   className={buttonClass({ variant: "secondary" })}
                 >
-                  {texts.dashboard.treasury.back_to_secretaria_cta}
+                  {txtDashboard.treasury.back_to_secretaria_cta}
                 </NavigationLinkWithLoader>
               }
             />
@@ -169,7 +169,7 @@ export function DailySessionBalanceCard({
                         <div className="mt-4 grid gap-3 sm:grid-cols-3">
                           <div className="rounded-card border border-border bg-card px-4 py-3">
                             <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
-                              {texts.dashboard.treasury.expected_balance_label}
+                              {txtDashboard.treasury.expected_balance_label}
                             </p>
                             <p className="mt-1 text-base font-semibold text-foreground">
                               {formatLocalizedAmount(draft.expectedBalance)}
@@ -177,7 +177,7 @@ export function DailySessionBalanceCard({
                           </div>
 
                           <label className="grid gap-2 text-sm text-foreground">
-                            <span className="font-medium">{texts.dashboard.treasury.declared_balance_label}</span>
+                            <span className="font-medium">{txtDashboard.treasury.declared_balance_label}</span>
                             <FormInput
                               type="text"
                               name="declared_balance"
@@ -215,7 +215,7 @@ export function DailySessionBalanceCard({
 
                           <div className="rounded-card border border-border bg-card px-4 py-3">
                             <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
-                              {texts.dashboard.treasury.difference_label}
+                              {txtDashboard.treasury.difference_label}
                             </p>
                             <p className="mt-1 text-base font-semibold text-foreground">
                               {formatLocalizedAmount(difference.differenceAmount)}
@@ -225,7 +225,7 @@ export function DailySessionBalanceCard({
 
                         {adjustmentType ? (
                           <p className="mt-3 text-sm text-muted-foreground">
-                            {texts.dashboard.treasury.adjustment_message}{" "}
+                            {txtDashboard.treasury.adjustment_message}{" "}
                             <span className="font-semibold text-foreground">
                               {getMovementTypeLabel(adjustmentType)}
                             </span>
@@ -240,10 +240,10 @@ export function DailySessionBalanceCard({
                   <div className="rounded-card border border-border bg-card p-4">
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold text-foreground">
-                        {texts.dashboard.treasury.adjustment_preview_title}
+                        {txtDashboard.treasury.adjustment_preview_title}
                       </h3>
                       <p className="text-sm leading-6 text-muted-foreground">
-                        {texts.dashboard.treasury.adjustment_preview_description}
+                        {txtDashboard.treasury.adjustment_preview_description}
                       </p>
                     </div>
 
@@ -275,8 +275,8 @@ export function DailySessionBalanceCard({
                     idleLabel={pageCopy.submitLabel}
                     pendingLabel={
                       validation.mode === "open"
-                        ? texts.dashboard.treasury.confirm_open_session_loading
-                        : texts.dashboard.treasury.confirm_close_session_loading
+                        ? txtDashboard.treasury.confirm_open_session_loading
+                        : txtDashboard.treasury.confirm_close_session_loading
                     }
                     className={buttonClass({ variant: "primary" })}
                   />
@@ -284,7 +284,7 @@ export function DailySessionBalanceCard({
                     href="/secretary"
                     className={buttonClass({ variant: "secondary" })}
                   >
-                    {texts.dashboard.treasury.cancel_session_cta}
+                    {txtDashboard.treasury.cancel_session_cta}
                   </NavigationLinkWithLoader>
                 </div>
               </PendingFieldset>

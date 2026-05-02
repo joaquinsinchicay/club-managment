@@ -40,7 +40,7 @@ import {
   buildPayrollCsvFileName,
   formatPayrollPendingCsv,
 } from "@/lib/services/treasury-payroll-csv";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard, rrhh as txtRrhh } from "@/lib/texts";
 
 type Props = {
   settlements: PayrollSettlement[];
@@ -63,8 +63,8 @@ type SortKey =
   | "staff_asc"
   | "staff_desc";
 
-const tTexts = texts.dashboard.treasury.payroll;
-const sTexts = texts.rrhh.settlements;
+const tTexts = txtDashboard.treasury.payroll;
+const sTexts = txtRrhh.settlements;
 
 function formatAmount(amount: number | null | undefined, currencyCode: string): string {
   if (amount === null || amount === undefined) return "—";

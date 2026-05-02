@@ -29,7 +29,7 @@ import {
   type SessionBalanceDraftBase,
   useSessionBalanceDraft,
 } from "@/lib/hooks/use-session-balance-draft";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 type CloseSessionModalFormProps = {
@@ -101,7 +101,7 @@ export function CloseSessionModalForm({
     };
   }
 
-  const warningText = texts.dashboard.treasury.close_session_warning.replace(
+  const warningText = txtDashboard.treasury.close_session_warning.replace(
     "{userName}",
     currentUserDisplayName
   );
@@ -127,11 +127,11 @@ export function CloseSessionModalForm({
         {/* Fecha + Hora */}
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
-            <FormFieldLabel>{texts.dashboard.treasury.close_session_date_label}</FormFieldLabel>
+            <FormFieldLabel>{txtDashboard.treasury.close_session_date_label}</FormFieldLabel>
             <FormReadonly>{validation.sessionDate}</FormReadonly>
           </div>
           <div className="flex flex-col gap-2">
-            <FormFieldLabel>{texts.dashboard.treasury.close_session_time_label}</FormFieldLabel>
+            <FormFieldLabel>{txtDashboard.treasury.close_session_time_label}</FormFieldLabel>
             <FormReadonly>{timeString}</FormReadonly>
           </div>
         </div>
@@ -139,23 +139,23 @@ export function CloseSessionModalForm({
         {/* Resumen del día */}
         <div className="grid grid-cols-4 gap-3 rounded-card border border-border bg-secondary-subtle px-4 py-3">
           <div>
-            <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_movements}</p>
+            <p className="text-xs text-muted-foreground">{txtDashboard.treasury.close_session_summary_movements}</p>
             <p className="mt-0.5 text-h4 font-semibold tabular-nums text-foreground">{summary.total}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_ingresos}</p>
+            <p className="text-xs text-muted-foreground">{txtDashboard.treasury.close_session_summary_ingresos}</p>
             <p className="mt-0.5 text-h4 font-semibold tabular-nums text-success">
               + {formatLocalizedAmount(summary.ingresos)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_egresos}</p>
+            <p className="text-xs text-muted-foreground">{txtDashboard.treasury.close_session_summary_egresos}</p>
             <p className="mt-0.5 text-h4 font-semibold tabular-nums text-ds-red-700">
               − {formatLocalizedAmount(summary.egresos)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">{texts.dashboard.treasury.close_session_summary_transfers}</p>
+            <p className="text-xs text-muted-foreground">{txtDashboard.treasury.close_session_summary_transfers}</p>
             <p className="mt-0.5 text-h4 font-semibold tabular-nums text-foreground">{summary.transfers}</p>
           </div>
         </div>
@@ -163,15 +163,15 @@ export function CloseSessionModalForm({
         {/* Tabla de arqueo */}
         <div className="flex flex-col gap-2">
           <FormSection required>
-            {texts.dashboard.treasury.close_session_table_account}
+            {txtDashboard.treasury.close_session_table_account}
           </FormSection>
           <DataTable density="compact" gridColumns="1.4fr 90px 90px 140px 100px">
             <DataTableHeader>
-              <DataTableHeadCell>{texts.dashboard.treasury.close_session_table_account}</DataTableHeadCell>
-              <DataTableHeadCell align="right">{texts.dashboard.treasury.close_session_table_opening}</DataTableHeadCell>
-              <DataTableHeadCell align="right">{texts.dashboard.treasury.close_session_table_net_movements}</DataTableHeadCell>
-              <DataTableHeadCell align="right">{texts.dashboard.treasury.close_session_table_real_balance}</DataTableHeadCell>
-              <DataTableHeadCell align="right">{texts.dashboard.treasury.close_session_table_difference}</DataTableHeadCell>
+              <DataTableHeadCell>{txtDashboard.treasury.close_session_table_account}</DataTableHeadCell>
+              <DataTableHeadCell align="right">{txtDashboard.treasury.close_session_table_opening}</DataTableHeadCell>
+              <DataTableHeadCell align="right">{txtDashboard.treasury.close_session_table_net_movements}</DataTableHeadCell>
+              <DataTableHeadCell align="right">{txtDashboard.treasury.close_session_table_real_balance}</DataTableHeadCell>
+              <DataTableHeadCell align="right">{txtDashboard.treasury.close_session_table_difference}</DataTableHeadCell>
             </DataTableHeader>
             <DataTableBody>
               {drafts.map((draft) => {
@@ -188,7 +188,7 @@ export function CloseSessionModalForm({
                     <DataTableCell>
                       <p className="text-sm font-semibold text-foreground">{draft.accountName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {texts.dashboard.treasury.expected_balance_label}:{" "}
+                        {txtDashboard.treasury.expected_balance_label}:{" "}
                         <span className="font-medium text-foreground">
                           $ {formatLocalizedAmount(draft.referenceBalance)}
                         </span>
@@ -221,7 +221,7 @@ export function CloseSessionModalForm({
                         onChange={(next) => updateDraft(draft.accountId, next)}
                         errorText={
                           isNegative
-                            ? texts.dashboard.treasury.close_session_negative_balance_error
+                            ? txtDashboard.treasury.close_session_negative_balance_error
                             : undefined
                         }
                       />
@@ -245,23 +245,23 @@ export function CloseSessionModalForm({
               })}
             </DataTableBody>
           </DataTable>
-          <FormHelpText>{texts.dashboard.treasury.close_session_table_helper}</FormHelpText>
+          <FormHelpText>{txtDashboard.treasury.close_session_table_helper}</FormHelpText>
         </div>
 
         <ConfirmDifferencesSection
           visible={hasDifferences}
           id="cl-diff-notes"
-          label={texts.dashboard.treasury.close_session_diff_notes_label}
-          placeholder={texts.dashboard.treasury.close_session_diff_notes_placeholder}
+          label={txtDashboard.treasury.close_session_diff_notes_label}
+          placeholder={txtDashboard.treasury.close_session_diff_notes_placeholder}
         />
 
         {/* Observaciones generales */}
         <div className="flex flex-col gap-2">
-          <FormFieldLabel>{texts.dashboard.treasury.close_session_notes_label}</FormFieldLabel>
+          <FormFieldLabel>{txtDashboard.treasury.close_session_notes_label}</FormFieldLabel>
           <FormTextarea
             id="cl-notes"
             name="notes"
-            placeholder={texts.dashboard.treasury.close_session_notes_placeholder}
+            placeholder={txtDashboard.treasury.close_session_notes_placeholder}
             rows={2}
           />
         </div>
@@ -272,9 +272,9 @@ export function CloseSessionModalForm({
 
         <ModalFooter
           onCancel={onCancel}
-          cancelLabel={texts.dashboard.treasury.cancel_session_cta}
-          submitLabel={texts.dashboard.treasury.confirm_close_session_cta}
-          pendingLabel={texts.dashboard.treasury.confirm_close_session_loading}
+          cancelLabel={txtDashboard.treasury.cancel_session_cta}
+          submitLabel={txtDashboard.treasury.confirm_close_session_cta}
+          pendingLabel={txtDashboard.treasury.confirm_close_session_loading}
           submitVariant="destructive"
         />
       </PendingFieldset>

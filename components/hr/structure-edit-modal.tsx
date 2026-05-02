@@ -20,9 +20,9 @@ import {
   SALARY_REMUNERATION_TYPES,
   type SalaryStructure,
 } from "@/lib/domain/salary-structure";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 
-const ssTexts = texts.rrhh.salary_structures;
+const ssTexts = txtRrhh.salary_structures;
 
 type StructureEditModalProps = {
   structure: SalaryStructure;

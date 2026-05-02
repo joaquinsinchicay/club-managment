@@ -11,9 +11,9 @@ import {
   STAFF_VINCULO_TYPES,
   type StaffMember,
 } from "@/lib/domain/staff-member";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 
-const smTexts = texts.rrhh.staff_members;
+const smTexts = txtRrhh.staff_members;
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);

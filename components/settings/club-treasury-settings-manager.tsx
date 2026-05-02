@@ -25,7 +25,7 @@ import type {
   TreasurySettings
 } from "@/lib/domain/access";
 import { DEFAULT_RECEIPT_EXAMPLE, DEFAULT_RECEIPT_MIN_LABEL, DEFAULT_RECEIPT_PATTERN } from "@/lib/receipt-formats";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard, settings as txtSettings } from "@/lib/texts";
 import { isSystemTreasuryCategoryName } from "@/lib/treasury-system-categories";
 import { getEmojiOptions } from "@/lib/treasury-system-options";
 
@@ -43,18 +43,18 @@ function getRoleVisibilityLabel(visibleForSecretaria: boolean, visibleForTesorer
   const labels = [];
 
   if (visibleForSecretaria) {
-    labels.push(texts.settings.club.treasury.account_visibility_options.secretaria);
+    labels.push(txtSettings.club.treasury.account_visibility_options.secretaria);
   }
 
   if (visibleForTesoreria) {
-    labels.push(texts.settings.club.treasury.account_visibility_options.tesoreria);
+    labels.push(txtSettings.club.treasury.account_visibility_options.tesoreria);
   }
 
-  return labels.join(" + ") || texts.settings.club.treasury.visibility_hidden;
+  return labels.join(" + ") || txtSettings.club.treasury.visibility_hidden;
 }
 
 function getAccountTypeLabel(accountType: TreasuryAccount["accountType"]) {
-  return texts.settings.club.treasury.account_types[accountType];
+  return txtSettings.club.treasury.account_types[accountType];
 }
 
 function getAccountVisibilityLabel(account: TreasuryAccount) {
@@ -62,19 +62,19 @@ function getAccountVisibilityLabel(account: TreasuryAccount) {
 }
 
 function getCurrencyLabel(currencyCode: TreasuryCurrencyCode) {
-  return texts.settings.club.treasury.currency_options[currencyCode];
+  return txtSettings.club.treasury.currency_options[currencyCode];
 }
 
 function getMovementTypeLabel(movementType: TreasuryMovementType) {
-  return texts.dashboard.treasury.movement_types[movementType];
+  return txtDashboard.treasury.movement_types[movementType];
 }
 
 const TREASURY_CURRENCY_OPTIONS: TreasuryCurrencyCode[] = ["ARS", "USD"];
 const TREASURY_MOVEMENT_TYPE_OPTIONS: TreasuryMovementType[] = ["ingreso", "egreso"];
 const TREASURY_ACCOUNT_VISIBILITY_OPTIONS = ["secretaria", "tesoreria"] as const;
-const TREASURY_ACCOUNT_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.accounts;
-const TREASURY_CATEGORY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.categories;
-const TREASURY_ACTIVITY_EMOJI_OPTIONS = texts.settings.club.treasury.emoji_options.activities;
+const TREASURY_ACCOUNT_EMOJI_OPTIONS = txtSettings.club.treasury.emoji_options.accounts;
+const TREASURY_CATEGORY_EMOJI_OPTIONS = txtSettings.club.treasury.emoji_options.categories;
+const TREASURY_ACTIVITY_EMOJI_OPTIONS = txtSettings.club.treasury.emoji_options.activities;
 
 type ClubActivityFormProps = {
   action: (formData: FormData) => Promise<void>;
@@ -95,19 +95,19 @@ function ClubActivityForm({
         {defaultActivity ? <input type="hidden" name="activity_id" value={defaultActivity.id} /> : null}
 
         <FormField>
-          <FormFieldLabel>{texts.settings.club.treasury.activity_name_label}</FormFieldLabel>
+          <FormFieldLabel>{txtSettings.club.treasury.activity_name_label}</FormFieldLabel>
           <FormInput type="text" name="name" defaultValue={defaultActivity?.name ?? ""} />
         </FormField>
 
         <div className="grid gap-3">
-          <FormFieldLabel>{texts.settings.club.treasury.account_visibility_label}</FormFieldLabel>
+          <FormFieldLabel>{txtSettings.club.treasury.account_visibility_label}</FormFieldLabel>
           <div className="grid gap-3 sm:grid-cols-2">
             {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
               <FormCheckboxCard
                 key={`activity-visibility-${visibility}`}
                 name="visibility"
                 value={visibility}
-                label={texts.settings.club.treasury.account_visibility_options[visibility]}
+                label={txtSettings.club.treasury.account_visibility_options[visibility]}
                 defaultChecked={
                   visibility === "secretaria"
                     ? (defaultActivity?.visibleForSecretaria ?? true)
@@ -119,9 +119,9 @@ function ClubActivityForm({
         </div>
 
         <FormField>
-          <FormFieldLabel>{texts.settings.club.treasury.emoji_label}</FormFieldLabel>
+          <FormFieldLabel>{txtSettings.club.treasury.emoji_label}</FormFieldLabel>
           <FormSelect name="emoji" defaultValue={defaultActivity?.emoji ?? ""}>
-            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+            <option value="">{txtSettings.club.treasury.emoji_placeholder}</option>
             {getEmojiOptions(TREASURY_ACTIVITY_EMOJI_OPTIONS, defaultActivity?.emoji).map((emoji) => (
               <option key={`activity-emoji-${emoji}`} value={emoji}>
                 {emoji}
@@ -192,33 +192,33 @@ function TreasuryAccountForm({
         {defaultAccount ? <input type="hidden" name="account_id" value={defaultAccount.id} /> : null}
 
         <FormField>
-          <FormFieldLabel>{texts.settings.club.treasury.account_name_label}</FormFieldLabel>
+          <FormFieldLabel>{txtSettings.club.treasury.account_name_label}</FormFieldLabel>
           <FormInput type="text" name="name" defaultValue={defaultAccount?.name ?? ""} />
         </FormField>
 
         <FormField>
-          <FormFieldLabel>{texts.settings.club.treasury.account_type_label}</FormFieldLabel>
+          <FormFieldLabel>{txtSettings.club.treasury.account_type_label}</FormFieldLabel>
           <FormSelect name="account_type" defaultValue={defaultAccount?.accountType ?? ""}>
             <option value="" disabled>
-              {texts.settings.club.treasury.account_type_placeholder}
+              {txtSettings.club.treasury.account_type_placeholder}
             </option>
-            <option value="efectivo">{texts.settings.club.treasury.account_types.efectivo}</option>
-            <option value="bancaria">{texts.settings.club.treasury.account_types.bancaria}</option>
+            <option value="efectivo">{txtSettings.club.treasury.account_types.efectivo}</option>
+            <option value="bancaria">{txtSettings.club.treasury.account_types.bancaria}</option>
             <option value="billetera_virtual">
-              {texts.settings.club.treasury.account_types.billetera_virtual}
+              {txtSettings.club.treasury.account_types.billetera_virtual}
             </option>
           </FormSelect>
         </FormField>
 
         <div className="grid gap-3">
-          <FormFieldLabel>{texts.settings.club.treasury.account_visibility_label}</FormFieldLabel>
+          <FormFieldLabel>{txtSettings.club.treasury.account_visibility_label}</FormFieldLabel>
           <div className="grid gap-3 sm:grid-cols-2">
             {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
               <FormCheckboxCard
                 key={`account-visibility-${visibility}`}
                 name="visibility"
                 value={visibility}
-                label={texts.settings.club.treasury.account_visibility_options[visibility]}
+                label={txtSettings.club.treasury.account_visibility_options[visibility]}
                 defaultChecked={
                   visibility === "secretaria"
                     ? (defaultAccount?.visibleForSecretaria ?? true)
@@ -230,9 +230,9 @@ function TreasuryAccountForm({
         </div>
 
         <FormField>
-          <FormFieldLabel>{texts.settings.club.treasury.emoji_label}</FormFieldLabel>
+          <FormFieldLabel>{txtSettings.club.treasury.emoji_label}</FormFieldLabel>
           <FormSelect name="emoji" defaultValue={defaultAccount?.emoji ?? ""}>
-            <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+            <option value="">{txtSettings.club.treasury.emoji_placeholder}</option>
             {getEmojiOptions(TREASURY_ACCOUNT_EMOJI_OPTIONS, defaultAccount?.emoji).map((emoji) => (
               <option key={`account-emoji-${emoji}`} value={emoji}>
                 {emoji}
@@ -242,7 +242,7 @@ function TreasuryAccountForm({
         </FormField>
 
         <div className="grid gap-3">
-          <FormFieldLabel>{texts.settings.club.treasury.account_currencies_label}</FormFieldLabel>
+          <FormFieldLabel>{txtSettings.club.treasury.account_currencies_label}</FormFieldLabel>
           <div className="grid gap-3 sm:grid-cols-3">
             {availableCurrencies.map((currencyCode) => (
               <FormCheckboxCard
@@ -257,7 +257,7 @@ function TreasuryAccountForm({
           </div>
           {currenciesTouched && selectedCurrencies.length === 0 ? (
             <p aria-live="assertive" className="text-sm text-destructive">
-              {texts.settings.club.treasury.feedback.account_currencies_required}
+              {txtSettings.club.treasury.feedback.account_currencies_required}
             </p>
           ) : null}
         </div>
@@ -300,14 +300,14 @@ function TreasuryCategoryForm({
         ) : (
           <>
             <FormField>
-              <FormFieldLabel>{texts.settings.club.treasury.category_name_label}</FormFieldLabel>
+              <FormFieldLabel>{txtSettings.club.treasury.category_name_label}</FormFieldLabel>
               <FormInput type="text" name="name" defaultValue={defaultCategory?.name ?? ""} />
             </FormField>
 
             <FormField>
-              <FormFieldLabel>{texts.settings.club.treasury.emoji_label}</FormFieldLabel>
+              <FormFieldLabel>{txtSettings.club.treasury.emoji_label}</FormFieldLabel>
               <FormSelect name="emoji" defaultValue={defaultCategory?.emoji ?? ""}>
-                <option value="">{texts.settings.club.treasury.emoji_placeholder}</option>
+                <option value="">{txtSettings.club.treasury.emoji_placeholder}</option>
                 {getEmojiOptions(TREASURY_CATEGORY_EMOJI_OPTIONS, defaultCategory?.emoji).map((emoji) => (
                   <option key={`category-emoji-${emoji}`} value={emoji}>
                     {emoji}
@@ -319,14 +319,14 @@ function TreasuryCategoryForm({
         )}
 
         <div className="grid gap-3">
-          <FormFieldLabel>{texts.settings.club.treasury.account_visibility_label}</FormFieldLabel>
+          <FormFieldLabel>{txtSettings.club.treasury.account_visibility_label}</FormFieldLabel>
           <div className="grid gap-3 sm:grid-cols-2">
             {TREASURY_ACCOUNT_VISIBILITY_OPTIONS.map((visibility) => (
               <FormCheckboxCard
                 key={`category-visibility-${visibility}`}
                 name="visibility"
                 value={visibility}
-                label={texts.settings.club.treasury.account_visibility_options[visibility]}
+                label={txtSettings.club.treasury.account_visibility_options[visibility]}
                 defaultChecked={
                   visibility === "secretaria"
                     ? (defaultCategory?.visibleForSecretaria ?? true)
@@ -424,8 +424,8 @@ export function ClubTreasurySettingsManager({
   return (
     <div className="space-y-6">
       <SettingsSectionShell
-        title={texts.settings.club.treasury.accounts_title}
-        description={texts.settings.club.treasury.accounts_description}
+        title={txtSettings.club.treasury.accounts_title}
+        description={txtSettings.club.treasury.accounts_description}
         action={
           <Button
             variant="secondary"
@@ -434,7 +434,7 @@ export function ClubTreasurySettingsManager({
               setEditingAccountId(null);
             }}
           >
-            {texts.settings.club.treasury.create_account_cta}
+            {txtSettings.club.treasury.create_account_cta}
           </Button>
         }
       >
@@ -443,15 +443,15 @@ export function ClubTreasurySettingsManager({
             <TreasuryAccountForm
               key={`create-account-form-${accountCreateFormKey}`}
               action={handleCreateAccount}
-              submitLabel={texts.settings.club.treasury.save_account_cta}
-              pendingLabel={texts.settings.club.treasury.save_account_loading}
+              submitLabel={txtSettings.club.treasury.save_account_cta}
+              pendingLabel={txtSettings.club.treasury.save_account_loading}
               availableCurrencies={availableAccountCurrencies}
             />
           </div>
         ) : null}
 
         {treasurySettings.accounts.length === 0 ? (
-          <EmptyState title={texts.settings.club.treasury.empty_accounts} />
+          <EmptyState title={txtSettings.club.treasury.empty_accounts} />
         ) : (
           <div className="grid gap-4">
             {treasurySettings.accounts.map((account) => (
@@ -460,7 +460,7 @@ export function ClubTreasurySettingsManager({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center rounded-shell bg-primary/10 text-xl">
-                        {account.emoji ?? texts.settings.club.treasury.default_account_emoji}
+                        {account.emoji ?? txtSettings.club.treasury.default_account_emoji}
                       </div>
                       <div>
                         <p className="truncate text-base font-semibold text-foreground">{account.name}</p>
@@ -471,11 +471,11 @@ export function ClubTreasurySettingsManager({
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <MetaPill
-                        label={texts.settings.club.treasury.account_visibility_label}
+                        label={txtSettings.club.treasury.account_visibility_label}
                         value={getAccountVisibilityLabel(account)}
                       />
                       <MetaPill
-                        label={texts.settings.club.treasury.account_currencies_label}
+                        label={txtSettings.club.treasury.account_currencies_label}
                         value={account.currencies.join(" · ")}
                       />
                     </div>
@@ -487,7 +487,7 @@ export function ClubTreasurySettingsManager({
                       setEditingAccountId((current) => (current === account.id ? null : account.id))
                     }
                   >
-                    {texts.settings.club.treasury.edit_account_cta}
+                    {txtSettings.club.treasury.edit_account_cta}
                   </Button>
                 </div>
 
@@ -495,8 +495,8 @@ export function ClubTreasurySettingsManager({
                   <div className="mt-4">
                     <TreasuryAccountForm
                       action={updateTreasuryAccountAction}
-                      submitLabel={texts.settings.club.treasury.update_account_cta}
-                      pendingLabel={texts.settings.club.treasury.update_account_loading}
+                      submitLabel={txtSettings.club.treasury.update_account_cta}
+                      pendingLabel={txtSettings.club.treasury.update_account_loading}
                       defaultAccount={account}
                       availableCurrencies={availableAccountCurrencies}
                     />
@@ -509,9 +509,9 @@ export function ClubTreasurySettingsManager({
       </SettingsSectionShell>
 
       <SettingsSectionShell
-        eyebrow={texts.settings.club.treasury.movement_type_selection_label}
-        title={texts.settings.club.treasury.movement_types_title}
-        description={texts.settings.club.treasury.movement_types_description}
+        eyebrow={txtSettings.club.treasury.movement_type_selection_label}
+        title={txtSettings.club.treasury.movement_types_title}
+        description={txtSettings.club.treasury.movement_types_description}
       >
         <div className="grid gap-3 lg:grid-cols-2">
           {TREASURY_MOVEMENT_TYPE_OPTIONS.map((movementType) => {
@@ -536,7 +536,7 @@ export function ClubTreasurySettingsManager({
                     {getMovementTypeLabel(movementType)}
                   </p>
                   <p className="text-xs font-semibold uppercase tracking-card-eyebrow text-muted-foreground">
-                    {texts.settings.club.treasury.movement_type_impacts[movementType]}
+                    {txtSettings.club.treasury.movement_type_impacts[movementType]}
                   </p>
                 </div>
               </article>
@@ -546,8 +546,8 @@ export function ClubTreasurySettingsManager({
       </SettingsSectionShell>
 
       <SettingsSectionShell
-        title={texts.settings.club.treasury.categories_title}
-        description={texts.settings.club.treasury.categories_description}
+        title={txtSettings.club.treasury.categories_title}
+        description={txtSettings.club.treasury.categories_description}
         action={
           <Button
             variant="secondary"
@@ -556,7 +556,7 @@ export function ClubTreasurySettingsManager({
               setEditingCategoryId(null);
             }}
           >
-            {texts.settings.club.treasury.create_category_cta}
+            {txtSettings.club.treasury.create_category_cta}
           </Button>
         }
       >
@@ -565,14 +565,14 @@ export function ClubTreasurySettingsManager({
             <TreasuryCategoryForm
               key={`create-category-form-${categoryCreateFormKey}`}
               action={handleCreateCategory}
-              submitLabel={texts.settings.club.treasury.save_category_cta}
-              pendingLabel={texts.settings.club.treasury.save_category_loading}
+              submitLabel={txtSettings.club.treasury.save_category_cta}
+              pendingLabel={txtSettings.club.treasury.save_category_loading}
             />
           </div>
         ) : null}
 
         {treasurySettings.categories.length === 0 ? (
-          <EmptyState title={texts.settings.club.treasury.empty_categories} />
+          <EmptyState title={txtSettings.club.treasury.empty_categories} />
         ) : (
           <div className="grid gap-4">
             {treasurySettings.categories.map((category) => (
@@ -581,7 +581,7 @@ export function ClubTreasurySettingsManager({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center rounded-shell bg-primary/10 text-xl">
-                        {category.emoji ?? texts.settings.club.treasury.default_category_emoji}
+                        {category.emoji ?? txtSettings.club.treasury.default_category_emoji}
                       </div>
                       <div>
                         <p className="truncate text-base font-semibold text-foreground">{category.name}</p>
@@ -595,7 +595,7 @@ export function ClubTreasurySettingsManager({
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <MetaPill
-                        label={texts.settings.club.treasury.account_visibility_label}
+                        label={txtSettings.club.treasury.account_visibility_label}
                         value={getRoleVisibilityLabel(
                           category.visibleForSecretaria,
                           category.visibleForTesoreria
@@ -610,7 +610,7 @@ export function ClubTreasurySettingsManager({
                       setEditingCategoryId((current) => (current === category.id ? null : category.id))
                     }
                   >
-                    {texts.settings.club.treasury.edit_category_cta}
+                    {txtSettings.club.treasury.edit_category_cta}
                   </Button>
                 </div>
 
@@ -618,8 +618,8 @@ export function ClubTreasurySettingsManager({
                   <div className="mt-4">
                     <TreasuryCategoryForm
                       action={updateTreasuryCategoryAction}
-                      submitLabel={texts.settings.club.treasury.update_category_cta}
-                      pendingLabel={texts.settings.club.treasury.update_category_loading}
+                      submitLabel={txtSettings.club.treasury.update_category_cta}
+                      pendingLabel={txtSettings.club.treasury.update_category_loading}
                       defaultCategory={category}
                     />
                   </div>
@@ -631,8 +631,8 @@ export function ClubTreasurySettingsManager({
       </SettingsSectionShell>
 
       <SettingsSectionShell
-        title={texts.settings.club.treasury.activities_title}
-        description={texts.settings.club.treasury.activities_description}
+        title={txtSettings.club.treasury.activities_title}
+        description={txtSettings.club.treasury.activities_description}
         action={
           <Button
             variant="secondary"
@@ -641,7 +641,7 @@ export function ClubTreasurySettingsManager({
               setEditingActivityId(null);
             }}
           >
-            {texts.settings.club.treasury.create_activity_cta}
+            {txtSettings.club.treasury.create_activity_cta}
           </Button>
         }
       >
@@ -650,14 +650,14 @@ export function ClubTreasurySettingsManager({
             <ClubActivityForm
               key={`create-activity-form-${activityCreateFormKey}`}
               action={handleCreateActivity}
-              submitLabel={texts.settings.club.treasury.save_activity_cta}
-              pendingLabel={texts.settings.club.treasury.save_activity_loading}
+              submitLabel={txtSettings.club.treasury.save_activity_cta}
+              pendingLabel={txtSettings.club.treasury.save_activity_loading}
             />
           </div>
         ) : null}
 
         {treasurySettings.activities.length === 0 ? (
-          <EmptyState title={texts.settings.club.treasury.empty_activities} />
+          <EmptyState title={txtSettings.club.treasury.empty_activities} />
         ) : (
           <div className="grid gap-4">
             {treasurySettings.activities.map((activity) => (
@@ -666,7 +666,7 @@ export function ClubTreasurySettingsManager({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center rounded-shell bg-primary/10 text-xl">
-                        {activity.emoji ?? texts.settings.club.treasury.default_activity_emoji}
+                        {activity.emoji ?? txtSettings.club.treasury.default_activity_emoji}
                       </div>
                       <div>
                         <p className="truncate text-base font-semibold text-foreground">{activity.name}</p>
@@ -680,7 +680,7 @@ export function ClubTreasurySettingsManager({
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <MetaPill
-                        label={texts.settings.club.treasury.account_visibility_label}
+                        label={txtSettings.club.treasury.account_visibility_label}
                         value={getRoleVisibilityLabel(
                           activity.visibleForSecretaria,
                           activity.visibleForTesoreria
@@ -695,7 +695,7 @@ export function ClubTreasurySettingsManager({
                       setEditingActivityId((current) => (current === activity.id ? null : activity.id))
                     }
                   >
-                    {texts.settings.club.treasury.edit_activity_cta}
+                    {txtSettings.club.treasury.edit_activity_cta}
                   </Button>
                 </div>
 
@@ -703,8 +703,8 @@ export function ClubTreasurySettingsManager({
                   <div className="mt-4">
                     <ClubActivityForm
                       action={updateClubActivityAction}
-                      submitLabel={texts.settings.club.treasury.update_activity_cta}
-                      pendingLabel={texts.settings.club.treasury.update_activity_loading}
+                      submitLabel={txtSettings.club.treasury.update_activity_cta}
+                      pendingLabel={txtSettings.club.treasury.update_activity_loading}
                       defaultActivity={activity}
                     />
                   </div>
@@ -716,36 +716,36 @@ export function ClubTreasurySettingsManager({
       </SettingsSectionShell>
 
       <SettingsSectionShell
-        title={texts.settings.club.treasury.receipt_formats_title}
-        description={texts.settings.club.treasury.receipt_formats_description}
+        title={txtSettings.club.treasury.receipt_formats_title}
+        description={txtSettings.club.treasury.receipt_formats_description}
       >
         <div className="grid gap-4 rounded-shell border border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.92)_0%,rgba(255,255,255,0.98)_100%)] p-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField>
-              <FormFieldLabel>{texts.settings.club.treasury.receipt_name_label}</FormFieldLabel>
+              <FormFieldLabel>{txtSettings.club.treasury.receipt_name_label}</FormFieldLabel>
               <FormReadonly>
-                {receiptFormat?.name ?? texts.settings.club.treasury.empty_receipt_formats}
+                {receiptFormat?.name ?? txtSettings.club.treasury.empty_receipt_formats}
               </FormReadonly>
             </FormField>
 
             <FormField>
-              <FormFieldLabel>{texts.settings.club.treasury.receipt_example_label}</FormFieldLabel>
+              <FormFieldLabel>{txtSettings.club.treasury.receipt_example_label}</FormFieldLabel>
               <FormReadonly>{receiptFormat?.example ?? DEFAULT_RECEIPT_EXAMPLE}</FormReadonly>
             </FormField>
 
             <FormField>
-              <FormFieldLabel>{texts.settings.club.treasury.receipt_pattern_label}</FormFieldLabel>
+              <FormFieldLabel>{txtSettings.club.treasury.receipt_pattern_label}</FormFieldLabel>
               <FormReadonly>{receiptFormat?.pattern ?? DEFAULT_RECEIPT_PATTERN}</FormReadonly>
             </FormField>
 
             <FormField>
-              <FormFieldLabel>{texts.settings.club.treasury.receipt_min_label}</FormFieldLabel>
+              <FormFieldLabel>{txtSettings.club.treasury.receipt_min_label}</FormFieldLabel>
               <FormReadonly>{DEFAULT_RECEIPT_MIN_LABEL}</FormReadonly>
             </FormField>
           </div>
 
           <p className="text-xs leading-5 text-muted-foreground">
-            {texts.settings.club.treasury.receipt_formats_read_only}
+            {txtSettings.club.treasury.receipt_formats_read_only}
           </p>
         </div>
       </SettingsSectionShell>

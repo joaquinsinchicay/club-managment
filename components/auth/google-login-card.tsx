@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { GoogleLogo } from "@/components/ui/google-logo";
 import { Spinner } from "@/components/ui/pending-form";
 import { Badge } from "@/components/ui/badge";
-import { texts } from "@/lib/texts";
+import { app as txtApp, auth as txtAuth } from "@/lib/texts";
 
 export function GoogleLoginCard() {
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -16,13 +16,13 @@ export function GoogleLoginCard() {
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <Card maxWidth="md" padding="spacious" className="rounded-dialog">
         <header className="mb-6 space-y-3">
-          <Badge label={texts.app.badge} tone="neutral" />
+          <Badge label={txtApp.badge} tone="neutral" />
           <div className="space-y-2">
             <h1 className="text-2xl font-semibold tracking-tight text-card-foreground">
-              {texts.auth.login.title}
+              {txtAuth.login.title}
             </h1>
             <p className="text-sm leading-6 text-muted-foreground">
-              {texts.auth.login.description}
+              {txtAuth.login.description}
             </p>
           </div>
         </header>
@@ -40,18 +40,18 @@ export function GoogleLoginCard() {
             {isRedirecting ? (
               <span className="col-span-3 inline-flex items-center justify-center gap-2">
                 <Spinner />
-                <span>{texts.auth.login.loading}</span>
+                <span>{txtAuth.login.loading}</span>
               </span>
             ) : (
               <>
                 <GoogleLogo />
-                <span className="text-center">{texts.auth.login.google_sign_in_cta}</span>
+                <span className="text-center">{txtAuth.login.google_sign_in_cta}</span>
                 <span aria-hidden="true" />
               </>
             )}
           </a>
           <p className="text-center text-sm text-muted-foreground">
-            {texts.auth.login.helper}
+            {txtAuth.login.helper}
           </p>
         </div>
       </Card>

@@ -44,7 +44,7 @@ import {
   type SalaryStructureStatus,
 } from "@/lib/domain/salary-structure";
 import { triggerClientFeedback } from "@/lib/client-feedback";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 type SalaryStructuresTabProps = {
@@ -56,7 +56,7 @@ type SalaryStructuresTabProps = {
 
 type StatusFilter = "all" | SalaryStructureStatus;
 
-const ssTexts = texts.rrhh.salary_structures;
+const ssTexts = txtRrhh.salary_structures;
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: ssTexts.filter_all },

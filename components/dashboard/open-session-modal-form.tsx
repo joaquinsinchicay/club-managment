@@ -26,7 +26,7 @@ import {
   type SessionBalanceDraftBase,
   useSessionBalanceDraft,
 } from "@/lib/hooks/use-session-balance-draft";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard } from "@/lib/texts";
 
 type OpenSessionModalFormProps = {
   validation: DailyCashSessionValidation;
@@ -50,7 +50,7 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
 
   const { drafts, updateDraft, hasDifferences } = useSessionBalanceDraft<OpenDraft>(initial);
 
-  const warningText = texts.dashboard.treasury.open_session_warning;
+  const warningText = txtDashboard.treasury.open_session_warning;
 
   return (
     <form
@@ -63,11 +63,11 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
         {/* Fecha + Hora */}
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
-            <FormFieldLabel>{texts.dashboard.treasury.open_session_date_label}</FormFieldLabel>
+            <FormFieldLabel>{txtDashboard.treasury.open_session_date_label}</FormFieldLabel>
             <FormReadonly>{validation.sessionDate}</FormReadonly>
           </div>
           <div className="flex flex-col gap-2">
-            <FormFieldLabel>{texts.dashboard.treasury.open_session_time_label}</FormFieldLabel>
+            <FormFieldLabel>{txtDashboard.treasury.open_session_time_label}</FormFieldLabel>
             <FormReadonly>{timeString}</FormReadonly>
           </div>
         </div>
@@ -75,13 +75,13 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
         {/* Tabla de saldos de apertura */}
         <div className="flex flex-col gap-2">
           <FormSection required>
-            {texts.dashboard.treasury.open_session_balances_label}
+            {txtDashboard.treasury.open_session_balances_label}
           </FormSection>
           <DataTable density="compact" gridColumns="1fr 120px 160px">
             <DataTableHeader>
-              <DataTableHeadCell>{texts.dashboard.treasury.open_session_table_account}</DataTableHeadCell>
-              <DataTableHeadCell align="right">{texts.dashboard.treasury.open_session_table_prev}</DataTableHeadCell>
-              <DataTableHeadCell align="right">{texts.dashboard.treasury.open_session_table_opening}</DataTableHeadCell>
+              <DataTableHeadCell>{txtDashboard.treasury.open_session_table_account}</DataTableHeadCell>
+              <DataTableHeadCell align="right">{txtDashboard.treasury.open_session_table_prev}</DataTableHeadCell>
+              <DataTableHeadCell align="right">{txtDashboard.treasury.open_session_table_opening}</DataTableHeadCell>
             </DataTableHeader>
             <DataTableBody>
               {drafts.map((draft) => (
@@ -107,14 +107,14 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
               ))}
             </DataTableBody>
           </DataTable>
-          <FormHelpText>{texts.dashboard.treasury.open_session_table_helper}</FormHelpText>
+          <FormHelpText>{txtDashboard.treasury.open_session_table_helper}</FormHelpText>
         </div>
 
         <ConfirmDifferencesSection
           visible={hasDifferences}
           id="op-diff-notes"
-          label={texts.dashboard.treasury.open_session_diff_notes_label}
-          placeholder={texts.dashboard.treasury.open_session_diff_notes_placeholder}
+          label={txtDashboard.treasury.open_session_diff_notes_label}
+          placeholder={txtDashboard.treasury.open_session_diff_notes_placeholder}
         />
 
         <FormBanner variant="warning">
@@ -123,9 +123,9 @@ export function OpenSessionModalForm({ validation, submitAction, onCancel }: Ope
 
         <ModalFooter
           onCancel={onCancel}
-          cancelLabel={texts.dashboard.treasury.cancel_session_cta}
-          submitLabel={texts.dashboard.treasury.confirm_open_session_cta}
-          pendingLabel={texts.dashboard.treasury.confirm_open_session_loading}
+          cancelLabel={txtDashboard.treasury.cancel_session_cta}
+          submitLabel={txtDashboard.treasury.confirm_open_session_cta}
+          pendingLabel={txtDashboard.treasury.confirm_open_session_loading}
         />
       </PendingFieldset>
     </form>

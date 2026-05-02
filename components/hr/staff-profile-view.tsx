@@ -38,13 +38,13 @@ import type {
   StaffActivityEntry,
   StaffProfile,
 } from "@/lib/services/hr-staff-profile-service";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 
-const profileTexts = texts.rrhh.staff_profile;
-const smTexts = texts.rrhh.staff_members;
-const scTexts = texts.rrhh.staff_contracts;
-const ssTexts = texts.rrhh.salary_structures;
-const settlementTexts = texts.rrhh.settlements;
+const profileTexts = txtRrhh.staff_profile;
+const smTexts = txtRrhh.staff_members;
+const scTexts = txtRrhh.staff_contracts;
+const ssTexts = txtRrhh.salary_structures;
+const settlementTexts = txtRrhh.settlements;
 
 function resolveRemunerationTypeLabel(raw: string | null): string | null {
   if (!raw) return null;

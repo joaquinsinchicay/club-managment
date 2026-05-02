@@ -45,7 +45,7 @@ import {
 import type { StaffMember } from "@/lib/domain/staff-member";
 import { useFilteredList } from "@/lib/hooks/use-filtered-list";
 import { useFormModal } from "@/lib/hooks/use-form-modal";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 
 type StaffContractsTabProps = {
   contracts: StaffContract[];
@@ -59,7 +59,7 @@ type StaffContractsTabProps = {
 
 type StatusFilter = "all" | StaffContractStatus;
 
-const scTexts = texts.rrhh.staff_contracts;
+const scTexts = txtRrhh.staff_contracts;
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: scTexts.filter_all },

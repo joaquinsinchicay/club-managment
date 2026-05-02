@@ -37,7 +37,7 @@ import type {
   DashboardTreasuryCard as DashboardTreasuryCardData,
   TreasuryMovementType
 } from "@/lib/domain/access";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 type TreasuryCardProps = {
@@ -73,7 +73,7 @@ function getSessionConfig(sessionStatus: DashboardTreasuryCardData["sessionStatu
       iconColor: "text-ds-green-700",
       iconText: "●",
       badgeClass: "bg-ds-green-050 text-ds-green-700",
-      badgeText: texts.dashboard.treasury.session_open
+      badgeText: txtDashboard.treasury.session_open
     };
   }
   if (sessionStatus === "closed") {
@@ -83,7 +83,7 @@ function getSessionConfig(sessionStatus: DashboardTreasuryCardData["sessionStatu
       iconColor: "text-ds-red-700",
       iconText: "✕",
       badgeClass: "bg-ds-red-050 text-ds-red-700",
-      badgeText: texts.dashboard.treasury.session_closed
+      badgeText: txtDashboard.treasury.session_closed
     };
   }
   return {
@@ -92,7 +92,7 @@ function getSessionConfig(sessionStatus: DashboardTreasuryCardData["sessionStatu
     iconColor: "text-ds-amber-700",
     iconText: "!",
     badgeClass: "bg-ds-amber-050 text-ds-amber-700",
-    badgeText: texts.dashboard.treasury.session_not_started
+    badgeText: txtDashboard.treasury.session_not_started
   };
 }
 
@@ -108,7 +108,7 @@ function buildSessionMeta(
   const openingTime = formatSessionTime(card.sessionOpenedAt);
   const closingTime = formatSessionTime(card.sessionClosedAt);
   const openedBy = card.sessionOpenedByUserName;
-  const movementsCount = texts.dashboard.treasury.session_meta_movements_count.replace(
+  const movementsCount = txtDashboard.treasury.session_meta_movements_count.replace(
     "{count}",
     String(card.movements.length)
   );
@@ -124,11 +124,11 @@ function buildSessionMeta(
         ? `${openingTime} · ${openedBy}`
         : openingTime
           ? openingTime
-          : texts.dashboard.treasury.session_meta_not_registered;
+          : txtDashboard.treasury.session_meta_not_registered;
     return [
-      { label: texts.dashboard.treasury.session_meta_opening, value: aperturaValue },
-      { label: texts.dashboard.treasury.session_meta_movements, value: movementsCount },
-      { label: texts.dashboard.treasury.session_meta_balance_current, value: currentBalance }
+      { label: txtDashboard.treasury.session_meta_opening, value: aperturaValue },
+      { label: txtDashboard.treasury.session_meta_movements, value: movementsCount },
+      { label: txtDashboard.treasury.session_meta_balance_current, value: currentBalance }
     ];
   }
 
@@ -136,21 +136,21 @@ function buildSessionMeta(
     const aperturaValue =
       openingTime && openedBy
         ? `${openingTime} · ${openedBy}`
-        : openingTime ?? texts.dashboard.treasury.session_meta_not_registered;
-    const cierreValue = closingTime ?? texts.dashboard.treasury.session_meta_not_registered;
+        : openingTime ?? txtDashboard.treasury.session_meta_not_registered;
+    const cierreValue = closingTime ?? txtDashboard.treasury.session_meta_not_registered;
     return [
-      { label: texts.dashboard.treasury.session_meta_opening, value: aperturaValue },
-      { label: texts.dashboard.treasury.session_meta_closing, value: cierreValue },
-      { label: texts.dashboard.treasury.session_meta_movements, value: movementsCount }
+      { label: txtDashboard.treasury.session_meta_opening, value: aperturaValue },
+      { label: txtDashboard.treasury.session_meta_closing, value: cierreValue },
+      { label: txtDashboard.treasury.session_meta_movements, value: movementsCount }
     ];
   }
 
   return [
     {
-      label: texts.dashboard.treasury.session_meta_opening,
-      value: texts.dashboard.treasury.session_meta_not_registered
+      label: txtDashboard.treasury.session_meta_opening,
+      value: txtDashboard.treasury.session_meta_not_registered
     },
-    { label: texts.dashboard.treasury.session_meta_movements, value: movementsCount }
+    { label: txtDashboard.treasury.session_meta_movements, value: movementsCount }
   ];
 }
 
@@ -187,7 +187,7 @@ function SessionCard({
         "border-l-[3px]",
         isUnresolved ? "border-l-slate-300" : cfg.borderColor
       )}
-      aria-label={texts.dashboard.treasury.session_card_label}
+      aria-label={txtDashboard.treasury.session_card_label}
     >
       {/* Session state header */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
@@ -202,11 +202,11 @@ function SessionCard({
         </div>
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-eyebrow font-semibold uppercase tracking-eyebrow text-muted-foreground">
-            {texts.dashboard.treasury.session_card_label}
+            {txtDashboard.treasury.session_card_label}
           </span>
           <span className="text-card-title font-semibold leading-tight tracking-tight text-foreground">
             {isUnresolved
-              ? texts.dashboard.treasury.actions_card_unresolved_description.split(".")[0]
+              ? txtDashboard.treasury.actions_card_unresolved_description.split(".")[0]
               : cfg.badgeText}
           </span>
         </div>
@@ -240,14 +240,14 @@ function SessionCard({
       {/* Closed message */}
       {sessionStatus === "closed" ? (
         <p className="px-4 pb-3 text-xs leading-relaxed text-muted-foreground">
-          {texts.dashboard.treasury.actions_card_closed_description}
+          {txtDashboard.treasury.actions_card_closed_description}
         </p>
       ) : null}
 
       {/* Pending message */}
       {sessionStatus === "not_started" ? (
         <p className="px-4 pb-3 text-xs leading-relaxed text-muted-foreground">
-          {texts.dashboard.treasury.session_pending_message}
+          {txtDashboard.treasury.session_pending_message}
         </p>
       ) : null}
 
@@ -255,7 +255,7 @@ function SessionCard({
       {canOpenSession ? (
         <div className="px-4 pb-4">
           <Button onClick={onOpenSession} fullWidth>
-            {texts.dashboard.treasury.open_session_flow_cta}
+            {txtDashboard.treasury.open_session_flow_cta}
           </Button>
         </div>
       ) : null}
@@ -263,14 +263,14 @@ function SessionCard({
       {canCreateMovement ? (
         <div className="grid grid-cols-2 gap-2 px-4 pb-4">
           <Button onClick={onOpenMovement} className="px-3">
-            {texts.dashboard.treasury.movement_modal_cta}
+            {txtDashboard.treasury.movement_modal_cta}
           </Button>
           <Button variant="secondary" onClick={onOpenTransfer} className="px-3">
-            {texts.dashboard.treasury.transfer_modal_cta}
+            {txtDashboard.treasury.transfer_modal_cta}
           </Button>
           {canCloseSession ? (
             <Button variant="destructive" onClick={onOpenCloseSession} className="col-span-2">
-              {texts.dashboard.treasury.close_session_flow_cta}
+              {txtDashboard.treasury.close_session_flow_cta}
             </Button>
           ) : null}
         </div>
@@ -286,11 +286,11 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
     <Card
       as="section"
       padding="none"
-      aria-label={texts.dashboard.treasury.balances_visible_title}
+      aria-label={txtDashboard.treasury.balances_visible_title}
     >
       <CardHeader
-        title={texts.dashboard.treasury.balances_visible_title}
-        description={texts.dashboard.treasury.balances_visible_description}
+        title={txtDashboard.treasury.balances_visible_title}
+        description={txtDashboard.treasury.balances_visible_description}
         action={
           <span className="mt-0.5 shrink-0 rounded-btn bg-secondary px-2 py-1 text-eyebrow font-semibold text-muted-foreground">
             ARS
@@ -301,9 +301,9 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
 
       <div className="border-t border-border px-4 pb-4">
         {isUnresolved ? (
-          <p className="pt-3 text-xs text-muted-foreground">{texts.dashboard.treasury.balances_unresolved}</p>
+          <p className="pt-3 text-xs text-muted-foreground">{txtDashboard.treasury.balances_unresolved}</p>
         ) : card.accounts.length === 0 ? (
-          <p className="pt-3 text-xs text-muted-foreground">{texts.dashboard.treasury.empty_accounts}</p>
+          <p className="pt-3 text-xs text-muted-foreground">{txtDashboard.treasury.empty_accounts}</p>
         ) : (
           <DataTable density="compact" className="rounded-none border-0">
             <DataTableBody>
@@ -313,7 +313,7 @@ function BalancesCard({ card }: { card: DashboardTreasuryCardData }) {
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-label font-medium text-foreground">{account.name}</span>
                       <span className="text-eyebrow font-semibold uppercase tracking-eyebrow text-muted-foreground">
-                        {texts.dashboard.treasury_role.cash_account_label}
+                        {txtDashboard.treasury_role.cash_account_label}
                       </span>
                     </div>
                     <div className="shrink-0 text-right">
@@ -376,11 +376,11 @@ function MovementsCard({
       as="section"
       padding="none"
       className="sm:col-span-2"
-      aria-label={texts.dashboard.treasury.movements_card_title}
+      aria-label={txtDashboard.treasury.movements_card_title}
     >
       <CardHeader
-        title={texts.dashboard.treasury.movements_card_title}
-        description={`${card.movements.length} ${texts.dashboard.treasury.movements_card_description} · ${today}`}
+        title={txtDashboard.treasury.movements_card_title}
+        description={`${card.movements.length} ${txtDashboard.treasury.movements_card_description} · ${today}`}
         action={
           detailHref ? (
             <NavigationLinkWithLoader
@@ -388,7 +388,7 @@ function MovementsCard({
               prefetch={false}
               className="shrink-0 text-small font-semibold text-muted-foreground transition hover:text-foreground"
             >
-              {texts.dashboard.treasury.movements_see_all_cta}
+              {txtDashboard.treasury.movements_see_all_cta}
             </NavigationLinkWithLoader>
           ) : undefined
         }
@@ -403,7 +403,7 @@ function MovementsCard({
             onClick={() => onFilterChange(null)}
             className="shrink-0"
           >
-            {texts.dashboard.treasury.movements_filter_all_accounts}
+            {txtDashboard.treasury.movements_filter_all_accounts}
           </ChipButton>
           {card.accounts.map((account) => (
             <ChipButton
@@ -420,9 +420,9 @@ function MovementsCard({
 
       <div className="border-t border-border">
         {isSessionUnresolved || isDataUnresolved ? (
-          <DataTableEmpty title={texts.dashboard.treasury.movements_unresolved} />
+          <DataTableEmpty title={txtDashboard.treasury.movements_unresolved} />
         ) : filteredMovements.length === 0 ? (
-          <DataTableEmpty title={texts.dashboard.treasury.movements_empty} />
+          <DataTableEmpty title={txtDashboard.treasury.movements_empty} />
         ) : (
           <SecretariaMovementList
             items={filteredMovements.map((movement) => ({
@@ -444,7 +444,7 @@ function MovementsCard({
               action: movement.canEdit ? (
                 <EditIconButton
                   onClick={() => onEditMovement(movement)}
-                  label={texts.dashboard.treasury.edit_movement_cta}
+                  label={txtDashboard.treasury.edit_movement_cta}
                 />
               ) : undefined
             }))}
@@ -507,15 +507,15 @@ export function TreasuryCard({
   } | null>(null);
 
   const pendingOverlayLabel = isMovementSubmissionPending
-    ? texts.dashboard.treasury.create_loading
+    ? txtDashboard.treasury.create_loading
     : isTransferSubmissionPending
-      ? texts.dashboard.treasury.transfer_create_loading
+      ? txtDashboard.treasury.transfer_create_loading
       : isMovementUpdatePending
-        ? texts.dashboard.treasury.update_loading
+        ? txtDashboard.treasury.update_loading
         : isSessionClosePending
-          ? texts.dashboard.treasury.confirm_close_session_loading
+          ? txtDashboard.treasury.confirm_close_session_loading
           : isSessionOpenPending
-            ? texts.dashboard.treasury.confirm_open_session_loading
+            ? txtDashboard.treasury.confirm_open_session_loading
             : null;
 
   useEffect(() => {
@@ -729,15 +729,15 @@ export function TreasuryCard({
       <Modal
         open={activeModal === "movement"}
         onClose={() => setActiveModal(null)}
-        title={texts.dashboard.treasury.movement_form_title}
-        description={texts.dashboard.treasury.movement_form_description}
+        title={txtDashboard.treasury.movement_form_title}
+        description={txtDashboard.treasury.movement_form_description}
         closeDisabled={isMovementSubmissionPending}
         size="md"
       >
         <SecretariaMovementForm
           submitAction={handleCreateTreasuryMovement}
-          submitLabel={texts.dashboard.treasury.create_cta}
-          pendingLabel={texts.dashboard.treasury.create_loading}
+          submitLabel={txtDashboard.treasury.create_cta}
+          pendingLabel={txtDashboard.treasury.create_loading}
           sessionDate={localTreasuryCard.sessionDate}
           onCancel={() => setActiveModal(null)}
         />
@@ -749,16 +749,16 @@ export function TreasuryCard({
           setActiveModal(null);
           setSelectedMovement(null);
         }}
-        title={texts.dashboard.treasury.edit_form_title}
-        description={texts.dashboard.treasury.edit_form_description}
+        title={txtDashboard.treasury.edit_form_title}
+        description={txtDashboard.treasury.edit_form_description}
         closeDisabled={isMovementUpdatePending}
         size="md"
       >
         {selectedMovement ? (
           <SecretariaMovementEditForm
             submitAction={handleUpdateSecretariaMovement}
-            submitLabel={texts.dashboard.treasury.update_cta}
-            pendingLabel={texts.dashboard.treasury.update_loading}
+            submitLabel={txtDashboard.treasury.update_cta}
+            pendingLabel={txtDashboard.treasury.update_loading}
             movement={selectedMovement}
             initialCostCenterIds={selectedMovement.costCenterIds ?? []}
             onCancel={() => {
@@ -775,8 +775,8 @@ export function TreasuryCard({
           setActiveModal(null);
           setSelectedMovement(null);
         }}
-        title={texts.dashboard.treasury.transfer_form_title}
-        description={texts.dashboard.treasury.edit_form_description}
+        title={txtDashboard.treasury.transfer_form_title}
+        description={txtDashboard.treasury.edit_form_description}
         closeDisabled={isMovementUpdatePending}
         size="md"
       >
@@ -817,8 +817,8 @@ export function TreasuryCard({
       <Modal
         open={activeModal === "transfer"}
         onClose={() => setActiveModal(null)}
-        title={texts.dashboard.treasury.transfer_form_title}
-        description={texts.dashboard.treasury.transfer_form_description}
+        title={txtDashboard.treasury.transfer_form_title}
+        description={txtDashboard.treasury.transfer_form_description}
         closeDisabled={isTransferSubmissionPending}
         size="md"
       >
@@ -835,8 +835,8 @@ export function TreasuryCard({
       <Modal
         open={activeModal === "close_session" && closeSessionValidation !== null}
         onClose={() => setActiveModal(null)}
-        title={texts.dashboard.treasury.closing_title}
-        description={texts.dashboard.treasury.closing_description}
+        title={txtDashboard.treasury.closing_title}
+        description={txtDashboard.treasury.closing_description}
         closeDisabled={isSessionClosePending}
         size="lg"
       >
@@ -854,8 +854,8 @@ export function TreasuryCard({
       <Modal
         open={activeModal === "open_session" && openSessionValidation !== null}
         onClose={() => setActiveModal(null)}
-        title={texts.dashboard.treasury.opening_title}
-        description={texts.dashboard.treasury.opening_description}
+        title={txtDashboard.treasury.opening_title}
+        description={txtDashboard.treasury.opening_description}
         closeDisabled={isSessionOpenPending}
         size="lg"
       >

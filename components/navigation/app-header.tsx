@@ -16,7 +16,7 @@ import {
   canOperateTesoreria
 } from "@/lib/domain/authorization";
 import { formatMembershipRoles } from "@/lib/domain/membership-roles";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard, header as txtHeader } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 type AppHeaderProps = {
@@ -59,8 +59,8 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
 
   const roleLabel = context.activeMembership
     ? formatMembershipRoles(context.activeMembership.roles)
-    : texts.dashboard.role_pending;
-  const clubLabel = context.activeClub?.name ?? texts.header.pending_club_label;
+    : txtDashboard.role_pending;
+  const clubLabel = context.activeClub?.name ?? txtHeader.pending_club_label;
   const clubInitials = getInitials(clubLabel);
   const clubLogoUrl = context.activeClub?.logoUrl ?? null;
   const clubPrimaryColor = context.activeClub?.colorPrimary ?? null;
@@ -78,12 +78,12 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
   }, [activeTab]);
 
   const tabs = [
-    canDashboard  && { key: "dashboard"  as TabKey, href: "/dashboard",  label: texts.header.navigation.dashboard },
-    canSecretaria && { key: "secretaria" as TabKey, href: "/secretary",  label: texts.header.navigation.secretaria },
-    canTesoreria  && { key: "tesoreria"  as TabKey, href: "/treasury",   label: texts.header.navigation.tesoreria },
-    canRrhh       && { key: "rrhh"       as TabKey, href: "/rrhh",       label: texts.header.navigation.rrhh },
-    canSettings   && { key: "settings"   as TabKey, href: "/settings",   label: texts.header.navigation.settings },
-    { key: "modules" as TabKey, href: "/modules", label: texts.header.navigation.modules },
+    canDashboard  && { key: "dashboard"  as TabKey, href: "/dashboard",  label: txtHeader.navigation.dashboard },
+    canSecretaria && { key: "secretaria" as TabKey, href: "/secretary",  label: txtHeader.navigation.secretaria },
+    canTesoreria  && { key: "tesoreria"  as TabKey, href: "/treasury",   label: txtHeader.navigation.tesoreria },
+    canRrhh       && { key: "rrhh"       as TabKey, href: "/rrhh",       label: txtHeader.navigation.rrhh },
+    canSettings   && { key: "settings"   as TabKey, href: "/settings",   label: txtHeader.navigation.settings },
+    { key: "modules" as TabKey, href: "/modules", label: txtHeader.navigation.modules },
   ].filter(Boolean) as { key: TabKey; href: string; label: string }[];
 
   return (
@@ -106,7 +106,7 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
           </div>
           <div className="flex min-w-0 flex-col leading-tight">
             <span className="text-eyebrow uppercase text-muted-foreground">
-              {texts.header.active_club_label}
+              {txtHeader.active_club_label}
             </span>
             {showClubSwitcher ? (
               <ActiveClubSelector
@@ -127,7 +127,7 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
         <div className="flex shrink-0 items-center gap-2">
           <div className="flex flex-col items-end leading-tight">
             <span className="text-eyebrow uppercase text-muted-foreground">
-              {texts.header.role_label}
+              {txtHeader.role_label}
             </span>
             <span className="text-small font-semibold text-ds-slate-700">
               {roleLabel}
@@ -144,7 +144,7 @@ export function AppHeader({ context, setActiveClubAction }: AppHeaderProps) {
       {/* App tabs */}
       {tabs.length > 0 && (
         <nav
-          aria-label={texts.header.navigation.aria_label}
+          aria-label={txtHeader.navigation.aria_label}
           className="flex gap-1 overflow-x-auto px-1.5 [scrollbar-width:none]"
         >
           {tabs.map((tab) => {

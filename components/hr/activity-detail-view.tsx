@@ -17,16 +17,16 @@ import { StructureEditModal } from "@/components/hr/structure-edit-modal";
 import { triggerClientFeedback } from "@/lib/client-feedback";
 import type { SalaryStructure } from "@/lib/domain/salary-structure";
 import type { StaffMember } from "@/lib/domain/staff-member";
-import { texts } from "@/lib/texts";
+import { rrhh as txtRrhh } from "@/lib/texts";
 import type {
   ActivityCollaborator,
   ActivityCostPoint,
   ActivityDetail,
 } from "@/lib/services/hr-activity-detail-service";
 
-const adTexts = texts.rrhh.activity_detail;
-const ssTexts = texts.rrhh.salary_structures;
-const scTexts = texts.rrhh.staff_contracts;
+const adTexts = txtRrhh.activity_detail;
+const ssTexts = txtRrhh.salary_structures;
+const scTexts = txtRrhh.staff_contracts;
 const monthLabels = adTexts.month_short_labels as Record<string, string>;
 
 type ActivityDetailViewProps = {

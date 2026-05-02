@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { type ComponentPropsWithoutRef, type MouseEvent, type ReactNode, useState } from "react";
 
 import { Spinner } from "@/components/ui/pending-form";
-import { texts } from "@/lib/texts";
+import { dashboard as txtDashboard } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 type NavigationLinkWithLoaderProps = LinkProps &
@@ -32,7 +32,7 @@ export function NavigationLinkWithLoader({
   children,
   className,
   href,
-  loadingLabel = texts.dashboard.treasury.navigation_loading,
+  loadingLabel = txtDashboard.treasury.navigation_loading,
   loadingClassName,
   loadingSpinnerClassName,
   loadingContentClassName,
